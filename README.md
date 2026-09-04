@@ -64,12 +64,12 @@ npm run dev
 
 | Integrante | Rol |
 |---|---|
-| Clara Isabel Vitoria Gran | Apoyo en base de datos |
+| Clara Isabel| Apoyo en base de datos |
 | Felipe Bernal | Base de datos |
-| Andrés Camilo Flores Bustamante | Backend + coordinación |
-| Lebron De La Rosa Castro | Backend |
-| Javier Vargas | Frontend |
-| Brian Federosa | Frontend |
+| Andrés Florez Bustamante | Backend + Coordinación |
+| Lewis De La Rosa Castro | Backend |
+| Jaber Vargas | Frontend |
+| Bryan Pederosa | Frontend |
 
 ## Flujo de trabajo
 
