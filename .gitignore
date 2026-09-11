@@ -6,6 +6,7 @@ backend/.env
 *.pyc
 
 # Frontend
+node_modules/
 frontend/node_modules/
 frontend/dist/
 

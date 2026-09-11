@@ -1,0 +1,102 @@
+.register-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f1ea;
+  padding: 2rem 1rem;
+}
+
+.register-card {
+  width: 100%;
+  max-width: 640px;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(15, 31, 56, 0.12);
+}
+
+.register-card__header {
+  background: #0f1f38;
+  padding: 2rem 2rem 1.5rem;
+}
+
+.register-card__title {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0.25rem 0 0;
+}
+
+.register-card__subtitle {
+  color: #b9c6d8;
+  font-size: 0.875rem;
+  margin: 0.25rem 0 0;
+}
+
+.register-card__body {
+  padding: 2rem;
+}
+
+/* Selector de tipo de cuenta */
+
+.tabs {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #dfe3e8;
+}
+
+.tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: #f4f1ea;
+  color: #0f1f38;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tab.is-active {
+  background: #0f1f38;
+  color: #fff;
+}
+
+/* Grilla de campos */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.form-grid__full {
+  grid-column: 1 / -1;
+}
+
+.register-actions {
+  margin-top: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.register-actions__footer {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.register-actions__footer .link {
+  color: #0f1f38;
+  font-weight: 500;
+}
+
+@media (max-width: 560px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
