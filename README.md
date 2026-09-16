@@ -93,8 +93,8 @@ npm run dev
 | Felipe Bernal | Base de datos |
 | Andrés Florez Bustamante | Backend + Coordinación |
 | Lewis De La Rosa Castro | Backend |
-| Javier Vargas | Frontend |
-| Bryan Pedrosa | Frontend |
+| Jaber Vargas | Frontend |
+| Bryan Pedroza | Frontend |
 
 ## Flujo de trabajo
 
@@ -103,5 +103,5 @@ npm run dev
 
 ## Estado del proyecto
 
-🚧 En desarrollo — Sprint 1 (gestión de clientes y empresas).
+🚧 En desarrollo 
 d3e7d5907ada7dda08aab38f0b4217093d69f281

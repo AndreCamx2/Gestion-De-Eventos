@@ -1,0 +1,154 @@
+.salones {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.toolbar__filters {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-input {
+  border: 1px solid #dfe3e8;
+  border-radius: 6px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+  min-width: 220px;
+}
+
+.filter {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #5b6472;
+}
+
+.filter select {
+  border: 1px solid #dfe3e8;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+  background: #fff;
+}
+
+/* Grid de tarjetas */
+
+.salones-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.salon-card {
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 31, 56, 0.06);
+}
+
+.salon-card__photo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: #e6e2d8;
+}
+
+.salon-card__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.salon-card__photo .badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.salon-card__body {
+  padding: 1rem 1.1rem 1.2rem;
+}
+
+.salon-card__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f1f38;
+  margin: 0 0 0.4rem;
+}
+
+.salon-card__capacity {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: #5b6472;
+  margin: 0 0 0.6rem;
+}
+
+.salon-card__tags {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.pill {
+  font-size: 0.72rem;
+  color: #4a5568;
+  background: #f1f2f4;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+}
+
+.badge {
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.badge--disponible { color: #2f7a4f; background: #e3f5e9; }
+.badge--reservado   { color: #b7791f; background: #fdf1d9; }
+
+.btn--outline {
+  background: #fff;
+  border: 1px solid #dfe3e8;
+  color: #0f1f38;
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn--outline:hover {
+  background: #f4f1ea;
+}
+
+.salones-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #8b95a5;
+  padding: 2rem 0;
+}
+
+@media (max-width: 1100px) {
+  .salones-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .salones-grid { grid-template-columns: 1fr; }
+}

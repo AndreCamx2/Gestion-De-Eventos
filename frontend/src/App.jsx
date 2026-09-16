@@ -1,25 +1,28 @@
 import { useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import Login from "./components/Login";
 import Registrar from "./components/Registrar";
+import DashboardLayout from "./components/DashboardLayout";
 import Home from "./components/Home";
+import Cotizaciones from "./components/Cotizaciones";
+import Salones from "./components/Salones";
 
-// Envuelve cualquier ruta que solo deba verse si el usuario inició sesión.
-// Si no hay usuario, lo manda de vuelta al login en vez de mostrar la pantalla.
-function ProtectedRoute({ user, children }) {
+// Envuelve TODAS las rutas del dashboard: si no hay usuario logueado,
+// redirige a /login en vez de dejar pasar a cualquiera de las pantallas hijas.
+function ProtectedRoute({ user }) {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  return children;
+  return <Outlet />;
 }
 
 export default function App() {
   const [user, setUser] = useState(null);
 
   function handleLoginSuccess({ email }) {
-    // Mientras no conectemos el backend, guardamos solo lo básico.
-    // Cuando conectemos la API real, aquí debería guardar también el rol
-    // que devuelva el servidor (administrador / cliente / proveedor).
+    // Mientras no se tenga el backend conectado, guardamos solo lo básico.
+    // Cuando se conecte la API real, guarda también el rol que devuelva el
+    // servidor (administrador / cliente / proveedor).
     setUser({ name: email.split("@")[0], role: "cliente" });
   }
 
@@ -35,52 +38,20 @@ export default function App() {
         <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
         <Route path="/registro" element={<Registrar />} />
 
-        <Route
-          path="/inicio"
-          element={
-            <ProtectedRoute user={user}>
-              <Home user={user ?? undefined} onLogout={handleLogout} />
-            </ProtectedRoute>
-          }
-        />
+        {/* Todo lo de aquí adentro exige sesión iniciada */}
+        <Route element={<ProtectedRoute user={user} />}>
+          {/* Y todo lo de aquí adentro comparte el mismo sidebar + navbar */}
+          <Route element={<DashboardLayout user={user ?? undefined} onLogout={handleLogout} />}>
+            <Route path="/inicio" element={<Home />} />
+            <Route path="/cotizaciones" element={<Cotizaciones />} />
+            <Route path="/salones" element={<Salones />} />
 
-        {/* Estas rutas ya están enlazadas desde el sidebar y las quick-access
-            cards de Home; crear sus componentes y reemplazar este placeholder
-            a medida que las vayamos construyendo. */}
-        <Route
-          path="/cotizaciones"
-          element={
-            <ProtectedRoute user={user}>
-              <div style={{ padding: "2rem" }}>Cotizaciones — pendiente de construir</div>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/calendario"
-          element={
-            <ProtectedRoute user={user}>
-              <div style={{ padding: "2rem" }}>Calendario — pendiente de construir</div>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/clientes"
-          element={
-            <ProtectedRoute user={user}>
-              <div style={{ padding: "2rem" }}>Clientes — pendiente de construir</div>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/salones"
-          element={
-            <ProtectedRoute user={user}>
-              <div style={{ padding: "2rem" }}>Salones y Servicios — pendiente de construir</div>
-            </ProtectedRoute>
-          }
-        />
+            {/* Aún pendientes de construir */}
+            <Route path="/calendario" element={<div style={{ padding: "2rem" }}>Calendario — pendiente de construir</div>} />
+            <Route path="/clientes" element={<div style={{ padding: "2rem" }}>Clientes — pendiente de construir</div>} />
+          </Route>
+        </Route>
 
-        {/* Cualquier ruta desconocida vuelve al login */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
