@@ -3,19 +3,20 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Inyectamos la variable de entorno para la URL de la API de Django
-ARG VITE_API_URL
-ENV VITE_API_URL=$VITE_API_URL
-
+# Instalamos dependencias primero para aprovechar el caché de Docker
 COPY package*.json ./
 RUN npm install
 
 COPY . .
 
+# Inyectamos la variable de entorno para la URL de la API de Django
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 # Genera los archivos optimizados dentro de /app/dist
 RUN npm run build
 
-# (Etapa de Nginx en tu Dockerfile)
+# ETAPA 2: servir con Nginx
 FROM nginx:alpine
 
 # Copiar la configuración personalizada de Nginx
