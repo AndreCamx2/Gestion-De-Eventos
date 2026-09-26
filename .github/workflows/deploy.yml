@@ -1,0 +1,16 @@
+name: Despliegue Backend en Render
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deploy Hook
+        run: |
+          curl -X POST "https://api.render.com/deploy/srv-das2jjt9fdbs73bjhru0?key=9gvVIcqyQ2A"
