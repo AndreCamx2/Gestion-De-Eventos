@@ -1,0 +1,18 @@
+@startuml CU18_LiquidarEvento
+title CU-18: Diagrama de Actividades - Liquidar Evento
+skinparam backgroundColor white
+
+start
+:Evento culmina;
+:Auditor o Cajero selecciona "Liquidar Evento";
+:Sistema suma: Cotización Inicial + Consumos Extra;
+:Sistema resta: Garantía / Anticipos pagados;
+:Generar saldo final;
+if (¿Saldo pendiente mayor a 0?) then (Sí)
+  :Registrar pago del cliente (Tarjeta, Transferencia);
+else (No)
+endif
+:Emitir Factura Electrónica;
+:Cambiar estado financiero a "Pagado";
+stop
+@enduml

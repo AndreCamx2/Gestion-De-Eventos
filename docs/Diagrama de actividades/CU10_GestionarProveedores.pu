@@ -1,0 +1,16 @@
+@startuml CU10_GestionarProveedores
+title CU-10: Diagrama de Actividades - Gestionar Proveedores
+skinparam backgroundColor white
+
+start
+:Administrador selecciona "Nuevo Proveedor";
+:Ingresa NIT y Nombre de la empresa;
+:Sistema valida el NIT;
+if (¿NIT ya existe?) then (Sí)
+  :Cargar datos para modificar proveedor;
+else (No)
+  :Ingresa datos de contacto y servicios;
+  :Guardar proveedor en base de datos;
+endif
+stop
+@enduml

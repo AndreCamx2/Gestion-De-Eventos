@@ -1,0 +1,24 @@
+@startuml CU14_ModificarCotizacion
+title CU-14: Diagrama de Actividades - Modificar Cotización
+skinparam backgroundColor white
+
+start
+:Ejecutivo busca Cotización en estado "Cotizado";
+:Selecciona "Editar";
+:Agrega, elimina o modifica Conceptos (cantidades);
+:Sistema recalcula costos e impuestos;
+:Validar si requiere actualización de Bloqueo;
+if (¿Cambia la fecha o el salón?) then (Sí)
+  :Verificar nueva disponibilidad;
+  if (¿Disponible?) then (Sí)
+    :Actualizar Bloqueo temporal;
+  else (No)
+    :Mostrar error y revertir fecha;
+    stop
+  endif
+else (No)
+endif
+:Guardar nueva versión de la Cotización;
+:Generar nuevo PDF;
+stop
+@enduml

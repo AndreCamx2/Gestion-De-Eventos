@@ -6,6 +6,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import Home from "./components/Home";
 import Cotizaciones from "./components/Cotizaciones";
 import Salones from "./components/Salones";
+import { getUsuarioActual, logout } from "./api/auth";
 
 // Envuelve TODAS las rutas del dashboard: si no hay usuario logueado,
 // redirige a /login en vez de dejar pasar a cualquiera de las pantallas hijas.
@@ -19,14 +20,17 @@ function ProtectedRoute({ user }) {
 export default function App() {
   const [user, setUser] = useState(null);
 
-  function handleLoginSuccess({ email }) {
-    // Mientras no se tenga el backend conectado, guardamos solo lo básico.
-    // Cuando se conecte la API real, guarda también el rol que devuelva el
-    // servidor (administrador / cliente / proveedor).
-    setUser({ name: email.split("@")[0], role: "cliente" });
+  async function handleLoginSuccess() {
+    const usuario = await getUsuarioActual();
+    setUser({
+      name: usuario.username,
+      role: usuario.rol.codigo,
+      sitios: usuario.sitios,
+    });
   }
 
   function handleLogout() {
+    logout();
     setUser(null);
   }
 

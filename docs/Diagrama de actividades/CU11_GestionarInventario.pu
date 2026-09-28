@@ -1,0 +1,23 @@
+@startuml CU11_GestionarInventario
+title CU-11: Diagrama de Actividades - Gestionar Inventario
+skinparam backgroundColor white
+
+start
+:Usuario ingresa al módulo de Inventario;
+:Selecciona "Nuevo Elemento" o "Actualizar Stock";
+if (¿Es nuevo elemento?) then (Sí)
+  :Ingresa nombre, descripción y proveedor;
+  :Asigna stock inicial;
+else (Actualizar)
+  :Selecciona elemento existente;
+  :Ingresa cantidad a sumar/restar;
+endif
+:Sistema actualiza cantidad en BD;
+:Verificar si el stock es menor al mínimo;
+if (¿Alerta de stock bajo?) then (Sí)
+  :Mostrar notificación "Stock bajo";
+else (No)
+  :Confirmar operación exitosa;
+endif
+stop
+@enduml

@@ -1,0 +1,37 @@
+@startuml SGDE-10_Consultar_clientes_secuencia
+title SGDE-10 - Consultar clientes
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Ejecutivo comercial" as EC
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+EC -> UI : Seleccionar "Consultar clientes"
+UI --> EC : Mostrar campo de búsqueda
+EC -> UI : Ingresar criterio de búsqueda (nombre, documento o correo)
+UI -> SI : Enviar criterio de búsqueda
+SI -> BD : Buscar clientes que coincidan
+BD --> SI : Resultado de consulta
+
+alt Hay coincidencias
+  SI --> UI : Enviar listado de clientes
+  UI --> EC : Mostrar listado de clientes
+else Sin coincidencias
+  SI --> UI : Informar que no hay resultados
+  UI --> EC : Mostrar mensaje "No se encontraron clientes"
+end
+@enduml

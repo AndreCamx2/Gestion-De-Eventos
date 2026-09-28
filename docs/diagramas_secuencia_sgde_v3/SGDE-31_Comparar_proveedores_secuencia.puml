@@ -1,0 +1,39 @@
+@startuml SGDE-31_Comparar_proveedores_secuencia
+title SGDE-31 - Comparar proveedores
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Administrador" as AD
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+AD -> UI : Seleccionar "Comparar proveedores"
+UI --> AD : Mostrar proveedores y criterios
+AD -> UI : Elegir proveedores y criterios de comparación
+UI -> SI : Enviar selección
+SI -> SI : Validar selección
+
+alt Menos de dos proveedores seleccionados
+  SI --> UI : Informar selección insuficiente
+  UI --> AD : Mostrar mensaje "Seleccione al menos dos proveedores"
+else Selección válida
+  SI -> BD : Consultar datos y stock actualizado de los proveedores
+  BD --> SI : Datos de los proveedores
+  SI -> SI : Construir cuadro comparativo
+  SI --> UI : Enviar cuadro comparativo
+  UI --> AD : Mostrar cuadro comparativo
+end
+@enduml

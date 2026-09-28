@@ -1,0 +1,38 @@
+@startuml SGDE-19_Definir_vigencia_secuencia
+title SGDE-19 - Definir vigencia (RF-07)
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Ejecutivo comercial" as EC
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+EC -> UI : Seleccionar cotización y "Definir vigencia"
+UI --> EC : Solicitar fecha límite
+EC -> UI : Ingresar fecha límite de vigencia
+UI -> SI : Enviar fecha límite
+SI -> SI : Validar fecha límite
+
+alt Fecha límite inválida (anterior a hoy)
+  SI --> UI : Informar fecha inválida
+  UI --> EC : Mostrar mensaje "La fecha límite no es válida"
+else Fecha límite válida (CP-12)
+  SI -> BD : Guardar vigencia y actualizar vencimiento del bloqueo
+  BD --> SI : Confirmar actualización
+  SI --> UI : Informar vigencia definida
+  UI --> EC : Mostrar mensaje "Salón bloqueado temporalmente hasta la fecha límite"
+end
+@enduml

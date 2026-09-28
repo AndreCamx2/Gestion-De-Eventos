@@ -1,0 +1,37 @@
+@startuml Diagrama_Componentes_SGDE
+title Diagrama de Componentes - SGDE
+skinparam backgroundColor white
+
+package "Frontend (Aplicación Cliente)" {
+  [Interfaz de Usuario (SPA)] as UI
+}
+
+package "Backend (Servidor de Aplicaciones)" {
+  [Controlador API REST] as API
+  [Módulo de Autenticación (JWT)] as Auth
+  [Módulo de Gestión Comercial] as Comercial
+  [Módulo de Gestión de Espacios] as Espacios
+  [Módulo de Inventario y Catálogo] as Catalogo
+}
+
+database "Sistema Gestor de Base de Datos" {
+  [Motor de Base de Datos Relacional] as DB
+}
+
+cloud "Servicios Externos" {
+  [Servicio de Correo Electrónico (SMTP)] as Mail
+}
+
+UI -(0- API : Peticiones HTTP/HTTPS
+API --> Auth
+API --> Comercial
+API --> Espacios
+API --> Catalogo
+
+Auth --> DB
+Comercial --> DB
+Espacios --> DB
+Catalogo --> DB
+
+Auth --> Mail : Envío de códigos (Recuperar contraseña)
+@enduml

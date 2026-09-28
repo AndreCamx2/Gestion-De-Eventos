@@ -1,0 +1,37 @@
+@startuml SGDE-15_Bloquear_salon_secuencia
+title SGDE-15 - Bloquear salón (RF-07)
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Ejecutivo comercial" as EC
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+EC -> UI : Seleccionar "Bloquear salón" desde la cotización
+UI -> SI : Enviar salón, fecha y horario a bloquear
+SI -> BD : Verificar si hay un bloqueo vigente
+BD --> SI : Resultado de consulta
+
+alt Ya existe un bloqueo temporal vigente (CP-13)
+  SI --> UI : Informar bloqueo activo
+  UI --> EC : Mostrar restricción por bloqueo activo
+else Salón sin bloqueo vigente
+  SI -> BD : Guardar bloqueo y cambiar estado del salón a "Bloqueado Temporalmente"
+  BD --> SI : Confirmar bloqueo
+  SI --> UI : Informar bloqueo registrado
+  UI --> EC : Mostrar mensaje "Salón bloqueado temporalmente"
+end
+@enduml

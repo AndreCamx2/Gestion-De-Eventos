@@ -1,0 +1,56 @@
+@startuml EXTRA_RF-13_Restablecer_contrasena_secuencia
+title RF-13 - Restablecer contraseña
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Usuario del sistema" as US
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+participant "Servicio de correo" as Correo
+US -> UI : Seleccionar "Olvidé mi contraseña"
+UI --> US : Solicitar correo electrónico
+US -> UI : Ingresar correo electrónico
+UI -> SI : Enviar correo
+SI -> BD : Buscar usuario por correo
+BD --> SI : Resultado de consulta
+
+alt Correo no registrado (CP-21)
+  SI --> UI : Informar correo inexistente
+  UI --> US : Mostrar alerta "El correo no existe en la base de datos"
+else Correo registrado (CP-20)
+  SI -> SI : Generar código de verificación
+  SI -> BD : Guardar código con su vencimiento
+  BD --> SI : Confirmar registro
+  SI -> Correo : Enviar código de verificación
+  SI --> UI : Informar código enviado
+  UI --> US : Solicitar código y nueva contraseña
+  US -> UI : Ingresar código y nueva contraseña
+  UI -> SI : Enviar código y nueva contraseña
+  SI -> BD : Validar código
+  BD --> SI : Resultado de consulta
+
+  alt Código incorrecto o vencido
+    SI --> UI : Informar código inválido
+    UI --> US : Mostrar mensaje "El código no es válido"
+  else Código correcto (CP-22)
+    SI -> SI : Cifrar nueva contraseña
+    SI -> BD : Actualizar contraseña
+    BD --> SI : Confirmar actualización
+    SI --> UI : Informar restablecimiento exitoso
+    UI --> US : Mostrar mensaje "Contraseña actualizada, ya puede iniciar sesión"
+  end
+end
+@enduml

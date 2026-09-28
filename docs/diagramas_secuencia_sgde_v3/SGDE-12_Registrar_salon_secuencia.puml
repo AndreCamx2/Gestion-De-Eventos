@@ -1,0 +1,38 @@
+@startuml SGDE-12_Registrar_salon_secuencia
+title SGDE-12 - Registrar salón (RF-02)
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Administrador" as AD
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+AD -> UI : Seleccionar "Registrar salón"
+UI --> AD : Mostrar formulario de salón
+AD -> UI : Ingresar nombre, dimensiones, capacidad, características y fotos
+UI -> SI : Enviar datos del salón
+SI -> SI : Validar formato de dimensiones y capacidad
+
+alt Capacidad negativa o dimensiones no numéricas (CP-05)
+  SI --> UI : Informar error de formato
+  UI --> AD : Mostrar mensaje de error de formato
+else Datos válidos (CP-04)
+  SI -> BD : Guardar salón con estado "Disponible"
+  BD --> SI : Confirmar registro
+  SI --> UI : Informar registro exitoso
+  UI --> AD : Mostrar mensaje "Salón registrado y disponible"
+end
+@enduml

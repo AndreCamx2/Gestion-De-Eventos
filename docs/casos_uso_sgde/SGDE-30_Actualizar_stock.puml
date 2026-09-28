@@ -1,0 +1,32 @@
+@startuml
+left to right direction
+skinparam backgroundColor white
+skinparam usecase {
+  BackgroundColor #F2F2F2
+  BorderColor black
+  FontSize 12
+}
+skinparam rectangle {
+  BorderColor black
+  FontSize 13
+  FontStyle bold
+}
+skinparam ArrowColor black
+
+actor "Usuario del sistema" as US
+actor "Proveedor" as PR
+actor "Administrador" as AD
+
+rectangle "Sistema SGDE" {
+  usecase "Iniciar sesión\n(JWT)" as UC1
+  usecase "Actualizar stock\nde elementos" as UC2
+  usecase "Comparar\nproveedores" as UC3
+}
+
+US --> UC1
+PR --> UC1
+PR --> UC2
+AD --> UC3
+
+UC3 ..> UC2 : <<include>>
+@enduml

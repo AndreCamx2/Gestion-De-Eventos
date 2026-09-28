@@ -1,0 +1,20 @@
+@startuml CU09_RecuperarContrasena
+title CU-09: Diagrama de Actividades - Recuperar Contraseña
+skinparam backgroundColor white
+
+start
+:Usuario selecciona "Olvidé mi contraseña";
+:Ingresa correo electrónico;
+:Sistema verifica si el correo existe;
+if (¿Correo registrado?) then (Sí)
+  :Generar token de recuperación;
+  :Enviar enlace al correo del usuario;
+  :Usuario hace clic en el enlace;
+  :Ingresa y confirma nueva contraseña;
+  :Sistema actualiza credenciales en BD;
+else (No)
+  :Mostrar mensaje genérico de envío;
+  note right: Por seguridad no se dice que no existe
+endif
+stop
+@enduml

@@ -1,0 +1,17 @@
+@startuml CU12_GestionarHoteles
+title CU-12: Diagrama de Actividades - Gestionar Hoteles
+skinparam backgroundColor white
+
+start
+:SuperAdmin ingresa a "Gestión de Hoteles";
+:Selecciona "Agregar Hotel";
+:Ingresa Nombre, Dirección y asigna Empresa administradora;
+:Sistema valida datos obligatorios;
+if (¿Datos correctos?) then (Sí)
+  :Registrar Hotel en BD;
+  :Habilitar creación de Salones para este Hotel;
+else (No)
+  :Solicitar corrección de datos;
+endif
+stop
+@enduml

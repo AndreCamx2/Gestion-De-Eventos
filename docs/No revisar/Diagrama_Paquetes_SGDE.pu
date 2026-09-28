@@ -1,0 +1,35 @@
+@startuml Diagrama_Paquetes_SGDE
+title Diagrama de Paquetes - SGDE
+skinparam backgroundColor white
+
+package "sgde.interfaz" {
+  [Vistas y Componentes]
+}
+
+package "sgde.controladores" {
+  [Controladores HTTP]
+  [Middlewares Seguridad]
+}
+
+package "sgde.servicios" {
+  [Servicios Comercial]
+  [Servicios Inventario]
+  [Servicios Espacios]
+  [Servicios Usuarios]
+}
+
+package "sgde.modelos" {
+  [Entidades del Negocio]
+  [DTOs]
+}
+
+package "sgde.repositorios" {
+  [Acceso a Datos (DAO/ORM)]
+}
+
+"sgde.interfaz" ..> "sgde.controladores" : consume
+"sgde.controladores" ..> "sgde.servicios" : invoca
+"sgde.servicios" ..> "sgde.repositorios" : delega operaciones BD
+"sgde.servicios" ..> "sgde.modelos" : usa
+"sgde.repositorios" ..> "sgde.modelos" : retorna
+@enduml

@@ -1,0 +1,18 @@
+@startuml CU04_GestionarConceptos
+title CU-04: Diagrama de Actividades - Gestionar Conceptos
+skinparam backgroundColor white
+
+start
+:Administrador selecciona "Nuevo Concepto";
+:Ingresa nombre y tipo (Alimentos, Equipos, Servicios);
+:Asigna Precio Base y porcentaje de Impuestos;
+:Asigna Proveedor (Opcional);
+if (¿El concepto requiere stock físico?) then (Sí)
+  :Vincular a inventario de Elementos;
+else (No)
+  :Marcar como servicio intangible;
+endif
+:Guardar concepto en el catálogo;
+:Concepto disponible para cotizaciones;
+stop
+@enduml

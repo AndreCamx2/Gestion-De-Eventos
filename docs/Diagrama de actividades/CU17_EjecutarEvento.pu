@@ -1,0 +1,16 @@
+@startuml CU17_EjecutarEvento
+title CU-17: Diagrama de Actividades - Ejecutar Evento
+skinparam backgroundColor white
+
+start
+:Llega la fecha de inicio del Evento;
+:Sistema cambia estado del Evento a "En Ejecución";
+:Áreas operativas entregan servicios según Orden (BEO);
+if (¿Cliente solicita servicios extra de última hora?) then (Sí)
+  :Comercial o Coordinador agrega "Consumos Extra" al evento;
+  :Sistema actualiza cuenta por cobrar;
+else (No)
+endif
+:Culmina el horario del evento;
+stop
+@enduml

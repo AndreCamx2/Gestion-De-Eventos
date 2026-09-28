@@ -1,0 +1,13 @@
+@startuml CU16_GenerarBEO
+title CU-16: Diagrama de Actividades - Generar Orden de Servicio (BEO)
+skinparam backgroundColor white
+
+start
+:Coordinador selecciona un Evento "Confirmado";
+:Selecciona "Generar Orden de Servicio (BEO)";
+:Sistema extrae: Salón, Montaje, Conceptos (A&B, equipos) y Horarios;
+:Usuario añade notas operativas (Ej: "Alergias del cliente");
+:Sistema genera documento maestro del evento;
+:Distribuir digitalmente a áreas operativas (Cocina, Aseo, Tecnología);
+stop
+@enduml

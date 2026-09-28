@@ -1,0 +1,37 @@
+@startuml SGDE-23_Consultar_historico_secuencia
+title SGDE-23 - Consultar histórico (RF-11)
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Administrador" as AD
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+AD -> UI : Seleccionar "Consultar histórico"
+UI --> AD : Mostrar filtros de búsqueda
+AD -> UI : Filtrar por estado (confirmados, cancelados o finalizados)
+UI -> SI : Enviar filtros
+SI -> BD : Buscar eventos que cumplan el filtro
+BD --> SI : Resultado de consulta
+
+alt Hay eventos que cumplen el filtro (CP-18)
+  SI --> UI : Enviar listado de eventos
+  UI --> AD : Mostrar listado detallado del histórico
+else Sin resultados
+  SI --> UI : Informar que no hay resultados
+  UI --> AD : Mostrar mensaje "No hay eventos para el filtro seleccionado"
+end
+@enduml

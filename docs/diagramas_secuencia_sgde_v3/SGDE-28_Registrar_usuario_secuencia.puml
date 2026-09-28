@@ -1,0 +1,47 @@
+@startuml SGDE-28_Registrar_usuario_secuencia
+title SGDE-28 - Registrar usuario
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Administrador" as AD
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+AD -> UI : Seleccionar "Registrar usuario"
+UI --> AD : Mostrar formulario de usuario
+AD -> UI : Ingresar nombre, correo, rol y contraseña inicial
+opt Asociar usuario a un hotel
+  AD -> UI : Seleccionar hotel
+end
+UI -> SI : Enviar datos del usuario
+SI -> BD : Verificar si el correo ya existe
+BD --> SI : Resultado de consulta
+SI -> SI : Validar datos ingresados
+
+alt Campos obligatorios vacíos
+  SI --> UI : Informar campos obligatorios faltantes
+  UI --> AD : Mostrar alerta "Todos los campos son obligatorios"
+else Correo ya registrado
+  SI --> UI : Informar registro duplicado
+  UI --> AD : Mostrar alerta "Ya existe un usuario con ese correo"
+else Datos válidos
+  SI -> SI : Cifrar contraseña
+  SI -> BD : Guardar usuario
+  BD --> SI : Confirmar registro
+  SI --> UI : Informar registro exitoso
+  UI --> AD : Mostrar mensaje "Usuario registrado correctamente"
+end
+@enduml

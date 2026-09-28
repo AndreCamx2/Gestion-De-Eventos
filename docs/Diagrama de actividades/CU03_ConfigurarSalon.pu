@@ -1,0 +1,20 @@
+@startuml CU03_ConfigurarSalon
+title CU-03: Diagrama de Actividades - Configurar Salón
+skinparam backgroundColor white
+
+start
+:Administrador selecciona "Nuevo Salón";
+:Ingresa nombre, dimensiones y capacidad física;
+:Selecciona los tipos de Montajes permitidos;
+repeat
+  :Asignar capacidad máxima para el montaje seleccionado;
+repeat while (¿Agregar otro montaje?) is (Sí)
+:Sistema valida que las capacidades no excedan la física;
+if (¿Validación correcta?) then (Sí)
+  :Guardar Salón y configuraciones (SalonMontaje);
+  :Estado del Salón = "Disponible";
+else (No)
+  :Mostrar error "Capacidad de montaje excede límite físico";
+endif
+stop
+@enduml

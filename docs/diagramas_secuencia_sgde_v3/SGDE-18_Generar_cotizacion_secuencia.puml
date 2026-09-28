@@ -1,0 +1,42 @@
+@startuml SGDE-18_Generar_cotizacion_secuencia
+title SGDE-18 - Generar cotización (RF-06)
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Ejecutivo comercial" as EC
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+EC -> UI : Seleccionar "Generar cotización"
+UI --> EC : Mostrar formulario de cotización
+EC -> UI : Ingresar cliente, salón, montaje, cantidad de personas y duración
+EC -> UI : Agregar productos, servicios e impuestos
+UI -> SI : Enviar datos de la cotización
+SI -> BD : Consultar capacidad del salón/montaje y precios
+BD --> SI : Capacidad máxima y precios
+SI -> SI : Validar cantidad de personas contra la capacidad
+
+alt Personas superan la capacidad máxima (CP-11)
+  SI --> UI : Informar capacidad excedida
+  UI --> EC : Mostrar alerta "La cantidad de personas supera el límite permitido"
+else Capacidad válida (CP-10)
+  SI -> SI : Calcular costos totales
+  SI -> BD : Guardar cotización
+  BD --> SI : Confirmar registro
+  SI --> UI : Enviar cotización detallada
+  UI --> EC : Mostrar cotización con los costos totales
+end
+@enduml

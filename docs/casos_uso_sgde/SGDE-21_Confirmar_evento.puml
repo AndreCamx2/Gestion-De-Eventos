@@ -1,0 +1,45 @@
+@startuml
+left to right direction
+skinparam backgroundColor white
+skinparam usecase {
+  BackgroundColor #F2F2F2
+  BorderColor black
+  FontSize 12
+}
+skinparam rectangle {
+  BorderColor black
+  FontSize 13
+  FontStyle bold
+}
+skinparam ArrowColor black
+
+actor "Ejecutivo comercial" as EC
+
+rectangle "Sistema SGDE" {
+  usecase "Registrar cliente" as UC1
+  usecase "Consultar clientes" as UC2
+  usecase "Consultar\ndisponibilidad" as UC3
+  usecase "Generar cotización" as UC4
+  usecase "Bloquear salón" as UC5
+  usecase "Definir vigencia" as UC6
+  usecase "Registrar aceptación\ny garantía" as UC7
+  usecase "Confirmar evento" as UC8
+  usecase "Registrar\ncancelación" as UC9
+}
+
+EC -- UC1
+EC -- UC2
+EC -- UC3
+EC -- UC4
+EC -- UC5
+EC -- UC6
+EC -- UC7
+EC -- UC8
+EC -- UC9
+
+UC5 ..> UC4 : <<extend>>
+UC6 ..> UC4 : <<extend>>
+UC7 ..> UC4 : <<extend>>
+UC8 ..> UC7 : <<include>>
+UC9 ..> UC8 : <<extend>>
+@enduml

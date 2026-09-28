@@ -1,0 +1,39 @@
+@startuml SGDE-27_Iniciar_sesion_secuencia
+title SGDE-27 - Iniciar sesión (JWT)
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Usuario del sistema" as US
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+US -> UI : Ingresar correo y contraseña
+UI -> SI : Enviar credenciales
+SI -> BD : Buscar usuario por correo
+BD --> SI : Datos del usuario
+SI -> SI : Verificar contraseña
+
+alt Credenciales inválidas
+  SI --> UI : Informar credenciales inválidas
+  UI --> US : Mostrar mensaje "Correo o contraseña incorrectos"
+else Credenciales válidas
+  SI -> SI : Generar token JWT
+  SI --> UI : Enviar token JWT
+  UI --> US : Dar acceso según su rol
+end
+
+note over UI, SI : Las siguientes peticiones incluyen el token JWT
+@enduml

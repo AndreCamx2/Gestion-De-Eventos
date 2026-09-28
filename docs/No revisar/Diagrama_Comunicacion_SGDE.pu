@@ -1,0 +1,21 @@
+@startuml Diagrama_Comunicacion_SGDE
+title Diagrama de Comunicación - Generar Cotización
+skinparam backgroundColor white
+allow_mixing
+
+actor "Ejecutivo\nComercial" as EC
+object ": InterfazUI" as UI
+object ": GestorCotizaciones" as Gestor
+object ": RepositorioEspacios" as RepoEspacios
+object "nuevaCotizacion : Cotizacion" as Cot
+
+EC -right-> UI : 1: Ingresar datos de cotización (cliente, salón, montaje, personas)
+UI -right-> Gestor : 2: enviarDatos(cotizacionDTO)
+Gestor -down-> RepoEspacios : 3: consultarCapacidadYPrecios(salonId, montajeId)
+RepoEspacios -up-> Gestor : 4: retorna(capacidadMaxima, precios)
+Gestor -> Gestor : 5: validarCapacidadMaxima()
+Gestor -> Gestor : 6: calcularCostosTotales()
+Gestor -down-> Cot : 7: crearCotizacion(datos)
+Gestor -left-> UI : 8: retornarCotizacionDetallada()
+UI -left-> EC : 9: Mostrar cotización con costos totales
+@enduml

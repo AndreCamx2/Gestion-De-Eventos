@@ -1,3 +1,5 @@
 from django.contrib import admin
+from .models import Proveedor, StockElemento
 
-# Register your models here.
+admin.site.register(Proveedor)
+admin.site.register(StockElemento)

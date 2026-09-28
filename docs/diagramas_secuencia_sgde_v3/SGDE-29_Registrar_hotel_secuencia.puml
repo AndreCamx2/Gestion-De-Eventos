@@ -1,0 +1,47 @@
+@startuml SGDE-29_Registrar_hotel_secuencia
+title SGDE-29 - Registrar hotel
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Administrador" as AD
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+AD -> UI : Seleccionar "Registrar hotel"
+UI -> SI : Solicitar empresas disponibles
+SI -> BD : Consultar empresas
+BD --> SI : Listado de empresas
+SI --> UI : Enviar empresas
+UI --> AD : Mostrar formulario de hotel y empresas disponibles
+AD -> UI : Ingresar datos del hotel y seleccionar la empresa
+UI -> SI : Enviar datos del hotel
+SI -> BD : Verificar si el hotel ya existe
+BD --> SI : Resultado de consulta
+SI -> SI : Validar datos ingresados
+
+alt Campos obligatorios vacíos
+  SI --> UI : Informar campos obligatorios faltantes
+  UI --> AD : Mostrar alerta "Todos los campos son obligatorios"
+else Hotel ya registrado
+  SI --> UI : Informar registro duplicado
+  UI --> AD : Mostrar alerta "El hotel ya se encuentra registrado"
+else Datos válidos
+  SI -> BD : Guardar hotel
+  BD --> SI : Confirmar registro
+  SI --> UI : Informar registro exitoso
+  UI --> AD : Mostrar mensaje "Hotel registrado correctamente"
+end
+@enduml

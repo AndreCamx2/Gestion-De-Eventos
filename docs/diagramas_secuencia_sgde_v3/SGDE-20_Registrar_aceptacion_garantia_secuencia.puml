@@ -1,0 +1,38 @@
+@startuml SGDE-20_Registrar_aceptacion_garantia_secuencia
+title SGDE-20 - Registrar aceptación y garantía (RF-08)
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Ejecutivo comercial" as EC
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+EC -> UI : Seleccionar cotización y "Registrar aceptación"
+UI --> EC : Mostrar formulario de aceptación y garantía
+EC -> UI : Confirmar aceptación del cliente y adjuntar comprobante de garantía/pago
+UI -> SI : Enviar aceptación y comprobante
+SI -> SI : Validar soporte de garantía
+
+alt Sin soporte de garantía o pago mínimo (CP-15)
+  SI --> UI : Informar garantía obligatoria
+  UI --> EC : Mostrar alerta "La garantía es obligatoria para continuar"
+else Soporte adjunto (CP-14)
+  SI -> BD : Guardar aceptación y garantía
+  BD --> SI : Confirmar registro
+  SI --> UI : Informar registro exitoso
+  UI --> EC : Mostrar mensaje "Aceptación y garantía registradas"
+end
+@enduml

@@ -1,0 +1,18 @@
+@startuml Diagrama_Estados_SGDE
+title Diagrama de Estados - Ciclo de Vida de una Reserva/Evento
+skinparam backgroundColor white
+
+[*] --> Cotizado : Generar cotización
+Cotizado --> BloqueadoTemporalmente : Registrar bloqueo de agenda
+BloqueadoTemporalmente --> GarantiaRegistrada : Registrar aceptación del cliente
+GarantiaRegistrada --> Confirmado : Verificar y aprobar garantía
+Confirmado --> Finalizado : Culminación de la fecha del evento
+
+Cotizado --> Cancelado : Rechazo del cliente
+BloqueadoTemporalmente --> Cancelado : Vencimiento de vigencia límite
+GarantiaRegistrada --> Cancelado : Garantía rechazada
+Confirmado --> Cancelado : Cancelación por cliente (Aplica políticas)
+
+Cancelado --> [*]
+Finalizado --> [*]
+@enduml

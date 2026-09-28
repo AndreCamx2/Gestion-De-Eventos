@@ -1,0 +1,16 @@
+@startuml CU15_ConsultarCalendario
+title CU-15: Diagrama de Actividades - Consultar Calendario
+skinparam backgroundColor white
+
+start
+:Usuario ingresa a "Calendario de Disponibilidad";
+:Filtra por Mes, Semana o Salón;
+:Sistema consulta en BD Bloqueos y Eventos Confirmados;
+:Renderizar grilla de tiempos (Timeline);
+if (¿Usuario selecciona una fecha disponible?) then (Sí)
+  :Habilitar botón "Crear Cotización para esta fecha";
+else (Selecciona fecha ocupada)
+  :Mostrar detalles del Bloqueo/Evento (Solo lectura);
+endif
+stop
+@enduml

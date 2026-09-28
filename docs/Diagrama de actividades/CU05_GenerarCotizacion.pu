@@ -1,0 +1,19 @@
+@startuml CU05_GenerarCotizacion
+title CU-05: Diagrama de Actividades - Generar Cotización
+skinparam backgroundColor white
+
+start
+:Ejecutivo Comercial inicia "Nueva Cotización";
+:Selecciona Cliente, Salón y Montaje;
+:Ingresa cantidad estimada de personas;
+if (¿Supera la capacidad del montaje?) then (Sí)
+  :Mostrar alerta de "Capacidad Excedida";
+  stop
+else (No)
+  :Agregar conceptos (servicios/productos) al carrito;
+  :Sistema calcula subtotal, impuestos y total;
+  :Guardar cotización en estado "Cotizado";
+  :Generar PDF y enviar al cliente;
+  stop
+endif
+@enduml

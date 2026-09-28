@@ -1,0 +1,50 @@
+@startuml Diagrama_Objetos_SGDE
+title Diagrama de Objetos - Instancia de Reserva y Evento
+skinparam backgroundColor white
+
+object "<u>cliente1: Cliente</u>" as C1 {
+  documento = "1020304050"
+  nombre = "Tech Innovators S.A."
+  correo = "eventos@techinnovators.com"
+}
+
+object "<u>salon1: Salon</u>" as S1 {
+  nombre = "Salón Esmeralda"
+  capacidadMaxima = 400
+  estado = "Ocupado"
+}
+
+object "<u>montaje1: Montaje</u>" as M1 {
+  nombre = "Tipo Auditorio"
+}
+
+object "<u>configuracion1: SalonMontaje</u>" as SM1 {
+  capacidad = 350
+}
+
+object "<u>cotizacion1: Cotizacion</u>" as Cot {
+  id = "COT-2026-001"
+  fecha = "18-Sep-2026"
+  cantidadPersonas = 200
+  costoTotal = 8500000.00
+  estado = "Confirmado"
+}
+
+object "<u>concepto1: Concepto</u>" as Prod1 {
+  nombre = "Refrigerio Premium"
+  precioBase = 25000
+}
+
+object "<u>evento1: Evento</u>" as Ev1 {
+  id = 105
+  estado = "Confirmado"
+  garantiaAprobada = true
+}
+
+C1 <-- Cot : solicitada por
+Cot --> SM1 : se realizará en
+S1 "1" *-- "1..*" SM1 : compuesto por
+M1 "1" *-- "1..*" SM1 : aplica formato
+Cot --> Prod1 : incluye consumo de
+Cot --> Ev1 : aprobada y convertida en
+@enduml

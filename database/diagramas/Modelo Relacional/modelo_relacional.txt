@@ -1,0 +1,145 @@
+erDiagram
+    Ciudad {
+        int id PK
+        string codigo
+        string nombre
+    }
+
+    Sitio {
+        int id PK
+        string nombre
+        int ciudad_id FK
+        timestamp creado_en
+    }
+
+    Rol {
+        int id PK
+        string codigo
+        string nombre
+        text descripcion
+    }
+
+    Usuario {
+        int id PK
+        string username
+        string email
+        boolean is_active
+        int rol_id FK
+    }
+
+    UsuarioSitio {
+        int id PK
+        int usuario_id FK
+        int sitio_id FK
+    }
+
+    Empresa {
+        int id PK
+        string razon_social
+        string identificacion
+        string contacto
+        int ciudad_id FK
+    }
+
+    Cliente {
+        int id PK
+        string tipo
+        string nombre
+        int empresa_id FK
+        string forma_pago
+        text observaciones_internas
+        timestamp creado_en
+    }
+
+    Montaje {
+        int id PK
+        string codigo
+        string nombre
+        text descripcion
+    }
+
+    Salon {
+        int id PK
+        int sitio_id FK
+        string nombre
+        decimal altura
+        decimal ancho
+    }
+
+    SalonMontaje {
+        int id PK
+        int salon_id FK
+        int montaje_id FK
+        int aforo
+        string foto_url
+    }
+
+    Concepto {
+        int id PK
+        int sitio_id FK
+        string nombre
+        decimal precio
+        decimal impuesto_pct
+        boolean activo
+    }
+
+    Proveedor {
+        int id PK
+        string nombre
+        string identificacion
+        string contacto
+    }
+
+    StockElemento {
+        int id PK
+        int proveedor_id FK
+        string nombre_elemento
+        int cantidad
+        decimal valor
+        timestamp actualizado_en
+    }
+
+    Cotizacion {
+        int id PK
+        int sitio_id FK
+        int cliente_id FK
+        int usuario_id FK
+        int salon_id FK
+        int montaje_id FK
+        string estado
+        date fecha_evento
+        date validez_oferta
+        int cantidad_personas
+        timestamp bloqueo_hasta
+        string garantia_tipo
+        decimal garantia_monto
+        decimal penalizacion_pct
+        timestamp creado_en
+    }
+
+    CotizacionItem {
+        int id PK
+        int cotizacion_id FK
+        int concepto_id FK
+        int cantidad
+        decimal precio_unitario
+    }
+
+    Ciudad ||--o{ Sitio : ubica
+    Ciudad ||--o{ Empresa : ubica
+    Sitio ||--o{ UsuarioSitio : tiene
+    Usuario ||--o{ UsuarioSitio : administra
+    Rol ||--o{ Usuario : clasifica
+    Empresa ||--o{ Cliente : agrupa
+    Sitio ||--o{ Salon : posee
+    Sitio ||--o{ Concepto : ofrece
+    Sitio ||--o{ Cotizacion : recibe
+    Salon ||--o{ SalonMontaje : permite
+    Montaje ||--o{ SalonMontaje : usado_en
+    Montaje ||--o{ Cotizacion : aplica_en
+    Cliente ||--o{ Cotizacion : solicita
+    Usuario ||--o{ Cotizacion : crea
+    Salon ||--o{ Cotizacion : reservado_en
+    Proveedor ||--o{ StockElemento : abastece
+    Cotizacion ||--o{ CotizacionItem : contiene
+    Concepto ||--o{ CotizacionItem : incluido_en

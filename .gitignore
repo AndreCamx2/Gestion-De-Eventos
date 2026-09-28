@@ -9,7 +9,11 @@ backend/.env
 node_modules/
 frontend/node_modules/
 frontend/dist/
+frontend/.env
 
 # General
 .DS_Store
 *.log
+
+# Raíz (Docker)
+.env

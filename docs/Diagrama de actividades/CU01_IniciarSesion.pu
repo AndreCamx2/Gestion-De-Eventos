@@ -1,0 +1,21 @@
+@startuml CU01_IniciarSesion
+title CU-01: Diagrama de Actividades - Iniciar Sesión
+skinparam backgroundColor white
+
+start
+:Usuario ingresa al portal del SGDE;
+:Ingresa correo y contraseña;
+:Sistema valida formato de credenciales;
+if (¿Formato correcto?) then (Sí)
+  :Sistema consulta base de datos;
+  if (¿Credenciales coinciden?) then (Sí)
+    :Generar token de sesión (JWT);
+    :Redirigir al panel principal (Dashboard);
+  else (No)
+    :Mostrar error "Credenciales incorrectas";
+  endif
+else (No)
+  :Mostrar error "Formato inválido";
+endif
+stop
+@enduml

@@ -1,0 +1,36 @@
+@startuml Diagrama_Actividades_SGDE
+title Diagrama de Actividades - Proceso Comercial de Eventos
+skinparam backgroundColor white
+
+start
+:Ejecutivo Comercial inicia Cotización;
+:Selecciona Cliente, Salón y Montaje;
+if (¿Cantidad de personas\nsupera capacidad?) then (Sí)
+  :Mostrar error de capacidad;
+  stop
+else (No)
+  :Agrega Conceptos (Productos/Servicios);
+  :Sistema calcula costos totales;
+  :Se genera Cotización detallada;
+  :Bloquear Salón (Temporalmente);
+  :Definir vigencia del bloqueo;
+  if (¿Cliente acepta cotización?) then (Sí)
+    :Cliente envía comprobante de pago/garantía;
+    :Ejecutivo registra aceptación y garantía;
+    :Sistema valida garantía;
+    if (¿Condiciones de garantía\naprobadas?) then (Sí)
+      :Confirmar Evento;
+      :Bloqueo temporal pasa a definitivo;
+      stop
+    else (No)
+      :Informar condiciones incumplidas;
+      stop
+    endif
+  else (No)
+    :Vence vigencia o Cliente rechaza;
+    :Registrar cancelación;
+    :Liberar Salón;
+    stop
+  endif
+endif
+@enduml

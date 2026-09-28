@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { registrarCliente } from "../api/auth";
 import "../styles/register.css";
 
 const ACCOUNT_TYPES = {
   natural: {
     label: "Persona Natural",
     fields: [
-      { name: "fullName", label: "Nombre completo", type: "text", placeholder: "Ana María Restrepo", full: true },
+      { name: "fullName", label: "Nombre completo", type: "text", placeholder: "Maria Bustamante", full: true },
       { name: "documentId", label: "Cédula / Documento", type: "text", placeholder: "1234567890" },
       { name: "phoneNatural", label: "Teléfono", type: "tel", placeholder: "+57 300 000 0000" },
-      { name: "emailNatural", label: "Correo electrónico", type: "email", placeholder: "ana@correo.com" },
-      { name: "cityNatural", label: "Ciudad", type: "text", placeholder: "Cartagena" },
+      { name: "emailNatural", label: "Correo electrónico", type: "email", placeholder: "maria@correo.com" },
     ],
   },
   empresa: {
@@ -21,16 +21,28 @@ const ACCOUNT_TYPES = {
       { name: "contactName", label: "Nombre del contacto", type: "text", placeholder: "Carlos Pérez" },
       { name: "phoneEmpresa", label: "Teléfono", type: "tel", placeholder: "+57 300 000 0000" },
       { name: "emailEmpresa", label: "Correo corporativo", type: "email", placeholder: "contacto@empresa.com" },
-      { name: "cityEmpresa", label: "Ciudad", type: "text", placeholder: "Cartagena" },
     ],
   },
 };
 
 const INITIAL_FORM = {
-  fullName: "", documentId: "", phoneNatural: "", emailNatural: "", cityNatural: "",
-  companyName: "", taxId: "", contactName: "", phoneEmpresa: "", emailEmpresa: "", cityEmpresa: "",
+  fullName: "", documentId: "", phoneNatural: "", emailNatural: "",
+  companyName: "", taxId: "", contactName: "", phoneEmpresa: "", emailEmpresa: "",
   password: "", confirmPassword: "",
 };
+
+// Traduce los nombres de campo que devuelve el backend (según el error de
+// validación) a los nombres reales del formulario, para poder mostrar el
+// error justo debajo del input correspondiente.
+function mapBackendErrorField(backendField, accountType) {
+  const map = {
+    identificacion: accountType === "natural" ? "documentId" : "taxId",
+    email: accountType === "natural" ? "emailNatural" : "emailEmpresa",
+    razon_social: "companyName",
+    nombre: accountType === "natural" ? "fullName" : "contactName",
+  };
+  return map[backendField] || null;
+}
 
 export default function Registrar() {
   const [accountType, setAccountType] = useState("natural");
@@ -75,7 +87,7 @@ export default function Registrar() {
     return nextErrors;
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const nextErrors = validate();
     setErrors(nextErrors);
@@ -84,14 +96,44 @@ export default function Registrar() {
     if (Object.keys(nextErrors).length > 0) return;
 
     setSubmitting(true);
-    // Aquí va la llamada real a la API de registro (fetch/axios),
-    // enviando { accountType, ...campos del tipo activo, password }.
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      await registrarCliente({
+        tipo: accountType === "empresa" ? "juridica" : "natural",
+        nombre: accountType === "natural" ? form.fullName : form.contactName,
+        identificacion: accountType === "natural" ? form.documentId : form.taxId,
+        telefono: accountType === "natural" ? form.phoneNatural : form.phoneEmpresa,
+        email: accountType === "natural" ? form.emailNatural : form.emailEmpresa,
+        password: form.password,
+        razonSocial: form.companyName,
+      });
+
       setSuccess(true);
-      // Deja ver el mensaje de éxito un momento antes de mandar al login.
       setTimeout(() => navigate("/login"), 1200);
-    }, 800);
+    } catch (err) {
+      let backendErrors = {};
+      try {
+        backendErrors = JSON.parse(err.message);
+      } catch {
+        // El mensaje no era JSON, lo tratamos como error general más abajo.
+      }
+
+      const mappedErrors = {};
+      Object.entries(backendErrors).forEach(([field, messages]) => {
+        const mappedField = mapBackendErrorField(field, accountType);
+        const message = Array.isArray(messages) ? messages[0] : messages;
+        if (mappedField) {
+          mappedErrors[mappedField] = message;
+        }
+      });
+
+      if (Object.keys(mappedErrors).length > 0) {
+        setErrors(mappedErrors);
+      } else {
+        setErrors({ general: "No se pudo crear la cuenta. Verifica los datos e intenta de nuevo." });
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const activeFields = ACCOUNT_TYPES[accountType].fields;
@@ -126,6 +168,12 @@ export default function Registrar() {
           {success && (
             <div className="alert alert--success" role="status" style={{ marginTop: 24 }}>
               Cuenta creada correctamente.
+            </div>
+          )}
+
+          {errors.general && (
+            <div className="alert alert--error" role="alert" style={{ marginTop: 24 }}>
+              {errors.general}
             </div>
           )}
 

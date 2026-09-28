@@ -1,35 +1,11 @@
-HEAD
-# Gestion-De-Eventos
-Sistema de Gestión de Eventos (SGDE)
 
 # Sistema de Gestión de Eventos (SGDE)
-d3e7d5907ada7dda08aab38f0b4217093d69f281
 
 Software de gestión de eventos y salones para el sector de congresos y convenciones de Cartagena (hoteles, centros de convenciones y casas de eventos). Cubre todo el ciclo comercial de un evento — desde la cotización hasta la confirmación, ejecución y cierre — de forma ágil, trazable y estandarizada.
 
 Proyecto académico desarrollado para el programa de Administración de Empresas Turísticas y Hoteleras, en conjunto con un cliente real del sector.
 
- HEAD
-Este README describe la versión beta: cubre únicamente los requerimientos funcionales RF-01 a RF-12 definidos en docs/. Facturación e inscripción de asistentes a eventos quedan fuera de alcance (se gestionan con herramientas externas).
-
-Funcionalidades
-Gestión de clientes (personas naturales y jurídicas) y empresas
-Gestión de salones y tipos de montaje, con aforo por combinación salón/montaje
-Calendario de disponibilidad con bloqueo temporal de espacios
-Catálogo de conceptos (productos/servicios) con precios e impuestos
-Generación de cotizaciones con vigencia
-Registro de garantías y confirmación de eventos
-Cancelaciones con política de penalización
-Histórico de eventos
-Stack
-Capa	Tecnología
-Frontend	React + JavaScript (Vite)
-Backend	Python — Django + Django REST Framework
-Base de datos	PostgreSQL
-Autenticación	JWT (djangorestframework-simplejwt)
-Gestión del proyecto	Jira (SGDE)
-
- Este README describe la **versión beta**: cubre únicamente los requerimientos funcionales RF-01 a RF-12 definidos en `docs/`. Facturación e inscripción de asistentes a eventos quedan fuera de alcance (se gestionan con herramientas externas).
+> Este README describe la **versión beta**: cubre únicamente los requerimientos funcionales RF-01 a RF-12 definidos en `docs/`. Facturación e inscripción de asistentes a eventos quedan fuera de alcance (se gestionan con herramientas externas).
 
 ## Funcionalidades
 
@@ -62,6 +38,7 @@ sgde/
 └── docs/        # Requerimientos, backlog y guías del proyecto
 ```
 
+
 ## Puesta en marcha
 
 ### Backend
@@ -89,12 +66,12 @@ npm run dev
 
 | Integrante | Rol |
 |---|---|
-| Clara Isabel| Apoyo en base de datos |
+| Clara Isabel Vitoria Gran | Apoyo en base de datos |
 | Felipe Bernal | Base de datos |
-| Andrés Florez Bustamante | Backend + Coordinación |
-| Lewis De La Rosa Castro | Backend |
+| Andrés Camilo Flores Bustamante | Backend + coordinación |
+| Lebron De La Rosa Castro | Backend |
 | Jaber Vargas | Frontend |
-| Bryan Pedroza | Frontend |
+| Brian Federosa | Frontend |
 
 ## Flujo de trabajo
 
@@ -103,5 +80,23 @@ npm run dev
 
 ## Estado del proyecto
 
-🚧 En desarrollo 
-d3e7d5907ada7dda08aab38f0b4217093d69f281
+🚧 En desarrollo — Sprint 1 (gestión de clientes y empresas).
+=======
+Este README describe la versión beta: cubre únicamente los requerimientos funcionales RF-01 a RF-12 definidos en docs/. Facturación e inscripción de asistentes a eventos quedan fuera de alcance (se gestionan con herramientas externas).
+
+Funcionalidades
+Gestión de clientes (personas naturales y jurídicas) y empresas
+Gestión de salones y tipos de montaje, con aforo por combinación salón/montaje
+Calendario de disponibilidad con bloqueo temporal de espacios
+Catálogo de conceptos (productos/servicios) con precios e impuestos
+Generación de cotizaciones con vigencia
+Registro de garantías y confirmación de eventos
+Cancelaciones con política de penalización
+Histórico de eventos
+Stack
+Capa	Tecnología
+Frontend	React + JavaScript (Vite)
+Backend	Python — Django + Django REST Framework
+Base de datos	PostgreSQL
+Autenticación	JWT (djangorestframework-simplejwt)
+Gestión del proyecto	Jira (SGDE)

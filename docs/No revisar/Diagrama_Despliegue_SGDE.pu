@@ -1,0 +1,30 @@
+@startuml Diagrama_Despliegue_SGDE
+title Diagrama de Despliegue - SGDE
+skinparam backgroundColor white
+
+node "Dispositivo del Usuario" <<Client Device>> {
+  node "Navegador Web" <<Execution Environment>> {
+    artifact "Frontend SGDE\n(React/Angular/Vue)" as Front
+  }
+}
+
+node "Servidor Web y Proxy" <<Server>> {
+  component "Servidor HTTP (Ej. Nginx/Apache)" as Nginx
+}
+
+node "Servidor de Aplicaciones" <<Server>> {
+  node "Entorno de Ejecución\n(Node.js / Java / Python)" <<Execution Environment>> {
+    artifact "Backend SGDE (API REST)" as Backend
+  }
+}
+
+node "Servidor de Base de Datos" <<Server>> {
+  database "Motor RDBMS\n(Ej. PostgreSQL/MySQL)" <<Database>> {
+    artifact "Esquema de BD SGDE" as Schema
+  }
+}
+
+Front ..> Nginx : HTTPS
+Nginx ..> Backend : HTTP (Proxy inverso)
+Backend ..> Schema : TCP/IP (Conexión BD)
+@enduml

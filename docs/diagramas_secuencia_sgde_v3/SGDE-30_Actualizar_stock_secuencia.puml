@@ -1,0 +1,42 @@
+@startuml SGDE-30_Actualizar_stock_secuencia
+title SGDE-30 - Actualizar stock de elementos
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Proveedor" as PR
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+PR -> UI : Seleccionar "Actualizar stock"
+UI -> SI : Solicitar elementos del proveedor
+SI -> BD : Consultar elementos y stock actual
+BD --> SI : Elementos con su stock
+SI --> UI : Enviar elementos
+UI --> PR : Mostrar elementos con su stock actual
+PR -> UI : Seleccionar elemento e ingresar nueva cantidad
+UI -> SI : Enviar nueva cantidad
+SI -> SI : Validar cantidad
+
+alt Cantidad inválida (negativa o no numérica)
+  SI --> UI : Informar error de formato
+  UI --> PR : Mostrar mensaje de error de formato
+else Cantidad válida
+  SI -> BD : Actualizar stock
+  BD --> SI : Confirmar actualización
+  SI --> UI : Informar actualización exitosa
+  UI --> PR : Mostrar mensaje "Stock actualizado correctamente"
+end
+@enduml

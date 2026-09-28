@@ -1,0 +1,18 @@
+@startuml CU06_BloqueoAgenda
+title CU-06: Diagrama de Actividades - Bloquear Agenda
+skinparam backgroundColor white
+
+start
+:Ejecutivo selecciona Cotización activa;
+:Solicita "Bloquear Salón";
+:Sistema verifica disponibilidad en fecha y hora;
+if (¿Salón disponible?) then (Sí)
+  :Sistema solicita vigencia del bloqueo (Fecha límite);
+  :Ejecutivo confirma fechas;
+  :Registrar Bloqueo Temporal en BD;
+  :Cambiar estado de Cotización a "Bloqueado Temporalmente";
+else (No)
+  :Mostrar error "Salón ocupado o fechas cruzadas";
+endif
+stop
+@enduml

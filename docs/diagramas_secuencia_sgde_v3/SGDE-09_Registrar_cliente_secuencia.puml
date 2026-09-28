@@ -1,0 +1,43 @@
+@startuml SGDE-09_Registrar_cliente_secuencia
+title SGDE-09 - Registrar cliente (RF-01)
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Ejecutivo comercial" as EC
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+EC -> UI : Seleccionar "Registrar nuevo cliente"
+UI --> EC : Mostrar formulario de registro
+EC -> UI : Ingresar datos del cliente
+UI -> SI : Enviar datos del cliente
+SI -> BD : Verificar si correo/documento ya existe
+BD --> SI : Resultado de consulta
+SI -> SI : Validar datos ingresados
+
+alt Campos obligatorios vacíos (CP-02)
+  SI --> UI : Informar campos obligatorios faltantes
+  UI --> EC : Mostrar alerta "Todos los campos son obligatorios"
+else Correo o documento ya registrado (CP-03)
+  SI --> UI : Informar que el cliente ya existe
+  UI --> EC : Mostrar alerta "Ya existe una cuenta con ese correo o documento"
+else Datos válidos y cliente nuevo (CP-01)
+  SI -> BD : Guardar cliente
+  BD --> SI : Confirmar registro
+  SI --> UI : Informar registro exitoso
+  UI --> EC : Mostrar mensaje "Cliente registrado correctamente"
+end
+@enduml

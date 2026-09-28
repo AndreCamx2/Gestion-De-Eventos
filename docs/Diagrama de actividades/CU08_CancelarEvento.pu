@@ -1,0 +1,22 @@
+@startuml CU08_CancelarEvento
+title CU-08: Diagrama de Actividades - Cancelar Evento/Reserva
+skinparam backgroundColor white
+
+start
+:Sistema o Usuario inicia "Cancelación";
+if (¿Cancelación manual o vencimiento automático?) then (Manual por Cliente)
+  :Verificar políticas de cancelación;
+  if (¿Aplica penalidad?) then (Sí)
+    :Generar cobro de penalidad al Cliente;
+  else (No)
+    :Proceder sin cobros;
+  endif
+else (Vencimiento Automático)
+  :Registrar motivo "Vencimiento de vigencia";
+endif
+:Cambiar estado de Cotización/Evento a "Cancelado";
+:Eliminar Bloqueo de agenda (Liberar Salón);
+:Actualizar estado del Salón a "Disponible";
+:Notificar al Cliente;
+stop
+@enduml

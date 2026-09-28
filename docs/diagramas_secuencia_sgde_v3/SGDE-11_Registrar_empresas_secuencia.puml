@@ -1,0 +1,43 @@
+@startuml SGDE-11_Registrar_empresas_secuencia
+title SGDE-11 - Registrar empresas
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Administrador" as AD
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+AD -> UI : Seleccionar "Registrar empresa"
+UI --> AD : Mostrar formulario de registro
+AD -> UI : Ingresar datos de la empresa
+UI -> SI : Enviar datos de la empresa
+SI -> BD : Verificar si la empresa ya existe
+BD --> SI : Resultado de consulta
+SI -> SI : Validar datos ingresados
+
+alt Campos obligatorios vacíos
+  SI --> UI : Informar campos obligatorios faltantes
+  UI --> AD : Mostrar alerta "Todos los campos son obligatorios"
+else Empresa ya registrada
+  SI --> UI : Informar registro duplicado
+  UI --> AD : Mostrar alerta "La empresa ya se encuentra registrada"
+else Datos válidos
+  SI -> BD : Guardar empresa
+  BD --> SI : Confirmar registro
+  SI --> UI : Informar registro exitoso
+  UI --> AD : Mostrar mensaje "Empresa registrada correctamente"
+end
+@enduml

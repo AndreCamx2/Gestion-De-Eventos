@@ -1,0 +1,13 @@
+@startuml CU19_FinalizarEvento
+title CU-19: Diagrama de Actividades - Finalizar Evento
+skinparam backgroundColor white
+
+start
+:Cajero confirma liquidación (Pagado);
+:Coordinador selecciona "Finalizar Evento";
+:Notificar al área de Aseo para desmontaje del Salón;
+:Actualizar estado de Evento a "Finalizado";
+:Liberar espacio en el calendario de forma definitiva;
+:Enviar encuesta de satisfacción al Cliente;
+stop
+@enduml

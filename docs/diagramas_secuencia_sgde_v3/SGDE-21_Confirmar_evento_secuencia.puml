@@ -1,0 +1,38 @@
+@startuml SGDE-21_Confirmar_evento_secuencia
+title SGDE-21 - Confirmar evento (RF-09)
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Ejecutivo comercial" as EC
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+EC -> UI : Seleccionar evento y "Confirmar evento"
+UI -> SI : Enviar solicitud de confirmación
+SI -> BD : Consultar aceptación y garantía del evento
+BD --> SI : Aceptación y garantía
+SI -> SI : Verificar condiciones de garantía
+
+alt Garantía no verificada o no aprobada
+  SI --> UI : Informar condiciones incumplidas
+  UI --> EC : Mostrar mensaje "No se cumplen las condiciones de garantía"
+else Condiciones de garantía aprobadas (CP-16)
+  SI -> BD : Cambiar estado a "Confirmado" y bloquear horario definitivamente
+  BD --> SI : Confirmar actualización
+  SI --> UI : Informar evento confirmado
+  UI --> EC : Mostrar mensaje "Evento confirmado"
+end
+@enduml

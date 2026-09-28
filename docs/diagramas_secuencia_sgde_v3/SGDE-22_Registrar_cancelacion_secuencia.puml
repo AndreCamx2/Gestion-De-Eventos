@@ -1,0 +1,40 @@
+@startuml SGDE-22_Registrar_cancelacion_secuencia
+title SGDE-22 - Registrar cancelación (RF-10)
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+autonumber
+
+actor "Ejecutivo comercial" as EC
+participant "Interfaz" as UI
+participant "Sistema" as SI
+database "Base de datos" as BD
+
+EC -> UI : Seleccionar evento y "Registrar cancelación"
+UI --> EC : Solicitar causa de la cancelación
+EC -> UI : Ingresar causa
+UI -> SI : Enviar causa de cancelación
+SI -> BD : Consultar estado del evento
+BD --> SI : Estado del evento
+
+alt Evento no confirmado o ya cancelado
+  SI --> UI : Informar que no se puede cancelar
+  UI --> EC : Mostrar mensaje "El evento no se puede cancelar"
+else Evento confirmado (CP-17)
+  SI -> SI : Aplicar políticas del servicio (retención o devolución)
+  SI -> BD : Cambiar estado a "Cancelado", liberar agenda y registrar retención/devolución
+  BD --> SI : Confirmar actualización
+  SI --> UI : Informar cancelación registrada
+  UI --> EC : Mostrar estado "Cancelado" y retenciones o devoluciones
+end
+@enduml

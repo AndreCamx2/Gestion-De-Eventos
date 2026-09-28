@@ -1,0 +1,23 @@
+@startuml CU02_RegistrarCliente
+title CU-02: Diagrama de Actividades - Registrar Cliente
+skinparam backgroundColor white
+
+start
+:Usuario selecciona "Registrar Cliente";
+:Ingresa documento (NIT/CC);
+:Sistema verifica existencia del documento;
+if (¿El cliente ya existe?) then (Sí)
+  :Mostrar alerta "Cliente ya registrado";
+  :Cargar datos actuales para edición;
+else (No)
+  :Usuario ingresa nombre, correo y teléfono;
+  :Sistema valida datos obligatorios;
+  if (¿Datos completos?) then (Sí)
+    :Guardar cliente en Base de Datos;
+    :Mostrar mensaje "Registro exitoso";
+  else (No)
+    :Mostrar alerta "Completar campos requeridos";
+  endif
+endif
+stop
+@enduml

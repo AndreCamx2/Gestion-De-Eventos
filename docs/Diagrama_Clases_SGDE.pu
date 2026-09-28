@@ -1,0 +1,104 @@
+@startuml Diagrama_Clases_SGDE
+title Diagrama de Clases - SGDE
+skinparam backgroundColor white
+skinparam classAttributeIconSize 0
+
+class Empresa {
+  +nit: String
+  +nombre: String
+  +direccion: String
+}
+
+class Hotel {
+  +id: int
+  +nombre: String
+  +direccion: String
+}
+
+class Usuario {
+  +id: int
+  +nombre: String
+  +correo: String
+  +rol: String
+  +contrasena: String
+}
+
+class Cliente {
+  +documento: String
+  +nombre: String
+  +correo: String
+  +telefono: String
+}
+
+class Salon {
+  +id: int
+  +nombre: String
+  +dimensiones: String
+  +capacidadMaxima: int
+  +estado: String
+}
+
+class Montaje {
+  +id: int
+  +nombre: String
+}
+
+class SalonMontaje {
+  +capacidad: int
+}
+
+class Concepto {
+  +id: int
+  +nombre: String
+  +tipo: String
+  +precioBase: double
+  +impuestos: double
+}
+
+class Cotizacion {
+  +id: int
+  +fecha: Date
+  +cantidadPersonas: int
+  +duracion: int
+  +fechaLimiteVigencia: Date
+  +estado: String
+  +costoTotal: double
+}
+
+class Bloqueo {
+  +id: int
+  +fechaInicio: DateTime
+  +fechaFin: DateTime
+}
+
+class Evento {
+  +id: int
+  +estado: String
+  +garantiaAprobada: boolean
+  +comprobanteAdjunto: String
+}
+
+class Proveedor {
+  +nit: String
+  +nombre: String
+}
+
+class Elemento {
+  +id: int
+  +nombre: String
+  +stock: int
+}
+
+Empresa "1" -- "0..*" Hotel : administra >
+Hotel "1" -- "0..*" Usuario : emplea >
+Hotel "1" -- "0..*" Salon : contiene >
+Salon "1" -- "1..*" SalonMontaje : configura <
+Montaje "1" -- "1..*" SalonMontaje : define <
+Cotizacion "1" -- "1" Cliente : pertenece a >
+Cotizacion "1" -- "1" SalonMontaje : requiere >
+Cotizacion "1" -- "0..*" Concepto : incluye >
+Cotizacion "1" -- "0..1" Bloqueo : genera >
+Cotizacion "1" -- "0..1" Evento : se convierte en >
+Proveedor "1" -- "0..*" Elemento : provee >
+Proveedor "1" -- "0..*" Montaje : ofrece >
+@enduml

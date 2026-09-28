@@ -1,0 +1,18 @@
+@startuml CU13_GestionarUsuarios
+title CU-13: Diagrama de Actividades - Gestionar Usuarios
+skinparam backgroundColor white
+
+start
+:Administrador selecciona "Crear Usuario";
+:Ingresa datos personales y correo;
+:Asigna Hotel y Rol (Ej. Comercial, Operativo, Admin);
+:Sistema valida unicidad del correo;
+if (¿Correo disponible?) then (Sí)
+  :Generar contraseña temporal;
+  :Guardar usuario en BD;
+  :Enviar correo de bienvenida al usuario;
+else (No)
+  :Mostrar error "El correo ya está en uso";
+endif
+stop
+@enduml

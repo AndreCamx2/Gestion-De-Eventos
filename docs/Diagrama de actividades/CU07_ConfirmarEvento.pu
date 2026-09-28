@@ -1,0 +1,19 @@
+@startuml CU07_ConfirmarEvento
+title CU-07: Diagrama de Actividades - Confirmar Evento
+skinparam backgroundColor white
+
+start
+:Cliente envía pago o documento de garantía;
+:Ejecutivo registra garantía en el sistema;
+:Sistema envía a revisión (Políticas del Hotel);
+if (¿Garantía es válida?) then (Sí)
+  :Sistema aprueba garantía;
+  :Convertir Bloqueo Temporal en Definitivo;
+  :Crear Evento Oficial (Estado "Confirmado");
+  :Notificar éxito al cliente y áreas operativas;
+else (No)
+  :Rechazar garantía;
+  :Solicitar al cliente corrección;
+endif
+stop
+@enduml
