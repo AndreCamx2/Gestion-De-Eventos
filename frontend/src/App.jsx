@@ -6,6 +6,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import Home from "./components/Home";
 import Cotizaciones from "./components/Cotizaciones";
 import Salones from "./components/Salones";
+import Clientes from "./components/Clientes";
 import { getUsuarioActual, logout } from "./api/auth";
 
 // Envuelve TODAS las rutas del dashboard: si no hay usuario logueado,
@@ -49,10 +50,10 @@ export default function App() {
             <Route path="/inicio" element={<Home />} />
             <Route path="/cotizaciones" element={<Cotizaciones />} />
             <Route path="/salones" element={<Salones />} />
+            <Route path="/clientes" element={<Clientes />} />
 
-            {/* Aún pendientes de construir */}
+            {/* Aún pendiente de construir */}
             <Route path="/calendario" element={<div style={{ padding: "2rem" }}>Calendario — pendiente de construir</div>} />
-            <Route path="/clientes" element={<div style={{ padding: "2rem" }}>Clientes — pendiente de construir</div>} />
           </Route>
         </Route>
 
