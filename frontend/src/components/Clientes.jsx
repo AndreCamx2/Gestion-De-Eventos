@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { listarClientes, crearCliente } from "../api/clientes";
 import "../styles/clientes.css";
 
@@ -8,6 +8,7 @@ import "../styles/clientes.css";
 const EMPRESAS_TEMP = [
   { id: 1, nombre: "Eventos XYZ S.A.S" },
 ];
+
 function nombreEmpresa(id) {
   const empresa = EMPRESAS_TEMP.find((e) => e.id === id);
   return empresa ? empresa.nombre : "—";
@@ -17,13 +18,22 @@ const FORM_INICIAL = {
   tipo: "natural",
   nombre: "",
   identificacion: "",
+  telefono: "",
+  correo: "",
   empresa: "",
 };
+
+const FILTROS_TIPO = [
+  { value: "todos", label: "Todos" },
+  { value: "natural", label: "Persona natural" },
+  { value: "juridica", label: "Jurídica" },
+];
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+  const [filtroTipo, setFiltroTipo] = useState("todos");
 
   const [modalAbierto, setModalAbierto] = useState(false);
   const [form, setForm] = useState(FORM_INICIAL);
@@ -46,6 +56,11 @@ export default function Clientes() {
       setCargando(false);
     }
   }
+
+  const clientesFiltrados = useMemo(() => {
+    if (filtroTipo === "todos") return clientes;
+    return clientes.filter((c) => c.tipo === filtroTipo);
+  }, [clientes, filtroTipo]);
 
   function abrirModal() {
     setForm(FORM_INICIAL);
@@ -71,6 +86,8 @@ export default function Clientes() {
         tipo: form.tipo,
         nombre: form.nombre,
         identificacion: form.identificacion,
+        telefono: form.telefono,
+        correo: form.correo,
         empresa: form.empresa ? Number(form.empresa) : undefined,
       });
       setModalAbierto(false);
@@ -91,6 +108,17 @@ export default function Clientes() {
         </button>
       </div>
 
+      <div className="toolbar toolbar--filters">
+        <label className="filter">
+          <span>Tipo:</span>
+          <select value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
+            {FILTROS_TIPO.map((f) => (
+              <option key={f.value} value={f.value}>{f.label}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+
       {cargando && <p>Cargando clientes...</p>}
       {error && <p className="clientes-error">Error: {error}</p>}
 
@@ -101,20 +129,24 @@ export default function Clientes() {
               <th>Nombre</th>
               <th>Tipo</th>
               <th>Identificación</th>
+              <th>Teléfono</th>
+              <th>Correo</th>
               <th>Empresa</th>
             </tr>
           </thead>
           <tbody>
-            {clientes.map((c) => (
+            {clientesFiltrados.map((c) => (
               <tr key={c.id}>
                 <td>{c.nombre}</td>
                 <td>{c.tipo === "juridica" ? "Jurídica" : "Natural"}</td>
                 <td>{c.identificacion || "—"}</td>
+                <td>{c.telefono || "—"}</td>
+                <td>{c.correo || "—"}</td>
                 <td>{c.empresa ? nombreEmpresa(c.empresa) : "—"}</td>
               </tr>
             ))}
-            {clientes.length === 0 && (
-              <tr><td colSpan="4">No hay clientes registrados todavía.</td></tr>
+            {clientesFiltrados.length === 0 && (
+              <tr><td colSpan="6">No hay clientes que coincidan con el filtro.</td></tr>
             )}
           </tbody>
         </table>
@@ -174,6 +206,28 @@ export default function Clientes() {
                   </select>
                 </div>
               )}
+
+              <div className="form-field">
+                <label htmlFor="telefono">Teléfono</label>
+                <input
+                  id="telefono"
+                  name="telefono"
+                  type="text"
+                  value={form.telefono}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="correo">Correo</label>
+                <input
+                  id="correo"
+                  name="correo"
+                  type="email"
+                  value={form.correo}
+                  onChange={handleChange}
+                />
+              </div>
 
               {errorForm && <p className="form-error">Error: {errorForm}</p>}
 

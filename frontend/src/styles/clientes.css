@@ -101,3 +101,20 @@
   font-size: 0.9rem;
   margin-top: 0.5rem;
 }
+
+.toolbar--filters {
+  margin-top: -0.5rem;
+}
+
+.filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.filter select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}

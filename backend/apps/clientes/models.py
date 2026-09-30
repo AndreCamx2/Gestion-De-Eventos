@@ -7,6 +7,7 @@ class Empresa(models.Model):
     razon_social = models.CharField(max_length=150)
     identificacion = models.CharField(max_length=30, unique=True)
     contacto = models.CharField(max_length=120, blank=True)
+    correo = models.EmailField(blank=True)
     ciudad = models.ForeignKey(Ciudad, on_delete=models.PROTECT, related_name="empresas", null=True, blank=True)
 
     def __str__(self):
@@ -28,6 +29,8 @@ class Cliente(models.Model):
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
     nombre = models.CharField(max_length=150)
     identificacion = models.CharField(max_length=30, unique=True, null=True, blank=True)
+    telefono = models.CharField(max_length=20, blank=True)
+    correo = models.EmailField(blank=True)
     empresa = models.ForeignKey(
         Empresa, on_delete=models.PROTECT, related_name="clientes",
         null=True, blank=True
