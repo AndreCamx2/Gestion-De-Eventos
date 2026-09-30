@@ -3,3 +3,10 @@ __pycache__/
 *.pyc
 .env
 .git/
+
+DB_NAME=sgde_db
+DB_USER=postgres
+DB_PASSWORD=andre1234
+DB_HOST=localhost
+DB_PORT=5432
+SECRET_KEY=sgde-clave-secreta-desarrollo-2026-xyz789-cartagena

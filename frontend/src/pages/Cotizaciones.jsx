@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import "../styles/cotizaciones.css";
+import { apiFetch } from "../api/client";
 
 // (algo como GET /api/cotizaciones) cuando el backend esté listo se colocarán los datos reales por medio de la API.
 const COTIZACIONES_MOCK = [
