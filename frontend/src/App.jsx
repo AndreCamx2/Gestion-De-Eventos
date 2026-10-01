@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
-import Login from "./components/Login";
-import Registrar from "./components/Registrar";
-import DashboardLayout from "./components/DashboardLayout";
-import Home from "./components/Home";
-import Cotizaciones from "./components/Cotizaciones";
-import Salones from "./components/Salones";
-import Clientes from "./components/Clientes";
+import Login from "./pages/Login";
+import Registrar from "./pages/Registrar";
+import DashboardLayout from "./pages/DashboardLayout";
+import Home from "./pages/Home";
+import Cotizaciones from "./pages/Cotizaciones";
+import Clientes from "./pages/Clientes";
 import { getUsuarioActual, logout } from "./api/auth";
 
 // Envuelve TODAS las rutas del dashboard: si no hay usuario logueado,
@@ -49,7 +48,8 @@ export default function App() {
           <Route element={<DashboardLayout user={user ?? undefined} onLogout={handleLogout} />}>
             <Route path="/inicio" element={<Home />} />
             <Route path="/cotizaciones" element={<Cotizaciones />} />
-            <Route path="/salones" element={<Salones />} />
+            {/* TODO: falta crear pages/Salones.jsx (SGDE-35) */}
+            <Route path="/salones" element={<div style={{ padding: "2rem" }}>Salones — pendiente de construir</div>} />
             <Route path="/clientes" element={<Clientes />} />
 
             {/* Aún pendiente de construir */}
