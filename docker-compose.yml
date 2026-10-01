@@ -33,7 +33,7 @@ services:
     build:
       context: ./frontend # O la ruta exacta a tu carpeta frontend
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
     restart: unless-stopped
     ports:
       - "80:80"
