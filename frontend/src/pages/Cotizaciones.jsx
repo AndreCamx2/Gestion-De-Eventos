@@ -1,56 +1,63 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { getCotizaciones } from "../api/cotizaciones";
 import "../styles/cotizaciones.css";
-import { apiFetch } from "../api/client";
-
-// (algo como GET /api/cotizaciones) cuando el backend esté listo se colocarán los datos reales por medio de la API.
-const COTIZACIONES_MOCK = [
-  { id: "#COT-2041", cliente: "Mateo Gómez Villalobos", tipo: "Persona", salon: "Salón Esmeralda", fecha: "Oct 12, 2026", estado: "Aprobada", monto: 4250000 },
-  { id: "#COT-2040", cliente: "Inversiones Bolívar S.A.S.", tipo: "Empresa", salon: "Terraza del Mar", fecha: "Oct 18, 2026", estado: "Pendiente", monto: 12800000 },
-  { id: "#COT-2039", cliente: "Valeria Sofía Mendoza", tipo: "Persona", salon: "Salón Colonial", fecha: "Nov 02, 2026", estado: "Aprobada", monto: 3100000 },
-  { id: "#COT-2038", cliente: "Constructora del Caribe", tipo: "Empresa", salon: "Salón Imperial", fecha: "Nov 15, 2026", estado: "Rechazada", monto: 8500000 },
-  { id: "#COT-2037", cliente: "Andrés Felipe Restrepo", tipo: "Persona", salon: "Jardín Naranjos", fecha: "Dec 05, 2026", estado: "Pendiente", monto: 2900000 },
-  { id: "#COT-2036", cliente: "Tecnología Cartagena", tipo: "Empresa", salon: "Auditorio Principal", fecha: "Sep 28, 2026", estado: "Vencida", monto: 15000000 },
-  { id: "#COT-2035", cliente: "Camila Reyes Osorio", tipo: "Persona", salon: "Salón Imperial", fecha: "Oct 05, 2026", estado: "Aprobada", monto: 6400000 },
-];
 
 const ESTADOS = ["Todos", "Pendiente", "Aprobada", "Rechazada", "Vencida"];
 const TIPOS_CLIENTE = ["Todos", "Persona", "Empresa"];
 const RANGOS_FECHA = ["Este mes", "Últimos 3 meses", "Este año"];
 
 function formatCOP(value) {
-  return value.toLocaleString("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+  return Number(value || 0).toLocaleString("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  });
 }
 
 function EstadoBadge({ estado }) {
-  // Cada estado tiene su propia clase de color, definida en cotizaciones.css
-  const claseEstado = `badge badge--${estado.toLowerCase()}`;
+  const claseEstado = `badge badge--${(estado || "").toLowerCase()}`;
   return <span className={claseEstado}>{estado}</span>;
 }
 
 export default function Cotizaciones() {
+  const [cotizaciones, setCotizaciones] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [filtroEstado, setFiltroEstado] = useState("Todos");
   const [filtroTipo, setFiltroTipo] = useState("Todos");
   const [filtroFecha, setFiltroFecha] = useState(RANGOS_FECHA[0]);
   const [paginaActual, setPaginaActual] = useState(1);
 
-  // Filtrado en el frontend, solo para esta demo con datos de ejemplo.
-  // Cuando se conecte el backend, lo normal es mandar estos filtros como
-  // query params (?estado=Pendiente&tipo=Empresa) y que el backend
-  // devuelva ya la página filtrada, en vez de filtrar aquí.
-  const cotizacionesFiltradas = useMemo(() => {
-    return COTIZACIONES_MOCK.filter((c) => {
-      const coincideEstado = filtroEstado === "Todos" || c.estado === filtroEstado;
-      const coincideTipo = filtroTipo === "Todos" || c.tipo === filtroTipo;
-      return coincideEstado && coincideTipo;
-    });
-  }, [filtroEstado, filtroTipo]);
+  useEffect(() => {
+    setLoading(true);
+    
+    getCotizaciones({
+      estado: filtroEstado,
+      tipo: filtroTipo,
+      rangoFecha: filtroFecha,
+      page: paginaActual,
+    })
+      .then((data) => {
+        const listaCotizaciones = Array.isArray(data) ? data : data.results || [];
+        setCotizaciones(listaCotizaciones);
+        setError(null);
+      })
+      .catch((err) => {
+        console.error("Error al cargar cotizaciones:", err);
+        setError(err.message || "No se pudieron obtener las cotizaciones del servidor.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [filtroEstado, filtroTipo, filtroFecha, paginaActual]);
 
   const resumen = useMemo(() => {
-    const pendientes = COTIZACIONES_MOCK.filter((c) => c.estado === "Pendiente").length;
-    const aprobadas = COTIZACIONES_MOCK.filter((c) => c.estado === "Aprobada").length;
-    const valorTotal = COTIZACIONES_MOCK.reduce((sum, c) => sum + c.monto, 0);
-    return { total: COTIZACIONES_MOCK.length, pendientes, aprobadas, valorTotal };
-  }, []);
+    const pendientes = cotizaciones.filter((c) => c.estado === "Pendiente" || c.estado === "pendiente").length;
+    const aprobadas = cotizaciones.filter((c) => c.estado === "Aprobada" || c.estado === "aprobada").length;
+    const valorTotal = cotizaciones.reduce((sum, c) => sum + Number(c.monto || c.total || 0), 0);
+    return { total: cotizaciones.length, pendientes, aprobadas, valorTotal };
+  }, [cotizaciones]);
 
   return (
     <div className="cotizaciones">
@@ -79,7 +86,7 @@ export default function Cotizaciones() {
         <div className="toolbar__filters">
           <label className="filter">
             <span>Estado:</span>
-            <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
+            <select value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setPaginaActual(1); }}>
               {ESTADOS.map((estado) => (
                 <option key={estado} value={estado}>{estado}</option>
               ))}
@@ -88,7 +95,7 @@ export default function Cotizaciones() {
 
           <label className="filter">
             <span>Tipo de cliente:</span>
-            <select value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
+            <select value={filtroTipo} onChange={(e) => { setFiltroTipo(e.target.value); setPaginaActual(1); }}>
               {TIPOS_CLIENTE.map((tipo) => (
                 <option key={tipo} value={tipo}>{tipo}</option>
               ))}
@@ -97,7 +104,7 @@ export default function Cotizaciones() {
 
           <label className="filter">
             <span>Fecha:</span>
-            <select value={filtroFecha} onChange={(e) => setFiltroFecha(e.target.value)}>
+            <select value={filtroFecha} onChange={(e) => { setFiltroFecha(e.target.value); setPaginaActual(1); }}>
               {RANGOS_FECHA.map((rango) => (
                 <option key={rango} value={rango}>{rango}</option>
               ))}
@@ -108,6 +115,7 @@ export default function Cotizaciones() {
         <button type="button" className="btn btn--primary">+ Nueva cotización</button>
       </div>
 
+      {/* Tabla de Cotizaciones */}
       <div className="table-wrap">
         <table className="cotizaciones-table">
           <thead>
@@ -122,21 +130,30 @@ export default function Cotizaciones() {
             </tr>
           </thead>
           <tbody>
-            {cotizacionesFiltradas.map((c) => (
-              <tr key={c.id}>
-                <td className="cell-strong">{c.id}</td>
-                <td>{c.cliente}</td>
-                <td><span className="pill">{c.tipo}</span></td>
-                <td>{c.salon}</td>
-                <td>{c.fecha}</td>
-                <td><EstadoBadge estado={c.estado} /></td>
-                <td>{formatCOP(c.monto)}</td>
-              </tr>
-            ))}
-            {cotizacionesFiltradas.length === 0 && (
+            {loading ? (
               <tr>
-                <td colSpan={7} className="table-empty">No hay cotizaciones con estos filtros.</td>
+                <td colSpan={7} className="table-empty">Cargando cotizaciones desde la API…</td>
               </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={7} className="table-empty" style={{ color: "#d9534f" }}>{error}</td>
+              </tr>
+            ) : cotizaciones.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="table-empty">No hay cotizaciones registradas con estos filtros.</td>
+              </tr>
+            ) : (
+              cotizaciones.map((c) => (
+                <tr key={c.id}>
+                  <td className="cell-strong">{c.id}</td>
+                  <td>{c.cliente || c.nombre_cliente}</td>
+                  <td><span className="pill">{c.tipo || c.tipo_cliente}</span></td>
+                  <td>{c.salon || c.nombre_salon}</td>
+                  <td>{c.fecha || c.fecha_evento}</td>
+                  <td><EstadoBadge estado={c.estado} /></td>
+                  <td>{formatCOP(c.monto || c.total)}</td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>
@@ -144,7 +161,7 @@ export default function Cotizaciones() {
 
       <div className="pagination">
         <p className="pagination__info">
-          Mostrando 1 a {cotizacionesFiltradas.length} de {resumen.total} resultados
+          Mostrando página {paginaActual}
         </p>
         <div className="pagination__controls">
           <button type="button" disabled={paginaActual === 1} onClick={() => setPaginaActual((p) => p - 1)}>
