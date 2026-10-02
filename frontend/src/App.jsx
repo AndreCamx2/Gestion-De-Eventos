@@ -13,6 +13,8 @@ import Home from "./pages/Home";
 import Cotizaciones from "./pages/Cotizaciones";
 import Salones from "./pages/Salones";
 import Clientes from "./pages/Clientes";
+import Rack from "./pages/Rack";
+<Route path="/rack" element={<Rack />} />;
 import { getUsuarioActual, logout } from "./api/auth";
 
 // Envuelve TODAS las rutas del dashboard: si no hay usuario logueado,
