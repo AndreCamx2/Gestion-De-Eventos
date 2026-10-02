@@ -12,18 +12,23 @@ class Montaje(models.Model):
 
 
 class Salon(models.Model):
-    sitio = models.ForeignKey(Sitio, on_delete=models.CASCADE, related_name="salones")
-    nombre = models.CharField(max_length=100)
+    sitio = models.ForeignKey(Sitio, on_delete=models.PROTECT, related_name="salones")
+    nombre = models.CharField(max_length=100, db_index=True)
     altura = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     ancho = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     foto_url = models.URLField(blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["sitio", "nombre"], name="uq_sitio_salon_nombre")
+        ]
 
     def __str__(self):
         return f"{self.nombre} ({self.sitio.nombre})"
 
 
 class SalonMontaje(models.Model):
-    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name="montajes")
+    salon = models.ForeignKey(Salon, on_delete=models.PROTECT, related_name="montajes")
     montaje = models.ForeignKey(Montaje, on_delete=models.PROTECT, related_name="salones")
     aforo = models.PositiveIntegerField()
     foto_url = models.URLField(blank=True)

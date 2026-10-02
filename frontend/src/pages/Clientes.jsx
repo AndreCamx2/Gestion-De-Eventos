@@ -1,18 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
-import { listarClientes, crearCliente } from "../api/clientes";
+import { useNavigate } from "react-router-dom";
+import { listarClientes, crearCliente, listarEmpresas } from "../api/clientes";
 import "../styles/clientes.css";
-
-// Temporal: mientras no exista un endpoint para listar empresas (SGDE-11,
-// pendiente de Andrés), usamos esta lista fija. La empresa "Eventos XYZ S.A.S"
-// ya existe en la base de datos (id: 1), creada manualmente en /admin/ para pruebas.
-const EMPRESAS_TEMP = [
-  { id: 1, nombre: "Eventos XYZ S.A.S" },
-];
-
-function nombreEmpresa(id) {
-  const empresa = EMPRESAS_TEMP.find((e) => e.id === id);
-  return empresa ? empresa.nombre : "—";
-}
 
 const FORM_INICIAL = {
   tipo: "natural",
@@ -31,6 +20,7 @@ const FILTROS_TIPO = [
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
+  const [empresas, setEmpresas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [filtroTipo, setFiltroTipo] = useState("todos");
@@ -39,22 +29,41 @@ export default function Clientes() {
   const [form, setForm] = useState(FORM_INICIAL);
   const [guardando, setGuardando] = useState(false);
   const [errorForm, setErrorForm] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    cargarClientes();
+    cargarDatos();
   }, []);
 
-  async function cargarClientes() {
+  async function cargarDatos() {
     setCargando(true);
     setError(null);
     try {
-      const data = await listarClientes();
-      setClientes(data);
+      const [clientesData, empresasData] = await Promise.all([
+        listarClientes(),
+        listarEmpresas(),
+      ]);
+      setClientes(clientesData);
+      setEmpresas(empresasData);
     } catch (err) {
-      setError(err.message);
+      if (err.status === 401) {
+        sessionStorage.removeItem("access_token");
+        sessionStorage.removeItem("refresh_token");
+        navigate("/login");
+      } else if (err.status === 403) {
+        setError("No tienes permisos para consultar los clientes o empresas.");
+      } else {
+        setError("Error al comunicarse con el servidor. Intenta de nuevo.");
+      }
     } finally {
       setCargando(false);
     }
+  }
+
+  function obtenerNombreEmpresa(id) {
+    if (!id) return "—";
+    const emp = empresas.find((e) => e.id === id);
+    return emp ? emp.razon_social : `Empresa #${id}`;
   }
 
   const clientesFiltrados = useMemo(() => {
@@ -91,9 +100,30 @@ export default function Clientes() {
         empresa: form.empresa ? Number(form.empresa) : undefined,
       });
       setModalAbierto(false);
-      await cargarClientes();
+      await cargarDatos();
     } catch (err) {
-      setErrorForm(err.message);
+      if (err.status === 400) {
+        if (err.body && typeof err.body === "object") {
+          if (err.body.detail) {
+            setErrorForm(err.body.detail);
+          } else {
+            const mensajes = Object.entries(err.body)
+              .map(([campo, errores]) => `${campo}: ${Array.isArray(errores) ? errores.join(", ") : errores}`)
+              .join(" | ");
+            setErrorForm(mensajes || "Datos inválidos en el formulario.");
+          }
+        } else {
+          setErrorForm("Datos inválidos en el formulario.");
+        }
+      } else if (err.status === 401) {
+        sessionStorage.removeItem("access_token");
+        sessionStorage.removeItem("refresh_token");
+        navigate("/login");
+      } else if (err.status === 403) {
+        setErrorForm("No tienes permisos suficientes para registrar clientes.");
+      } else {
+        setErrorForm("Error inesperado en el servidor al registrar cliente.");
+      }
     } finally {
       setGuardando(false);
     }
@@ -142,7 +172,7 @@ export default function Clientes() {
                 <td>{c.identificacion || "—"}</td>
                 <td>{c.telefono || "—"}</td>
                 <td>{c.correo || "—"}</td>
-                <td>{c.empresa ? nombreEmpresa(c.empresa) : "—"}</td>
+                <td>{c.empresa ? obtenerNombreEmpresa(c.empresa) : "—"}</td>
               </tr>
             ))}
             {clientesFiltrados.length === 0 && (
@@ -200,8 +230,8 @@ export default function Clientes() {
                   <label htmlFor="empresa">Empresa</label>
                   <select id="empresa" name="empresa" value={form.empresa} onChange={handleChange} required>
                     <option value="">Selecciona una empresa...</option>
-                    {EMPRESAS_TEMP.map((emp) => (
-                      <option key={emp.id} value={emp.id}>{emp.nombre}</option>
+                    {empresas.map((emp) => (
+                      <option key={emp.id} value={emp.id}>{emp.razon_social}</option>
                     ))}
                   </select>
                 </div>

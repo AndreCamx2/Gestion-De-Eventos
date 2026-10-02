@@ -111,10 +111,14 @@ export default function Registrar() {
       setTimeout(() => navigate("/login"), 1200);
     } catch (err) {
       let backendErrors = {};
-      try {
-        backendErrors = JSON.parse(err.message);
-      } catch {
-        // El mensaje no era JSON, lo tratamos como error general más abajo.
+      if (err.body && typeof err.body === "object") {
+        backendErrors = err.body;
+      } else {
+        try {
+          backendErrors = JSON.parse(err.message);
+        } catch {
+          // El mensaje no era JSON, lo tratamos como error general más abajo.
+        }
       }
 
       const mappedErrors = {};
@@ -128,6 +132,8 @@ export default function Registrar() {
 
       if (Object.keys(mappedErrors).length > 0) {
         setErrors(mappedErrors);
+      } else if (err.body?.detail) {
+        setErrors({ general: err.body.detail });
       } else {
         setErrors({ general: "No se pudo crear la cuenta. Verifica los datos e intenta de nuevo." });
       }

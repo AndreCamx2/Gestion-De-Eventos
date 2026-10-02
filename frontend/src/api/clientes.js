@@ -4,7 +4,20 @@ export async function listarClientes() {
   return apiFetch("/clientes/", { method: "GET" });
 }
 
-export async function crearCliente({ tipo, nombre, identificacion, telefono, correo, empresa, forma_pago, observaciones_internas }) {
+export async function listarEmpresas() {
+  return apiFetch("/empresas/", { method: "GET" });
+}
+
+export async function crearCliente({
+  tipo,
+  nombre,
+  identificacion,
+  telefono,
+  correo,
+  empresa,
+  forma_pago,
+  observaciones_internas,
+}) {
   const body = { tipo, nombre };
 
   if (tipo === "juridica") {

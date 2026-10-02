@@ -1,11 +1,5 @@
-import { useState } from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-  Outlet,
-} from "react-router-dom";
+import { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import Login from "./pages/Login";
 import Registrar from "./pages/Registrar";
 import DashboardLayout from "./pages/DashboardLayout";
@@ -14,12 +8,14 @@ import Cotizaciones from "./pages/Cotizaciones";
 import Salones from "./pages/Salones";
 import Clientes from "./pages/Clientes";
 import Rack from "./pages/Rack";
-<Route path="/rack" element={<Rack />} />;
 import { getUsuarioActual, logout } from "./api/auth";
 
 // Envuelve TODAS las rutas del dashboard: si no hay usuario logueado,
 // redirige a /login en vez de dejar pasar a cualquiera de las pantallas hijas.
-function ProtectedRoute({ user }) {
+function ProtectedRoute({ user, cargando }) {
+  if (cargando) {
+    return <div style={{ padding: "2rem" }}>Verificando sesión...</div>;
+  }
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -28,13 +24,35 @@ function ProtectedRoute({ user }) {
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    async function restaurarSesion() {
+      const token = sessionStorage.getItem("access_token");
+      if (token) {
+        try {
+          const usuario = await getUsuarioActual();
+          setUser({
+            name: usuario.username,
+            role: usuario.rol?.codigo || "cliente",
+            sitios: usuario.sitios || [],
+          });
+        } catch {
+          logout();
+          setUser(null);
+        }
+      }
+      setCargando(false);
+    }
+    restaurarSesion();
+  }, []);
 
   async function handleLoginSuccess() {
     const usuario = await getUsuarioActual();
     setUser({
       name: usuario.username,
-      role: usuario.rol.codigo,
-      sitios: usuario.sitios,
+      role: usuario.rol?.codigo || "cliente",
+      sitios: usuario.sitios || [],
     });
   }
 
@@ -55,7 +73,7 @@ export default function App() {
         <Route path="/registro" element={<Registrar />} />
 
         {/* Todo lo de aquí adentro exige sesión iniciada */}
-        <Route element={<ProtectedRoute user={user} />}>
+        <Route element={<ProtectedRoute user={user} cargando={cargando} />}>
           {/* Y todo lo de aquí adentro comparte el mismo sidebar + navbar */}
           <Route
             element={
@@ -67,16 +85,9 @@ export default function App() {
           >
             <Route path="/inicio" element={<Home />} />
             <Route path="/cotizaciones" element={<Cotizaciones />} />
-            {/* TODO: falta crear pages/Salones.jsx (SGDE-35) */}
-            <Route
-              path="/salones"
-              element={
-                <div style={{ padding: "2rem" }}>
-                  Salones — pendiente de construir
-                </div>
-              }
-            />
+            <Route path="/salones" element={<Salones />} />
             <Route path="/clientes" element={<Clientes />} />
+            <Route path="/rack" element={<Rack />} />
 
             {/* Aún pendiente de construir */}
             <Route
@@ -95,3 +106,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+
