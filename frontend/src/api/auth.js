@@ -7,8 +7,9 @@ export async function login(username, password) {
     skipAuth: true,
   });
 
-  localStorage.setItem("access_token", data.access);
-  localStorage.setItem("refresh_token", data.refresh);
+  // REGLA M-06: almacenar tokens JWT en sessionStorage para mitigar robo por XSS/persistencia
+  sessionStorage.setItem("access_token", data.access);
+  sessionStorage.setItem("refresh_token", data.refresh);
 
   return data;
 }
@@ -18,11 +19,20 @@ export async function getUsuarioActual() {
 }
 
 export function logout() {
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
+  sessionStorage.removeItem("access_token");
+  sessionStorage.removeItem("refresh_token");
 }
 
-export async function registrarCliente({ tipo, nombre, identificacion, telefono, email, password, razonSocial }) {
+export async function registrarCliente({
+  tipo,
+  nombre,
+  identificacion,
+  telefono,
+  email,
+  password,
+  razonSocial,
+  ciudad = "CTG",
+}) {
   const body = {
     tipo,
     nombre,
@@ -30,7 +40,7 @@ export async function registrarCliente({ tipo, nombre, identificacion, telefono,
     telefono,
     email,
     password,
-    ciudad: "CTG",
+    ciudad,
   };
 
   if (tipo === "juridica") {

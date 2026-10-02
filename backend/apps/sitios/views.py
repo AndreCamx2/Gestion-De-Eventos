@@ -4,6 +4,6 @@ from .models import Sitio
 
 
 class SitioListCreateView(generics.ListCreateAPIView):
-    queryset = Sitio.objects.all()
+    queryset = Sitio.objects.select_related("ciudad")
     serializer_class = SitioSerializer
     permission_classes = [permissions.IsAuthenticated]

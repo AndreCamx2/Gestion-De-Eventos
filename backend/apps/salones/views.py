@@ -4,7 +4,7 @@ from .models import Salon, Montaje, SalonMontaje
 
 
 class SalonListCreateView(generics.ListCreateAPIView):
-    queryset = Salon.objects.all()
+    queryset = Salon.objects.select_related("sitio")
     serializer_class = SalonSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -16,6 +16,6 @@ class MontajeListCreateView(generics.ListCreateAPIView):
 
 
 class SalonMontajeListCreateView(generics.ListCreateAPIView):
-    queryset = SalonMontaje.objects.all()
+    queryset = SalonMontaje.objects.select_related("salon", "montaje")
     serializer_class = SalonMontajeSerializer
     permission_classes = [permissions.IsAuthenticated]
