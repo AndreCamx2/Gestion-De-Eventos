@@ -174,13 +174,36 @@
   position: absolute;
   right: 0;
   top: calc(100% + 8px);
+  width: 240px;
+  max-width: calc(100vw - 32px);
   background: #fff;
   border: 1px solid #e6e2d8;
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(15, 31, 56, 0.12);
-  min-width: 160px;
   overflow: hidden;
   z-index: 10;
+}
+
+.navbar__menu-header {
+  padding: 0.85rem 1rem;
+}
+
+.navbar__menu-greeting {
+  color: #0f1f38;
+  font-size: 0.95rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.navbar__menu-role {
+  margin-top: 0.25rem;
+  color: #8b95a5;
+  font-size: 0.8rem;
+  text-transform: capitalize;
+}
+
+.navbar__menu-divider {
+  border-top: 1px solid #e6e2d8;
 }
 
 .navbar__menu-item {
