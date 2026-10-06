@@ -9,7 +9,6 @@ if (!API_URL) {
 
 export async function apiFetch(endpoint, options = {}) {
   const skipAuth = options.skipAuth ?? false;
-  // REGLA M-06: Usar sessionStorage en lugar de localStorage para prevenir persistencia insegura
   const token = !skipAuth ? sessionStorage.getItem("access_token") : null;
 
   const headers = {
