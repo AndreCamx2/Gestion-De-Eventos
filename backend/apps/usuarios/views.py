@@ -3,11 +3,12 @@ from .serializers import UsuarioRegistroSerializer, UsuarioMeSerializer
 
 
 from .models import Usuario
+from .permissions import EsAdministrador
 
 
 class RegistrarUsuarioView(generics.CreateAPIView):
     serializer_class = UsuarioRegistroSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
 
 class MeView(generics.RetrieveAPIView):
