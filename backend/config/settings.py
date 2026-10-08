@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 import dj_database_url
 
@@ -7,7 +8,13 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-local-dev-key')
+# Sin valor por defecto a propósito (SEG-003): si falta, el servidor no arranca.
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise ImproperlyConfigured(
+        "Falta la variable de entorno SECRET_KEY. Defínela en backend/.env (local) "
+        "o en las variables de entorno de Render (producción)."
+    )
 
 # Por defecto False: si falta la variable DEBUG en el entorno, el backend
 # arranca en modo seguro (sin tracebacks expuestos) en vez de modo debug.
