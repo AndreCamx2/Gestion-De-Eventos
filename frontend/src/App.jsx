@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
 import Login from "./pages/Login";
 import Registrar from "./pages/Registrar";
 import DashboardLayout from "./pages/DashboardLayout";
@@ -7,6 +13,7 @@ import Home from "./pages/Home";
 import Cotizaciones from "./pages/Cotizaciones";
 import Salones from "./pages/Salones";
 import Clientes from "./pages/Clientes";
+import Proveedores from "./pages/Proveedores";
 import Rack from "./pages/Rack";
 import { getUsuarioActual, logout } from "./api/auth";
 
@@ -106,4 +113,3 @@ export default function App() {
     </BrowserRouter>
   );
 }
-
