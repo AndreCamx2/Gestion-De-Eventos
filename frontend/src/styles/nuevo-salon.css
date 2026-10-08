@@ -1,0 +1,109 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 31, 56, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1.5rem;
+}
+
+.modal-card {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.modal-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.modal-card__header h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #0f1f38;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #8b95a5;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.modal-card .field {
+  margin-bottom: 1rem;
+}
+
+.montaje-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.montaje-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  border: 1px solid #dfe3e8;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+  color: #4a5568;
+}
+
+.montaje-chip:has(input:checked) {
+  background: #0f1f38;
+  border-color: #0f1f38;
+  color: #fff;
+}
+
+.montaje-chip input {
+  margin: 0;
+}
+
+.upload-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #c3c9d1;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  color: #8b95a5;
+  cursor: pointer;
+  min-height: 90px;
+  overflow: hidden;
+}
+
+.upload-preview {
+  width: 100%;
+  max-height: 140px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+
+.modal-actions .btn {
+  flex: 1;
+}

@@ -77,6 +77,9 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
               className="navbar__profile-trigger"
               onClick={() => setMenuOpen((open) => !open)}
               aria-expanded={menuOpen}
+              aria-haspopup="true"
+              aria-controls="navbar-profile-menu"
+              aria-label={`Menú de usuario de ${user.name}`}
             >
               <div className="navbar__avatar">{getInitials(user.name)}</div>
               <div className="navbar__identity">
@@ -95,14 +98,19 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
             </button>
 
             {menuOpen && (
-              <div className="navbar__menu">
-                <button type="button" className="navbar__menu-item">
-                  Mi perfil
-                </button>
+              <div className="navbar__menu" id="navbar-profile-menu">
+                <div className="navbar__menu-header">
+                  <p className="navbar__menu-greeting">Hola, {user.name}</p>
+                  <p className="navbar__menu-role">{user.role}</p>
+                </div>
+                <div className="navbar__menu-divider" />
                 <button
                   type="button"
                   className="navbar__menu-item navbar__menu-item--danger"
-                  onClick={onLogout}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onLogout();
+                  }}
                 >
                   Cerrar sesión
                 </button>

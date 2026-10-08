@@ -4,8 +4,8 @@ from apps.sitios.models import Ciudad
 
 
 class Empresa(models.Model):
-    razon_social = models.CharField(max_length=150)
-    identificacion = models.CharField(max_length=30, unique=True)
+    razon_social = models.CharField(max_length=150, db_index=True)
+    identificacion = models.CharField(max_length=30, unique=True, db_index=True)
     contacto = models.CharField(max_length=120, blank=True)
     correo = models.EmailField(blank=True)
     ciudad = models.ForeignKey(Ciudad, on_delete=models.PROTECT, related_name="empresas", null=True, blank=True)
@@ -23,14 +23,14 @@ class Cliente(models.Model):
     ]
 
     usuario = models.OneToOneField(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
         related_name="cliente", null=True, blank=True
     )
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
-    nombre = models.CharField(max_length=150)
-    identificacion = models.CharField(max_length=30, unique=True, null=True, blank=True)
+    nombre = models.CharField(max_length=150, db_index=True)
+    identificacion = models.CharField(max_length=30, unique=True, null=True, blank=True, db_index=True)
     telefono = models.CharField(max_length=20, blank=True)
-    correo = models.EmailField(blank=True)
+    correo = models.EmailField(blank=True, db_index=True)
     empresa = models.ForeignKey(
         Empresa, on_delete=models.PROTECT, related_name="clientes",
         null=True, blank=True

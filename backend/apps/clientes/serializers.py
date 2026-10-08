@@ -2,13 +2,23 @@ from django.db import transaction
 from rest_framework import serializers
 from apps.usuarios.models import Usuario, Rol
 from apps.sitios.models import Ciudad
+from apps.cotizaciones.models import Cotizacion
 from .models import Cliente, Empresa
 
+
+class CotizacionResumenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cotizacion
+        fields = ["id", "estado", "fecha_evento", "cantidad_personas", "creado_en"]
+
+
 class ClienteAdminSerializer(serializers.ModelSerializer):
+    cotizaciones = CotizacionResumenSerializer(many=True, read_only=True)
+
     class Meta:
         model = Cliente
         fields = ["id", "tipo", "nombre", "identificacion", "telefono", "correo", "empresa",
-                  "forma_pago", "observaciones_internas", "creado_en"]
+                  "forma_pago", "observaciones_internas", "creado_en", "cotizaciones"]
         read_only_fields = ["creado_en"]
 
     def validate(self, data):
@@ -78,3 +88,9 @@ class RegistroPublicoSerializer(serializers.Serializer):
             "email": instance.usuario.email,
             "mensaje": "Cuenta creada correctamente. Ya puedes iniciar sesión.",
         }
+
+
+class EmpresaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Empresa
+        fields = ["id", "razon_social", "identificacion", "contacto", "correo", "ciudad"]

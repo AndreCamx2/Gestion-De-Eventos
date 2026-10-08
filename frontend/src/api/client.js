@@ -1,8 +1,15 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+const API_URL = import.meta.env.VITE_API_URL;
+
+if (!API_URL) {
+  throw new Error(
+    "[SGDE] La variable VITE_API_URL no está definida. " +
+    "Crea un archivo .env.local con: VITE_API_URL=http://localhost:8000/api"
+  );
+}
 
 export async function apiFetch(endpoint, options = {}) {
   const skipAuth = options.skipAuth ?? false;
-  const token = !skipAuth ? localStorage.getItem("access_token") : null;
+  const token = !skipAuth ? sessionStorage.getItem("access_token") : null;
 
   const headers = {
     "Content-Type": "application/json",
@@ -13,8 +20,15 @@ export async function apiFetch(endpoint, options = {}) {
   const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || JSON.stringify(error) || "Error en la petición");
+    const body = await response.json().catch(() => ({}));
+    const error = new Error(body.detail || "Error en la petición");
+    error.status = response.status;
+    error.body = body;
+    throw error;
+  }
+
+  if (response.status === 204) {
+    return null;
   }
 
   return response.json();

@@ -14,13 +14,13 @@ class Cotizacion(models.Model):
         ("cancelado", "Cancelado"),
     ]
 
-    sitio = models.ForeignKey(Sitio, on_delete=models.CASCADE, related_name="cotizaciones")
+    sitio = models.ForeignKey(Sitio, on_delete=models.PROTECT, related_name="cotizaciones")
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, related_name="cotizaciones")
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="cotizaciones")
     salon = models.ForeignKey(Salon, on_delete=models.PROTECT, related_name="cotizaciones")
     montaje = models.ForeignKey(Montaje, on_delete=models.PROTECT, related_name="cotizaciones")
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="cotizado")
-    fecha_evento = models.DateField()
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="cotizado", db_index=True)
+    fecha_evento = models.DateField(db_index=True)
     validez_oferta = models.DateField(null=True, blank=True)
     cantidad_personas = models.PositiveIntegerField()
     bloqueo_hasta = models.DateTimeField(null=True, blank=True)
