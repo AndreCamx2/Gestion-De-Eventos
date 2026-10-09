@@ -1,4 +1,5 @@
 from rest_framework import generics, permissions
+from apps.usuarios.permissions import EsAdministrador
 from .models import Concepto
 from .serializers import ConceptoSerializer
 
@@ -6,4 +7,4 @@ from .serializers import ConceptoSerializer
 class ConceptoListCreateView(generics.ListCreateAPIView):
     queryset = Concepto.objects.all()
     serializer_class = ConceptoSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
