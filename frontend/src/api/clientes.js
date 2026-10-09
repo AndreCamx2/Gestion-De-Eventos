@@ -35,10 +35,12 @@ export async function crearCliente({
 }) {
   const body = { tipo, nombre };
 
+  // En jurídica no se envía identificacion: el NIT vive en la empresa.
   if (tipo === "juridica") {
     body.empresa = empresa;
   } else {
     body.identificacion = identificacion;
+    if (empresa) body.empresa = empresa;
   }
 
   if (telefono) body.telefono = telefono;

@@ -133,11 +133,44 @@
   filter: brightness(0.9);
 }
 
-.clientes-table__acciones {
+/* La celda sigue siendo table-cell; el flex vive en el div interno. */
+.clientes-acciones {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.35rem;
 }
+
+.clientes-acciones .btn {
+  white-space: nowrap;
+}
+
+/* Lista principal: anchos fijos por columna (la tabla es table-layout: fixed).
+   Nombre, Correo y Empresa pueden ser largos: parten en cualquier punto para no
+   invadir la celda vecina. Las demás solo parten si su valor no cabe. La tabla
+   compacta del modal de Ver queda fuera para no cambiar. */
+.clientes-table:not(.clientes-table--compacta) th,
+.clientes-table:not(.clientes-table--compacta) td {
+  padding: 0.75rem 0.5rem;
+  overflow-wrap: break-word;
+}
+
+.clientes-table:not(.clientes-table--compacta) th {
+  font-size: 0.75rem;
+  letter-spacing: 0;
+}
+
+.clientes-table:not(.clientes-table--compacta) :is(th, td):is(:nth-child(1), :nth-child(5), :nth-child(6)) {
+  overflow-wrap: anywhere;
+}
+
+.clientes-table:not(.clientes-table--compacta) th:nth-child(1) { width: 12.5%; }   /* Nombre */
+.clientes-table:not(.clientes-table--compacta) th:nth-child(2) { width: 8.5%; }  /* Tipo */
+.clientes-table:not(.clientes-table--compacta) th:nth-child(3) { width: 11.5%; } /* Identificación */
+.clientes-table:not(.clientes-table--compacta) th:nth-child(4) { width: 11.5%; } /* Teléfono */
+.clientes-table:not(.clientes-table--compacta) th:nth-child(5) { width: 15%; }   /* Correo */
+.clientes-table:not(.clientes-table--compacta) th:nth-child(6) { width: 11%; }   /* Empresa */
+.clientes-table:not(.clientes-table--compacta) th:nth-child(7) { width: 17rem; } /* Acciones: 3 botones */
 
 /* Clientes dados de baja */
 .clientes-table__row--inactivo td:not(.clientes-table__acciones) {
@@ -192,4 +225,11 @@
   border-radius: 4px;
   font: inherit;
   resize: vertical;
+}
+
+/* NIT de solo lectura (jurídica): se toma de la empresa elegida */
+.form-field input[readonly] {
+  background: #f3f3f3;
+  color: #555;
+  cursor: default;
 }

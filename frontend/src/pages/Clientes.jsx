@@ -7,53 +7,14 @@ import {
   actualizarCliente,
   darDeBajaCliente,
 } from "../api/clientes";
+import ClienteForm, {
+  FORM_VACIO,
+  formDesdeCliente,
+  nitDeEmpresa,
+  erroresDesdeApi,
+  payloadEdicion,
+} from "./ClienteForm";
 import "../styles/clientes.css";
-
-const FORM_INICIAL = {
-  tipo: "natural",
-  nombre: "",
-  identificacion: "",
-  telefono: "",
-  correo: "",
-  empresa: "",
-};
-
-const FORM_EDICION_VACIO = {
-  tipo: "natural",
-  nombre: "",
-  identificacion: "",
-  telefono: "",
-  correo: "",
-  empresa: "",
-  forma_pago: "",
-  observaciones_internas: "",
-};
-
-function formDesdeCliente(c) {
-  return {
-    tipo: c.tipo,
-    nombre: c.nombre ?? "",
-    identificacion: c.identificacion ?? "",
-    telefono: c.telefono ?? "",
-    correo: c.correo ?? "",
-    empresa: c.empresa ? String(c.empresa) : "",
-    forma_pago: c.forma_pago ?? "",
-    observaciones_internas: c.observaciones_internas ?? "",
-  };
-}
-
-const ETIQUETAS_CAMPO = {
-  tipo: "Tipo",
-  nombre: "Nombre",
-  identificacion: "Identificación",
-  telefono: "Teléfono",
-  correo: "Correo",
-  empresa: "Empresa",
-  forma_pago: "Forma de pago",
-  observaciones_internas: "Observaciones internas",
-};
-
-const textoError = (e) => (Array.isArray(e) ? e.join(" ") : String(e));
 
 const FILTROS_TIPO = [
   { value: "todos", label: "Todos" },
@@ -67,19 +28,14 @@ export default function Clientes() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [filtroTipo, setFiltroTipo] = useState("todos");
-
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [form, setForm] = useState(FORM_INICIAL);
-  const [guardando, setGuardando] = useState(false);
-  const [errorForm, setErrorForm] = useState(null);
+  const [mostrarInactivos, setMostrarInactivos] = useState(false);
   const navigate = useNavigate();
 
-  const [mostrarInactivos, setMostrarInactivos] = useState(false);
-  // Cliente sobre el que se abrió un modal de ver / editar / baja (null = ninguno).
+  // Un solo modal de formulario para crear y editar: { modo: "crear" | "editar", cliente? }.
+  const [modalForm, setModalForm] = useState(null);
+  const [form, setForm] = useState(FORM_VACIO);
   const [verCliente, setVerCliente] = useState(null);
-  const [editarCliente, setEditarCliente] = useState(null);
   const [bajaCliente, setBajaCliente] = useState(null);
-  const [formEdicion, setFormEdicion] = useState(FORM_EDICION_VACIO);
   const [erroresCampo, setErroresCampo] = useState({});
   const [errorAccion, setErrorAccion] = useState(null);
   const [procesando, setProcesando] = useState(false);
@@ -87,6 +43,12 @@ export default function Clientes() {
   useEffect(() => {
     cargarDatos();
   }, [mostrarInactivos]);
+
+  function cerrarSesionExpirada() {
+    sessionStorage.removeItem("access_token");
+    sessionStorage.removeItem("refresh_token");
+    navigate("/login");
+  }
 
   async function cargarDatos() {
     setCargando(true);
@@ -100,9 +62,7 @@ export default function Clientes() {
       setEmpresas(empresasData);
     } catch (err) {
       if (err.status === 401) {
-        sessionStorage.removeItem("access_token");
-        sessionStorage.removeItem("refresh_token");
-        navigate("/login");
+        cerrarSesionExpirada();
       } else if (err.status === 403) {
         setError("No tienes permisos para consultar los clientes o empresas.");
       } else {
@@ -119,80 +79,22 @@ export default function Clientes() {
     return emp ? emp.razon_social : `Empresa #${id}`;
   }
 
+  // Identificación propia del cliente; si no tiene (p. ej. jurídica del registro
+  // público), el NIT de su empresa.
+  function obtenerIdentificacion(c) {
+    return c.identificacion || nitDeEmpresa(empresas, c.empresa) || "—";
+  }
+
   const clientesFiltrados = useMemo(() => {
     if (filtroTipo === "todos") return clientes;
     return clientes.filter((c) => c.tipo === filtroTipo);
   }, [clientes, filtroTipo]);
 
-  function abrirModal() {
-    setForm(FORM_INICIAL);
-    setErrorForm(null);
-    setModalAbierto(true);
-  }
-
-  function cerrarModal() {
-    setModalAbierto(false);
-  }
-
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setErrorForm(null);
-    setGuardando(true);
-    try {
-      await crearCliente({
-        tipo: form.tipo,
-        nombre: form.nombre,
-        identificacion: form.identificacion,
-        telefono: form.telefono,
-        correo: form.correo,
-        empresa: form.empresa ? Number(form.empresa) : undefined,
-      });
-      setModalAbierto(false);
-      await cargarDatos();
-    } catch (err) {
-      if (err.status === 400) {
-        if (err.body && typeof err.body === "object") {
-          if (err.body.detail) {
-            setErrorForm(err.body.detail);
-          } else {
-            const mensajes = Object.entries(err.body)
-              .map(([campo, errores]) => `${campo}: ${Array.isArray(errores) ? errores.join(", ") : errores}`)
-              .join(" | ");
-            setErrorForm(mensajes || "Datos inválidos en el formulario.");
-          }
-        } else {
-          setErrorForm("Datos inválidos en el formulario.");
-        }
-      } else if (err.status === 401) {
-        sessionStorage.removeItem("access_token");
-        sessionStorage.removeItem("refresh_token");
-        navigate("/login");
-      } else if (err.status === 403) {
-        setErrorForm("No tienes permisos suficientes para registrar clientes.");
-      } else {
-        setErrorForm("Error inesperado en el servidor al registrar cliente.");
-      }
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  function cerrarSesionExpirada() {
-    sessionStorage.removeItem("access_token");
-    sessionStorage.removeItem("refresh_token");
-    navigate("/login");
-  }
-
-  function abrirEdicion(c) {
-    setFormEdicion(formDesdeCliente(c));
+  function abrirModalForm(modo, cliente) {
+    setForm(cliente ? formDesdeCliente(cliente) : FORM_VACIO);
     setErroresCampo({});
     setErrorAccion(null);
-    setEditarCliente(c);
+    setModalForm({ modo, cliente });
   }
 
   function abrirBaja(c) {
@@ -200,53 +102,50 @@ export default function Clientes() {
     setBajaCliente(c);
   }
 
-  function handleChangeEdicion(e) {
+  function handleChange(e) {
     const { name, value } = e.target;
-    setFormEdicion((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
     setErroresCampo((prev) => ({ ...prev, [name]: undefined }));
   }
 
-  async function handleGuardarEdicion(e) {
+  async function handleSubmitForm(e) {
     e.preventDefault();
+    const esCrear = modalForm.modo === "crear";
     setErroresCampo({});
     setErrorAccion(null);
+
+    if (esCrear && form.tipo === "natural" && !form.identificacion.trim()) {
+      setErroresCampo({ identificacion: "La identificación es obligatoria para personas naturales." });
+      return;
+    }
+
     setProcesando(true);
     try {
-      await actualizarCliente(editarCliente.id, {
-        tipo: formEdicion.tipo,
-        nombre: formEdicion.nombre,
-        // El API tiene unique en identificacion: un "" chocaría con otros vacíos, se envía null.
-        identificacion: formEdicion.identificacion.trim() || null,
-        telefono: formEdicion.telefono,
-        correo: formEdicion.correo,
-        empresa: formEdicion.empresa ? Number(formEdicion.empresa) : null,
-        forma_pago: formEdicion.forma_pago,
-        observaciones_internas: formEdicion.observaciones_internas,
-      });
-      setEditarCliente(null);
+      if (esCrear) {
+        await crearCliente({
+          ...form,
+          identificacion: form.identificacion.trim(),
+          empresa: form.empresa ? Number(form.empresa) : undefined,
+        });
+      } else {
+        await actualizarCliente(modalForm.cliente.id, payloadEdicion(form));
+      }
+      setModalForm(null);
       await cargarDatos();
     } catch (err) {
       if (err.status === 400 && err.body && typeof err.body === "object") {
         // Los errores por campo se muestran junto a su input; el resto, abajo.
-        const { detail, non_field_errors, ...porCampo } = err.body;
-        const campos = {};
-        const sueltos = [];
-        Object.entries(porCampo).forEach(([campo, e2]) => {
-          if (campo in ETIQUETAS_CAMPO) campos[campo] = textoError(e2);
-          else sueltos.push(`${campo}: ${textoError(e2)}`);
-        });
-        if (detail) sueltos.push(textoError(detail));
-        if (non_field_errors) sueltos.push(textoError(non_field_errors));
+        const { campos, general } = erroresDesdeApi(err.body);
         setErroresCampo(campos);
-        setErrorAccion(sueltos.join(" | ") || null);
+        setErrorAccion(general);
       } else if (err.status === 401) {
         cerrarSesionExpirada();
       } else if (err.status === 403) {
-        setErrorAccion("No tienes permisos suficientes para editar clientes.");
+        setErrorAccion(`No tienes permisos suficientes para ${esCrear ? "registrar" : "editar"} clientes.`);
       } else if (err.status === 404) {
         setErrorAccion("Este cliente ya no existe. Cierra y actualiza la lista.");
       } else {
-        setErrorAccion("Error inesperado en el servidor al guardar los cambios.");
+        setErrorAccion(`Error inesperado en el servidor al ${esCrear ? "registrar el cliente" : "guardar los cambios"}.`);
       }
     } finally {
       setProcesando(false);
@@ -279,7 +178,7 @@ export default function Clientes() {
     <div className="clientes">
       <div className="toolbar">
         <h2>Directorio de clientes</h2>
-        <button type="button" className="btn btn--primary" onClick={abrirModal}>
+        <button type="button" className="btn btn--primary" onClick={() => abrirModalForm("crear")}>
           + Nuevo cliente
         </button>
       </div>
@@ -327,22 +226,24 @@ export default function Clientes() {
                   {!c.activo && <span className="clientes-badge--inactivo">Inactivo</span>}
                 </td>
                 <td>{c.tipo === "juridica" ? "Jurídica" : "Natural"}</td>
-                <td>{c.identificacion || "—"}</td>
+                <td>{obtenerIdentificacion(c)}</td>
                 <td>{c.telefono || "—"}</td>
                 <td>{c.correo || "—"}</td>
                 <td>{c.empresa ? obtenerNombreEmpresa(c.empresa) : "—"}</td>
                 <td className="clientes-table__acciones">
-                  <button type="button" className="btn btn--ghost btn--sm" onClick={() => setVerCliente(c)}>
-                    Ver
-                  </button>
-                  <button type="button" className="btn btn--ghost btn--sm" onClick={() => abrirEdicion(c)}>
-                    Editar
-                  </button>
-                  {c.activo && (
-                    <button type="button" className="btn btn--danger btn--sm" onClick={() => abrirBaja(c)}>
-                      Dar de baja
+                  <div className="clientes-acciones">
+                    <button type="button" className="btn btn--ghost btn--sm" onClick={() => setVerCliente(c)}>
+                      Ver
                     </button>
-                  )}
+                    <button type="button" className="btn btn--ghost btn--sm" onClick={() => abrirModalForm("editar", c)}>
+                      Editar
+                    </button>
+                    {c.activo && (
+                      <button type="button" className="btn btn--danger btn--sm" onClick={() => abrirBaja(c)}>
+                        Dar de baja
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -351,98 +252,6 @@ export default function Clientes() {
             )}
           </tbody>
         </table>
-      )}
-
-      {modalAbierto && (
-        <div className="modal-overlay" onClick={cerrarModal}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h3>Nuevo cliente</h3>
-              <button type="button" className="modal__close" onClick={cerrarModal}>×</button>
-            </div>
-
-            <form onSubmit={handleSubmit}>
-              <div className="form-field">
-                <label htmlFor="tipo">Tipo</label>
-                <select id="tipo" name="tipo" value={form.tipo} onChange={handleChange}>
-                  <option value="natural">Natural</option>
-                  <option value="juridica">Jurídica</option>
-                </select>
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="nombre">Nombre</label>
-                <input
-                  id="nombre"
-                  name="nombre"
-                  type="text"
-                  value={form.nombre}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-
-              {form.tipo === "natural" && (
-                <div className="form-field">
-                  <label htmlFor="identificacion">Identificación</label>
-                  <input
-                    id="identificacion"
-                    name="identificacion"
-                    type="text"
-                    value={form.identificacion}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              )}
-
-              {form.tipo === "juridica" && (
-                <div className="form-field">
-                  <label htmlFor="empresa">Empresa</label>
-                  <select id="empresa" name="empresa" value={form.empresa} onChange={handleChange} required>
-                    <option value="">Selecciona una empresa...</option>
-                    {empresas.map((emp) => (
-                      <option key={emp.id} value={emp.id}>{emp.razon_social}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="form-field">
-                <label htmlFor="telefono">Teléfono</label>
-                <input
-                  id="telefono"
-                  name="telefono"
-                  type="text"
-                  value={form.telefono}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="correo">Correo</label>
-                <input
-                  id="correo"
-                  name="correo"
-                  type="email"
-                  value={form.correo}
-                  onChange={handleChange}
-                />
-              </div>
-
-              {errorForm && <p className="form-error">Error: {errorForm}</p>}
-
-              <div className="form-actions">
-                <button type="button" className="btn btn--ghost" onClick={cerrarModal}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn--primary" disabled={guardando}>
-                  {guardando ? "Guardando..." : "Guardar"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
       )}
 
       {verCliente && (
@@ -459,8 +268,8 @@ export default function Clientes() {
             <dl className="detalle">
               <dt>Tipo</dt>
               <dd>{verCliente.tipo === "juridica" ? "Jurídica" : "Natural"}</dd>
-              <dt>Identificación</dt>
-              <dd>{verCliente.identificacion || "—"}</dd>
+              <dt>{verCliente.tipo === "juridica" ? "NIT" : "Identificación"}</dt>
+              <dd>{obtenerIdentificacion(verCliente)}</dd>
               <dt>Teléfono</dt>
               <dd>{verCliente.telefono || "—"}</dd>
               <dt>Correo</dt>
@@ -510,95 +319,31 @@ export default function Clientes() {
         </div>
       )}
 
-      {editarCliente && (
-        <div className="modal-overlay" onClick={() => setEditarCliente(null)}>
+      {modalForm && (
+        <div className="modal-overlay" onClick={() => !procesando && setModalForm(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal__header">
-              <h3>Editar cliente</h3>
-              <button type="button" className="modal__close" onClick={() => setEditarCliente(null)}>×</button>
+              <h3>{modalForm.modo === "crear" ? "Nuevo cliente" : "Editar cliente"}</h3>
+              <button type="button" className="modal__close" onClick={() => setModalForm(null)}>×</button>
             </div>
 
-            <form onSubmit={handleGuardarEdicion} noValidate>
-              <div className="form-field">
-                <label htmlFor="ed-tipo">Tipo</label>
-                <select id="ed-tipo" name="tipo" value={formEdicion.tipo} onChange={handleChangeEdicion}>
-                  <option value="natural">Natural</option>
-                  <option value="juridica">Jurídica</option>
-                </select>
-                {erroresCampo.tipo && <p className="field__error">{erroresCampo.tipo}</p>}
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="ed-nombre">Nombre</label>
-                <input id="ed-nombre" name="nombre" type="text" value={formEdicion.nombre} onChange={handleChangeEdicion} />
-                {erroresCampo.nombre && <p className="field__error">{erroresCampo.nombre}</p>}
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="ed-identificacion">Identificación</label>
-                <input
-                  id="ed-identificacion"
-                  name="identificacion"
-                  type="text"
-                  value={formEdicion.identificacion}
-                  onChange={handleChangeEdicion}
-                />
-                {erroresCampo.identificacion && <p className="field__error">{erroresCampo.identificacion}</p>}
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="ed-empresa">
-                  Empresa{formEdicion.tipo === "juridica" ? " (obligatoria)" : ""}
-                </label>
-                <select id="ed-empresa" name="empresa" value={formEdicion.empresa} onChange={handleChangeEdicion}>
-                  <option value="">{formEdicion.tipo === "juridica" ? "Selecciona una empresa..." : "Sin empresa"}</option>
-                  {empresas.map((emp) => (
-                    <option key={emp.id} value={emp.id}>{emp.razon_social}</option>
-                  ))}
-                </select>
-                {erroresCampo.empresa && <p className="field__error">{erroresCampo.empresa}</p>}
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="ed-telefono">Teléfono</label>
-                <input id="ed-telefono" name="telefono" type="text" value={formEdicion.telefono} onChange={handleChangeEdicion} />
-                {erroresCampo.telefono && <p className="field__error">{erroresCampo.telefono}</p>}
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="ed-correo">Correo</label>
-                <input id="ed-correo" name="correo" type="email" value={formEdicion.correo} onChange={handleChangeEdicion} />
-                {erroresCampo.correo && <p className="field__error">{erroresCampo.correo}</p>}
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="ed-forma_pago">Forma de pago</label>
-                <input id="ed-forma_pago" name="forma_pago" type="text" value={formEdicion.forma_pago} onChange={handleChangeEdicion} />
-                {erroresCampo.forma_pago && <p className="field__error">{erroresCampo.forma_pago}</p>}
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="ed-observaciones_internas">Observaciones internas</label>
-                <textarea
-                  id="ed-observaciones_internas"
-                  name="observaciones_internas"
-                  rows="3"
-                  value={formEdicion.observaciones_internas}
-                  onChange={handleChangeEdicion}
-                />
-                {erroresCampo.observaciones_internas && (
-                  <p className="field__error">{erroresCampo.observaciones_internas}</p>
-                )}
-              </div>
+            <form onSubmit={handleSubmitForm} noValidate>
+              <ClienteForm
+                idPrefix={modalForm.modo}
+                form={form}
+                errores={erroresCampo}
+                empresas={empresas}
+                onChange={handleChange}
+              />
 
               {errorAccion && <p className="form-error">Error: {errorAccion}</p>}
 
               <div className="form-actions">
-                <button type="button" className="btn btn--ghost" onClick={() => setEditarCliente(null)}>
+                <button type="button" className="btn btn--ghost" onClick={() => setModalForm(null)}>
                   Cancelar
                 </button>
                 <button type="submit" className="btn btn--primary" disabled={procesando}>
-                  {procesando ? "Guardando..." : "Guardar cambios"}
+                  {procesando ? "Guardando..." : modalForm.modo === "crear" ? "Guardar" : "Guardar cambios"}
                 </button>
               </div>
             </form>
