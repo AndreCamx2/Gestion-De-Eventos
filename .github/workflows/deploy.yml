@@ -17,6 +17,10 @@ jobs:
     services:
       postgres:
         image: postgres:18
+        # Login a Docker Hub para evitar el límite de descargas anónimas (toomanyrequests).
+        credentials:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
         env:
           POSTGRES_DB: sgde_db
           POSTGRES_USER: postgres
