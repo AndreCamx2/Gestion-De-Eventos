@@ -7,7 +7,6 @@ export async function login(username, password) {
     skipAuth: true,
   });
 
-  // REGLA M-06: almacenar tokens JWT en sessionStorage para mitigar robo por XSS/persistencia
   sessionStorage.setItem("access_token", data.access);
   sessionStorage.setItem("refresh_token", data.refresh);
 

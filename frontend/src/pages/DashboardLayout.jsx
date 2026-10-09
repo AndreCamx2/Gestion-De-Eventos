@@ -7,7 +7,9 @@ export const NAV_ITEMS = [
   { to: "/inicio", label: "Inicio", icon: <IconInicio /> },
   { to: "/cotizaciones", label: "Cotizaciones", icon: <IconCotizaciones /> },
   { to: "/calendario", label: "Calendario", icon: <IconCalendario /> },
-  { to: "/clientes", label: "Clientes", icon: <IconClientes /> },
+  // `roles` es opcional: sin él, el ítem lo ve cualquier usuario con sesión.
+  // Es solo experiencia de usuario; la seguridad real es el 403 del API.
+  { to: "/clientes", label: "Clientes", icon: <IconClientes />, roles: ["administrador"] },
   { to: "/salones", label: "Salones y Servicios", icon: <IconSalones /> },
 ];
 
@@ -52,7 +54,7 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
         </div>
 
         <nav className="sidebar__nav">
-          {NAV_ITEMS.map((item) => (
+          {NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(user.role)).map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -71,7 +73,7 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
         <header className="navbar">
           <h1 className="navbar__title">{pageTitle}</h1>
 
-          <div className="navbar__profile" ref={menuRef}>
+          <div className={`navbar__profile${menuOpen ? " is-open" : ""}`} ref={menuRef}>
             <button
               type="button"
               className="navbar__profile-trigger"

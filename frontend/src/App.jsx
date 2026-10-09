@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
 import Login from "./pages/Login";
 import Registrar from "./pages/Registrar";
 import DashboardLayout from "./pages/DashboardLayout";
@@ -7,6 +13,7 @@ import Home from "./pages/Home";
 import Cotizaciones from "./pages/Cotizaciones";
 import Salones from "./pages/Salones";
 import Clientes from "./pages/Clientes";
+import Proveedores from "./pages/Proveedores";
 import Rack from "./pages/Rack";
 import { getUsuarioActual, logout } from "./api/auth";
 
@@ -18,6 +25,15 @@ function ProtectedRoute({ user, cargando }) {
   }
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  return <Outlet />;
+}
+
+// Redirige a /inicio si el rol del usuario no está permitido. Es solo
+// experiencia de usuario: la seguridad real es el 403 del API.
+function RoleRoute({ user, roles }) {
+  if (!roles.includes(user?.role)) {
+    return <Navigate to="/inicio" replace />;
   }
   return <Outlet />;
 }
@@ -86,7 +102,9 @@ export default function App() {
             <Route path="/inicio" element={<Home />} />
             <Route path="/cotizaciones" element={<Cotizaciones />} />
             <Route path="/salones" element={<Salones />} />
-            <Route path="/clientes" element={<Clientes />} />
+            <Route element={<RoleRoute user={user} roles={["administrador"]} />}>
+              <Route path="/clientes" element={<Clientes />} />
+            </Route>
             <Route path="/rack" element={<Rack />} />
 
             {/* Aún pendiente de construir */}
@@ -106,4 +124,3 @@ export default function App() {
     </BrowserRouter>
   );
 }
-

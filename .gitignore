@@ -19,3 +19,5 @@ frontend/.env.*.local
 
 # Raíz (Docker)
 .env
+# Guia personal de Claude Code (solo local)
+CLAUDE.md

@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 import dj_database_url
 
@@ -7,7 +8,13 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-local-dev-key')
+# Sin valor por defecto a propósito (SEG-003): si falta, el servidor no arranca.
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise ImproperlyConfigured(
+        "Falta la variable de entorno SECRET_KEY. Defínela en backend/.env (local) "
+        "o en las variables de entorno de Render (producción)."
+    )
 
 # Por defecto False: si falta la variable DEBUG en el entorno, el backend
 # arranca en modo seguro (sin tracebacks expuestos) en vez de modo debug.
@@ -60,6 +67,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost",
     "http://127.0.0.1:5173",
+    "http://localhost:8080",   # frontend en Docker (docker-compose)
+    "http://127.0.0.1:8080",
 ]
 
 # Si defines FRONTEND_URL en Render (la URL de Vercel), la añade automáticamente
@@ -67,9 +76,10 @@ frontend_url = os.getenv('FRONTEND_URL')
 if frontend_url:
     CORS_ALLOWED_ORIGINS.append(frontend_url)
 
-# Permite cualquier subdominio de Vercel si estás testeando previews
+# Producción y previews de Vercel de ESTE proyecto (gestion-de-eventos-*.vercel.app).
+# Un solo nivel de subdominio ([a-z0-9-]) para no aceptar hosts con puntos.
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://.*\.vercel\.app$",
+    r"^https://gestion-de-eventos[a-z0-9-]*\.vercel\.app$",
 ]
 
 CSRF_TRUSTED_ORIGINS = [

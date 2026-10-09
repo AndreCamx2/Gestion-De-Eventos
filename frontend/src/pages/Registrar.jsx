@@ -40,6 +40,7 @@ function mapBackendErrorField(backendField, accountType) {
     email: accountType === "natural" ? "emailNatural" : "emailEmpresa",
     razon_social: "companyName",
     nombre: accountType === "natural" ? "fullName" : "contactName",
+    password: "password",
   };
   return map[backendField] || null;
 }
@@ -74,8 +75,8 @@ export default function Registrar() {
 
     if (!form.password) {
       nextErrors.password = "Ingresa una contraseña.";
-    } else if (form.password.length < 6) {
-      nextErrors.password = "Debe tener mínimo 6 caracteres.";
+    } else if (form.password.length < 8) {
+      nextErrors.password = "Debe tener mínimo 8 caracteres.";
     }
 
     if (!form.confirmPassword) {
@@ -124,7 +125,8 @@ export default function Registrar() {
       const mappedErrors = {};
       Object.entries(backendErrors).forEach(([field, messages]) => {
         const mappedField = mapBackendErrorField(field, accountType);
-        const message = Array.isArray(messages) ? messages[0] : messages;
+        // El backend puede devolver varios mensajes por campo (p. ej. contraseña): se muestran todos.
+        const message = Array.isArray(messages) ? messages.join(" ") : messages;
         if (mappedField) {
           mappedErrors[mappedField] = message;
         }
