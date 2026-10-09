@@ -1,6 +1,7 @@
 from django.db import transaction
 from rest_framework import serializers
 from apps.usuarios.models import Usuario, Rol
+from apps.usuarios.validators import errores_password
 from apps.sitios.models import Ciudad
 from apps.cotizaciones.models import Cotizacion
 from .models import Cliente, Empresa
@@ -68,18 +69,26 @@ class RegistroPublicoSerializer(serializers.Serializer):
     telefono = serializers.CharField(max_length=20, required=False, allow_blank=True)
     email = serializers.EmailField()
     ciudad = serializers.CharField(max_length=10)  # código, ej. "CTG"
-    password = serializers.CharField(write_only=True, min_length=6)
+    password = serializers.CharField(write_only=True, min_length=8)
 
     # Solo si tipo = "juridica"
     razon_social = serializers.CharField(max_length=150, required=False, allow_blank=True)
 
     def validate(self, data):
+        # Se juntan todos los errores en una sola respuesta 400, para que el usuario
+        # corrija el formulario de una vez.
+        errores = {}
         if data["tipo"] == Cliente.JURIDICA and not data.get("razon_social"):
-            raise serializers.ValidationError(
-                {"razon_social": "La razón social es obligatoria para clientes jurídicos."}
-            )
+            errores["razon_social"] = "La razón social es obligatoria para clientes jurídicos."
         if Usuario.objects.filter(username=data["email"]).exists():
-            raise serializers.ValidationError({"email": "Ya existe una cuenta con este correo."})
+            errores["email"] = "Ya existe una cuenta con este correo."
+        mensajes = errores_password(
+            data["password"], username=data["email"], email=data["email"], first_name=data["nombre"],
+        )
+        if mensajes:
+            errores["password"] = mensajes
+        if errores:
+            raise serializers.ValidationError(errores)
         return data
 
     @transaction.atomic

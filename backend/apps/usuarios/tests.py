@@ -168,6 +168,61 @@ class CadenaEscaladaSEG004Tests(APITestCase):
         self.assertFalse(Usuario.objects.filter(rol=rol_admin).exists())
 
 
+class RegistroPublicoPasswordTests(APITestCase):
+    """POST /api/registro/ valida la contraseña con AUTH_PASSWORD_VALIDATORS."""
+
+    BASE = {"tipo": "natural", "nombre": "Carolina Méndez", "identificacion": "1045678",
+            "email": "carolina.mendez@example.com", "ciudad": "CTG"}
+
+    def registrar(self, **cambios):
+        return self.client.post("/api/registro/", dict(self.BASE, **cambios), format="json")
+
+    def assertPasswordRechazada(self, respuesta, fragmento):
+        self.assertEqual(respuesta.status_code, status.HTTP_400_BAD_REQUEST)
+        errores = respuesta.json()["password"]
+        self.assertIsInstance(errores, list)
+        self.assertTrue(any(fragmento in e for e in errores), errores)
+        self.assertFalse(Usuario.objects.filter(username=self.BASE["email"]).exists())
+
+    def test_contrasena_corta(self):
+        self.assertPasswordRechazada(self.registrar(password="Ab1#xyz"), "al menos 8 caracteres")
+
+    def test_contrasena_solo_numerica(self):
+        self.assertPasswordRechazada(self.registrar(password="83920174562"), "completamente numérica")
+
+    def test_contrasena_comun(self):
+        self.assertPasswordRechazada(self.registrar(password="password123"), "demasiado común")
+
+    def test_contrasena_parecida_al_correo(self):
+        self.assertPasswordRechazada(self.registrar(password="carolina.mendez"), "muy parecida a nombre de usuario")
+
+    def test_contrasena_parecida_al_nombre(self):
+        # Correo sin relación con la contraseña: solo puede fallar por el nombre.
+        r = self.registrar(email="xk93qz@dominio.test", password="Carolina2026")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.json()["password"], ["La contraseña es muy parecida a nombre."])
+        self.assertFalse(Usuario.objects.filter(username="xk93qz@dominio.test").exists())
+
+    def test_contrasena_valida_registra_un_cliente(self):
+        r = self.registrar(password=PASSWORD)
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Usuario.objects.get(username=self.BASE["email"]).rol.codigo, "cliente")
+
+    def test_rol_administrador_en_el_payload_se_ignora(self):
+        r = self.registrar(password=PASSWORD, rol="administrador")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Usuario.objects.get(username=self.BASE["email"]).rol.codigo, "cliente")
+        self.assertFalse(Usuario.objects.filter(rol__codigo="administrador").exists())
+
+    def test_errores_de_correo_duplicado_y_password_llegan_juntos(self):
+        crear_usuario(self.BASE["email"], "cliente")
+        r = self.registrar(password="83920174562")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        cuerpo = r.json()
+        self.assertIn("email", cuerpo)
+        self.assertIsInstance(cuerpo["password"], list)
+
+
 def detalle(pk):
     return f"/api/usuarios/{pk}/"
 
