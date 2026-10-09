@@ -1,10 +1,9 @@
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from .models import Usuario, Rol
 from .services import validar_cambio_usuario
+from .validators import validar_password_candidata
 
 MSG_ROL_CLIENTE_REGISTRO = "Los clientes se crean desde la pantalla de Clientes."
 
@@ -30,13 +29,11 @@ class UsuarioRegistroSerializer(serializers.ModelSerializer):
         return rol
 
     def validate(self, attrs):
-        # Mismas reglas de AUTH_PASSWORD_VALIDATORS que usa el admin de Django.
-        # Se pasa un usuario temporal para que valide la similitud con username/email.
-        usuario = Usuario(username=attrs.get("username", ""), email=attrs.get("email", ""))
-        try:
-            validate_password(attrs["password"], user=usuario)
-        except DjangoValidationError as e:
-            raise serializers.ValidationError({"password": list(e.messages)})
+        # Mismas reglas de AUTH_PASSWORD_VALIDATORS que el registro público (validators.py).
+        validar_password_candidata(
+            attrs["password"], username=attrs.get("username", ""), email=attrs.get("email", ""),
+            first_name=attrs.get("first_name", ""), last_name=attrs.get("last_name", ""),
+        )
         return attrs
 
     def create(self, validated_data):
