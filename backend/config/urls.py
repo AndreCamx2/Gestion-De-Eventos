@@ -8,7 +8,9 @@ from apps.salones.views import SalonListCreateView, MontajeListCreateView, Salon
 
 from apps.catalogo.views import ConceptoListCreateView
 from apps.proveedores.views import ProveedorListCreateView, StockElementoListCreateView
-from apps.clientes.views import RegistroPublicoView, ClienteAdminListCreateView, EmpresaListCreateView
+from apps.clientes.views import (
+    RegistroPublicoView, ClienteAdminListCreateView, ClienteAdminRetrieveUpdateDestroyView, EmpresaListCreateView,
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -19,6 +21,7 @@ urlpatterns = [
     path('api/usuarios/me/', MeView.as_view(), name='usuario_me'),
      path('api/sitios/', SitioListCreateView.as_view(), name='sitio_list_create'),
     path('api/clientes/', ClienteAdminListCreateView.as_view(), name='cliente_admin_list_create'),
+    path('api/clientes/<int:pk>/', ClienteAdminRetrieveUpdateDestroyView.as_view(), name='cliente_admin_detail'),
     path('api/empresas/', EmpresaListCreateView.as_view(), name='empresa_list_create'),
     path('api/salones/', SalonListCreateView.as_view(), name='salon_list_create'),
     path('api/montajes/', MontajeListCreateView.as_view(), name='montaje_list_create'),
