@@ -9,12 +9,35 @@ class RegistroPublicoView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
 
 
+def _clientes():
+    return Cliente.objects.select_related("empresa", "usuario").prefetch_related("cotizaciones")
+
+
 class ClienteAdminListCreateView(generics.ListCreateAPIView):
-    queryset = Cliente.objects.select_related("empresa").prefetch_related("cotizaciones")
     serializer_class = ClienteAdminSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
     filter_backends = [filters.SearchFilter]
     search_fields = ["nombre", "identificacion", "correo", "empresa__razon_social"]
+
+    def get_queryset(self):
+        queryset = _clientes()
+        incluir = self.request.query_params.get("incluir_inactivos", "").lower()
+        if incluir not in ("true", "1"):
+            queryset = queryset.filter(activo=True)
+        return queryset
+
+
+class ClienteAdminRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """Detalle de un cliente. Incluye inactivos para poder verlos y reactivarlos.
+
+    DELETE es lógico: marca activo=False y desactiva su Usuario (no borra la fila).
+    """
+    queryset = _clientes()
+    serializer_class = ClienteAdminSerializer
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+    def perform_destroy(self, instance):
+        instance.set_activo(False)
 
 
 class EmpresaListCreateView(generics.ListCreateAPIView):
