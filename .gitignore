@@ -21,3 +21,6 @@ frontend/.env.*.local
 .env
 # Guia personal de Claude Code (solo local)
 CLAUDE.md
+
+# Configuración local de Claude Code (no se comparte)
+.claude/settings.local.json
