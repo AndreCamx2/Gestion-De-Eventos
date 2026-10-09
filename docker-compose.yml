@@ -9,34 +9,50 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
     ports:
-      - "5432:5432"
+      # 5433 en tu máquina para no chocar con un Postgres nativo en 5432.
+      # El backend sigue usando db:5432 por la red interna de Docker.
+      - "5433:5432"
+    # El backend espera a que Postgres acepte conexiones antes de migrar.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-sgde_db}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
 
   backend:
     build: ./backend
     restart: unless-stopped
-    command: python manage.py runserver 0.0.0.0:8000
+    # Al levantar: aplica migraciones, siembra datos demo (idempotente) y arranca el servidor.
+    command: sh -c "python manage.py migrate --noinput && python manage.py seed_demo && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./backend:/app
     ports:
       - "8000:8000"
     environment:
-      DB_NAME: sgde_db
-      DB_USER: postgres
+      DB_NAME: ${DB_NAME:-sgde_db}
+      DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_HOST: db
       DB_PORT: 5432
-      SECRET_KEY: ${SECRET_KEY}
+      SECRET_KEY: ${SECRET_KEY:?Define SECRET_KEY en el archivo .env de la raíz}
+      DEBUG: "True"
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      SEED_CLIENTE_PASSWORD: ${SEED_CLIENTE_PASSWORD:-}
+      SEED_PROVEEDOR_PASSWORD: ${SEED_PROVEEDOR_PASSWORD:-}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
     build:
-      context: ./frontend # O la ruta exacta a tu carpeta frontend
+      context: ./frontend
       args:
+        # La URL la usa el NAVEGADOR, por eso es localhost:8000 y no http://backend:8000.
         VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
     restart: unless-stopped
     ports:
-      - "80:80"
+      # 8080 en tu máquina para no chocar con Apache (XAMPP) en el puerto 80.
+      - "8080:80"
     depends_on:
       - backend
 

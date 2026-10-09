@@ -1,15 +1,65 @@
-name: Despliegue Backend en Render
+name: Tests y despliegue Backend en Render
 
 on:
   push:
     branches:
       - main
+  # Los tests también corren en cada PR hacia main (el deploy no: ver "if" abajo).
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
+  test:
+    name: Pruebas del backend
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: sgde_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres-ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Valores descartables solo para CI; no son secretos reales.
+      SECRET_KEY: clave-descartable-solo-para-ci
+      DB_NAME: sgde_db
+      DB_USER: postgres
+      DB_PASSWORD: postgres-ci
+      DB_HOST: localhost
+      DB_PORT: 5432
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Instalar dependencias
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Correr pruebas
+        working-directory: backend
+        run: python manage.py test
+
   deploy:
+    name: Desplegar a Render
+    needs: test
+    # Solo un push (o ejecución manual) sobre main despliega; los PRs nunca.
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Render Deploy Hook
         run: |
-          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+          curl --fail -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
