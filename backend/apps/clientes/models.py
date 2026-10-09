@@ -47,13 +47,15 @@ class Cliente(models.Model):
 
         Desactivar el Usuario revoca su acceso (login); sin eso, "borrar" un
         cliente auto-registrado no le quitaría la entrada al sistema.
+
+        Es el espejo de Usuario.set_activo: cada uno guarda su estado y solo llama
+        al otro si el estado del otro todavía es distinto (sin recursión infinita).
         """
         with transaction.atomic():
             self.activo = activo
             self.save(update_fields=["activo"])
-            if self.usuario_id:
-                self.usuario.is_active = activo
-                self.usuario.save(update_fields=["is_active"])
+            if self.usuario_id and self.usuario.is_active != activo:
+                self.usuario.set_activo(activo)
 
     def __str__(self):
         return self.nombre
