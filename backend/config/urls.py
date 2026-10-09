@@ -6,6 +6,7 @@ from apps.usuarios.views import RegistrarUsuarioView, MeView
 from apps.sitios.views import SitioListCreateView
 from apps.salones.views import SalonListCreateView, MontajeListCreateView, SalonMontajeListCreateView
 from apps.clientes.views import RegistroPublicoView, ClienteAdminListCreateView, EmpresaListCreateView
+from apps.cotizaciones.views import CotizacionCalendarioView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -20,5 +21,6 @@ urlpatterns = [
     path('api/salones/', SalonListCreateView.as_view(), name='salon_list_create'),
     path('api/montajes/', MontajeListCreateView.as_view(), name='montaje_list_create'),
     path('api/salon-montajes/', SalonMontajeListCreateView.as_view(), name='salon_montaje_list_create'),
+    path('api/calendario/', CotizacionCalendarioView.as_view(), name='calendario_cotizaciones'),
 
 ]
