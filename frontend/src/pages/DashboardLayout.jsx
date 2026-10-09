@@ -71,7 +71,7 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
         <header className="navbar">
           <h1 className="navbar__title">{pageTitle}</h1>
 
-          <div className="navbar__profile" ref={menuRef}>
+          <div className={`navbar__profile${menuOpen ? " is-open" : ""}`} ref={menuRef}>
             <button
               type="button"
               className="navbar__profile-trigger"
