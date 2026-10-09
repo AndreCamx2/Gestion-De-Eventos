@@ -118,3 +118,78 @@
   border: 1px solid #ccc;
   border-radius: 4px;
 }
+/* Acciones por fila (Ver / Editar / Dar de baja) */
+.btn--sm {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.btn--danger {
+  background: var(--danger, #dc2626);
+  color: #fff;
+}
+
+.btn--danger:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+.clientes-table__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Clientes dados de baja */
+.clientes-table__row--inactivo td:not(.clientes-table__acciones) {
+  opacity: 0.55;
+}
+
+.clientes-badge--inactivo {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #fce6e4;
+  color: #b3261e;
+}
+
+/* Modal de detalle */
+.modal--ancho {
+  max-width: 560px;
+}
+
+.detalle {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.detalle dt {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.detalle dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.clientes-table--compacta th,
+.clientes-table--compacta td {
+  padding: 0.5rem 0.6rem;
+}
+
+.capitalizar {
+  text-transform: capitalize;
+}
+
+.form-field textarea {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+  resize: vertical;
+}

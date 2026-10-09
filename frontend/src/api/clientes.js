@@ -1,7 +1,22 @@
 import { apiFetch } from "./client";
 
-export async function listarClientes() {
-  return apiFetch("/clientes/", { method: "GET" });
+export async function listarClientes({ incluirInactivos = false } = {}) {
+  const query = incluirInactivos ? "?incluir_inactivos=true" : "";
+  return apiFetch(`/clientes/${query}`, { method: "GET" });
+}
+
+// PATCH: se envía solo lo que el formulario edita. El API valida que la
+// empresa exista si el tipo es jurídica.
+export async function actualizarCliente(id, datos) {
+  return apiFetch(`/clientes/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(datos),
+  });
+}
+
+// Baja lógica: el API pone Cliente.activo=False y Usuario.is_active=False.
+export async function darDeBajaCliente(id) {
+  return apiFetch(`/clientes/${id}/`, { method: "DELETE" });
 }
 
 export async function listarEmpresas() {
