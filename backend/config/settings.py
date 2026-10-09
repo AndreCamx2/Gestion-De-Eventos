@@ -67,6 +67,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost",
     "http://127.0.0.1:5173",
+    "http://localhost:8080",   # frontend en Docker (docker-compose)
+    "http://127.0.0.1:8080",
 ]
 
 # Si defines FRONTEND_URL en Render (la URL de Vercel), la añade automáticamente
@@ -74,9 +76,10 @@ frontend_url = os.getenv('FRONTEND_URL')
 if frontend_url:
     CORS_ALLOWED_ORIGINS.append(frontend_url)
 
-# Permite cualquier subdominio de Vercel si estás testeando previews
+# Producción y previews de Vercel de ESTE proyecto (gestion-de-eventos-*.vercel.app).
+# Un solo nivel de subdominio ([a-z0-9-]) para no aceptar hosts con puntos.
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://.*\.vercel\.app$",
+    r"^https://gestion-de-eventos[a-z0-9-]*\.vercel\.app$",
 ]
 
 CSRF_TRUSTED_ORIGINS = [

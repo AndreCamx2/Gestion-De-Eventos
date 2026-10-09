@@ -9,7 +9,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
     ports:
-      - "5432:5432"
+      # 5433 en tu máquina para no chocar con un Postgres nativo en 5432.
+      # El backend sigue usando db:5432 por la red interna de Docker.
+      - "5433:5432"
     # El backend espera a que Postgres acepte conexiones antes de migrar.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-sgde_db}"]
@@ -49,7 +51,8 @@ services:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api}
     restart: unless-stopped
     ports:
-      - "80:80"
+      # 8080 en tu máquina para no chocar con Apache (XAMPP) en el puerto 80.
+      - "8080:80"
     depends_on:
       - backend
 

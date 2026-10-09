@@ -53,9 +53,12 @@ La primera vez tarda varios minutos (descarga imágenes y compila el frontend). 
 
 | Qué | Dónde |
 |---|---|
-| Frontend | http://localhost |
+| Frontend | http://localhost:8080 |
 | API del backend | http://localhost:8000/api/ |
 | Admin de Django | http://localhost:8000/admin/ |
+| Base de datos (pgAdmin, DBeaver) | host `localhost`, puerto **5433**, usuario y contraseña de tu `.env` |
+
+> La base se publica en el **5433** (y no en el 5432) para no chocar con un PostgreSQL instalado en Windows. Dentro de Docker el backend sigue usando el 5432 por la red interna, así que no tienes que cambiar nada en el `.env`.
 
 **Usuarios demo** (los crea `seed_demo`):
 
@@ -168,8 +171,10 @@ Con Auto-Deploy activo, Render desplegaría cada push a `main` sin esperar los t
 |---|---|---|
 | `failed to connect to the docker API ... dockerDesktopLinuxEngine` | Docker Desktop está apagado | Ábrelo y espera a "Engine running" |
 | `required variable DB_PASSWORD is missing` o `SECRET_KEY` | Falta el `.env` de la raíz o esas variables | Sección 2 |
-| `port is already allocated` / `address already in use` en **5432** | Tienes PostgreSQL instalado en Windows corriendo en el mismo puerto | Apaga el servicio local (PowerShell como administrador): `Stop-Service postgresql-x64-18` (el nombre puede variar: `Get-Service postgres*`), o cambia el puerto publicado en `docker-compose.yml` |
-| Puerto **80** o **8000** ocupado | Otro programa lo usa | Ciérralo o cambia el puerto publicado en `docker-compose.yml` |
+| `port is already allocated` / `address already in use` en **8080** (o el frontend no abre) | Es raro, pero otro programa usa el 8080. Ojo: el **80** ya no se usa; si lo ocupa **XAMPP (Apache)** no afecta a este proyecto | Cierra el programa que use el 8080 o cambia `"8080:80"` en `docker-compose.yml` (el número de la izquierda) |
+| `port is already allocated` / `address already in use` en **5433** | Otro programa usa el 5433. La causa típica del problema original (5432) era el **PostgreSQL nativo de Windows**, y por eso la base se publica en el 5433 | Cambia `"5433:5432"` en `docker-compose.yml` (solo el número de la izquierda) |
+| pgAdmin no conecta a la base de Docker | Estás apuntando al 5432, que es el Postgres nativo de Windows (si existe), no el de Docker | Conéctate a `localhost` puerto **5433** |
+| Puerto **8000** ocupado | Otro programa lo usa | Ciérralo o cambia el puerto publicado en `docker-compose.yml` |
 | `UnicodeDecodeError` al conectar a la base | La base se creó sin codificación UTF8 (suele pasar con un Postgres instalado en Windows, no con el de Docker) | Usa el Postgres de Docker, o crea la base con `template0` + UTF8 |
 | El backend se reinicia en bucle | Falló `migrate` o `seed_demo` | `docker compose logs backend` y lee el error de arriba hacia abajo |
 | `seed_demo solo corre con DEBUG=True` | `DEBUG` no es `True` en ese entorno | En Docker ya viene en `True`; fuera de Docker pon `DEBUG=True` en `backend/.env` |
