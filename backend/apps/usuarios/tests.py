@@ -13,6 +13,9 @@ ENDPOINTS_ADMIN = [
     "/api/salones/",
     "/api/montajes/",
     "/api/salon-montajes/",
+    "/api/conceptos/",
+    "/api/proveedores/",
+    "/api/stock/",
 ]
 
 
