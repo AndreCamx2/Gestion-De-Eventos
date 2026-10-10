@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { IconInicio, IconCotizaciones, IconCalendario, IconClientes, IconSalones } from "./icons";
+import { IconInicio, IconCotizaciones, IconCalendario, IconClientes, IconSalones, IconConceptos } from "./icons";
 import "../styles/home.css";
 
 export const NAV_ITEMS = [
@@ -11,6 +11,7 @@ export const NAV_ITEMS = [
   // Es solo experiencia de usuario; la seguridad real es el 403 del API.
   { to: "/clientes", label: "Clientes", icon: <IconClientes />, roles: ["administrador"] },
   { to: "/salones", label: "Salones y Servicios", icon: <IconSalones /> },
+  { to: "/conceptos", label: "Conceptos y precios", icon: <IconConceptos />, roles: ["administrador"] },
 ];
 
 function getInitials(name) {
