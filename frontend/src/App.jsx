@@ -13,6 +13,7 @@ import Home from "./pages/Home";
 import Cotizaciones from "./pages/Cotizaciones";
 import Salones from "./pages/Salones";
 import Clientes from "./pages/Clientes";
+import Conceptos from "./pages/Conceptos";
 import Proveedores from "./pages/Proveedores";
 import Rack from "./pages/Rack";
 import { getUsuarioActual, logout } from "./api/auth";
@@ -104,6 +105,7 @@ export default function App() {
             <Route path="/salones" element={<Salones />} />
             <Route element={<RoleRoute user={user} roles={["administrador"]} />}>
               <Route path="/clientes" element={<Clientes />} />
+              <Route path="/conceptos" element={<Conceptos />} />
             </Route>
             <Route path="/rack" element={<Rack />} />
 

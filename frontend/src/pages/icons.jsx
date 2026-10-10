@@ -1,5 +1,3 @@
-// Íconos compartidos entre el sidebar (DashboardLayout) y las tarjetas
-// de acceso rápido (Home), para no duplicar el mismo SVG en dos archivos.
 
 export function IconInicio() {
   return (
@@ -46,6 +44,15 @@ export function IconSalones() {
         d="M15 9h4v11.5h-4M8 7.5h.01M12 7.5h.01M8 11h.01M12 11h.01M8 14.5h.01M12 14.5h.01"
         strokeLinecap="round"
       />
+    </svg>
+  );
+}
+
+export function IconConceptos() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <path d="M4 12.5V5h7.5l8.5 8.5-7.5 7.5z" strokeLinejoin="round" />
+      <circle cx="8.5" cy="9.5" r="1.3" />
     </svg>
   );
 }

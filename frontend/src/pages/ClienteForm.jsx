@@ -1,5 +1,6 @@
 // Formulario compartido por "Nuevo cliente" y "Editar cliente": mismos campos,
 // misma regla de NIT y misma lectura de errores del API.
+import { erroresDesdeApi as erroresDesdeApiComun } from "../utils/erroresApi";
 
 export const FORM_VACIO = {
   tipo: "natural",
@@ -38,21 +39,10 @@ const CAMPOS = [
   "empresa", "forma_pago", "observaciones_internas",
 ];
 
-const textoError = (e) => (Array.isArray(e) ? e.join(" ") : String(e));
-
-// Separa los errores 400 del API: los de un campo van junto a su input ({campo: texto})
-// y el resto (detail, non_field_errors, campos desconocidos) se junta en `general`.
+// Separa los errores 400 del API usando el clasificador compartido de utils/,
+// con la lista de campos de este formulario.
 export function erroresDesdeApi(body) {
-  const { detail, non_field_errors, ...porCampo } = body ?? {};
-  const campos = {};
-  const sueltos = [];
-  Object.entries(porCampo).forEach(([campo, e]) => {
-    if (CAMPOS.includes(campo)) campos[campo] = textoError(e);
-    else sueltos.push(`${campo}: ${textoError(e)}`);
-  });
-  if (detail) sueltos.push(textoError(detail));
-  if (non_field_errors) sueltos.push(textoError(non_field_errors));
-  return { campos, general: sueltos.join(" | ") || null };
+  return erroresDesdeApiComun(body, CAMPOS);
 }
 
 // Cuerpo del PATCH. En jurídica NO se envía identificacion: así no se borra la que
