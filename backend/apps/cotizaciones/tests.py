@@ -421,3 +421,25 @@ class AceptacionTests(CotizacionBaseTest):
     def test_cotizacion_inexistente_404(self):
         r = self.client.post(aceptacion(999999), {"tipo": "efectivo", "monto": "500"}, format="json")
         self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class CalendarioPermisosTests(CotizacionBaseTest):
+    """Solo GET: por eso no va en ENDPOINTS_ADMIN (allí el POST del admin espera 400)."""
+
+    URL = "/api/calendario/"
+
+    def test_sin_token_401(self):
+        self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_cliente_y_proveedor_reciben_403(self):
+        for usuario in (self.cliente_user, self.proveedor_user):
+            self.client.force_authenticate(user=usuario)
+            with self.subTest(rol=usuario.rol.codigo):
+                self.assertEqual(self.client.get(self.URL).status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_administrador_recibe_200(self):
+        cot = self.crear_en_bd()
+        self.client.force_authenticate(user=self.admin)
+        r = self.client.get(self.URL)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual([c["id"] for c in r.data], [cot.pk])

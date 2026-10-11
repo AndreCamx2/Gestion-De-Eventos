@@ -33,7 +33,8 @@ def exigir_estado_cotizado(cotizacion):
 
 class CotizacionCalendarioView(generics.ListAPIView):
     serializer_class = CotizacionCalendarioSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    # Muestra clientes y fechas de todos los eventos: solo para administradores.
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def get_queryset(self):
         queryset = Cotizacion.objects.exclude(estado="cancelado")
