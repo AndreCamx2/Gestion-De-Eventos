@@ -12,7 +12,7 @@ from apps.clientes.views import (
     RegistroPublicoView, ClienteAdminListCreateView, ClienteAdminRetrieveUpdateDestroyView, EmpresaListCreateView,
 )
 from apps.cotizaciones.views import (
-    CotizacionCalendarioView, CotizacionListCreateView, CotizacionDetailView,
+    CotizacionCalendarioView, CotizacionListCreateView, CotizacionDetailView, CotizacionAceptacionView,
 )
 
 urlpatterns = [
@@ -38,5 +38,6 @@ urlpatterns = [
     path('api/stock/', StockElementoListCreateView.as_view(), name='stock_list_create'),
     path('api/cotizaciones/', CotizacionListCreateView.as_view(), name='cotizacion_list_create'),
     path('api/cotizaciones/<int:pk>/', CotizacionDetailView.as_view(), name='cotizacion_detail'),
+    path('api/cotizaciones/<int:pk>/aceptacion/', CotizacionAceptacionView.as_view(), name='cotizacion_aceptacion'),
     path('api/calendario/', CotizacionCalendarioView.as_view(), name='calendario_cotizaciones'),
 ]

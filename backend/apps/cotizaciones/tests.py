@@ -329,3 +329,95 @@ class VigenciaTests(CotizacionBaseTest):
         cot = self.crear_en_bd()
         r = self.client.put(detalle(cot.pk), {"validez_oferta": str(hoy())}, format="json")
         self.assertEqual(r.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+def aceptacion(pk):
+    return f"{detalle(pk)}aceptacion/"
+
+
+class AceptacionTests(CotizacionBaseTest):
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+
+    def test_sin_token_401_y_otros_roles_403(self):
+        cot = self.crear_en_bd()
+        datos = {"tipo": "efectivo", "monto": "1000.00"}
+        self.client.force_authenticate(user=None)
+        self.assertEqual(self.client.post(aceptacion(cot.pk), datos, format="json").status_code, 401)
+        for usuario in (self.cliente_user, self.proveedor_user):
+            self.client.force_authenticate(user=usuario)
+            with self.subTest(rol=usuario.rol.codigo):
+                self.assertEqual(self.client.post(aceptacion(cot.pk), datos, format="json").status_code, 403)
+        cot.refresh_from_db()
+        self.assertEqual(cot.estado, "cotizado")
+
+    def test_registra_garantia_y_confirma(self):
+        cot = self.crear_en_bd()
+        r = self.client.post(aceptacion(cot.pk), {"tipo": "transferencia", "monto": "1000000"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+        self.assertEqual(r.data["estado"], "confirmado")
+        self.assertIs(r.data["vencida"], False)
+        garantia = r.data["garantia"]
+        self.assertEqual(
+            (garantia["tipo"], garantia["monto"], garantia["registrada_por"]),
+            ("transferencia", "1000000.00", "admin@test.com"),
+        )
+        self.assertIsNotNone(garantia["registrada_en"])
+
+        cot.refresh_from_db()
+        self.assertEqual(cot.estado, "confirmado")
+        self.assertEqual(cot.garantia_monto, Decimal("1000000.00"))
+        self.assertEqual(cot.garantia_registrada_por, self.admin)
+        self.assertIsNotNone(cot.garantia_registrada_en)
+
+    def test_detalle_sin_aceptacion_tiene_garantia_null(self):
+        cot = self.crear_en_bd()
+        self.assertIsNone(self.client.get(detalle(cot.pk)).data["garantia"])
+
+    def test_vencida_409(self):
+        cot = self.crear_en_bd(validez_oferta=hoy() - timedelta(days=1))
+        r = self.client.post(aceptacion(cot.pk), {"tipo": "efectivo", "monto": "500"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(r.data["detail"], "La cotización está vencida.")
+        cot.refresh_from_db()
+        self.assertEqual((cot.estado, cot.garantia_tipo), ("cotizado", ""))
+
+    def test_cancelada_o_ya_confirmada_409(self):
+        for estado in ("cancelado", "confirmado"):
+            cot = self.crear_en_bd(estado=estado, fecha_evento=hoy() + timedelta(days=50 + len(estado)))
+            with self.subTest(estado=estado):
+                r = self.client.post(aceptacion(cot.pk), {"tipo": "efectivo", "monto": "500"}, format="json")
+                self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+
+    def test_tipo_invalido_400(self):
+        cot = self.crear_en_bd()
+        r = self.client.post(aceptacion(cot.pk), {"tipo": "cheque", "monto": "500"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("tipo", r.data)
+
+    def test_monto_cero_o_negativo_400(self):
+        cot = self.crear_en_bd()
+        for monto in ("0", "-10"):
+            with self.subTest(monto=monto):
+                r = self.client.post(aceptacion(cot.pk), {"tipo": "efectivo", "monto": monto}, format="json")
+                self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(r.data["monto"], ["El monto debe ser mayor que 0."])
+        cot.refresh_from_db()
+        self.assertEqual(cot.estado, "cotizado")
+
+    def test_salon_ya_confirmado_esa_fecha_409(self):
+        fecha = hoy() + timedelta(days=30)
+        primera = self.crear_en_bd(fecha_evento=fecha)
+        segunda = self.crear_en_bd(fecha_evento=fecha)
+        datos = {"tipo": "tarjeta", "monto": "200000"}
+        self.assertEqual(self.client.post(aceptacion(primera.pk), datos, format="json").status_code, 200)
+
+        r = self.client.post(aceptacion(segunda.pk), datos, format="json")
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(r.data["detail"], "El salón ya está confirmado para esa fecha.")
+        segunda.refresh_from_db()
+        self.assertEqual((segunda.estado, segunda.garantia_tipo), ("cotizado", ""))
+
+    def test_cotizacion_inexistente_404(self):
+        r = self.client.post(aceptacion(999999), {"tipo": "efectivo", "monto": "500"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)

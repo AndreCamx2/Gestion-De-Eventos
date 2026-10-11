@@ -1,3 +1,6 @@
+from django.db import IntegrityError, transaction
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import APIException, ValidationError
@@ -7,7 +10,7 @@ from apps.usuarios.permissions import EsAdministrador
 
 from .models import Cotizacion
 from .serializers import (
-    CotizacionCalendarioSerializer, CotizacionCrearSerializer, CotizacionDetalleSerializer,
+    AceptacionSerializer, CotizacionCalendarioSerializer, CotizacionCrearSerializer, CotizacionDetalleSerializer,
     CotizacionListaSerializer, CotizacionVigenciaSerializer,
 )
 
@@ -54,7 +57,7 @@ def cotizaciones_con_relaciones():
     """Trae en pocas consultas todo lo que muestran el detalle y el listado (evita N+1)."""
     return (
         Cotizacion.objects
-        .select_related("sitio", "cliente", "salon", "montaje", "usuario")
+        .select_related("sitio", "cliente", "salon", "montaje", "usuario", "garantia_registrada_por")
         .prefetch_related("items__concepto")
     )
 
@@ -129,3 +132,39 @@ class CotizacionDetailView(generics.RetrieveUpdateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(CotizacionDetalleSerializer(self.get_queryset().get(pk=cotizacion.pk)).data)
+
+
+class CotizacionAceptacionView(generics.GenericAPIView):
+    """Registra la garantía y confirma la cotización (estado "confirmado")."""
+
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+    def post(self, request, *args, **kwargs):
+        with transaction.atomic():
+            # select_for_update bloquea la fila: dos aceptaciones simultáneas no se pisan.
+            cotizacion = get_object_or_404(Cotizacion.objects.select_for_update(), pk=kwargs["pk"])
+
+            serializer = AceptacionSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            exigir_estado_cotizado(cotizacion)
+            if cotizacion.vencida:
+                raise Conflicto("La cotización está vencida.")
+
+            cotizacion.garantia_tipo = serializer.validated_data["tipo"]
+            cotizacion.garantia_monto = serializer.validated_data["monto"]
+            cotizacion.garantia_registrada_en = timezone.now()
+            cotizacion.garantia_registrada_por = request.user
+            cotizacion.estado = "confirmado"
+            try:
+                # Atomic interno (savepoint): si choca con uq_salon_fecha_confirmado,
+                # respondemos 409 aquí en vez del 400 genérico del manejador global.
+                with transaction.atomic():
+                    cotizacion.save(update_fields=[
+                        "garantia_tipo", "garantia_monto", "garantia_registrada_en",
+                        "garantia_registrada_por", "estado",
+                    ])
+            except IntegrityError:
+                raise Conflicto("El salón ya está confirmado para esa fecha.")
+
+        return Response(CotizacionDetalleSerializer(cotizaciones_con_relaciones().get(pk=cotizacion.pk)).data)

@@ -10,7 +10,7 @@ from apps.salones.models import Montaje, Salon, SalonMontaje
 from apps.sitios.models import Sitio
 
 from .models import Cotizacion, CotizacionItem
-from .services import totales_cotizacion, totales_linea
+from .services import redondear, totales_cotizacion, totales_linea
 
 DIAS_VIGENCIA_POR_DEFECTO = 15
 
@@ -177,13 +177,14 @@ class CotizacionDetalleSerializer(serializers.ModelSerializer):
     subtotal = serializers.SerializerMethodField()
     impuestos = serializers.SerializerMethodField()
     total = serializers.SerializerMethodField()
+    garantia = serializers.SerializerMethodField()
 
     class Meta:
         model = Cotizacion
         fields = [
             "id", "estado", "vencida", "sitio", "cliente", "salon", "montaje", "aforo",
             "fecha_evento", "cantidad_personas", "validez_oferta", "creado_en", "creado_por",
-            "items", "subtotal", "impuestos", "total",
+            "items", "subtotal", "impuestos", "total", "garantia",
         ]
         read_only_fields = fields
 
@@ -202,6 +203,18 @@ class CotizacionDetalleSerializer(serializers.ModelSerializer):
 
     def get_total(self, obj):
         return str(_totales(obj)["total"])
+
+    def get_garantia(self, obj):
+        """null hasta que se registre la aceptación (SGDE-20)."""
+        if not obj.garantia_tipo:
+            return None
+        return {
+            "tipo": obj.garantia_tipo,
+            "monto": str(redondear(obj.garantia_monto)) if obj.garantia_monto is not None else None,
+            "registrada_en": serializers.DateTimeField().to_representation(obj.garantia_registrada_en)
+            if obj.garantia_registrada_en else None,
+            "registrada_por": obj.garantia_registrada_por.username if obj.garantia_registrada_por else None,
+        }
 
 
 class CotizacionListaSerializer(serializers.ModelSerializer):
@@ -242,3 +255,17 @@ class CotizacionVigenciaSerializer(serializers.ModelSerializer):
         if error:
             raise serializers.ValidationError({"validez_oferta": [error]})
         return attrs
+
+
+# --- Entrada: aceptación y garantía (SGDE-20) --------------------------------
+
+class AceptacionSerializer(serializers.Serializer):
+    TIPO_CHOICES = ["transferencia", "tarjeta", "consignacion", "efectivo"]
+
+    tipo = serializers.ChoiceField(choices=TIPO_CHOICES)
+    monto = serializers.DecimalField(max_digits=12, decimal_places=2)
+
+    def validate_monto(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("El monto debe ser mayor que 0.")
+        return value
