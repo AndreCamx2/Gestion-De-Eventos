@@ -26,6 +26,11 @@ class Cotizacion(models.Model):
     bloqueo_hasta = models.DateTimeField(null=True, blank=True)
     garantia_tipo = models.CharField(max_length=30, blank=True)
     garantia_monto = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    garantia_registrada_en = models.DateTimeField(null=True, blank=True)
+    garantia_registrada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="garantias_registradas", null=True, blank=True
+    )
     penalizacion_pct = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     motivo_cancelacion = models.TextField(blank=True)
     creado_en = models.DateTimeField(auto_now_add=True)
@@ -49,7 +54,10 @@ class CotizacionItem(models.Model):
     cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name="items")
     concepto = models.ForeignKey(Concepto, on_delete=models.PROTECT, related_name="items")
     cantidad = models.PositiveIntegerField(default=1)
+    # Copias del concepto al momento de cotizar: si luego cambia el concepto,
+    # la cotización no cambia.
     precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
+    impuesto_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
 
     def __str__(self):
         return f"{self.concepto.nombre} x{self.cantidad}"
