@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SGDE · Piedra viva · Casos límite y estados</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F2F0}
+a{color:#B4562F}a:hover{color:#8F3F1F}
+.btn{transition:transform 160ms cubic-bezier(0.23,1,0.32,1),filter 160ms ease}
+.btn:active{transform:scale(0.97)}
+.sk{background:linear-gradient(90deg,#F1EFEB 0%,#DCD9D3 50%,#F1EFEB 100%);background-size:200% 100%;animation:sk 1400ms linear infinite}
+@keyframes sk{from{background-position:200% 0}to{background-position:-200% 0}}
+@media (hover:hover) and (pointer:fine){.btn:hover{filter:brightness(1.08)}}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}.btn:active{transform:none}.sk{animation:none}}
+.tab{transition:color 160ms ease}@media (hover:hover) and (pointer:fine){.tab[aria-current="false"]:hover{color:#1D232B !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F3F2F0; color: #1D232B; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; padding: 56px 48px 72px; box-sizing: border-box;">
+  <div style="max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px;">
+    <header>
+      <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #B4562F;">Prueba de estrés</div>
+      <h1 style="margin: 8px 0 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 56px; line-height: 1; letter-spacing: -0.04em;">Casos límite y estados</h1>
+      <p style="margin: 12px 0 0; max-width: 720px; font-size: 17px; line-height: 1.5; color: #5D6673;">Cómo responde cada pantalla cuando los datos son raros, faltan o el servidor dice que no.</p>
+    </header>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px;">
+
+      <section style="border-radius: 22px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 22px; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7581;">Nombre muy largo</h2>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: #F1EFEB;">
+          <span style="flex: 0 0 36px; height: 36px; border-radius: 18px; background: #2F7FB8; color: #F3F2F0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px;">CI</span>
+          <div style="min-width: 0; flex: 1;">
+            <div title="Corporación Internacional de Eventos, Congresos y Convenciones del Caribe Colombiano S.A.S." style="font-weight: 800; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;">Corporación Internacional de Eventos, Congresos y Convenciones del Caribe Colombiano S.A.S.</div>
+            <div style="font-size: 12px; color: #5D6673; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">direccion.comercial.eventos.y.convenciones@corporacioninternacional.com.co</div>
+          </div>
+          <span style="flex: 0 0 auto; font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 999px; background: rgba(52,168,106,0.14); color: #1F6E44;">Activo</span>
+        </div>
+        <p style="margin: 0; font-size: 13px; color: #5D6673;">Dos líneas máximo y el nombre completo al pasar el puntero. El correo se corta con puntos suspensivos; la etiqueta de estado nunca se aplasta.</p>
+      </section>
+
+      <section style="border-radius: 22px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 22px; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7581;">Cifras extremas</h2>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+          <div style="padding: 16px; border-radius: 16px; background: #2F4A6D; color: #FFFFFF; min-width: 0;"><div style="font-size: 12px; font-weight: 800; text-transform: uppercase;">Valor vigente</div><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: clamp(16px, 1.5vw, 22px); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; margin-top: 6px;">$ 1.234.567.890</div></div>
+          <div style="padding: 16px; border-radius: 16px; background: #F1EFEB; min-width: 0;"><div style="font-size: 12px; font-weight: 800; text-transform: uppercase; color: #5D6673;">Por confirmar</div><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 30px; margin-top: 6px;">0</div><div style="font-size: 12px; color: #6E7581;">Nada pendiente hoy</div></div>
+        </div>
+        <p style="margin: 0; font-size: 13px; color: #5D6673;">Los montos de diez cifras reducen su tamaño antes de partirse. Un cero se explica, no se deja solo.</p>
+      </section>
+
+      <section style="border-radius: 22px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 28px 22px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px;">
+        <h2 style="margin: 0; align-self: flex-start; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7581;">Lista vacía</h2>
+        <div aria-hidden="true" style="display: flex; align-items: flex-end; gap: 6px; margin-top: 4px;">
+          <div style="width: 28px; height: 44px; border-radius: 999px 999px 0 0; background: #D6D3CD;"></div>
+          <div style="width: 28px; height: 60px; border-radius: 999px 999px 0 0; background: #F0B429;"></div>
+          <div style="width: 28px; height: 36px; border-radius: 999px 999px 0 0; background: #D6D3CD;"></div>
+        </div>
+        <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 24px;">Aún no hay cotizaciones</div>
+        <p style="margin: 0; font-size: 14px; color: #5D6673; max-width: 300px;">Cuando armes la primera, aparecerá aquí con su estado y su vigencia.</p>
+        <a class="btn" href="NuevaCotizacion.dc.html" style="display: inline-flex; align-items: center; height: 46px; padding: 0 18px; border-radius: 12px; background: #2F4A6D; color: #FFFFFF; font-weight: 800; text-decoration: none;">Armar la primera</a>
+      </section>
+
+      <section aria-busy="true" aria-label="Cargando" style="border-radius: 22px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 22px; display: flex; flex-direction: column; gap: 12px;">
+        <h2 style="margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7581;">Cargando</h2>
+        <div style="display: flex; align-items: center; gap: 12px;"><div class="sk" style="width: 36px; height: 36px; border-radius: 18px;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px;"><div class="sk" style="height: 12px; width: 70%; border-radius: 6px;"></div><div class="sk" style="height: 10px; width: 45%; border-radius: 5px;"></div></div></div>
+        <div style="display: flex; align-items: center; gap: 12px;"><div class="sk" style="width: 36px; height: 36px; border-radius: 18px;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px;"><div class="sk" style="height: 12px; width: 55%; border-radius: 6px;"></div><div class="sk" style="height: 10px; width: 35%; border-radius: 5px;"></div></div></div>
+        <div style="display: flex; align-items: center; gap: 12px;"><div class="sk" style="width: 36px; height: 36px; border-radius: 18px;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px;"><div class="sk" style="height: 12px; width: 62%; border-radius: 6px;"></div><div class="sk" style="height: 10px; width: 40%; border-radius: 5px;"></div></div></div>
+        <p style="margin: 0; font-size: 13px; color: #5D6673;">Esqueletos con la forma real de la fila, no un spinner en el centro. Sin animación si el sistema pide movimiento reducido.</p>
+      </section>
+
+      <section style="border-radius: 22px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 22px; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7581;">Sin permiso · 403</h2>
+        <div style="display: flex; gap: 14px; align-items: flex-start;">
+          <span style="flex: 0 0 44px; height: 44px; border-radius: 14px; background: rgba(111,131,217,0.18); color: #3A4C99; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11V8a6 6 0 0 1 12 0v3M5 11h14v10H5z"/></svg></span>
+          <div><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 20px;">Esta sección es para administradores</div><p style="margin: 6px 0 0; font-size: 14px; color: #5D6673;">Si necesitas acceso, pídeselo al administrador de tu hotel.</p></div>
+        </div>
+        <a class="btn" href="Inicio.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid #D6D3CD; color: #1D232B; font-weight: 800; text-decoration: none;">Volver al inicio</a>
+      </section>
+
+      <section style="border-radius: 22px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 22px; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7581;">Sesión vencida · 401</h2>
+        <div role="status" style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px; background: #1D232B; color: #F3F2F0; box-shadow: 0 18px 40px -20px rgba(29,35,43,0.45);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/></svg>
+          <span style="flex: 1; font-size: 14px; font-weight: 700;">Tu sesión expiró. Lo que escribiste sigue aquí.</span>
+          <a class="btn" href="Main.dc.html" style="display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 10px; background: #F3F2F0; color: #1D232B; font-weight: 800; font-size: 13px; text-decoration: none;">Entrar de nuevo</a>
+        </div>
+        <p style="margin: 0; font-size: 13px; color: #5D6673;">El aviso aparece abajo y no borra el formulario: al volver a entrar, la persona sigue donde iba.</p>
+      </section>
+
+      <section style="border-radius: 22px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 22px; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7581;">Conflicto · 409</h2>
+        <div role="alert" style="padding: 16px; border-radius: 16px; background: rgba(238,138,99,0.12); border: 1px solid rgba(238,138,99,0.5); display: flex; flex-direction: column; gap: 10px;">
+          <div style="font-weight: 800; color: #8F3F1F;">El salón Heredia ya está confirmado para el 20 de noviembre.</div>
+          <div style="font-size: 13px; color: #5D6673;">Otra cotización se confirmó primero. Estas opciones siguen libres ese día:</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <a class="btn" href="NuevaCotizacion.dc.html" style="display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 10px; background: #1D232B; color: #F3F2F0; font-weight: 800; font-size: 13px; text-decoration: none;">Getsemaní · hasta 50</a>
+            <a class="btn" href="Calendario.dc.html" style="display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D6D3CD; color: #1D232B; font-weight: 800; font-size: 13px; text-decoration: none;">Ver otras fechas</a>
+          </div>
+        </div>
+      </section>
+
+      <section style="border-radius: 22px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 22px; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7581;">Error en una línea · 400</h2>
+        <div style="padding: 12px; border-radius: 14px; background: #F1EFEB; border: 1.5px solid #2F4A6D; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; gap: 12px;"><span style="font-weight: 800;">Proyector antiguo</span><span style="font-weight: 800; font-variant-numeric: tabular-nums;">$ 142.800</span></div>
+          <span style="font-size: 13px; font-weight: 700; color: #B4562F;">El concepto está inactivo. Quítalo o elige otro.</span>
+        </div>
+        <div style="padding: 12px; border-radius: 14px; background: #F1EFEB; border: 1px solid #D6D3CD; display: flex; justify-content: space-between; gap: 12px;"><span style="font-weight: 800;">Coffee break por persona</span><span style="font-weight: 800; font-variant-numeric: tabular-nums;">$ 2.160.000</span></div>
+        <p style="margin: 0; font-size: 13px; color: #5D6673;">El error se marca en la línea que falló, no arriba del formulario.</p>
+      </section>
+
+      <section style="border-radius: 22px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 22px; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7581;">Servidor caído · 500 o sin red</h2>
+        <div style="display: flex; gap: 14px; align-items: flex-start;">
+          <span style="flex: 0 0 44px; height: 44px; border-radius: 14px; background: rgba(240,180,41,0.16); color: #9A6700; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0M12 19h.01M3 3l18 18"/></svg></span>
+          <div><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 20px;">No pudimos hablar con el servidor</div><p style="margin: 6px 0 0; font-size: 14px; color: #5D6673;">Revisa tu conexión. Si sigue fallando, avisa al equipo técnico.</p></div>
+        </div>
+        <button class="btn" type="button" style="align-self: flex-start; height: 44px; padding: 0 16px; border-radius: 12px; background: #F0B429; color: #3D2B00; border: 0; font: inherit; font-weight: 800; cursor: pointer;">Reintentar</button>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
