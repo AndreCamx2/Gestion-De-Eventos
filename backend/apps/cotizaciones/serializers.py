@@ -166,6 +166,7 @@ def _totales(cotizacion):
 
 
 class CotizacionDetalleSerializer(serializers.ModelSerializer):
+    vencida = serializers.BooleanField(read_only=True)
     sitio = SitioResumenSerializer(read_only=True)
     cliente = ClienteResumenSerializer(read_only=True)
     salon = SalonResumenSerializer(read_only=True)
@@ -180,7 +181,7 @@ class CotizacionDetalleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cotizacion
         fields = [
-            "id", "estado", "sitio", "cliente", "salon", "montaje", "aforo",
+            "id", "estado", "vencida", "sitio", "cliente", "salon", "montaje", "aforo",
             "fecha_evento", "cantidad_personas", "validez_oferta", "creado_en", "creado_por",
             "items", "subtotal", "impuestos", "total",
         ]
@@ -206,15 +207,38 @@ class CotizacionDetalleSerializer(serializers.ModelSerializer):
 class CotizacionListaSerializer(serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source="cliente.nombre", read_only=True)
     salon_nombre = serializers.CharField(source="salon.nombre", read_only=True)
+    vencida = serializers.BooleanField(read_only=True)
     total = serializers.SerializerMethodField()
 
     class Meta:
         model = Cotizacion
         fields = [
-            "id", "estado", "cliente_nombre", "salon_nombre",
+            "id", "estado", "vencida", "cliente_nombre", "salon_nombre",
             "fecha_evento", "cantidad_personas", "validez_oferta", "total",
         ]
         read_only_fields = fields
 
     def get_total(self, obj):
         return str(_totales(obj)["total"])
+
+
+# --- Entrada: cambiar la vigencia (SGDE-19) ----------------------------------
+
+class CotizacionVigenciaSerializer(serializers.ModelSerializer):
+    """Solo cambia validez_oferta; cualquier otro campo enviado es un error 400."""
+
+    class Meta:
+        model = Cotizacion
+        fields = ["validez_oferta"]
+        extra_kwargs = {"validez_oferta": {"required": True, "allow_null": False}}
+
+    def validate(self, attrs):
+        no_permitidos = set(self.initial_data) - set(self.fields)
+        if no_permitidos:
+            raise serializers.ValidationError(
+                {campo: ["Este campo no se puede modificar."] for campo in sorted(no_permitidos)}
+            )
+        error = validar_validez_oferta(attrs["validez_oferta"], self.instance.fecha_evento)
+        if error:
+            raise serializers.ValidationError({"validez_oferta": [error]})
+        return attrs

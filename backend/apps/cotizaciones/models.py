@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 from apps.sitios.models import Sitio
 from apps.clientes.models import Cliente
 from apps.salones.models import Salon, Montaje
@@ -48,6 +49,15 @@ class Cotizacion(models.Model):
 
     def __str__(self):
         return f"Cotización {self.id} - {self.cliente.nombre}"
+
+    @property
+    def vencida(self):
+        """Se calcula al leer (no se guarda): sigue cotizada y ya pasó su vigencia."""
+        return (
+            self.estado == "cotizado"
+            and self.validez_oferta is not None
+            and self.validez_oferta < timezone.localdate()
+        )
 
 
 class CotizacionItem(models.Model):

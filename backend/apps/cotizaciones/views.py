@@ -1,6 +1,6 @@
 from django.utils.dateparse import parse_date
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
 
 from apps.usuarios.permissions import EsAdministrador
@@ -8,8 +8,24 @@ from apps.usuarios.permissions import EsAdministrador
 from .models import Cotizacion
 from .serializers import (
     CotizacionCalendarioSerializer, CotizacionCrearSerializer, CotizacionDetalleSerializer,
-    CotizacionListaSerializer,
+    CotizacionListaSerializer, CotizacionVigenciaSerializer,
 )
+
+
+class Conflicto(APIException):
+    """409: la petición es válida pero choca con el estado actual de la cotización."""
+
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = "La cotización no admite esta operación en su estado actual."
+    default_code = "conflicto"
+
+
+ESTADO_EN_FEMENINO = {"bloqueado": "bloqueada", "confirmado": "confirmada", "cancelado": "cancelada"}
+
+
+def exigir_estado_cotizado(cotizacion):
+    if cotizacion.estado != "cotizado":
+        raise Conflicto(f"La cotización está {ESTADO_EN_FEMENINO.get(cotizacion.estado, cotizacion.estado)}.")
 
 
 class CotizacionCalendarioView(generics.ListAPIView):
@@ -97,7 +113,19 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
         return Response(CotizacionDetalleSerializer(detalle).data, status=status.HTTP_201_CREATED)
 
 
-class CotizacionDetailView(generics.RetrieveAPIView):
+class CotizacionDetailView(generics.RetrieveUpdateAPIView):
+    """Detalle y cambio de vigencia (PATCH). Sin PUT ni DELETE."""
+
     queryset = cotizaciones_con_relaciones()
     serializer_class = CotizacionDetalleSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+    http_method_names = ["get", "patch", "head", "options"]
+
+    def partial_update(self, request, *args, **kwargs):
+        cotizacion = self.get_object()
+        # Se permite aunque esté vencida: así se extiende una oferta que ya venció.
+        exigir_estado_cotizado(cotizacion)
+        serializer = CotizacionVigenciaSerializer(cotizacion, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(CotizacionDetalleSerializer(self.get_queryset().get(pk=cotizacion.pk)).data)

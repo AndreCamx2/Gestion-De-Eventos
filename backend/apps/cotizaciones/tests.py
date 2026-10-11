@@ -253,3 +253,79 @@ class ListadoCotizacionesTests(CotizacionBaseTest):
         # cotizaciones (con joins) + items + conceptos, sin importar cuántas haya
         with self.assertNumQueries(3):
             self.client.get(LISTA)
+
+
+class VigenciaTests(CotizacionBaseTest):
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+
+    def test_vigencia_por_defecto_hoy_mas_15_dias(self):
+        datos = self.payload()
+        del datos["validez_oferta"]
+        r = self.client.post(LISTA, datos, format="json")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED, r.data)
+        self.assertEqual(r.data["validez_oferta"], str(hoy() + timedelta(days=15)))
+
+    def test_vigencia_por_defecto_no_pasa_de_la_fecha_del_evento(self):
+        datos = self.payload(fecha_evento=str(hoy() + timedelta(days=7)))
+        del datos["validez_oferta"]
+        r = self.client.post(LISTA, datos, format="json")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED, r.data)
+        self.assertEqual(r.data["validez_oferta"], str(hoy() + timedelta(days=7)))
+
+    def test_vigencia_al_crear_fuera_de_rango_400(self):
+        for validez in (hoy() - timedelta(days=1), hoy() + timedelta(days=41)):
+            with self.subTest(validez=validez):
+                r = self.client.post(LISTA, self.payload(validez_oferta=str(validez)), format="json")
+                self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertIn("validez_oferta", r.data)
+
+    def test_vencida_true_y_false(self):
+        vigente = self.crear_en_bd(validez_oferta=hoy())
+        vencida = self.crear_en_bd(validez_oferta=hoy() - timedelta(days=1))
+        confirmada_vieja = self.crear_en_bd(validez_oferta=hoy() - timedelta(days=1), estado="confirmado")
+        esperado = {vigente.pk: False, vencida.pk: True, confirmada_vieja.pk: False}
+        for pk, valor in esperado.items():
+            with self.subTest(pk=pk):
+                self.assertIs(self.client.get(detalle(pk)).data["vencida"], valor)
+        self.assertEqual({c["id"]: c["vencida"] for c in self.client.get(LISTA).data}, esperado)
+
+    def test_patch_cambia_la_vigencia_aunque_este_vencida(self):
+        cot = self.crear_en_bd(validez_oferta=hoy() - timedelta(days=3))
+        nueva = str(hoy() + timedelta(days=10))
+        r = self.client.patch(detalle(cot.pk), {"validez_oferta": nueva}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+        self.assertEqual(r.data["validez_oferta"], nueva)
+        self.assertIs(r.data["vencida"], False)
+        self.assertIn("items", r.data)  # responde el detalle completo
+
+    def test_patch_con_fecha_invalida_400(self):
+        cot = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=30))
+        for validez in (hoy() - timedelta(days=1), hoy() + timedelta(days=31)):
+            with self.subTest(validez=validez):
+                r = self.client.patch(detalle(cot.pk), {"validez_oferta": str(validez)}, format="json")
+                self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertIn("validez_oferta", r.data)
+
+    def test_patch_con_otros_campos_400_y_no_cambia_nada(self):
+        cot = self.crear_en_bd()
+        r = self.client.patch(detalle(cot.pk), {
+            "validez_oferta": str(hoy() + timedelta(days=2)), "cantidad_personas": 5, "estado": "confirmado",
+        }, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(set(r.data), {"cantidad_personas", "estado"})
+        cot.refresh_from_db()
+        self.assertEqual((cot.estado, cot.cantidad_personas), ("cotizado", 50))
+
+    def test_patch_409_si_no_esta_cotizada(self):
+        for estado in ("confirmado", "cancelado"):
+            cot = self.crear_en_bd(estado=estado, fecha_evento=hoy() + timedelta(days=50 + len(estado)))
+            with self.subTest(estado=estado):
+                r = self.client.patch(detalle(cot.pk), {"validez_oferta": str(hoy())}, format="json")
+                self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+                self.assertIn("detail", r.data)
+
+    def test_no_existe_put(self):
+        cot = self.crear_en_bd()
+        r = self.client.put(detalle(cot.pk), {"validez_oferta": str(hoy())}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
