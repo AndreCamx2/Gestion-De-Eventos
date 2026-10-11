@@ -1,18 +1,19 @@
-import { IconInicio, IconCotizaciones, IconCalendario, IconClientes, IconSalones, IconConceptos, IconSitios } from "./icons";
 import { useState, useRef, useEffect } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
-import "../styles/home.css";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import "../styles/dashboard-layout.css";
 
+// Única fuente de las pestañas de la barra superior (y del título accesible).
+// El orden sigue la maqueta de Piedra viva.
 export const NAV_ITEMS = [
-  { to: "/inicio", label: "Inicio", icon: <IconInicio /> },
-  { to: "/cotizaciones", label: "Cotizaciones", icon: <IconCotizaciones /> },
-  { to: "/calendario", label: "Calendario", icon: <IconCalendario /> },
-  // `roles` es opcional: sin él, el ítem lo ve cualquier usuario con sesión.
+  { to: "/inicio", label: "Inicio" },
+  { to: "/cotizaciones", label: "Cotizaciones" },
+  { to: "/calendario", label: "Calendario" },
+  // `roles` es opcional: sin él, la pestaña la ve cualquier usuario con sesión.
   // Es solo experiencia de usuario; la seguridad real es el 403 del API.
-  { to: "/clientes", label: "Clientes", icon: <IconClientes />, roles: ["administrador"] },
-  { to: "/sitios", label: "Sitios", icon: <IconSitios />, roles: ["administrador"] },
-  { to: "/salones", label: "Salones y Servicios", icon: <IconSalones /> },
-  { to: "/conceptos", label: "Conceptos y precios", icon: <IconConceptos />, roles: ["administrador"] },
+  { to: "/salones", label: "Salones" },
+  { to: "/conceptos", label: "Conceptos", roles: ["administrador"] },
+  { to: "/clientes", label: "Clientes", roles: ["administrador"] },
+  { to: "/sitios", label: "Sitios", roles: ["administrador"] },
 ];
 
 function getInitials(name) {
@@ -27,8 +28,11 @@ function getInitials(name) {
 export default function DashboardLayout({ user = { name: "Usuario", role: "cliente" }, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const botonPerfilRef = useRef(null);
+  const pestanasRef = useRef(null);
   const location = useLocation();
 
+  // Cierra el menú del perfil al hacer clic afuera.
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -39,78 +43,85 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // El título de la barra superior se calcula según la ruta activa,
-  // usando la misma lista que arma el sidebar (una sola fuente de verdad).
+  // Con el menú abierto, Escape lo cierra y devuelve el foco al avatar.
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        botonPerfilRef.current?.focus();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [menuOpen]);
+
+  // En teléfono las pestañas se desplazan en horizontal: al cambiar de ruta,
+  // se mueve esa fila (sin animación) para que la pestaña activa quede a la vista.
+  // No se usa scrollIntoView porque también movería la página en vertical.
+  useEffect(() => {
+    const fila = pestanasRef.current;
+    const activa = fila?.querySelector('[aria-current="page"]');
+    if (!fila || !activa) return;
+    const margen = 16;
+    const inicio = activa.offsetLeft;
+    const fin = inicio + activa.offsetWidth;
+    if (inicio < fila.scrollLeft) {
+      fila.scrollLeft = inicio - margen;
+    } else if (fin > fila.scrollLeft + fila.clientWidth) {
+      fila.scrollLeft = fin - fila.clientWidth + margen;
+    }
+  }, [location.pathname]);
+
+  const visibleItems = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(user.role));
+
+  // Las pantallas aún no tienen su propio <h1>: mientras se migran a
+  // CabeceraPagina, el título de la ruta activa se anuncia de forma invisible.
   const currentItem = NAV_ITEMS.find((item) => location.pathname.startsWith(item.to));
-  const pageTitle = currentItem?.label ?? "Inicio";
+  const pageTitle = currentItem?.label ?? "SGDE";
 
   return (
-    <div className="dashboard-shell">
-      <aside className="sidebar">
-        <div className="sidebar__brand">
-          <div className="sidebar__mark">S</div>
-          <div>
-            <p className="sidebar__brand-name">SGDE</p>
-            <p className="sidebar__brand-sub">Cartagena</p>
-          </div>
-        </div>
+    <div className="panel">
+      <header className="barra-superior">
+        <div className="barra-superior__interior">
+          <Link to="/inicio" className="barra-superior__logo" aria-label="SGDE, ir al inicio">
+            <span className="barra-superior__marca" aria-hidden="true">S</span>
+            <span aria-hidden="true">SGDE</span>
+          </Link>
 
-        <nav className="sidebar__nav">
-          {NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(user.role)).map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => `sidebar__link${isActive ? " is-active" : ""}`}
-            >
-              {item.icon}
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+          <nav className="barra-superior__pestanas" aria-label="Principal" ref={pestanasRef}>
+            {visibleItems.map((item) => (
+              <NavLink key={item.to} to={item.to} className="barra-superior__pestana">
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
 
-        <div className="sidebar__footer">Sistema de Gestión de Eventos y Salones</div>
-      </aside>
-
-      <div className="dashboard-main">
-        <header className="navbar">
-          <h1 className="navbar__title">{pageTitle}</h1>
-
-          <div className={`navbar__profile${menuOpen ? " is-open" : ""}`} ref={menuRef}>
+          <div className="perfil" ref={menuRef}>
             <button
               type="button"
-              className="navbar__profile-trigger"
+              className="perfil__boton"
+              ref={botonPerfilRef}
               onClick={() => setMenuOpen((open) => !open)}
               aria-expanded={menuOpen}
-              aria-haspopup="true"
-              aria-controls="navbar-profile-menu"
+              aria-controls="perfil-menu"
               aria-label={`Menú de usuario de ${user.name}`}
             >
-              <div className="navbar__avatar">{getInitials(user.name)}</div>
-              <div className="navbar__identity">
-                <p className="navbar__name">{user.name}</p>
-                <p className="navbar__role">{user.role}</p>
-              </div>
-              <svg
-                className={`navbar__chevron${menuOpen ? " is-open" : ""}`}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <span className="perfil__avatar" aria-hidden="true">
+                {getInitials(user.name)}
+              </span>
             </button>
 
             {menuOpen && (
-              <div className="navbar__menu" id="navbar-profile-menu">
-                <div className="navbar__menu-header">
-                  <p className="navbar__menu-greeting">Hola, {user.name}</p>
-                  <p className="navbar__menu-role">{user.role}</p>
+              <div className="perfil__menu" id="perfil-menu">
+                <div className="perfil__encabezado">
+                  <p className="perfil__nombre">Hola, {user.name}</p>
+                  <p className="perfil__rol">{user.role}</p>
                 </div>
-                <div className="navbar__menu-divider" />
+                <div className="perfil__divisor" />
                 <button
                   type="button"
-                  className="navbar__menu-item navbar__menu-item--danger"
+                  className="perfil__opcion"
                   onClick={() => {
                     setMenuOpen(false);
                     onLogout();
@@ -121,13 +132,14 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
               </div>
             )}
           </div>
-        </header>
+        </div>
+      </header>
 
-        <main className="dashboard-content">
-          {/* Aquí se insertará la pantalla activa: Home, Cotizaciones, Salones, etc. */}
-          <Outlet />
-        </main>
-      </div>
+      <main className="panel__contenido">
+        <h1 className="visually-hidden">{pageTitle}</h1>
+        {/* Aquí se inserta la pantalla activa: Home, Cotizaciones, Salones, etc. */}
+        <Outlet />
+      </main>
     </div>
   );
 }

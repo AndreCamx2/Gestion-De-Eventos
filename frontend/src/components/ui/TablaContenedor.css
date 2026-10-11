@@ -1,0 +1,41 @@
+/* Contenedor de tabla — guía Piedra viva, secciones 3 y 5. Solo variables de tokens.css. */
+.tabla-contenedor {
+    min-width: 0;
+    overflow-x: auto;
+    background: var(--color-superficie);
+    border: var(--borde);
+    border-radius: var(--radio-tarjeta);
+}
+
+.tabla-contenedor table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--texto-navegacion);
+}
+
+.tabla-contenedor th {
+    padding: var(--espacio-4) var(--espacio-5);
+    border-bottom: var(--borde);
+    text-align: left;
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-tabla);
+    text-transform: uppercase;
+    color: var(--color-texto-tenue);
+    white-space: nowrap;
+}
+
+.tabla-contenedor td {
+    padding: var(--espacio-4) var(--espacio-5);
+    border-bottom: var(--borde);
+}
+
+.tabla-contenedor tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .tabla-contenedor tbody tr:hover {
+        background: var(--color-superficie-2);
+    }
+}
