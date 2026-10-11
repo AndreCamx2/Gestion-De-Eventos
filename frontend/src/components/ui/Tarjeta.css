@@ -1,0 +1,14 @@
+/* Tarjeta — guía Piedra viva, sección 4. Solo variables de tokens.css. */
+.tarjeta {
+    min-width: 0;
+    padding: var(--espacio-6);
+    background: var(--color-superficie);
+    border: var(--borde);
+    border-radius: var(--radio-tarjeta-grande);
+}
+
+@media (max-width: 600px) {
+    .tarjeta {
+        padding: var(--espacio-5);
+    }
+}

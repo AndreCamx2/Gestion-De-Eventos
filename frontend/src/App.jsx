@@ -92,7 +92,7 @@ export default function App() {
 
         {/* Todo lo de aquí adentro exige sesión iniciada */}
         <Route element={<ProtectedRoute user={user} cargando={cargando} />}>
-          {/* Y todo lo de aquí adentro comparte el mismo sidebar + navbar */}
+          {/* Y todo lo de aquí adentro comparte la misma barra superior */}
           <Route
             element={
               <DashboardLayout

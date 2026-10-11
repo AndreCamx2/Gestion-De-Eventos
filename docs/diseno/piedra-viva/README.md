@@ -20,15 +20,15 @@ Todos los colores salen de variables. Ningún componente escribe un hex directam
 | `--color-linea-fuerte` | `#D6D3CD` | Bordes de campos y botones secundarios |
 | `--color-texto` | `#1D232B` | Texto principal, botón oscuro |
 | `--color-texto-suave` | `#5D6673` | Texto secundario |
-| `--color-texto-tenue` | `#6E7581` | Etiquetas, ayudas, encabezados de tabla |
+| `--color-texto-tenue` | `#646B77` | Etiquetas, ayudas, encabezados de tabla |
 | `--color-tinta` | `#2F4A6D` | Acción principal (un solo botón tinta por pantalla) |
 | `--color-tinta-hover` | `#243B58` | Hover del botón principal |
 | `--color-tinta-suave` | `#E6ECF4` | Fondos suaves azules |
 | `--color-mandarina` | `#EE8A63` | Acento: pestaña activa, puntos, barras |
-| `--color-mandarina-texto` | `#B4562F` | Mandarina para texto (cumple contraste) |
+| `--color-mandarina-texto` | `#A64E2B` | Mandarina para texto (cumple contraste) |
 | `--color-durazno` | `#FCE5D9` | Fondos suaves cálidos, fila seleccionada, avatar |
 | `--color-mantequilla` | `#F0B429` | Acento amarillo (barras, puntos) |
-| `--color-mantequilla-texto` | `#A86B00` | Amarillo para texto |
+| `--color-mantequilla-texto` | `#875A00` | Amarillo para texto |
 | `--color-peligro` | `#B42318` | Errores y "Dar de baja" |
 
 Regla de oro: la tinta marca la acción principal y la mandarina solo acompaña. Si todo resalta, nada resalta.
@@ -39,11 +39,11 @@ Siempre etiqueta con texto + punto de color, nunca solo color.
 
 | Estado | Fondo | Texto | Punto |
 | --- | --- | --- | --- |
-| Cotizado | `rgba(240,180,41,0.16)` | `#9A6700` | `#F0B429` |
+| Cotizado | `rgba(240,180,41,0.16)` | `#875A00` | `#F0B429` |
 | Bloqueado | `rgba(111,131,217,0.18)` | `#3A4C99` | `#6F83D9` |
 | Confirmado | `rgba(52,168,106,0.14)` | `#1F6E44` | `#34A86A` |
-| Vencida | `rgba(238,138,99,0.16)` | `#B4562F` | `#EE8A63` |
-| Cancelado | `rgba(93,102,115,0.18)` | `#5D6673` | `#6E7581` |
+| Vencida | `rgba(238,138,99,0.16)` | `#9C4826` | `#EE8A63` |
+| Cancelado | `rgba(93,102,115,0.18)` | `#525A66` | `#6E7581` |
 
 Etiqueta: alto 26 px, padding 0 10 px, radio 999 px, letra 12 px peso 700, punto de 6 px.
 
