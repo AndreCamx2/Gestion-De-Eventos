@@ -1,6 +1,6 @@
-import { IconInicio, IconCotizaciones, IconCalendario, IconClientes, IconSalones, IconConceptos, IconSitios } from "./icons";
 import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { IconInicio, IconCotizaciones, IconCalendario, IconClientes, IconSalones, IconConceptos } from "./icons";
 import "../styles/home.css";
 
 export const NAV_ITEMS = [
@@ -10,7 +10,6 @@ export const NAV_ITEMS = [
   // `roles` es opcional: sin él, el ítem lo ve cualquier usuario con sesión.
   // Es solo experiencia de usuario; la seguridad real es el 403 del API.
   { to: "/clientes", label: "Clientes", icon: <IconClientes />, roles: ["administrador"] },
-  { to: "/sitios", label: "Sitios", icon: <IconSitios />, roles: ["administrador"] },
   { to: "/salones", label: "Salones y Servicios", icon: <IconSalones /> },
   { to: "/conceptos", label: "Conceptos y precios", icon: <IconConceptos />, roles: ["administrador"] },
 ];

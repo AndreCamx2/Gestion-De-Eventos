@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from apps.usuarios.views import RegistrarUsuarioView, MeView, UsuarioListCreateView, UsuarioDetailView
-from apps.sitios.views import SitioListCreateView, CiudadListView
+from apps.sitios.views import SitioListCreateView
 from apps.salones.views import SalonListCreateView, MontajeListCreateView, SalonMontajeListCreateView
 from apps.catalogo.views import (
     ConceptoListCreateView, ConceptoRetrieveUpdateView, ConceptoHistorialListView,
@@ -22,7 +22,6 @@ urlpatterns = [
     path('api/usuarios/me/', MeView.as_view(), name='usuario_me'),
     path('api/usuarios/', UsuarioListCreateView.as_view(), name='usuario_list_create'),
     path('api/usuarios/<int:pk>/', UsuarioDetailView.as_view(), name='usuario_detail'),
-    path('api/ciudades/', CiudadListView.as_view(), name='ciudad_list'),
     path('api/sitios/', SitioListCreateView.as_view(), name='sitio_list_create'),
     path('api/clientes/', ClienteAdminListCreateView.as_view(), name='cliente_admin_list_create'),
     path('api/clientes/<int:pk>/', ClienteAdminRetrieveUpdateDestroyView.as_view(), name='cliente_admin_detail'),
