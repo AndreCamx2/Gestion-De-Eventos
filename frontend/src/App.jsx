@@ -12,6 +12,7 @@ import DashboardLayout from "./pages/DashboardLayout";
 import Home from "./pages/Home";
 import Cotizaciones from "./pages/Cotizaciones";
 import Salones from "./pages/Salones";
+import Sitios from "./pages/hoteles/Sitios";
 import Clientes from "./pages/Clientes";
 import Conceptos from "./pages/Conceptos";
 import Proveedores from "./pages/Proveedores";
@@ -103,6 +104,7 @@ export default function App() {
             <Route path="/inicio" element={<Home />} />
             <Route path="/cotizaciones" element={<Cotizaciones />} />
             <Route path="/salones" element={<Salones />} />
+            <Route path="/sitios" element={<Sitios />} />
             <Route element={<RoleRoute user={user} roles={["administrador"]} />}>
               <Route path="/clientes" element={<Clientes />} />
               <Route path="/conceptos" element={<Conceptos />} />
