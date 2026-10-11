@@ -22,6 +22,7 @@ ENDPOINTS_ADMIN = [
     "/api/proveedores/",
     "/api/stock/",
     "/api/usuarios/",
+    "/api/cotizaciones/",
 ]
 
 
