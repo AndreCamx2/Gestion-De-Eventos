@@ -1,26 +1,27 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { registrarCliente } from "../api/auth";
-import "../styles/register.css";
+import { Boton, Campo } from "../components/ui";
+import "../styles/acceso.css";
 
 const ACCOUNT_TYPES = {
   natural: {
-    label: "Persona Natural",
+    label: "Persona natural",
     fields: [
-      { name: "fullName", label: "Nombre completo", type: "text", placeholder: "Maria Bustamante", full: true },
+      { name: "fullName", label: "Nombre completo", type: "text", placeholder: "Maria Bustamante", full: true, autoComplete: "name" },
       { name: "documentId", label: "Cédula / Documento", type: "text", placeholder: "1234567890" },
-      { name: "phoneNatural", label: "Teléfono", type: "tel", placeholder: "+57 300 000 0000" },
-      { name: "emailNatural", label: "Correo electrónico", type: "email", placeholder: "maria@correo.com" },
+      { name: "phoneNatural", label: "Teléfono", type: "tel", placeholder: "+57 300 000 0000", autoComplete: "tel" },
+      { name: "emailNatural", label: "Correo electrónico", type: "email", placeholder: "maria@correo.com", autoComplete: "email" },
     ],
   },
   empresa: {
     label: "Empresa / Institución",
     fields: [
-      { name: "companyName", label: "Razón social", type: "text", placeholder: "Eventos del Caribe S.A.S.", full: true },
+      { name: "companyName", label: "Razón social", type: "text", placeholder: "Eventos del Caribe S.A.S.", full: true, autoComplete: "organization" },
       { name: "taxId", label: "NIT", type: "text", placeholder: "900123456-7" },
-      { name: "contactName", label: "Nombre del contacto", type: "text", placeholder: "Carlos Pérez" },
-      { name: "phoneEmpresa", label: "Teléfono", type: "tel", placeholder: "+57 300 000 0000" },
-      { name: "emailEmpresa", label: "Correo corporativo", type: "email", placeholder: "contacto@empresa.com" },
+      { name: "contactName", label: "Nombre del contacto", type: "text", placeholder: "Carlos Pérez", autoComplete: "name" },
+      { name: "phoneEmpresa", label: "Teléfono", type: "tel", placeholder: "+57 300 000 0000", autoComplete: "tel" },
+      { name: "emailEmpresa", label: "Correo corporativo", type: "email", placeholder: "contacto@empresa.com", autoComplete: "email" },
     ],
   },
 };
@@ -30,6 +31,13 @@ const INITIAL_FORM = {
   companyName: "", taxId: "", contactName: "", phoneEmpresa: "", emailEmpresa: "",
   password: "", confirmPassword: "",
 };
+
+// Pasos del panel izquierdo (maqueta Registro.dc.html).
+const PASOS = [
+  { numero: 1, titulo: "Crea tu cuenta", texto: "Como persona o como empresa." },
+  { numero: 2, titulo: "Recibe tu cotización", texto: "Salón, montaje y servicios con precio final." },
+  { numero: 3, titulo: "Confirma con tu garantía", texto: "Y el salón queda reservado para ti." },
+];
 
 // Traduce los nombres de campo que devuelve el backend (según el error de
 // validación) a los nombres reales del formulario, para poder mostrar el
@@ -43,6 +51,14 @@ function mapBackendErrorField(backendField, accountType) {
     password: "password",
   };
   return map[backendField] || null;
+}
+
+function Etiqueta({ texto }) {
+  return (
+    <>
+      {texto} <span className="acceso-obligatorio" aria-hidden="true">*</span>
+    </>
+  );
 }
 
 export default function Registrar() {
@@ -147,122 +163,135 @@ export default function Registrar() {
   const activeFields = ACCOUNT_TYPES[accountType].fields;
 
   return (
-    <div className="register-shell">
-      <div className="register-card">
-        <div className="register-card__header">
-          <p className="auth-brand__mark">SGDE</p>
-          <h1 className="register-card__title">Crea tu cuenta</h1>
-          <p className="register-card__subtitle">
-            Regístrate para solicitar cotizaciones y gestionar tus eventos.
-          </p>
-        </div>
+    <div className="registro">
+      <aside className="registro-panel">
+        <span className="acceso-circulo acceso-circulo--panel-grande" aria-hidden="true" />
+        <span className="acceso-circulo acceso-circulo--panel-pequeno" aria-hidden="true" />
 
-        <div className="register-card__body">
-          <div className="tabs" role="tablist" aria-label="Tipo de cuenta">
-            {Object.entries(ACCOUNT_TYPES).map(([key, config]) => (
-              <button
-                key={key}
-                type="button"
-                className={`tab ${accountType === key ? "is-active" : ""}`}
-                role="tab"
-                aria-selected={accountType === key}
-                onClick={() => handleAccountTypeChange(key)}
+        <Link to="/login" className="acceso-logo">
+          <span className="acceso-logo__marca" aria-hidden="true">S</span>
+          SGDE
+        </Link>
+
+        <p className="registro-panel__titular">Tu próximo evento empieza aquí.</p>
+
+        <ol className="registro-pasos">
+          {PASOS.map((paso) => (
+            <li key={paso.numero} className="registro-pasos__item">
+              <span
+                className={`registro-pasos__numero${paso.numero === 1 ? " registro-pasos__numero--activo" : ""}`}
+                aria-hidden="true"
               >
-                {config.label}
-              </button>
-            ))}
+                {paso.numero}
+              </span>
+              <span>
+                <span className="registro-pasos__titulo">{paso.titulo}</span>
+                <span className="registro-pasos__texto">{paso.texto}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </aside>
+
+      <main className="registro-cuerpo">
+        <div className="registro-formulario">
+          <div>
+            <h1 className="registro-formulario__titulo">Crea tu cuenta</h1>
+            <p className="registro-formulario__subtitulo">
+              Regístrate para solicitar cotizaciones y gestionar tus eventos.
+            </p>
+          </div>
+
+          <div className="registro-tipo">
+            <p className="campo__etiqueta" id="tipo-cuenta">Tipo de cuenta</p>
+            <div className="registro-tipo__opciones" role="tablist" aria-labelledby="tipo-cuenta">
+              {Object.entries(ACCOUNT_TYPES).map(([key, config]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`registro-tipo__opcion${accountType === key ? " is-active" : ""}`}
+                  role="tab"
+                  aria-selected={accountType === key}
+                  onClick={() => handleAccountTypeChange(key)}
+                >
+                  {config.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {success && (
-            <div className="alert alert--success" role="status" style={{ marginTop: 24 }}>
-              Cuenta creada correctamente.
+            <div className="acceso-aviso acceso-aviso--exito" role="status">
+              Cuenta creada correctamente. Te llevamos al inicio de sesión…
             </div>
           )}
 
           {errors.general && (
-            <div className="alert alert--error" role="alert" style={{ marginTop: 24 }}>
+            <div className="acceso-aviso acceso-aviso--error" role="alert">
               {errors.general}
             </div>
           )}
 
-          <form noValidate onSubmit={handleSubmit}>
-            <div className="form-grid">
+          <form noValidate onSubmit={handleSubmit} className="registro-campos">
+            <div className="registro-rejilla">
               {activeFields.map((field) => (
-                <div
-                  className={`field ${field.full ? "form-grid__full" : ""}`}
+                <Campo
                   key={field.name}
-                >
-                  <label className="field__label" htmlFor={field.name}>
-                    {field.label} <span className="field__required">*</span>
-                  </label>
-                  <div className="field__control">
-                    <input
-                      className="field__input"
-                      type={field.type}
-                      id={field.name}
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      value={form[field.name]}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  {errors[field.name] && <p className="field__error">{errors[field.name]}</p>}
-                </div>
+                  className={field.full ? "registro-rejilla__completo" : ""}
+                  etiqueta={<Etiqueta texto={field.label} />}
+                  id={field.name}
+                  name={field.name}
+                  type={field.type}
+                  placeholder={field.placeholder}
+                  autoComplete={field.autoComplete}
+                  value={form[field.name]}
+                  onChange={handleChange}
+                  required
+                  error={errors[field.name]}
+                />
               ))}
             </div>
 
-            <div className="form-grid" style={{ marginTop: 20 }}>
-              <div className="field">
-                <label className="field__label" htmlFor="password">
-                  Contraseña <span className="field__required">*</span>
-                </label>
-                <div className="field__control">
-                  <input
-                    className="field__input"
-                    type="password"
-                    id="password"
-                    name="password"
-                    autoComplete="new-password"
-                    placeholder="Mínimo 6 caracteres"
-                    value={form.password}
-                    onChange={handleChange}
-                  />
-                </div>
-                {errors.password && <p className="field__error">{errors.password}</p>}
-              </div>
+            {/* Las contraseñas van en su propia fila, separadas de los datos */}
+            <div className="registro-rejilla">
+              <Campo
+                etiqueta={<Etiqueta texto="Contraseña" />}
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="Mínimo 8 caracteres"
+                value={form.password}
+                onChange={handleChange}
+                required
+                error={errors.password}
+              />
 
-              <div className="field">
-                <label className="field__label" htmlFor="confirmPassword">
-                  Confirmar contraseña <span className="field__required">*</span>
-                </label>
-                <div className="field__control">
-                  <input
-                    className="field__input"
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    autoComplete="new-password"
-                    placeholder="Repite tu contraseña"
-                    value={form.confirmPassword}
-                    onChange={handleChange}
-                  />
-                </div>
-                {errors.confirmPassword && <p className="field__error">{errors.confirmPassword}</p>}
-              </div>
+              <Campo
+                etiqueta={<Etiqueta texto="Confirmar contraseña" />}
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                placeholder="Repite tu contraseña"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                required
+                error={errors.confirmPassword}
+              />
             </div>
 
-            <div className="register-actions">
-              <button type="submit" className="btn btn--primary btn--block" disabled={submitting}>
-                {submitting ? <span className="btn__spinner" aria-hidden="true" /> : null}
-                <span className="btn__label">{submitting ? "Creando cuenta…" : "Crear cuenta"}</span>
-              </button>
-              <p className="register-actions__footer">
-                ¿Ya tienes cuenta? <a href="/login" className="link">Inicia sesión</a>
-              </p>
-            </div>
+            <Boton type="submit" variante="principal" className="acceso-enviar" disabled={submitting}>
+              {submitting ? <span className="btn__spinner acceso-spinner" aria-hidden="true" /> : null}
+              {submitting ? "Creando cuenta…" : "Crear mi cuenta"}
+            </Boton>
+
+            <p className="acceso-pie">
+              ¿Ya tienes cuenta? <Link to="/login" className="acceso-enlace">Inicia sesión</Link>
+            </p>
           </form>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
