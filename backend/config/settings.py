@@ -1,3 +1,4 @@
+from datetime import timedelta
 from pathlib import Path
 import os
 from django.core.exceptions import ImproperlyConfigured
@@ -5,6 +6,29 @@ from dotenv import load_dotenv
 import dj_database_url
 
 load_dotenv()
+
+
+def entero_positivo_entorno(nombre, defecto):
+    """Lee un entero mayor que cero de una variable de entorno.
+
+    Si la variable no existe (o está vacía) devuelve `defecto`. Si tiene un valor
+    que no es un entero positivo, el servidor no arranca: es mejor un error claro
+    que una sesión con una duración inesperada.
+    """
+    valor = os.getenv(nombre, "").strip()
+    if not valor:
+        return defecto
+    try:
+        numero = int(valor)
+    except ValueError:
+        numero = 0
+    if numero <= 0:
+        raise ImproperlyConfigured(
+            f"La variable de entorno {nombre} debe ser un número entero mayor que cero "
+            f"(recibido: {valor!r})."
+        )
+    return numero
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -157,6 +181,16 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "EXCEPTION_HANDLER": "apps.core.exceptions.custom_exception_handler",
+}
+
+# Duración de los tokens JWT (SGDE-86). Sin esto, simplejwt usa 5 minutos para
+# el acceso y la sesión vencía a mitad del trabajo. El frontend renueva el
+# acceso solo con /api/token/refresh/ mientras el refresco siga vigente.
+# Para probar en local con 1 minuto: JWT_ACCESS_MINUTES=1 en backend/.env.
+# Sin rotación ni lista negra de tokens en la beta (ver SGDE-86).
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=entero_positivo_entorno("JWT_ACCESS_MINUTES", 30)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(hours=entero_positivo_entorno("JWT_REFRESH_HOURS", 12)),
 }
 
 # Sin esto, Django no imprime los errores 500 en los logs de Render
