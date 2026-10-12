@@ -1,96 +1,649 @@
-/* Estilos de la pantalla Inicio (Home.jsx). El layout del panel vive en
-   dashboard-layout.css; esta pantalla se migra a Piedra viva en su propio PR. */
+/* Inicio — rediseño Piedra viva (SGDE-77).
+   Maquetas: docs/diseno/piedra-viva/maquetas/Inicio.dc.html (escritorio) y
+   Movil.dc.html (teléfono). Solo variables de tokens.css; todo con prefijo inicio-.
+   Esta pantalla no anima nada propio: el único movimiento es el de Boton, que ya
+   se apaga con prefers-reduced-motion en Boton.css. */
 
-.welcome__title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #0f1f38;
-  margin: 0 0 0.5rem;
+.inicio {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-7);
 }
 
-.welcome__copy {
-  font-size: 0.95rem;
-  color: #5b6472;
-  max-width: 60ch;
-  margin: 0 0 1.5rem;
+/* Variantes del saludo: la frase larga en escritorio, la corta y la tarjeta
+   oscura en teléfono. display: none también las saca del lector de pantalla. */
+.inicio-solo-movil {
+    display: none;
 }
 
-.quick-access-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.25rem;
+/* ---- Saludo ---- */
+.inicio-saludo {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--espacio-6);
+    padding: var(--espacio-8) 36px;
+    border-radius: var(--radio-tarjeta-grande);
+    background: linear-gradient(120deg, var(--color-tinta-suave) 0%, var(--color-superficie-2) 58%, var(--color-durazno) 100%);
 }
 
-.qa-card {
-  background: #fff;
-  border-left: 3px solid #0f1f38;
-  border-radius: 8px;
-  padding: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 190px;
-  text-decoration: none;
-  color: inherit;
-  box-shadow: 0 1px 3px rgba(15, 31, 56, 0.06);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+.inicio-saludo__circulo {
+    position: absolute;
+    border-radius: var(--radio-pildora);
 }
 
-.qa-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(15, 31, 56, 0.1);
+.inicio-saludo__circulo--grande {
+    top: -80px;
+    right: -60px;
+    width: 240px;
+    height: 240px;
+    background: color-mix(in srgb, var(--color-mandarina) 16%, transparent);
 }
 
-.qa-card--accent {
-  border-left-color: #d4a24e;
+.inicio-saludo__circulo--pequeno {
+    right: 180px;
+    bottom: -50px;
+    width: 110px;
+    height: 110px;
+    background: color-mix(in srgb, var(--color-mantequilla) 18%, transparent);
 }
 
-.qa-card__icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: #f4f1ea;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #0f1f38;
-  margin-bottom: 0.85rem;
+.inicio-saludo__textos {
+    position: relative;
+    flex: 1 1 480px;
+    max-width: 760px;
+    min-width: 0;
 }
 
-.qa-card__icon svg {
-  width: 18px;
-  height: 18px;
+.inicio-saludo__fecha {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--espacio-2);
+    margin: 0;
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-negrita);
+    color: var(--color-texto-suave);
 }
 
-.qa-card__title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #0f1f38;
-  margin: 0 0 0.4rem;
+.inicio-saludo__punto {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radio-pildora);
+    background: var(--color-mandarina);
 }
 
-.qa-card__desc {
-  font-size: 0.85rem;
-  color: #6b7280;
-  margin: 0;
-  line-height: 1.4;
+.inicio-saludo__titulo {
+    margin: 10px 0 0;
+    font-size: clamp(26px, 18px + 1.6vw, 34px);
+    font-weight: var(--peso-negrita);
+    line-height: 1.35;
+    letter-spacing: -0.025em;
+    overflow-wrap: anywhere;
 }
 
-.qa-card__cta {
-  font-size: 0.825rem;
-  font-weight: 500;
-  color: #0f1f38;
-  margin-top: 1rem;
+/* Subrayado grueso de la maqueta detrás de las cifras */
+.inicio-resaltado {
+    --resaltado: color-mix(in srgb, var(--color-mandarina) 40%, transparent);
+    padding: 0 4px;
+    background: linear-gradient(transparent 58%, var(--resaltado) 58%, var(--resaltado) 92%, transparent 92%);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    white-space: nowrap;
 }
 
-@media (max-width: 1100px) {
-  .quick-access-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.inicio-resaltado--mantequilla {
+    --resaltado: color-mix(in srgb, var(--color-mantequilla) 45%, transparent);
 }
 
-@media (max-width: 720px) {
-  .quick-access-grid {
-    grid-template-columns: 1fr;
-  }
+.inicio-saludo__alerta {
+    color: var(--color-mandarina-texto);
+}
+
+.inicio-saludo__esqueleto {
+    max-width: 520px;
+    margin-top: var(--espacio-4);
+}
+
+.inicio-saludo__esqueleto .esqueleto__fila {
+    padding: 0;
+}
+
+.inicio-saludo__error {
+    margin-top: var(--espacio-4);
+}
+
+.inicio-saludo__accion {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.inicio-saludo__nota {
+    margin: 0;
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-semi);
+    color: var(--color-texto-suave);
+}
+
+/* Tarjeta oscura "Por confirmar" (solo teléfono) */
+.inicio-por-confirmar {
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+    margin-top: var(--espacio-5);
+    padding: var(--espacio-5);
+    border-radius: var(--radio-tarjeta-grande);
+    background: var(--color-tinta);
+    color: var(--color-sobre-oscuro);
+    text-decoration: none;
+}
+
+.inicio-por-confirmar__textos,
+.inicio-por-confirmar__detalle {
+    display: flex;
+    flex-direction: column;
+}
+
+.inicio-por-confirmar__etiqueta {
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-tabla);
+    text-transform: uppercase;
+}
+
+.inicio-por-confirmar__cifra {
+    margin-top: var(--espacio-2);
+    font-size: 56px;
+    font-weight: var(--peso-extra);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+}
+
+.inicio-por-confirmar__detalle {
+    align-items: flex-end;
+    text-align: right;
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-negrita);
+}
+
+.inicio-por-confirmar__dinero {
+    font-weight: var(--peso-extra);
+}
+
+/* ---- Cuerpo: agenda a la izquierda, cifras a la derecha ---- */
+.inicio-cuerpo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--espacio-6);
+}
+
+.inicio-agenda {
+    flex: 2 1 560px;
+    min-width: 0;
+}
+
+.inicio-lateral {
+    display: flex;
+    flex: 1 1 300px;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    min-width: 0;
+}
+
+.inicio-bloque__cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-2) var(--espacio-3);
+    margin-bottom: var(--espacio-4);
+}
+
+.inicio-bloque__titulo {
+    margin: 0;
+    font-size: 18px;
+    font-weight: var(--peso-negrita);
+}
+
+.inicio-agenda__conteos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 0 auto;
+    padding: 0;
+    list-style: none;
+}
+
+.inicio-conteo {
+    padding: var(--espacio-1) 10px;
+    border-radius: var(--radio-pildora);
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-negrita);
+}
+
+.inicio-conteo--confirmado {
+    background: var(--estado-confirmado-fondo);
+    color: var(--estado-confirmado-texto);
+}
+
+.inicio-conteo--bloqueado {
+    background: var(--estado-bloqueado-fondo);
+    color: var(--estado-bloqueado-texto);
+}
+
+.inicio-conteo--cotizado {
+    background: var(--estado-cotizado-fondo);
+    color: var(--estado-cotizado-texto);
+}
+
+.inicio-conteo--vencida {
+    background: var(--estado-vencida-fondo);
+    color: var(--estado-vencida-texto);
+}
+
+.inicio-enlace {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--alto-tocable);
+    padding: 0 var(--espacio-1);
+    color: var(--color-mandarina-texto);
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-extra);
+    text-decoration: none;
+}
+
+/* ---- Agenda (línea de tiempo) ---- */
+.inicio-agenda__lista {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.inicio-evento {
+    position: relative;
+    display: grid;
+    grid-template-columns: 64px 14px minmax(0, 1fr);
+    column-gap: 18px;
+}
+
+/* Línea vertical que une los puntos; el último evento no la lleva */
+.inicio-evento::before {
+    content: "";
+    position: absolute;
+    top: 33px;
+    bottom: 0;
+    left: calc(64px + 18px + 6px);
+    width: 2px;
+    background: var(--color-linea);
+}
+
+.inicio-evento:last-child::before {
+    display: none;
+}
+
+.inicio-evento__fecha {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding-top: 14px;
+    font-variant-numeric: tabular-nums;
+}
+
+.inicio-evento__dia {
+    font-size: 18px;
+    font-weight: var(--peso-extra);
+    line-height: 1.2;
+}
+
+.inicio-evento__mes {
+    font-size: var(--texto-pequeno);
+    color: var(--color-texto-suave);
+}
+
+.inicio-evento__punto {
+    --punto: var(--color-texto-tenue);
+    --anillo: var(--color-campo);
+    position: relative;
+    width: 14px;
+    height: 14px;
+    margin-top: 19px;
+    border-radius: var(--radio-pildora);
+    background: var(--punto);
+    box-shadow: 0 0 0 4px var(--color-superficie), 0 0 0 6px var(--anillo);
+}
+
+.inicio-evento__punto--confirmado {
+    --punto: var(--estado-confirmado-punto);
+    --anillo: var(--estado-confirmado-fondo);
+}
+
+.inicio-evento__punto--bloqueado {
+    --punto: var(--estado-bloqueado-punto);
+    --anillo: var(--estado-bloqueado-fondo);
+}
+
+.inicio-evento__punto--cotizado {
+    --punto: var(--estado-cotizado-punto);
+    --anillo: var(--estado-cotizado-fondo);
+}
+
+.inicio-evento__punto--vencida {
+    --punto: var(--estado-vencida-punto);
+    --anillo: var(--estado-vencida-fondo);
+}
+
+.inicio-evento__cuerpo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+    min-width: 0;
+    margin: var(--espacio-1) 0;
+    padding: var(--espacio-3) 14px;
+}
+
+.inicio-evento__textos {
+    min-width: 0;
+}
+
+.inicio-evento__cliente {
+    margin: 0;
+    overflow: hidden;
+    font-size: var(--texto-cuerpo);
+    font-weight: var(--peso-negrita);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.inicio-evento__detalle {
+    margin: 0;
+    font-size: var(--texto-etiqueta);
+    color: var(--color-texto-suave);
+}
+
+.inicio-evento__detalle--alerta {
+    color: var(--color-mandarina-texto);
+}
+
+.inicio-evento__cuerpo .estado-badge {
+    flex-shrink: 0;
+}
+
+.inicio-agenda__mas {
+    margin: var(--espacio-3) 0 0;
+    font-size: var(--texto-etiqueta);
+    color: var(--color-texto-suave);
+}
+
+/* ---- Tarjetas de cifras (Confirmados, Tasa de cierre, Ocupación) ---- */
+.inicio .inicio-cifra {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: var(--espacio-5);
+}
+
+.inicio-cifra__icono {
+    display: flex;
+    flex: 0 0 44px;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    border-radius: var(--radio-control);
+}
+
+.inicio-cifra__icono--exito {
+    background: var(--estado-confirmado-fondo);
+    color: var(--estado-confirmado-texto);
+}
+
+.inicio-cifra__icono--calido {
+    background: var(--color-durazno);
+    color: var(--color-mandarina-texto);
+}
+
+.inicio-cifra__textos {
+    flex: 1;
+    min-width: 0;
+}
+
+.inicio-cifra__titulo {
+    margin: 0;
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-semi);
+    color: var(--color-texto-suave);
+}
+
+.inicio-cifra__valor {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px;
+    margin: 2px 0 0;
+    font-size: 32px;
+    font-weight: var(--peso-extra);
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+}
+
+.inicio-cifra__comparacion {
+    padding: 2px var(--espacio-2);
+    border-radius: var(--radio-pildora);
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-negrita);
+    letter-spacing: normal;
+}
+
+.inicio-cifra__comparacion--sube {
+    background: var(--estado-confirmado-fondo);
+    color: var(--estado-confirmado-texto);
+}
+
+.inicio-cifra__comparacion--baja {
+    background: var(--estado-vencida-fondo);
+    color: var(--estado-vencida-texto);
+}
+
+.inicio-cifra__comparacion--igual {
+    background: var(--color-campo);
+    color: var(--color-texto-suave);
+}
+
+.inicio-cifra__nota,
+.inicio-cifra__sin-datos {
+    margin: var(--espacio-1) 0 0;
+    font-size: var(--texto-etiqueta);
+    color: var(--color-texto-suave);
+}
+
+.inicio-cifra .esqueleto,
+.inicio-bloque--compacto .esqueleto {
+    margin-top: var(--espacio-2);
+}
+
+.inicio-cifra .esqueleto__fila,
+.inicio-bloque--compacto .esqueleto__fila {
+    padding: 0;
+}
+
+.inicio .inicio-bloque--compacto {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    padding: var(--espacio-5);
+}
+
+.inicio-ocupacion {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.inicio-ocupacion__fila {
+    display: grid;
+    grid-template-columns: minmax(0, 120px) minmax(0, 1fr) 44px;
+    align-items: center;
+    gap: 10px;
+    font-size: var(--texto-navegacion);
+}
+
+.inicio-ocupacion__nombre {
+    overflow: hidden;
+    font-weight: var(--peso-semi);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.inicio-ocupacion__barra {
+    display: block;
+    height: 10px;
+    overflow: hidden;
+    border-radius: 5px;
+    background: var(--color-campo);
+}
+
+.inicio-ocupacion__relleno {
+    display: block;
+    height: 100%;
+    border-radius: 5px;
+}
+
+.inicio-ocupacion__relleno--tono-0 {
+    background: var(--color-mandarina);
+}
+
+.inicio-ocupacion__relleno--tono-1 {
+    background: var(--color-tinta);
+}
+
+.inicio-ocupacion__relleno--tono-2 {
+    background: var(--color-mantequilla);
+}
+
+.inicio-ocupacion__pct {
+    color: var(--color-texto-suave);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---- Hover solo con mouse ---- */
+@media (hover: hover) and (pointer: fine) {
+    .inicio-enlace:hover {
+        text-decoration: underline;
+    }
+
+    .inicio-por-confirmar:hover {
+        background: var(--color-tinta-hover);
+    }
+}
+
+/* ---- Teléfono (maqueta Movil) ---- */
+@media (max-width: 600px) {
+    .inicio {
+        gap: var(--espacio-5);
+    }
+
+    .inicio-solo-escritorio {
+        display: none;
+    }
+
+    .inicio-saludo__titulo .inicio-solo-movil {
+        display: inline;
+    }
+
+    .inicio-por-confirmar.inicio-solo-movil {
+        display: flex;
+    }
+
+    /* El saludo deja de ser una tarjeta: va directo sobre el fondo */
+    .inicio-saludo {
+        overflow: visible;
+        gap: var(--espacio-4);
+        padding: 0;
+        border-radius: 0;
+        background: none;
+    }
+
+    .inicio-saludo__circulo,
+    .inicio-saludo__punto {
+        display: none;
+    }
+
+    .inicio-saludo__textos {
+        flex-basis: 100%;
+    }
+
+    .inicio-saludo__fecha {
+        font-size: var(--texto-pequeno);
+        font-weight: var(--peso-extra);
+        letter-spacing: var(--tracking-antetitulo);
+        text-transform: uppercase;
+        color: var(--color-mandarina-texto);
+    }
+
+    .inicio-saludo__titulo {
+        margin-top: 6px;
+        font-size: 34px;
+        font-weight: var(--peso-extra);
+        line-height: 1.02;
+        letter-spacing: var(--tracking-titulo);
+    }
+
+    .inicio-saludo__accion {
+        width: 100%;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .inicio-cuerpo {
+        gap: var(--espacio-5);
+    }
+
+    /* Agenda compacta: la fecha en un recuadro, sin línea de tiempo */
+    .inicio-evento {
+        grid-template-columns: 50px minmax(0, 1fr);
+        column-gap: var(--espacio-3);
+        padding: 6px 0;
+    }
+
+    .inicio-evento::before,
+    .inicio-evento__punto {
+        display: none;
+    }
+
+    .inicio-evento__fecha {
+        align-items: center;
+        justify-content: center;
+        height: 50px;
+        padding: 0;
+        border-radius: 14px;
+        background: var(--color-campo);
+    }
+
+    .inicio-evento__dia {
+        font-size: 20px;
+        line-height: 1;
+        color: var(--color-mantequilla-texto);
+    }
+
+    .inicio-evento__mes {
+        font-size: 10px;
+        font-weight: var(--peso-extra);
+        text-transform: uppercase;
+    }
+
+    .inicio-evento__cuerpo {
+        margin: 0;
+        padding: 0;
+    }
 }
