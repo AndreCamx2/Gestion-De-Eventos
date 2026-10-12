@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL;
+export const API_URL = import.meta.env.VITE_API_URL;
 
 if (!API_URL) {
   throw new Error(
@@ -12,6 +12,8 @@ const RUTAS_SIN_RENOVAR = ["/token/", "/token/refresh/"];
 
 // Renovación en curso (SGDE-86). Si varias peticiones reciben 401 a la vez,
 // todas esperan esta misma promesa: se hace una sola llamada a /token/refresh/.
+// Con la rotación de SGDE-92 esto es obligatorio: el refresh solo sirve UNA vez,
+// y dos renovaciones a la vez con el mismo refresh harían fallar la segunda.
 let renovacionEnCurso = null;
 
 // Pide un access nuevo con el refresh guardado. Devuelve el access nuevo, o null
@@ -31,7 +33,8 @@ function renovarAcceso() {
       const data = await response.json();
       if (!data.access) return null;
       sessionStorage.setItem("access_token", data.access);
-      // Hoy el backend no rota el refresh; si algún día lo hace, se guarda el nuevo.
+      // SGDE-92: el backend rota el refresh. El usado ya quedó invalidado, así
+      // que hay que guardar el nuevo o la próxima renovación daría 401.
       if (data.refresh) sessionStorage.setItem("refresh_token", data.refresh);
       return data.access;
     })()
