@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   listarClientes,
   crearCliente,
@@ -14,7 +13,17 @@ import ClienteForm, {
   erroresDesdeApi,
   payloadEdicion,
 } from "./ClienteForm";
-import { Boton, CabeceraPagina, EstadoBadge, TablaContenedor } from "../components/ui";
+import {
+  AvisoError,
+  Boton,
+  CabeceraPagina,
+  Esqueleto,
+  EstadoBadge,
+  EstadoVacio,
+  TablaContenedor,
+  Tarjeta,
+} from "../components/ui";
+import SesionVencida from "../components/SesionVencida";
 import "../styles/directorio-clientes.css";
 
 const FILTROS_TIPO = [
@@ -72,11 +81,13 @@ export default function Clientes() {
   const [clientes, setClientes] = useState([]);
   const [empresas, setEmpresas] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(null);
+  // Error al cargar la lista: null | "permiso" (403) | "servidor" (500 o sin red) | "sesion" (401).
+  const [errorCarga, setErrorCarga] = useState(null);
+  // 401: se avisa abajo sin salir de la pantalla (components/SesionVencida.jsx).
+  const [sesionVencida, setSesionVencida] = useState(false);
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [busqueda, setBusqueda] = useState("");
   const [mostrarInactivos, setMostrarInactivos] = useState(false);
-  const navigate = useNavigate();
 
   // Panel lateral para crear y editar: null | { modo: "crear" } | { modo: "editar", cliente }.
   const [panel, setPanel] = useState(null);
@@ -90,6 +101,7 @@ export default function Clientes() {
   const [procesando, setProcesando] = useState(false);
 
   const tablaRef = useRef(null);
+  const buscarRef = useRef(null);
   const panelRef = useRef(null);
   const tituloPanelRef = useRef(null);
   const dialogoBajaRef = useRef(null);
@@ -138,16 +150,10 @@ export default function Clientes() {
     }
   }, [panel]);
 
-  function cerrarSesionExpirada() {
-    sessionStorage.removeItem("access_token");
-    sessionStorage.removeItem("refresh_token");
-    navigate("/login");
-  }
-
   // Devuelve la lista nueva (o null si falló) para refrescar el cliente del panel.
   async function cargarDatos() {
     setCargando(true);
-    setError(null);
+    setErrorCarga(null);
     try {
       const [clientesData, empresasData] = await Promise.all([
         listarClientes({ incluirInactivos: mostrarInactivos }),
@@ -158,11 +164,12 @@ export default function Clientes() {
       return clientesData;
     } catch (err) {
       if (err.status === 401) {
-        cerrarSesionExpirada();
+        setErrorCarga("sesion");
+        setSesionVencida(true);
       } else if (err.status === 403) {
-        setError("No tienes permisos para consultar los clientes o empresas.");
+        setErrorCarga("permiso");
       } else {
-        setError("Error al comunicarse con el servidor. Intenta de nuevo.");
+        setErrorCarga("servidor");
       }
       return null;
     } finally {
@@ -307,7 +314,8 @@ export default function Clientes() {
         setErroresCampo(campos);
         setErrorAccion(general);
       } else if (err.status === 401) {
-        cerrarSesionExpirada();
+        // El formulario se queda como está: al volver a entrar, se guarda de nuevo.
+        setSesionVencida(true);
       } else if (err.status === 403) {
         setErrorAccion(`No tienes permisos suficientes para ${esCrear ? "registrar" : "editar"} clientes.`);
       } else if (err.status === 404) {
@@ -332,7 +340,9 @@ export default function Clientes() {
       await cargarDatos();
     } catch (err) {
       if (err.status === 401) {
-        cerrarSesionExpirada();
+        // Se cierra la confirmación para que el aviso de abajo se pueda usar.
+        dialogoBajaRef.current?.close();
+        setSesionVencida(true);
       } else if (err.status === 403) {
         setErrorBaja("No tienes permisos suficientes para dar de baja clientes.");
       } else if (err.status === 404) {
@@ -345,8 +355,27 @@ export default function Clientes() {
     }
   }
 
-  // La tabla se mantiene en pantalla mientras se recarga (no salta ni pierde el foco).
-  const mostrarTabla = !error && (!cargando || clientes.length > 0);
+  // Qué se ve en la zona de la lista. Si ya hay clientes, la tabla se mantiene
+  // mientras se recarga (no salta ni pierde el foco).
+  let vistaLista = "tabla";
+  if (errorCarga === "permiso" || errorCarga === "servidor") vistaLista = "error";
+  else if (clientes.length === 0 && errorCarga === "sesion") vistaLista = "sesion";
+  else if (clientes.length === 0 && cargando) vistaLista = "carga";
+  else if (clientes.length === 0) vistaLista = "vacio";
+  else if (clientesFiltrados.length === 0) vistaLista = "sinCoincidencias";
+
+  function quitarFiltros() {
+    setFiltroTipo("todos");
+    setBusqueda("");
+    // El botón "Quitar filtros" desaparece: el foco pasa a la búsqueda.
+    buscarRef.current?.focus();
+  }
+
+  function alVolverAEntrar() {
+    setSesionVencida(false);
+    // Si la sesión venció al cargar, la lista nunca llegó: se pide otra vez.
+    if (errorCarga === "sesion") cargarDatos();
+  }
 
   return (
     <div className="directorio">
@@ -386,6 +415,7 @@ export default function Clientes() {
               <path d="M20 20l-3.5-3.5" />
             </svg>
             <input
+              ref={buscarRef}
               type="search"
               className="directorio-buscar__input"
               aria-label="Buscar cliente"
@@ -412,15 +442,66 @@ export default function Clientes() {
 
       <div className="directorio__cuerpo">
         <div className="directorio__lista">
-          {cargando && (
-            <p className="directorio-estado-carga" role="status">Cargando clientes...</p>
-          )}
-          {error && (
-            <p className="directorio-aviso directorio-aviso--error" role="alert">Error: {error}</p>
+          {vistaLista === "error" && (
+            <Tarjeta>
+              <AvisoError tipo={errorCarga} onReintentar={cargarDatos} />
+            </Tarjeta>
           )}
 
-          {mostrarTabla && (
-            <TablaContenedor ref={tablaRef} etiqueta="Listado de clientes" aria-busy={cargando || undefined}>
+          {vistaLista === "sesion" && (
+            <Tarjeta>
+              <EstadoVacio
+                titulo="Tu sesión expiró"
+                texto="Vuelve a entrar con el aviso de abajo para ver la lista de clientes."
+              />
+            </Tarjeta>
+          )}
+
+          {vistaLista === "carga" && (
+            <TablaContenedor>
+              <Esqueleto filas={6} columnas={3} etiqueta="Cargando clientes…" />
+            </TablaContenedor>
+          )}
+
+          {vistaLista === "vacio" && (
+            <Tarjeta>
+              <EstadoVacio
+                titulo={mostrarInactivos ? "Aún no hay clientes" : "No hay clientes activos"}
+                texto={
+                  mostrarInactivos
+                    ? "Cuando registres el primero, aparecerá aquí con su tipo y sus cotizaciones."
+                    : "Registra el primero, o activa «Mostrar inactivos» para ver los dados de baja."
+                }
+                accion={
+                  <Boton variante="secundario" onClick={() => siNoHayCambios(abrirCrear)}>
+                    Registrar el primero
+                  </Boton>
+                }
+              />
+            </Tarjeta>
+          )}
+
+          {vistaLista === "sinCoincidencias" && (
+            <Tarjeta>
+              <EstadoVacio
+                titulo="Ningún cliente coincide"
+                texto="Prueba con otro nombre, NIT, cédula o correo, o quita los filtros."
+                accion={
+                  <Boton variante="secundario" onClick={quitarFiltros}>
+                    Quitar filtros
+                  </Boton>
+                }
+              />
+            </Tarjeta>
+          )}
+
+          {vistaLista === "tabla" && (
+            <TablaContenedor
+              ref={tablaRef}
+              etiqueta="Listado de clientes"
+              aria-busy={cargando || undefined}
+              className={cargando ? "directorio-tabla-caja--recargando" : ""}
+            >
               <table className="directorio-tabla">
                 <colgroup>
                   <col />
@@ -475,13 +556,6 @@ export default function Clientes() {
                       </tr>
                     );
                   })}
-                  {clientesFiltrados.length === 0 && (
-                    <tr>
-                      <td colSpan="5" className="directorio-tabla__vacio">
-                        No hay clientes que coincidan con el filtro.
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </TablaContenedor>
@@ -668,6 +742,8 @@ export default function Clientes() {
       >
         <p className="directorio-dialogo__texto">Tienes cambios sin guardar. ¿Descartarlos?</p>
       </DialogoConfirmacion>
+
+      <SesionVencida visible={sesionVencida} onReingreso={alVolverAEntrar} />
     </div>
   );
 }

@@ -157,9 +157,14 @@
     min-width: 0;
 }
 
-.directorio-estado-carga {
-    font-size: var(--texto-navegacion);
-    color: var(--color-texto-suave);
+/* Recarga con la lista ya en pantalla (por ejemplo, al mostrar inactivos):
+   la tabla se atenúa en vez de cambiarse por el esqueleto */
+.directorio-tabla-caja--recargando {
+    opacity: 0.6;
+}
+
+.directorio .tabla-contenedor {
+    transition: opacity var(--duracion-menu) ease;
 }
 
 /* ---- Tabla ----
@@ -289,13 +294,6 @@
 
 .directorio-tabla__cotiz {
     font-weight: var(--peso-extra);
-}
-
-.tabla-contenedor .directorio-tabla td.directorio-tabla__vacio {
-    height: auto;
-    padding: var(--espacio-6) var(--espacio-5);
-    color: var(--color-texto-suave);
-    cursor: default;
 }
 
 /* ---- Avatar con iniciales ---- */
