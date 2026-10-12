@@ -20,4 +20,7 @@ EXPOSE 8000
 # para importarse y collectstatic corre en el build, donde Render aún no la inyecta.
 RUN SECRET_KEY=solo-para-collectstatic-en-el-build python manage.py collectstatic --noinput
 
-CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000"]
+# Al arrancar: migraciones, limpieza de refresh tokens vencidos de la lista negra
+# (SGDE-92; Render Free reinicia el contenedor tras cada inactividad, así que se
+# limpia seguido sin cron; si la limpieza falla, el servidor arranca igual) y gunicorn.
+CMD ["sh", "-c", "python manage.py migrate --noinput && (python manage.py flushexpiredtokens || true) && gunicorn config.wsgi:application --bind 0.0.0.0:8000"]

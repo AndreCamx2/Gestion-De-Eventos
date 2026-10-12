@@ -100,7 +100,17 @@ docker compose logs -f db          # logs de la base de datos
 docker compose logs --tail 100     # últimas 100 líneas de todo
 docker compose exec backend python manage.py test   # correr las pruebas
 docker compose exec backend python manage.py shell  # consola de Django
+docker compose exec backend python manage.py flushexpiredtokens  # borra refresh tokens vencidos (ver abajo)
 ```
+
+### Sesión, cierre de sesión y lista negra de tokens (SGDE-92)
+
+- **Login** (`POST /api/token/`) entrega un `access` (dura `JWT_ACCESS_MINUTES`, 30 por defecto) y un `refresh` (dura `JWT_REFRESH_HOURS`, 12 por defecto). El frontend los guarda en `sessionStorage`.
+- **Renovación** (`POST /api/token/refresh/`): entrega un access **y un refresh nuevos**, y el refresh usado pasa a una **lista negra**, así que ya no sirve. El refresh nuevo vence a la misma hora que el del login: la sesión no se alarga.
+- **Cerrar sesión** (`POST /api/token/logout/` con `{"refresh": "..."}`): pone ese refresh en la lista negra. Funciona aunque el access ya haya vencido. El frontend borra los tokens primero y avisa al servidor después (espera como máximo 5 s), así que salir nunca se queda colgado.
+- **Límite aceptado:** el **access** no se invalida al cerrar sesión. Es un JWT sin estado y sigue sirviendo hasta que vence (como máximo `JWT_ACCESS_MINUTES`). Si al cerrar sesión no hay red, el refresh también sigue sirviendo hasta que vence.
+- **Varias pestañas:** si duplicas una pestaña, las dos comparten el mismo refresh. La primera que lo renueve lo invalida, y la otra pedirá entrar de nuevo en su próxima renovación.
+- **Tablas:** `token_blacklist_outstandingtoken` (cada refresh emitido) y `token_blacklist_blacklistedtoken` (los invalidados). Crecen con cada login y cada renovación. `python manage.py flushexpiredtokens` borra los ya vencidos. En producción lo corre el Dockerfile cada vez que arranca el contenedor; en local, córrelo cuando quieras (comando de arriba). Las dos tablas se ven en `/admin/` → "Token Blacklist".
 
 ### Resetear la base de datos
 

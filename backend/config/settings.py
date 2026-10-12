@@ -61,6 +61,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
+    # Lista negra de refresh tokens (SGDE-92): logout y rotación los invalidan.
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "apps.usuarios",
     "apps.sitios",
@@ -187,10 +189,24 @@ REST_FRAMEWORK = {
 # el acceso y la sesión vencía a mitad del trabajo. El frontend renueva el
 # acceso solo con /api/token/refresh/ mientras el refresco siga vigente.
 # Para probar en local con 1 minuto: JWT_ACCESS_MINUTES=1 en backend/.env.
-# Sin rotación ni lista negra de tokens en la beta (ver SGDE-86).
+#
+# Lista negra y rotación (SGDE-92):
+# - POST /api/token/logout/ con {"refresh": ...} pone ese refresh en la lista
+#   negra: ya no sirve para pedir accesos nuevos.
+# - Cada /api/token/refresh/ entrega un refresh nuevo y pone el anterior en la
+#   lista negra. El nuevo conserva el vencimiento del original
+#   (RenovarTokenConTopeSerializer), así que la sesión sigue terminando
+#   JWT_REFRESH_HOURS después del login, como en SGDE-86.
+# - Límite aceptado: el ACCESS no se invalida al cerrar sesión. Es un JWT sin
+#   estado y sigue sirviendo hasta que vence (JWT_ACCESS_MINUTES).
+# - Los refresh vencidos se borran con `python manage.py flushexpiredtokens`
+#   (lo corre el Dockerfile al arrancar).
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=entero_positivo_entorno("JWT_ACCESS_MINUTES", 30)),
     "REFRESH_TOKEN_LIFETIME": timedelta(hours=entero_positivo_entorno("JWT_REFRESH_HOURS", 12)),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "TOKEN_REFRESH_SERIALIZER": "apps.usuarios.tokens.RenovarTokenConTopeSerializer",
 }
 
 # Sin esto, Django no imprime los errores 500 en los logs de Render
