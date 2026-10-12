@@ -23,7 +23,7 @@ import {
   TablaContenedor,
   Tarjeta,
 } from "../components/ui";
-import SesionVencida from "../components/SesionVencida";
+import SesionVencida, { AvisoSesionEnVentana } from "../components/SesionVencida";
 import "../styles/directorio-clientes.css";
 
 const FILTROS_TIPO = [
@@ -105,6 +105,10 @@ export default function Clientes() {
   const panelRef = useRef(null);
   const tituloPanelRef = useRef(null);
   const dialogoBajaRef = useRef(null);
+  // "Dar de baja" de la confirmación: recibe el foco al volver a entrar (SGDE-94).
+  const confirmarBajaRef = useRef(null);
+  // Para abrir "Entrar de nuevo" desde dentro de la confirmación modal (SGDE-94).
+  const sesionRef = useRef(null);
   const dialogoDescartarRef = useRef(null);
   // Elemento que abrió el diálogo: recibe el foco de vuelta al cerrarlo.
   const disparadorRef = useRef(null);
@@ -340,8 +344,9 @@ export default function Clientes() {
       await cargarDatos();
     } catch (err) {
       if (err.status === 401) {
-        // Se cierra la confirmación para que el aviso de abajo se pueda usar.
-        dialogoBajaRef.current?.close();
+        // La confirmación sigue abierta y muestra el aviso dentro (la barra de abajo
+        // queda inerte con una ventana modal abierta). Al volver a entrar, se pulsa
+        // "Dar de baja" otra vez (SGDE-94).
         setSesionVencida(true);
       } else if (err.status === 403) {
         setErrorBaja("No tienes permisos suficientes para dar de baja clientes.");
@@ -708,7 +713,7 @@ export default function Clientes() {
             <Boton variante="secundario" onClick={() => dialogoBajaRef.current?.close()} disabled={procesando}>
               Cancelar
             </Boton>
-            <Boton variante="peligro" onClick={handleConfirmarBaja} disabled={procesando}>
+            <Boton ref={confirmarBajaRef} variante="peligro" onClick={handleConfirmarBaja} disabled={procesando}>
               {procesando ? "Procesando..." : "Dar de baja"}
             </Boton>
           </>
@@ -718,6 +723,11 @@ export default function Clientes() {
           ¿Dar de baja a <strong>{clienteSeleccionado?.nombre}</strong>? El cliente dejará de aparecer en la lista y su
           usuario no podrá iniciar sesión. Sus datos y cotizaciones se conservan.
         </p>
+        {sesionVencida && (
+          <AvisoSesionEnVentana
+            onEntrar={() => sesionRef.current?.abrir({ focoAlVolver: confirmarBajaRef.current })}
+          />
+        )}
         {errorBaja && (
           <p className="directorio-aviso directorio-aviso--error" role="alert">Error: {errorBaja}</p>
         )}
@@ -743,7 +753,7 @@ export default function Clientes() {
         <p className="directorio-dialogo__texto">Tienes cambios sin guardar. ¿Descartarlos?</p>
       </DialogoConfirmacion>
 
-      <SesionVencida visible={sesionVencida} onReingreso={alVolverAEntrar} />
+      <SesionVencida ref={sesionRef} visible={sesionVencida} onReingreso={alVolverAEntrar} />
     </div>
   );
 }

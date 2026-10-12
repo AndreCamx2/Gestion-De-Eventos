@@ -4,6 +4,7 @@ import { crearSalon } from "../api/salones";
 import { erroresDesdeApi } from "../utils/erroresApi";
 import { Boton, Campo } from "../components/ui";
 import SalonDialogo, { cerrarDialogoDe } from "./SalonDialogo";
+import { AvisoSesionEnVentana } from "../components/SesionVencida";
 
 const CAMPOS = ["sitio", "nombre", "ancho", "altura", "foto_url"];
 
@@ -12,7 +13,16 @@ const CAMPOS = ["sitio", "nombre", "ancho", "altura", "foto_url"];
 // - sitios: lista de /api/sitios/ para el select.
 // - onCreado(salon): recibe el salón que devolvió el API.
 // - onSesionVencida(): 401 aunque se intentó renovar el token.
-export default function NuevoSalonModal({ sitios, onCreado, onCerrar, onSesionVencida }) {
+// - sesionVencida / onEntrarDeNuevo(evento): con la sesión vencida se muestra el
+//   aviso dentro de la ventana; la ventana no se cierra y conserva lo escrito.
+export default function NuevoSalonModal({
+  sitios,
+  onCreado,
+  onCerrar,
+  onSesionVencida,
+  sesionVencida,
+  onEntrarDeNuevo,
+}) {
   // Con un solo sitio no hay nada que elegir: viene marcado.
   const [form, setForm] = useState(() => ({
     sitio: sitios.length === 1 ? String(sitios[0].id) : "",
@@ -55,10 +65,9 @@ export default function NuevoSalonModal({ sitios, onCreado, onCerrar, onSesionVe
         setErrores(campos);
         setErrorGeneral(general);
       } else if (err.status === 401) {
-        // El fondo queda inactivo mientras la ventana está abierta: hay que cerrarla
-        // para usar el aviso de abajo.
+        // La barra de abajo queda inerte mientras la ventana está abierta: el aviso
+        // va dentro de la ventana (AvisoSesionEnVentana), que no se cierra.
         onSesionVencida();
-        setErrorGeneral("Tu sesión expiró. Cierra esta ventana y vuelve a entrar con el aviso de abajo.");
       } else if (err.status === 403) {
         setErrorGeneral("No tienes permisos suficientes para crear salones.");
       } else {
@@ -150,6 +159,7 @@ export default function NuevoSalonModal({ sitios, onCreado, onCerrar, onSesionVe
           error={errores.foto_url}
         />
 
+        {sesionVencida && <AvisoSesionEnVentana onEntrar={onEntrarDeNuevo} />}
         {errorGeneral && (
           <p className="salones-dialogo__error" role="alert">Error: {errorGeneral}</p>
         )}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import { login } from "../api/auth";
 import { AvisoSesion, Boton, Campo } from "./ui";
 import "./SesionVencida.css";
@@ -12,6 +12,14 @@ import "./SesionVencida.css";
 //   const [sesionVencida, setSesionVencida] = useState(false);
 //   ...en el catch: if (err.status === 401) setSesionVencida(true);
 //   <SesionVencida visible={sesionVencida} onReingreso={() => setSesionVencida(false)} />
+//
+// Con una ventana modal (<dialog> con showModal) abierta, todo lo de afuera queda
+// inerte, también la barra de abajo: no recibe clics ni foco (SGDE-94). Para esos
+// casos, la ventana muestra <AvisoSesionEnVentana> y su botón llama a
+// sesionRef.current.abrir({ focoAlVolver }): el diálogo "Entrar de nuevo" se abre
+// ENCIMA de la ventana, que no se cierra ni pierde lo escrito.
+//   const sesionRef = useRef(null);
+//   <SesionVencida ref={sesionRef} ... />
 //
 // Vive fuera de components/ui porque llama al API.
 
@@ -27,7 +35,22 @@ function idDeUsuario(token) {
   }
 }
 
-export default function SesionVencida({ visible, onReingreso }) {
+// Aviso de sesión vencida DENTRO de una ventana modal (SGDE-94). Va dentro del
+// <dialog> abierto, que es lo único activo, y su botón abre "Entrar de nuevo" encima.
+export function AvisoSesionEnVentana({ onEntrar }) {
+  return (
+    <div className="aviso-sesion-ventana" role="alert">
+      <p className="aviso-sesion-ventana__texto">
+        Tu sesión expiró. Lo que escribiste sigue aquí: vuelve a entrar y luego inténtalo otra vez.
+      </p>
+      <Boton variante="secundario" onClick={onEntrar}>
+        Entrar de nuevo
+      </Boton>
+    </div>
+  );
+}
+
+export default function SesionVencida({ visible, onReingreso, ref }) {
   const dialogoRef = useRef(null);
   // Lo que tenía el foco cuando venció la sesión (por ejemplo, "Guardar"):
   // al volver a entrar, el foco regresa ahí.
@@ -39,10 +62,16 @@ export default function SesionVencida({ visible, onReingreso }) {
     if (visible) focoPrevioRef.current = document.activeElement;
   }, [visible]);
 
-  function abrir() {
+  // focoAlVolver: elemento que recibe el foco tras volver a entrar (por ejemplo,
+  // "Crear salón", que perdió el foco mientras estaba deshabilitado guardando).
+  function abrir({ focoAlVolver } = {}) {
+    if (focoAlVolver) focoPrevioRef.current = focoAlVolver;
     setErrorIngreso(null);
     dialogoRef.current?.showModal();
   }
+
+  // Para abrir "Entrar de nuevo" desde una ventana modal (AvisoSesionEnVentana).
+  useImperativeHandle(ref, () => ({ abrir }));
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -89,7 +118,7 @@ export default function SesionVencida({ visible, onReingreso }) {
 
   return (
     <>
-      <AvisoSesion visible={visible} onEntrar={abrir} />
+      <AvisoSesion visible={visible} onEntrar={() => abrir()} />
 
       <dialog
         ref={dialogoRef}

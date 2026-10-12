@@ -3,6 +3,7 @@ import { habilitarMontaje } from "../api/salones";
 import { erroresDesdeApi } from "../utils/erroresApi";
 import { Boton, Campo } from "../components/ui";
 import SalonDialogo, { cerrarDialogoDe } from "./SalonDialogo";
+import { AvisoSesionEnVentana } from "../components/SesionVencida";
 
 const CAMPOS = ["salon", "montaje", "aforo"];
 
@@ -13,6 +14,8 @@ const CAMPOS = ["salon", "montaje", "aforo"];
 // - etiquetaSalon(salon): texto de cada opción del select de salones.
 // - salonInicial: id del salón si se abrió desde su tarjeta.
 // - onHabilitado(salonMontaje): recibe lo que devolvió el API.
+// - sesionVencida / onEntrarDeNuevo(evento): con la sesión vencida se muestra el
+//   aviso dentro de la ventana; la ventana no se cierra y conserva lo escrito.
 export default function HabilitarMontajeModal({
   salones,
   montajes,
@@ -22,6 +25,8 @@ export default function HabilitarMontajeModal({
   onHabilitado,
   onCerrar,
   onSesionVencida,
+  sesionVencida,
+  onEntrarDeNuevo,
 }) {
   const [form, setForm] = useState({
     salon: salonInicial ? String(salonInicial) : "",
@@ -77,8 +82,8 @@ export default function HabilitarMontajeModal({
         setErrores(campos);
         setErrorGeneral(general);
       } else if (err.status === 401) {
+        // El aviso va dentro de la ventana (AvisoSesionEnVentana), que no se cierra.
         onSesionVencida();
-        setErrorGeneral("Tu sesión expiró. Cierra esta ventana y vuelve a entrar con el aviso de abajo.");
       } else if (err.status === 403) {
         setErrorGeneral("No tienes permisos suficientes para habilitar montajes.");
       } else {
@@ -158,6 +163,7 @@ export default function HabilitarMontajeModal({
           error={errores.aforo}
         />
 
+        {sesionVencida && <AvisoSesionEnVentana onEntrar={onEntrarDeNuevo} />}
         {errorGeneral && (
           <p className="salones-dialogo__error" role="alert">Error: {errorGeneral}</p>
         )}

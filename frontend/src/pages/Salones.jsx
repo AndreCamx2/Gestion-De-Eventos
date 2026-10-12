@@ -58,6 +58,8 @@ export default function Salones() {
   const nuevoSalonRef = useRef(null);
   // Botón que abrió el diálogo: recibe el foco de vuelta al cerrarlo.
   const disparadorRef = useRef(null);
+  // Para abrir "Entrar de nuevo" desde dentro de una ventana modal (SGDE-94).
+  const sesionRef = useRef(null);
 
   useEffect(() => {
     cargarDatos();
@@ -175,6 +177,13 @@ export default function Salones() {
     setAforoMinimo("");
     // El botón "Quitar filtros" desaparece: el foco pasa a la búsqueda.
     buscarRef.current?.focus();
+  }
+
+  // "Entrar de nuevo" desde dentro de una ventana abierta (SGDE-94): el diálogo de
+  // login se abre encima y, al entrar, el foco vuelve al botón de guardar de la ventana.
+  function entrarDeNuevoDesdeVentana(evento) {
+    const guardar = evento.currentTarget.form?.querySelector('button[type="submit"]');
+    sesionRef.current?.abrir({ focoAlVolver: guardar });
   }
 
   function alVolverAEntrar() {
@@ -408,6 +417,8 @@ export default function Salones() {
           onCreado={alCrearSalon}
           onCerrar={cerrarDialogo}
           onSesionVencida={() => setSesionVencida(true)}
+          sesionVencida={sesionVencida}
+          onEntrarDeNuevo={entrarDeNuevoDesdeVentana}
         />
       )}
 
@@ -421,10 +432,12 @@ export default function Salones() {
           onHabilitado={alHabilitarMontaje}
           onCerrar={cerrarDialogo}
           onSesionVencida={() => setSesionVencida(true)}
+          sesionVencida={sesionVencida}
+          onEntrarDeNuevo={entrarDeNuevoDesdeVentana}
         />
       )}
 
-      <SesionVencida visible={sesionVencida} onReingreso={alVolverAEntrar} />
+      <SesionVencida ref={sesionRef} visible={sesionVencida} onReingreso={alVolverAEntrar} />
     </div>
   );
 }
