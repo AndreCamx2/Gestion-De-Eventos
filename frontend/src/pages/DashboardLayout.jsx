@@ -1,18 +1,19 @@
 import { IconInicio, IconCotizaciones, IconCalendario, IconClientes, IconSalones, IconConceptos, IconSitios } from "./icons";
 import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { ROLES_POR_RUTA } from "../rutasPorRol";
 import "../styles/home.css";
 
 export const NAV_ITEMS = [
-  { to: "/inicio", label: "Inicio", icon: <IconInicio /> },
-  { to: "/cotizaciones", label: "Cotizaciones", icon: <IconCotizaciones /> },
-  { to: "/calendario", label: "Calendario", icon: <IconCalendario /> },
+  { to: "/inicio", label: "Inicio", icon: <IconInicio />, roles: ROLES_POR_RUTA["/inicio"] },
+  { to: "/cotizaciones", label: "Cotizaciones", icon: <IconCotizaciones />, roles: ROLES_POR_RUTA["/cotizaciones"] },
+  { to: "/calendario", label: "Calendario", icon: <IconCalendario />, roles: ROLES_POR_RUTA["/calendario"] },
   // `roles` es opcional: sin él, el ítem lo ve cualquier usuario con sesión.
   // Es solo experiencia de usuario; la seguridad real es el 403 del API.
-  { to: "/clientes", label: "Clientes", icon: <IconClientes />, roles: ["administrador"] },
-  { to: "/sitios", label: "Sitios", icon: <IconSitios />, roles: ["administrador"] },
-  { to: "/salones", label: "Salones y Servicios", icon: <IconSalones /> },
-  { to: "/conceptos", label: "Conceptos y precios", icon: <IconConceptos />, roles: ["administrador"] },
+  { to: "/clientes", label: "Clientes", icon: <IconClientes />, roles: ROLES_POR_RUTA["/clientes"] },
+  { to: "/sitios", label: "Sitios", icon: <IconSitios />, roles: ROLES_POR_RUTA["/sitios"] },
+  { to: "/salones", label: "Salones y Servicios", icon: <IconSalones />, roles: ROLES_POR_RUTA["/salones"] },
+  { to: "/conceptos", label: "Conceptos y precios", icon: <IconConceptos />, roles: ROLES_POR_RUTA["/conceptos"] },
 ];
 
 function getInitials(name) {
