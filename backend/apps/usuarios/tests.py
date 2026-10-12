@@ -555,3 +555,19 @@ class BajaUsuarioYClienteIdaYVueltaTests(BaseUsuariosAdminTests):
         self.proveedor.set_activo(False)
         self.proveedor.refresh_from_db()
         self.assertFalse(self.proveedor.is_active)
+
+
+class UsuarioMeTests(APITestCase):
+    """SGDE-89: el saludo del Inicio usa first_name, y si viene vacío, username."""
+
+    def test_me_trae_first_name(self):
+        usuario = crear_usuario("carla@test.com", "administrador")
+        usuario.first_name = "Carla"
+        usuario.save(update_fields=["first_name"])
+        self.client.force_authenticate(user=usuario)
+        data = self.client.get("/api/usuarios/me/").data
+        self.assertEqual((data["first_name"], data["username"]), ("Carla", "carla@test.com"))
+
+    def test_me_trae_first_name_vacio_si_no_tiene(self):
+        self.client.force_authenticate(user=crear_usuario("sin-nombre@test.com", "proveedor"))
+        self.assertEqual(self.client.get("/api/usuarios/me/").data["first_name"], "")
