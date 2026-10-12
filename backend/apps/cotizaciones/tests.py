@@ -1,7 +1,9 @@
 from datetime import timedelta
 from decimal import Decimal
 
+from django.db import connection
 from django.test import SimpleTestCase
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -470,3 +472,110 @@ class CalendarioPermisosTests(CotizacionBaseTest):
         r = self.client.get(self.URL)
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertEqual([c["id"] for c in r.data], [cot.pk])
+
+
+class CalendarioCamposTests(CotizacionBaseTest):
+    """SGDE-89: el Inicio arma la agenda solo con /calendario/, sin cruzar con /cotizaciones/."""
+
+    URL = "/api/calendario/"
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+
+    def por_id(self, respuesta):
+        return {c["id"]: c for c in respuesta.data}
+
+    def test_vencida_true_si_sigue_cotizada_y_paso_su_vigencia(self):
+        vencida = self.crear_en_bd(validez_oferta=hoy() - timedelta(days=1))
+        # Confirmada con la vigencia ya pasada: no cuenta como vencida.
+        confirmada = self.crear_en_bd(validez_oferta=hoy() - timedelta(days=1), estado="confirmado")
+        filas = self.por_id(self.client.get(self.URL))
+        self.assertIs(filas[vencida.pk]["vencida"], True)
+        self.assertIs(filas[confirmada.pk]["vencida"], False)
+
+    def test_trae_validez_oferta_y_montaje(self):
+        cot = self.crear_en_bd(validez_oferta=hoy() + timedelta(days=7))
+        fila = self.por_id(self.client.get(self.URL))[cot.pk]
+        self.assertEqual(fila["validez_oferta"], str(hoy() + timedelta(days=7)))
+        self.assertEqual(fila["montaje"], self.montaje.pk)
+        self.assertEqual(fila["montaje_nombre"], "Auditorio Test")
+
+    def crear_con_relaciones_propias(self, n):
+        """Cotización con cliente, salón y montaje propios: si vuelve el N+1, sube el conteo."""
+        cliente = Cliente.objects.create(
+            tipo="natural", nombre=f"Cliente {n}", identificacion=f"9000{n}", correo=f"c{n}@test.com"
+        )
+        salon = Salon.objects.create(sitio=self.sitio, nombre=f"Salón {n}")
+        montaje = Montaje.objects.create(codigo=f"test_montaje_{n}", nombre=f"Montaje {n}")
+        return Cotizacion.objects.create(
+            sitio=self.sitio, cliente=cliente, usuario=self.admin, salon=salon, montaje=montaje,
+            cantidad_personas=10, fecha_evento=hoy() + timedelta(days=30),
+            validez_oferta=hoy() + timedelta(days=5),
+        )
+
+    def test_mismas_consultas_con_1_que_con_5_cotizaciones(self):
+        self.crear_con_relaciones_propias(1)
+        with CaptureQueriesContext(connection) as con_una:
+            self.assertEqual(len(self.client.get(self.URL).data), 1)
+
+        for n in range(2, 6):
+            self.crear_con_relaciones_propias(n)
+        with self.assertNumQueries(len(con_una)):
+            r = self.client.get(self.URL)
+        self.assertEqual(len(r.data), 5)
+        self.assertEqual(len({c["montaje_nombre"] for c in r.data}), 5)
+
+
+class ListadoCamposSGDE89Tests(CotizacionBaseTest):
+    """SGDE-89: fechas de creación, confirmación y bloqueo, montaje y garantía en el listado."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+
+    def fila(self, cot):
+        return next(c for c in self.client.get(LISTA).data if c["id"] == cot.pk)
+
+    def test_confirmado_en_y_garantia_null_antes_de_la_aceptacion(self):
+        fila = self.fila(self.crear_en_bd())
+        self.assertIsNone(fila["confirmado_en"])
+        self.assertIsNone(fila["garantia"])
+
+    def test_confirmado_en_y_garantia_despues_de_la_aceptacion(self):
+        cot = self.crear_en_bd()
+        r = self.client.post(aceptacion(cot.pk), {"tipo": "efectivo", "monto": "350000"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+
+        fila = self.fila(cot)
+        self.assertIsNotNone(fila["confirmado_en"])
+        self.assertEqual(fila["confirmado_en"], r.data["confirmado_en"])
+        self.assertEqual((fila["garantia"]["tipo"], fila["garantia"]["monto"]), ("efectivo", "350000.00"))
+        # Mismo formato que el detalle: una sola función arma la garantía.
+        self.assertEqual(fila["garantia"], r.data["garantia"])
+
+    def test_trae_creado_en_bloqueo_hasta_y_montaje_nombre(self):
+        cot = self.crear_en_bd()
+        Cotizacion.objects.filter(pk=cot.pk).update(bloqueo_hasta=timezone.now() + timedelta(days=2))
+
+        fila = self.fila(cot)
+        self.assertIsNotNone(fila["creado_en"])
+        self.assertIsNotNone(fila["bloqueo_hasta"])
+        self.assertEqual(fila["montaje_nombre"], "Auditorio Test")
+
+    def test_bloqueo_hasta_null_si_no_hay_bloqueo(self):
+        self.assertIsNone(self.fila(self.crear_en_bd())["bloqueo_hasta"])
+
+
+class DetalleCamposSGDE89Tests(CotizacionBaseTest):
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+
+    def test_trae_bloqueo_hasta_y_confirmado_en(self):
+        cot = self.crear_en_bd()
+        data = self.client.get(detalle(cot.pk)).data
+        self.assertIn("bloqueo_hasta", data)
+        self.assertIsNone(data["confirmado_en"])
+
+        self.client.post(aceptacion(cot.pk), {"tipo": "tarjeta", "monto": "1000"}, format="json")
+        data = self.client.get(detalle(cot.pk)).data
+        self.assertIsNotNone(data["confirmado_en"])
+        self.assertEqual(data["confirmado_en"], data["garantia"]["registrada_en"])

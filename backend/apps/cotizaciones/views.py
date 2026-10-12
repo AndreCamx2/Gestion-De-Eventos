@@ -39,7 +39,11 @@ class CotizacionCalendarioView(generics.ListAPIView):
 
     def get_queryset(self):
         # Un ?salon= de otro sitio devuelve una lista vacía: el filtro por sitio va primero.
-        queryset = filtrar_por_sitio(Cotizacion.objects.exclude(estado="cancelado"), self.request.user)
+        # select_related: sin él, cada fila hace una consulta por cliente, salón y montaje.
+        queryset = filtrar_por_sitio(
+            Cotizacion.objects.exclude(estado="cancelado").select_related("cliente", "salon", "montaje"),
+            self.request.user,
+        )
 
         salon = self.request.query_params.get("salon")
         if salon:
