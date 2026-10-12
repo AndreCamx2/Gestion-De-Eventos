@@ -1,19 +1,20 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { ROLES_POR_RUTA } from "../rutasPorRol";
 import "../styles/dashboard-layout.css";
 
 // Única fuente de las pestañas de la barra superior (y del título accesible).
 // El orden sigue la maqueta de Piedra viva.
 export const NAV_ITEMS = [
-  { to: "/inicio", label: "Inicio" },
-  { to: "/cotizaciones", label: "Cotizaciones" },
-  { to: "/calendario", label: "Calendario" },
-  // `roles` es opcional: sin él, la pestaña la ve cualquier usuario con sesión.
-  // Es solo experiencia de usuario; la seguridad real es el 403 del API.
-  { to: "/salones", label: "Salones" },
-  { to: "/conceptos", label: "Conceptos", roles: ["administrador"] },
-  { to: "/clientes", label: "Clientes", roles: ["administrador"] },
-  { to: "/sitios", label: "Sitios", roles: ["administrador"] },
+  // Los roles de cada pestaña salen de rutasPorRol.js (SGDE-54), la misma lista que usa
+  // RoleRoute. Es solo experiencia de usuario; la seguridad real es el 403 del API.
+  { to: "/inicio", label: "Inicio", roles: ROLES_POR_RUTA["/inicio"] },
+  { to: "/cotizaciones", label: "Cotizaciones", roles: ROLES_POR_RUTA["/cotizaciones"] },
+  { to: "/calendario", label: "Calendario", roles: ROLES_POR_RUTA["/calendario"] },
+  { to: "/salones", label: "Salones", roles: ROLES_POR_RUTA["/salones"] },
+  { to: "/conceptos", label: "Conceptos", roles: ROLES_POR_RUTA["/conceptos"] },
+  { to: "/clientes", label: "Clientes", roles: ROLES_POR_RUTA["/clientes"] },
+  { to: "/sitios", label: "Sitios", roles: ROLES_POR_RUTA["/sitios"] },
 ];
 
 function getInitials(name) {

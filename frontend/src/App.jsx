@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
   Outlet,
+  useLocation,
 } from "react-router-dom";
 import Login from "./pages/Login";
 import Registrar from "./pages/Registrar";
@@ -18,6 +19,7 @@ import Conceptos from "./pages/Conceptos";
 import Proveedores from "./pages/Proveedores";
 import Rack from "./pages/Rack";
 import { getUsuarioActual, logout } from "./api/auth";
+import { rolesDeRuta } from "./rutasPorRol";
 
 // Envuelve TODAS las rutas del dashboard: si no hay usuario logueado,
 // redirige a /login en vez de dejar pasar a cualquiera de las pantallas hijas.
@@ -31,10 +33,14 @@ function ProtectedRoute({ user, cargando }) {
   return <Outlet />;
 }
 
-// Redirige a /inicio si el rol del usuario no está permitido. Es solo
-// experiencia de usuario: la seguridad real es el 403 del API.
-function RoleRoute({ user, roles }) {
-  if (!roles.includes(user?.role)) {
+// Redirige a /inicio si el rol del usuario no puede ver la ruta actual, según
+// ROLES_POR_RUTA (rutasPorRol.js). Envuelve TODO el panel y niega por defecto:
+// una ruta sin roles declarados no la ve nadie.
+// REGLA: toda ruta nueva declara sus roles en rutasPorRol.js en el mismo PR.
+// Es solo experiencia de usuario: la seguridad real es el 403 del API.
+function RoleRoute({ user }) {
+  const { pathname } = useLocation();
+  if (!rolesDeRuta(pathname).includes(user?.role)) {
     return <Navigate to="/inicio" replace />;
   }
   return <Outlet />;
@@ -101,25 +107,26 @@ export default function App() {
               />
             }
           >
-            <Route path="/inicio" element={<Home />} />
-            <Route path="/cotizaciones" element={<Cotizaciones />} />
-            <Route path="/salones" element={<Salones />} />
-            <Route path="/sitios" element={<Sitios />} />
-            <Route element={<RoleRoute user={user} roles={["administrador"]} />}>
+            {/* Y todo lo de aquí adentro exige un rol permitido para la ruta */}
+            <Route element={<RoleRoute user={user} />}>
+              <Route path="/inicio" element={<Home />} />
+              <Route path="/cotizaciones" element={<Cotizaciones />} />
+              <Route path="/salones" element={<Salones />} />
+              <Route path="/sitios" element={<Sitios />} />
               <Route path="/clientes" element={<Clientes />} />
               <Route path="/conceptos" element={<Conceptos />} />
-            </Route>
-            <Route path="/rack" element={<Rack />} />
+              <Route path="/rack" element={<Rack />} />
 
-            {/* Aún pendiente de construir */}
-            <Route
-              path="/calendario"
-              element={
-                <div style={{ padding: "2rem" }}>
-                  Calendario — pendiente de construir
-                </div>
-              }
-            />
+              {/* Aún pendiente de construir */}
+              <Route
+                path="/calendario"
+                element={
+                  <div style={{ padding: "2rem" }}>
+                    Calendario — pendiente de construir
+                  </div>
+                }
+              />
+            </Route>
           </Route>
         </Route>
 
