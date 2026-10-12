@@ -113,7 +113,8 @@
     right: 4px;
     transform: translateY(-50%);
     min-width: var(--alto-tocable);
-    min-height: 38px;
+    /* 44 px tocables (el campo mide 46 px, así que cabe dentro) */
+    min-height: var(--alto-tocable);
     padding: 0 var(--espacio-3);
     border: 0;
     border-radius: 8px;

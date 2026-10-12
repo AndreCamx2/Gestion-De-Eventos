@@ -1,0 +1,60 @@
+/* Diálogo para volver a entrar tras un 401 (components/SesionVencida.jsx).
+   Solo variables de tokens.css. */
+.sesion-dialogo {
+    width: min(420px, calc(100% - 2 * var(--espacio-4)));
+    max-width: none;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radio-tarjeta-grande);
+    background: var(--color-superficie);
+    color: var(--color-texto);
+    box-shadow: var(--sombra-flotante);
+}
+
+.sesion-dialogo::backdrop {
+    background: color-mix(in srgb, var(--color-texto) 45%, transparent);
+}
+
+.sesion-dialogo__contenido {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    padding: var(--espacio-6);
+}
+
+.sesion-dialogo__titulo {
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-seccion);
+}
+
+.sesion-dialogo__texto {
+    font-size: var(--texto-cuerpo);
+    color: var(--color-texto-suave);
+}
+
+.sesion-dialogo__error {
+    padding: var(--espacio-3) var(--espacio-4);
+    border-radius: var(--radio-control);
+    background: var(--estado-vencida-fondo);
+    color: var(--color-peligro);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-semi);
+}
+
+.sesion-dialogo__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--espacio-3);
+}
+
+@media (max-width: 600px) {
+    .sesion-dialogo__contenido {
+        padding: var(--espacio-5);
+    }
+
+    .sesion-dialogo__acciones > * {
+        flex: 1 1 auto;
+    }
+}
