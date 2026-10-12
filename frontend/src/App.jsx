@@ -20,6 +20,7 @@ import Proveedores from "./pages/Proveedores";
 import Rack from "./pages/Rack";
 import { getUsuarioActual, logout } from "./api/auth";
 import { rolesDeRuta } from "./rutasPorRol";
+import { nombreVisible } from "./utils/nombreUsuario";
 
 // Mientras se revisa si hay sesión (al cargar o recargar la página) no se
 // redirige a ningún lado: así no se manda al login a alguien que sí tiene sesión.
@@ -84,7 +85,7 @@ export default function App() {
         try {
           const usuario = await getUsuarioActual();
           setUser({
-            name: usuario.username,
+            name: nombreVisible(usuario),
             role: usuario.rol?.codigo || "cliente",
             sitios: usuario.sitios || [],
           });
@@ -101,7 +102,7 @@ export default function App() {
   async function handleLoginSuccess() {
     const usuario = await getUsuarioActual();
     setUser({
-      name: usuario.username,
+      name: nombreVisible(usuario),
       role: usuario.rol?.codigo || "cliente",
       sitios: usuario.sitios || [],
     });
