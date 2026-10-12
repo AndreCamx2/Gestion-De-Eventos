@@ -293,3 +293,94 @@ class IdentificacionDuplicadaTests(BaseClientesTests):
         self.assertIn(
             cliente.pk, self.ids_del_listado(LISTA + "?search=Buscable&incluir_inactivos=true")
         )
+
+
+class IdentificacionJuridicoTests(BaseClientesTests):
+    """SGDE-87: el NIT de un jurídico vive en su Empresa; Cliente.identificacion queda en null."""
+
+    MENSAJE = "Un cliente jurídico no lleva identificación: el NIT es el de su empresa."
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+
+    def cuerpo_juridico(self, **extra):
+        return {"tipo": "juridica", "nombre": "Contacto", "empresa": self.empresa.pk, **extra}
+
+    def assertIdentificacionNula(self, cliente_id):
+        self.assertIsNone(Cliente.objects.get(pk=cliente_id).identificacion)
+
+    # --- Crear (POST) ---
+
+    def test_post_juridico_con_identificacion_da_400(self):
+        respuesta = self.client.post(LISTA, self.cuerpo_juridico(identificacion="900123"), format="json")
+        self.assertEqual(respuesta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(respuesta.json()["identificacion"][0], self.MENSAJE)
+        self.assertFalse(Cliente.objects.filter(tipo=Cliente.JURIDICA).exists())
+
+    def test_post_juridico_con_identificacion_de_otro_da_el_mensaje_de_juridico(self):
+        # La regla del jurídico gana al aviso de identificación repetida.
+        self.crear_natural(identificacion="555")
+        respuesta = self.client.post(LISTA, self.cuerpo_juridico(identificacion="555"), format="json")
+        self.assertEqual(respuesta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(respuesta.json()["identificacion"][0], self.MENSAJE)
+
+    def test_post_juridico_sin_identificacion_crea_con_null(self):
+        respuesta = self.client.post(LISTA, self.cuerpo_juridico(), format="json")
+        self.assertEqual(respuesta.status_code, status.HTTP_201_CREATED)
+        self.assertIsNone(respuesta.json()["identificacion"])
+        self.assertIdentificacionNula(respuesta.json()["id"])
+
+    def test_post_juridico_con_identificacion_vacia_o_null_crea_con_null(self):
+        for valor in ["", None, "   "]:
+            with self.subTest(valor=valor):
+                respuesta = self.client.post(
+                    LISTA, self.cuerpo_juridico(identificacion=valor), format="json"
+                )
+                self.assertEqual(respuesta.status_code, status.HTTP_201_CREATED)
+                self.assertIdentificacionNula(respuesta.json()["id"])
+
+    # --- Editar (PATCH) ---
+
+    def test_patch_natural_a_juridico_sin_enviar_identificacion_la_deja_null(self):
+        # Lo que hace la pantalla: payloadEdicion no envía identificacion en jurídica.
+        natural = self.crear_natural(identificacion="123")
+        respuesta = self.client.patch(
+            detalle(natural.pk), {"tipo": "juridica", "empresa": self.empresa.pk}, format="json"
+        )
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        self.assertIsNone(respuesta.json()["identificacion"])
+        self.assertIdentificacionNula(natural.pk)
+
+    def test_patch_juridico_enviando_identificacion_da_400(self):
+        juridico = self.crear_juridico()
+        respuesta = self.client.patch(detalle(juridico.pk), {"identificacion": "777"}, format="json")
+        self.assertEqual(respuesta.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(respuesta.json()["identificacion"][0], self.MENSAJE)
+        self.assertIdentificacionNula(juridico.pk)
+
+    def test_patch_de_otro_campo_en_juridico_viejo_borra_la_identificacion(self):
+        # Dato viejo: jurídico guardado con identificación antes de esta regla.
+        viejo = Cliente.objects.create(
+            tipo=Cliente.JURIDICA, nombre="Viejo", identificacion="900123", empresa=self.empresa
+        )
+        respuesta = self.client.patch(detalle(viejo.pk), {"telefono": "3001112233"}, format="json")
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        viejo.refresh_from_db()
+        self.assertIsNone(viejo.identificacion)
+        self.assertEqual(viejo.telefono, "3001112233")
+
+    # --- Natural: sin cambios ---
+
+    def test_natural_se_crea_con_su_identificacion(self):
+        respuesta = self.client.post(
+            LISTA, {"tipo": "natural", "nombre": "Ana", "identificacion": "1047000111"}, format="json"
+        )
+        self.assertEqual(respuesta.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(respuesta.json()["identificacion"], "1047000111")
+
+    def test_natural_editado_sin_tocar_la_identificacion_la_conserva(self):
+        natural = self.crear_natural(identificacion="1047000111")
+        respuesta = self.client.patch(detalle(natural.pk), {"telefono": "3005556677"}, format="json")
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        natural.refresh_from_db()
+        self.assertEqual(natural.identificacion, "1047000111")
