@@ -93,6 +93,11 @@ export function erroresDesdeApi(body) {
   return { campos, general };
 }
 
+export function claseImpuesto(impuestoPct) {
+  const valor = Number(impuestoPct || 0);
+  return [0, 8, 19].includes(valor) ? `conceptos-impuesto--${valor}` : "conceptos-impuesto--otro";
+}
+
 export default function ConceptoForm({
   idPrefix,
   form,
@@ -102,8 +107,15 @@ export default function ConceptoForm({
   esEdicion,
 }) {
   const id = (campo) => `${idPrefix}-${campo}`;
+  const idError = (campo) => `${id(campo)}-error`;
+  const describir = (campo) => (errores[campo] ? { "aria-invalid": true, "aria-describedby": idError(campo) } : {});
   const error = (campo) =>
-    errores[campo] && <p className="field__error">{errores[campo]}</p>;
+    errores[campo] && (
+      <p id={idError(campo)} className="conceptos-campo__error">
+        {errores[campo]}
+      </p>
+    );
+  const clase = (campo) => ["conceptos-campo", errores[campo] && "conceptos-campo--error"].filter(Boolean).join(" ");
 
   const impuestoFueraDeLista = !OPCIONES_IMPUESTO.some(
     (o) => o.value === form.impuesto_pct,
@@ -117,14 +129,17 @@ export default function ConceptoForm({
 
   return (
     <>
-      <div className="form-field">
-        <label htmlFor={id("sitio")}>Sitio</label>
+      <div className={clase("sitio")}>
+        <label className="conceptos-campo__etiqueta" htmlFor={id("sitio")}>Sitio</label>
         <select
           id={id("sitio")}
           name="sitio"
+          className="conceptos-campo__control"
           value={form.sitio}
           onChange={onChange}
           disabled={esEdicion}
+          data-foco-inicial
+          {...describir("sitio")}
         >
           <option value="">Selecciona un sitio...</option>
           {sitios.map((s) => (
@@ -142,59 +157,67 @@ export default function ConceptoForm({
         {error("sitio")}
       </div>
 
-      <div className="form-field">
-        <label htmlFor={id("nombre")}>Nombre</label>
+      <div className={clase("nombre")}>
+        <label className="conceptos-campo__etiqueta" htmlFor={id("nombre")}>Nombre</label>
         <input
           id={id("nombre")}
           name="nombre"
           type="text"
+          className="conceptos-campo__control"
           placeholder="Ej. Mesero por hora"
           value={form.nombre}
           onChange={onChange}
+          {...describir("nombre")}
         />
         {error("nombre")}
       </div>
 
-      <div className="form-field">
-        <label htmlFor={id("precio")}>Precio (COP, sin impuesto)</label>
-        <input
-          id={id("precio")}
-          name="precio"
-          type="number"
-          min="0"
-          step="any"
-          inputMode="decimal"
-          placeholder="45000"
-          value={form.precio}
-          onChange={onChange}
-        />
-        {error("precio")}
-      </div>
+      <div className="conceptos-dialogo__par">
+        <div className={clase("precio")}>
+          <label className="conceptos-campo__etiqueta" htmlFor={id("precio")}>Precio sin impuesto (COP)</label>
+          <input
+            id={id("precio")}
+            name="precio"
+            type="number"
+            min="0"
+            step="any"
+            inputMode="decimal"
+            className="conceptos-campo__control"
+            placeholder="45000"
+            value={form.precio}
+            onChange={onChange}
+            {...describir("precio")}
+          />
+          {error("precio")}
+        </div>
 
-      <div className="form-field">
-        <label htmlFor={id("impuesto_pct")}>Impuesto</label>
-        <select
-          id={id("impuesto_pct")}
-          name="impuesto_pct"
-          value={form.impuesto_pct}
-          onChange={onChange}
-        >
-          {OPCIONES_IMPUESTO.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-          {impuestoFueraDeLista && (
-            <option value={form.impuesto_pct}>
-              {form.impuesto_pct}% (valor actual)
-            </option>
-          )}
-        </select>
-        {error("impuesto_pct")}
+        <div className={clase("impuesto_pct")}>
+          <label className="conceptos-campo__etiqueta" htmlFor={id("impuesto_pct")}>Impuesto</label>
+          <select
+            id={id("impuesto_pct")}
+            name="impuesto_pct"
+            className="conceptos-campo__control"
+            value={form.impuesto_pct}
+            onChange={onChange}
+            {...describir("impuesto_pct")}
+          >
+            {OPCIONES_IMPUESTO.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+            {impuestoFueraDeLista && (
+              <option value={form.impuesto_pct}>
+                {form.impuesto_pct}% (valor actual)
+              </option>
+            )}
+          </select>
+          {error("impuesto_pct")}
+        </div>
       </div>
 
       <p className="conceptos-total">
-        Precio con impuesto:{" "}
+        Precio con impuesto
         <strong>{precioValido ? formatCOP(total) : "—"}</strong>
       </p>
     </>
