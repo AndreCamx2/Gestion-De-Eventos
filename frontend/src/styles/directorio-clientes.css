@@ -1,0 +1,689 @@
+/* Pantalla de Clientes — rediseño Piedra viva (maqueta Clientes.dc.html).
+   Solo variables de tokens.css: ningún color en hex.
+   Todas las clases llevan el prefijo "directorio-" para no chocar con
+   clientes.css, que sigue cargado mientras Conceptos lo use. */
+
+.directorio {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-6);
+}
+
+/* ---- Filtros: tipo (segmentado), búsqueda e interruptor de inactivos ---- */
+.directorio-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+}
+
+.directorio-segmentado {
+    display: inline-flex;
+    gap: 6px;
+    padding: 6px;
+    border: var(--borde);
+    border-radius: 16px;
+    background: var(--color-superficie);
+}
+
+.directorio-segmentado__opcion {
+    min-height: var(--alto-tocable);
+    padding: 0 var(--espacio-4);
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color-texto-suave);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-extra);
+    -webkit-tap-highlight-color: transparent;
+    transition: transform var(--duracion-presion) var(--curva-salida);
+}
+
+.directorio-segmentado__opcion[aria-pressed="true"] {
+    background: var(--color-tinta);
+    color: var(--color-sobre-oscuro);
+}
+
+.directorio-segmentado__opcion:active {
+    transform: scale(0.97);
+}
+
+.directorio-filtros__derecha {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-3);
+}
+
+.directorio-buscar {
+    display: flex;
+    flex: 1 1 260px;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    min-height: var(--alto-tocable);
+    padding: 0 14px;
+    border: 1.5px solid var(--color-linea-fuerte);
+    border-radius: var(--radio-control);
+    background: var(--color-superficie);
+    color: var(--color-texto-tenue);
+}
+
+/* Foco en la caja completa: borde tinta + anillo suave, como Campo */
+.directorio-buscar:focus-within {
+    border-color: var(--color-tinta);
+    box-shadow: var(--anillo-campo);
+}
+
+.directorio-buscar svg {
+    flex-shrink: 0;
+}
+
+.directorio-buscar__input {
+    flex: 1;
+    min-width: 0;
+    min-height: 40px;
+    border: 0;
+    background: transparent;
+    color: var(--color-texto);
+    /* 16 px: con menos, iOS hace zoom a la página al enfocar el campo */
+    font-size: 16px;
+}
+
+.directorio-buscar__input:focus-visible {
+    outline: none;
+}
+
+.directorio-buscar__input::placeholder {
+    color: var(--color-texto-tenue);
+}
+
+.directorio-interruptor {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: var(--alto-tocable);
+    padding: 0 var(--espacio-1);
+    border: 0;
+    background: transparent;
+    color: var(--color-texto-suave);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-negrita);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.directorio-interruptor__pista {
+    position: relative;
+    flex-shrink: 0;
+    width: 40px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--color-linea-fuerte);
+}
+
+.directorio-interruptor__perilla {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    background: var(--color-texto);
+    transition: transform var(--duracion-menu) var(--curva-salida);
+}
+
+.directorio-interruptor[aria-checked="true"] .directorio-interruptor__pista {
+    background: var(--color-tinta);
+}
+
+.directorio-interruptor[aria-checked="true"] .directorio-interruptor__perilla {
+    background: var(--color-superficie);
+    transform: translateX(16px);
+}
+
+/* ---- Cuerpo: tabla a la izquierda, panel a la derecha ---- */
+.directorio__cuerpo {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(340px, 1fr);
+    align-items: start;
+    gap: var(--espacio-5);
+}
+
+.directorio__lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    min-width: 0;
+}
+
+.directorio-estado-carga {
+    font-size: var(--texto-navegacion);
+    color: var(--color-texto-suave);
+}
+
+/* ---- Tabla ----
+   ".tabla-contenedor .directorio-tabla" gana a las reglas base de
+   TablaContenedor sin depender del orden en que se cargan los CSS. */
+.tabla-contenedor .directorio-tabla {
+    /* En pantallas angostas la tabla conserva este ancho y se desplaza dentro de su caja */
+    min-width: 660px;
+    table-layout: fixed;
+}
+
+.directorio-tabla__col-tipo {
+    width: 104px;
+}
+
+.directorio-tabla__col-ident {
+    width: 24%;
+}
+
+.directorio-tabla__col-cotiz {
+    width: 84px;
+}
+
+.directorio-tabla__col-estado {
+    width: 124px;
+}
+
+.tabla-contenedor .directorio-tabla th,
+.tabla-contenedor .directorio-tabla td {
+    padding-left: var(--espacio-3);
+    padding-right: var(--espacio-3);
+}
+
+.tabla-contenedor .directorio-tabla td {
+    height: 68px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.tabla-contenedor .directorio-tabla :is(th, td):first-child {
+    padding-left: var(--espacio-5);
+}
+
+.tabla-contenedor .directorio-tabla :is(th, td):last-child {
+    padding-right: var(--espacio-5);
+}
+
+.directorio-tabla__fila {
+    cursor: pointer;
+}
+
+/* Fila seleccionada: fondo durazno y barra tinta a la izquierda */
+.tabla-contenedor .directorio-tabla__fila--seleccionada td {
+    background: var(--color-durazno);
+}
+
+.tabla-contenedor .directorio-tabla__fila--seleccionada td:first-child {
+    box-shadow: inset 3px 0 0 var(--color-tinta);
+}
+
+.directorio-tabla__cliente {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-3);
+    width: 100%;
+    min-width: 0;
+    min-height: var(--alto-tocable);
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    font-size: var(--texto-navegacion);
+    text-align: left;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.directorio-tabla__textos {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.directorio-tabla__nombre,
+.directorio-tabla__correo,
+.directorio-tabla__ident {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.directorio-tabla__nombre {
+    font-weight: var(--peso-extra);
+}
+
+.directorio-tabla__correo {
+    font-size: var(--texto-pequeno);
+    color: var(--color-texto-suave);
+}
+
+/* Inactivo: se distingue por la etiqueta y el nombre en texto suave
+   (sin bajar la opacidad, que dejaría el texto sin contraste suficiente) */
+.directorio-tabla__fila--inactiva .directorio-tabla__nombre {
+    color: var(--color-texto-suave);
+}
+
+.directorio-tabla__tipo {
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-negrita);
+    color: var(--color-texto-suave);
+}
+
+.directorio-tabla__ident {
+    font-size: var(--texto-etiqueta);
+    color: var(--color-texto-suave);
+    font-variant-numeric: tabular-nums;
+}
+
+.directorio-tabla__num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.tabla-contenedor .directorio-tabla th.directorio-tabla__num {
+    text-align: right;
+}
+
+.directorio-tabla__cotiz {
+    font-weight: var(--peso-extra);
+}
+
+.tabla-contenedor .directorio-tabla td.directorio-tabla__vacio {
+    height: auto;
+    padding: var(--espacio-6) var(--espacio-5);
+    color: var(--color-texto-suave);
+    cursor: default;
+}
+
+/* ---- Avatar con iniciales ---- */
+.directorio-avatar {
+    display: inline-flex;
+    flex: 0 0 36px;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    border-radius: var(--radio-pildora);
+    background: var(--color-durazno);
+    color: var(--color-mandarina-texto);
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-extra);
+}
+
+/* Sobre la fila seleccionada (también durazno) el avatar pasa a blanco */
+.directorio-tabla__fila--seleccionada .directorio-avatar {
+    background: var(--color-superficie);
+}
+
+.directorio-avatar--grande {
+    flex-basis: 48px;
+    height: 48px;
+    font-size: var(--texto-subtitulo);
+}
+
+/* ---- Estado del cliente: texto + punto ---- */
+.directorio-estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: var(--radio-pildora);
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-negrita);
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.directorio-estado__punto {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radio-pildora);
+}
+
+.directorio-estado--activo {
+    background: var(--estado-confirmado-fondo);
+    color: var(--estado-confirmado-texto);
+}
+
+.directorio-estado--activo .directorio-estado__punto {
+    background: var(--estado-confirmado-punto);
+}
+
+.directorio-estado--inactivo {
+    background: var(--estado-cancelado-fondo);
+    color: var(--estado-cancelado-texto);
+}
+
+.directorio-estado--inactivo .directorio-estado__punto {
+    background: var(--estado-cancelado-punto);
+}
+
+/* ---- Panel lateral (crear / editar) ---- */
+.directorio-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    min-width: 0;
+    padding: var(--espacio-6);
+    border: var(--borde);
+    border-radius: var(--radio-tarjeta-grande);
+    background: var(--color-superficie);
+    box-shadow: var(--sombra-flotante);
+    /* Margen al bajar hasta el panel con scrollIntoView en teléfono */
+    scroll-margin-top: var(--espacio-4);
+}
+
+.directorio-panel__vacio {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+    padding: var(--espacio-8) var(--espacio-2);
+    text-align: center;
+    font-size: var(--texto-navegacion);
+    color: var(--color-texto-suave);
+}
+
+.directorio-panel__vacio-titulo {
+    font-size: var(--texto-subtitulo);
+    font-weight: var(--peso-extra);
+    color: var(--color-texto);
+}
+
+.directorio-panel__cabecera {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--espacio-3);
+}
+
+.directorio-panel__textos {
+    flex: 1;
+    min-width: 0;
+}
+
+.directorio-panel__antetitulo {
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-extra);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-texto-tenue);
+}
+
+.directorio-panel__titulo {
+    margin-top: 2px;
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    line-height: 1.15;
+    letter-spacing: var(--tracking-seccion);
+    overflow-wrap: anywhere;
+}
+
+/* El título recibe el foco por código (no con Tab): sin contorno */
+.directorio-panel__titulo:focus {
+    outline: none;
+}
+
+.directorio-panel__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-2);
+    margin-top: var(--espacio-1);
+    font-size: var(--texto-etiqueta);
+    color: var(--color-texto-suave);
+}
+
+.directorio-panel__cerrar {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--alto-tocable);
+    height: var(--alto-tocable);
+    margin: -6px -6px 0 0;
+    border: 0;
+    border-radius: var(--radio-control);
+    background: transparent;
+    color: var(--color-texto-suave);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.directorio-panel__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+}
+
+.directorio-panel__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.directorio-panel__guardar {
+    flex: 1 1 auto;
+}
+
+.directorio-panel__nota {
+    font-size: var(--texto-pequeno);
+    line-height: 1.5;
+    color: var(--color-texto-tenue);
+}
+
+/* ---- Formulario (ClienteForm) ---- */
+.directorio-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.directorio-form__par {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--espacio-3);
+}
+
+.directorio-form__ayuda {
+    font-size: var(--texto-pequeno);
+    color: var(--color-texto-tenue);
+}
+
+.directorio-form__ayuda strong {
+    color: var(--color-texto-suave);
+}
+
+.campo__input.directorio-form__area {
+    min-height: 88px;
+    padding: 10px var(--espacio-3);
+    resize: vertical;
+}
+
+/* ---- Avisos (error y éxito) ---- */
+.directorio-aviso {
+    padding: var(--espacio-3) var(--espacio-4);
+    border-radius: var(--radio-control);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-semi);
+    overflow-wrap: anywhere;
+}
+
+.directorio-aviso--error {
+    background: var(--estado-vencida-fondo);
+    color: var(--color-peligro);
+}
+
+.directorio-aviso--exito {
+    background: var(--estado-confirmado-fondo);
+    color: var(--estado-confirmado-texto);
+}
+
+/* Vacío no ocupa lugar ni deja hueco en el formulario, pero sigue en la
+   página para que el lector de pantalla anuncie el aviso cuando aparezca */
+.directorio-aviso--exito:empty {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+
+/* ---- Historial de cotizaciones del cliente ---- */
+.directorio-historial {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    padding-top: var(--espacio-4);
+    border-top: var(--borde);
+}
+
+.directorio-historial__titulo {
+    font-size: var(--texto-cuerpo);
+    font-weight: var(--peso-extra);
+}
+
+.directorio-historial__caja {
+    overflow-x: auto;
+}
+
+.directorio-historial__tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--texto-navegacion);
+    font-variant-numeric: tabular-nums;
+}
+
+.directorio-historial__tabla th {
+    padding: 0 var(--espacio-2) var(--espacio-2);
+    text-align: left;
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-tabla);
+    text-transform: uppercase;
+    color: var(--color-texto-tenue);
+    white-space: nowrap;
+}
+
+.directorio-historial__tabla td {
+    padding: 10px var(--espacio-2);
+    border-top: var(--borde);
+    white-space: nowrap;
+}
+
+.directorio-historial__tabla :is(th, td):first-child {
+    padding-left: 0;
+}
+
+.directorio-historial__tabla :is(th, td):last-child {
+    padding-right: 0;
+}
+
+.directorio-historial__id {
+    font-weight: var(--peso-extra);
+}
+
+.directorio-historial__vacio {
+    font-size: var(--texto-navegacion);
+    color: var(--color-texto-suave);
+}
+
+/* ---- Diálogos de confirmación (<dialog> nativo) ---- */
+.directorio-dialogo {
+    width: min(440px, calc(100% - 2 * var(--espacio-4)));
+    max-width: none;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radio-tarjeta-grande);
+    background: var(--color-superficie);
+    color: var(--color-texto);
+    box-shadow: var(--sombra-flotante);
+}
+
+.directorio-dialogo::backdrop {
+    background: color-mix(in srgb, var(--color-texto) 45%, transparent);
+}
+
+.directorio-dialogo__contenido {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    padding: var(--espacio-6);
+}
+
+.directorio-dialogo__titulo {
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-seccion);
+}
+
+.directorio-dialogo__texto {
+    font-size: var(--texto-cuerpo);
+    color: var(--color-texto-suave);
+}
+
+.directorio-dialogo__texto strong {
+    color: var(--color-texto);
+}
+
+.directorio-dialogo__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--espacio-3);
+    margin-top: var(--espacio-1);
+}
+
+/* ---- Hover solo con mouse: en pantallas táctiles se quedaría "pegado" ---- */
+@media (hover: hover) and (pointer: fine) {
+    .directorio-segmentado__opcion[aria-pressed="false"]:hover,
+    .directorio-panel__cerrar:hover {
+        background: var(--color-campo);
+        color: var(--color-texto);
+    }
+
+    .directorio-interruptor:hover {
+        color: var(--color-texto);
+    }
+}
+
+/* ---- Pantallas angostas: el panel se apila debajo de la tabla ---- */
+@media (max-width: 1099px) {
+    .directorio__cuerpo {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* Apilado no se muestra el panel vacío: solo aparece al seleccionar o crear */
+    .directorio-panel--vacio {
+        display: none;
+    }
+}
+
+/* ---- Teléfono ---- */
+@media (max-width: 600px) {
+    .directorio-filtros__derecha {
+        width: 100%;
+    }
+
+    .directorio-panel {
+        padding: var(--espacio-5);
+    }
+
+    .directorio-dialogo__acciones > * {
+        flex: 1 1 auto;
+    }
+}
+
+/* Movimiento reducido (guía, sección 7): sin escalas ni desplazamientos */
+@media (prefers-reduced-motion: reduce) {
+    .directorio-segmentado__opcion,
+    .directorio-interruptor__perilla {
+        transition: none;
+    }
+
+    .directorio-segmentado__opcion:active {
+        transform: none;
+    }
+}
