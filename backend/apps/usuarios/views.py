@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Q
 from rest_framework import filters, generics, permissions
 from .serializers import UsuarioRegistroSerializer, UsuarioMeSerializer, UsuarioAdminSerializer
 from .models import Usuario
@@ -8,6 +9,24 @@ from .services import validar_cambio_usuario
 
 def _usuarios():
     return Usuario.objects.select_related("rol").prefetch_related("sitios").order_by("username")
+
+
+def usuarios_visibles(actor):
+    """Usuarios que puede ver y editar `actor` (SGDE-90).
+
+    El superusuario ve a todos. Un administrador ve a sí mismo, a quienes comparten
+    al menos un sitio con él y a los que no tienen sitios (proveedores, usuarios de
+    clientes, recién creados), para poder gestionarlos. Nunca ve a un superusuario,
+    tenga o no sitios: no puede verlo, editarlo ni darlo de baja. Cualquier otro da 404.
+    """
+    queryset = _usuarios()
+    if actor.is_superuser:
+        return queryset
+    return (
+        queryset.filter(Q(pk=actor.pk) | Q(sitios__in=actor.sitios.all()) | Q(sitios__isnull=True))
+        .exclude(is_superuser=True)
+        .distinct()
+    )
 
 
 class UsuarioListCreateView(generics.ListCreateAPIView):
@@ -26,7 +45,7 @@ class UsuarioListCreateView(generics.ListCreateAPIView):
         return UsuarioAdminSerializer
 
     def get_queryset(self):
-        queryset = _usuarios()
+        queryset = usuarios_visibles(self.request.user)
         params = self.request.query_params
         if params.get("incluir_inactivos", "").lower() not in ("true", "1"):
             queryset = queryset.filter(is_active=True)
@@ -41,9 +60,11 @@ class UsuarioDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     DELETE es lógico: marca is_active=False (y da de baja a su Cliente, si lo tiene).
     """
-    queryset = _usuarios()
     serializer_class = UsuarioAdminSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+    def get_queryset(self):
+        return usuarios_visibles(self.request.user)
 
     def perform_destroy(self, instance):
         with transaction.atomic():

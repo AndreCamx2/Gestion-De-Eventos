@@ -51,6 +51,9 @@ class CotizacionBaseTest(APITestCase):
         ctg = Ciudad.objects.get(codigo="CTG")
         cls.sitio = Sitio.objects.create(nombre="Hotel Caribe", ciudad=ctg)
         cls.otro_sitio = Sitio.objects.create(nombre="Finca La Ceiba", ciudad=ctg)
+        # Administra los dos sitios (SGDE-90): así "concepto de otro sitio" prueba la
+        # regla salón/concepto, no el filtro por sitio (que se prueba en apps/sitios).
+        cls.admin.sitios.add(cls.sitio, cls.otro_sitio)
         cls.salon = Salon.objects.create(sitio=cls.sitio, nombre="Salón Barú")
         cls.montaje = Montaje.objects.create(codigo="test_auditorio", nombre="Auditorio Test")
         cls.montaje_no_habilitado = Montaje.objects.create(codigo="test_coctel", nombre="Cóctel Test")
