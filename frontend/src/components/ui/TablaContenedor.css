@@ -1,5 +1,8 @@
 /* Contenedor de tabla — guía Piedra viva, secciones 3 y 5. Solo variables de tokens.css. */
 .tabla-contenedor {
+    /* relative: el texto oculto para lectores (.visually-hidden, absoluto) queda
+       dentro de la caja con scroll; si no, ensancha la página en teléfono. */
+    position: relative;
     min-width: 0;
     overflow-x: auto;
     background: var(--color-superficie);
