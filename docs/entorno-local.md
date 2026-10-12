@@ -76,6 +76,12 @@ docker compose exec backend python manage.py seed_demo
 
 > `seed_demo` se niega a correr si `DEBUG` no es `True`, para que nunca siembres datos demo en producción por accidente.
 
+**Sitios de cada usuario (SGDE-90).** El API solo muestra los datos (sitios, salones, conceptos, cotizaciones, calendario) de los sitios asignados al usuario en `Usuario.sitios`. Un administrador **sin sitios no ve nada**. El superusuario ve todo, por eso `admin` sigue viéndolo todo en local. Para probar el filtro, crea en http://localhost:8000/admin/ otro usuario con rol administrador, **sin** marcar "Superusuario", y asígnale uno o varios sitios en "Información SGDE". Para ver qué administradores no tienen sitios:
+
+```powershell
+docker compose exec backend python manage.py revisar_sitios
+```
+
 ### Cambios de código en este modo
 
 - **Backend:** la carpeta `backend/` está montada dentro del contenedor y Django recarga solo al guardar. No necesitas reconstruir.

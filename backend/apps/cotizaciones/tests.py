@@ -51,6 +51,9 @@ class CotizacionBaseTest(APITestCase):
         ctg = Ciudad.objects.get(codigo="CTG")
         cls.sitio = Sitio.objects.create(nombre="Hotel Caribe", ciudad=ctg)
         cls.otro_sitio = Sitio.objects.create(nombre="Finca La Ceiba", ciudad=ctg)
+        # Administra los dos sitios (SGDE-90): así "concepto de otro sitio" prueba la
+        # regla salón/concepto, no el filtro por sitio (que se prueba en apps/sitios).
+        cls.admin.sitios.add(cls.sitio, cls.otro_sitio)
         cls.salon = Salon.objects.create(sitio=cls.sitio, nombre="Salón Barú")
         cls.montaje = Montaje.objects.create(codigo="test_auditorio", nombre="Auditorio Test")
         cls.montaje_no_habilitado = Montaje.objects.create(codigo="test_coctel", nombre="Cóctel Test")
@@ -178,6 +181,30 @@ class CrearCotizacionTests(CotizacionBaseTest):
         self.assertEqual(r.data["items"][1], {"concepto": ["El concepto está inactivo."]})
         self.assertEqual(r.data["items"][2], {"concepto": ["El concepto no pertenece al sitio del salón."]})
         self.assertFalse(Cotizacion.objects.exists())
+
+    def test_errores_de_campo_en_items_tambien_son_una_lista_por_posicion(self):
+        """Concepto inexistente o cantidad inválida: mismo formato que las reglas de validate()."""
+        self.client.force_authenticate(user=self.admin)
+        items = [
+            {"concepto": self.almuerzo.pk, "cantidad": 1},
+            {"concepto": 999999, "cantidad": 1},
+            {"concepto": self.almuerzo.pk, "cantidad": 0},
+        ]
+        r = self.client.post(LISTA, self.payload(items=items), format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        errores = r.json()["items"]
+        self.assertIsInstance(errores, list)
+        self.assertEqual(len(errores), 3)
+        self.assertEqual(errores[0], {})
+        self.assertEqual(list(errores[1]), ["concepto"])
+        self.assertEqual(list(errores[2]), ["cantidad"])
+        self.assertFalse(Cotizacion.objects.exists())
+
+    def test_errores_de_la_lista_entera_no_cambian(self):
+        self.client.force_authenticate(user=self.admin)
+        r = self.client.post(LISTA, self.payload(items="no es una lista"), format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("non_field_errors", r.json()["items"])
 
     def test_sin_items_cantidad_cero_y_fecha_pasada(self):
         self.client.force_authenticate(user=self.admin)

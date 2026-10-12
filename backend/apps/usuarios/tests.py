@@ -469,16 +469,23 @@ class ReglasDeSeguridadUsuarioTests(BaseUsuariosAdminTests):
             ("patch", {"is_active": False}, "is_active"),
             ("patch", {"rol": self.rol_proveedor.id}, "rol"),
         ]
-        for metodo, cuerpo, campo in casos:
-            with self.subTest(metodo=metodo, cuerpo=cuerpo):
-                if cuerpo is None:
-                    respuesta = getattr(self.client, metodo)(detalle(super_user.pk))
-                else:
-                    respuesta = getattr(self.client, metodo)(detalle(super_user.pk), cuerpo, format="json")
-                self.assertEqual(respuesta.status_code, status.HTTP_400_BAD_REQUEST)
-                mensaje = respuesta.json()[campo]
-                mensaje = mensaje if isinstance(mensaje, str) else mensaje[0]
-                self.assertIn("panel de administración de Django", mensaje)
+        # Un administrador normal ni siquiera lo ve (SGDE-90): 404. Otro superusuario
+        # sí lo ve, y la regla de validar_cambio_usuario lo frena con 400.
+        otro_super = Usuario.objects.create_superuser(
+            username="root2", email="root2@test.com", password=PASSWORD, rol=self.rol_admin)
+        for actor, esperado in ((self.admin, status.HTTP_404_NOT_FOUND), (otro_super, status.HTTP_400_BAD_REQUEST)):
+            self.client.force_authenticate(user=actor)
+            for metodo, cuerpo, campo in casos:
+                with self.subTest(actor=actor.username, metodo=metodo, cuerpo=cuerpo):
+                    if cuerpo is None:
+                        respuesta = getattr(self.client, metodo)(detalle(super_user.pk))
+                    else:
+                        respuesta = getattr(self.client, metodo)(detalle(super_user.pk), cuerpo, format="json")
+                    self.assertEqual(respuesta.status_code, esperado)
+                    if esperado == status.HTTP_400_BAD_REQUEST:
+                        mensaje = respuesta.json()[campo]
+                        mensaje = mensaje if isinstance(mensaje, str) else mensaje[0]
+                        self.assertIn("panel de administración de Django", mensaje)
         super_user.refresh_from_db()
         self.assertTrue(super_user.is_active)
         self.assertEqual(super_user.rol, self.rol_admin)

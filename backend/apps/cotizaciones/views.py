@@ -6,6 +6,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
 
+from apps.sitios.acceso import filtrar_por_sitio
 from apps.usuarios.permissions import EsAdministrador
 
 from .models import Cotizacion
@@ -33,11 +34,12 @@ def exigir_estado_cotizado(cotizacion):
 
 class CotizacionCalendarioView(generics.ListAPIView):
     serializer_class = CotizacionCalendarioSerializer
-    # Muestra clientes y fechas de todos los eventos: solo para administradores.
+    # Muestra clientes y fechas de los eventos de sus sitios: solo para administradores.
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def get_queryset(self):
-        queryset = Cotizacion.objects.exclude(estado="cancelado")
+        # Un ?salon= de otro sitio devuelve una lista vacía: el filtro por sitio va primero.
+        queryset = filtrar_por_sitio(Cotizacion.objects.exclude(estado="cancelado"), self.request.user)
 
         salon = self.request.query_params.get("salon")
         if salon:
@@ -63,6 +65,11 @@ def cotizaciones_con_relaciones():
     )
 
 
+def cotizaciones_del_usuario(usuario):
+    """Las cotizaciones de los sitios del usuario: un id de otro sitio da 404."""
+    return filtrar_por_sitio(cotizaciones_con_relaciones(), usuario)
+
+
 def _fecha_param(params, nombre):
     valor = params.get(nombre)
     if not valor:
@@ -85,7 +92,7 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         params = self.request.query_params
-        queryset = cotizaciones_con_relaciones().order_by("fecha_evento", "id")
+        queryset = cotizaciones_del_usuario(self.request.user).order_by("fecha_evento", "id")
 
         estado = params.get("estado")
         if estado:
@@ -120,10 +127,12 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
 class CotizacionDetailView(generics.RetrieveUpdateAPIView):
     """Detalle y cambio de vigencia (PATCH). Sin PUT ni DELETE."""
 
-    queryset = cotizaciones_con_relaciones()
     serializer_class = CotizacionDetalleSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
     http_method_names = ["get", "patch", "head", "options"]
+
+    def get_queryset(self):
+        return cotizaciones_del_usuario(self.request.user)
 
     def partial_update(self, request, *args, **kwargs):
         cotizacion = self.get_object()
@@ -143,7 +152,10 @@ class CotizacionAceptacionView(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         with transaction.atomic():
             # select_for_update bloquea la fila: dos aceptaciones simultáneas no se pisan.
-            cotizacion = get_object_or_404(Cotizacion.objects.select_for_update(), pk=kwargs["pk"])
+            # Una cotización de otro sitio da 404, igual que una inexistente.
+            cotizacion = get_object_or_404(
+                filtrar_por_sitio(Cotizacion.objects.select_for_update(), request.user), pk=kwargs["pk"]
+            )
 
             serializer = AceptacionSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)

@@ -27,6 +27,7 @@ class EditarPrecioConceptoTests(APITestCase):
         cls.cliente_user = crear_usuario("cliente@test.com", "cliente")
         cls.proveedor_user = crear_usuario("proveedor@test.com", "proveedor")
         sitio = Sitio.objects.create(nombre="Hotel Caribe", ciudad=Ciudad.objects.get(codigo="CTG"))
+        cls.admin.sitios.add(sitio)  # sin sitios no vería el concepto (SGDE-90)
         cls.concepto = Concepto.objects.create(sitio=sitio, nombre="Silla Tiffany", precio=Decimal("1000.00"))
 
     def test_sin_token_recibe_401(self):

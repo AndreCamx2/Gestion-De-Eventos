@@ -9,6 +9,10 @@ class RegistroPublicoView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
 
 
+# Clientes y empresas son COMPARTIDOS entre sitios (decisión de diseño, SGDE-90):
+# un mismo cliente puede cotizar en varios sitios y el modelo no tiene sitio.
+# Lo que sí es de cada sitio son sus cotizaciones: ClienteAdminSerializer solo
+# muestra las de los sitios del usuario.
 def _clientes():
     return Cliente.objects.select_related("empresa", "usuario").prefetch_related("cotizaciones")
 
