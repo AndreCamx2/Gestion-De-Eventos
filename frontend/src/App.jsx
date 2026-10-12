@@ -21,16 +21,43 @@ import Rack from "./pages/Rack";
 import { getUsuarioActual, logout } from "./api/auth";
 import { rolesDeRuta } from "./rutasPorRol";
 
+// Mientras se revisa si hay sesión (al cargar o recargar la página) no se
+// redirige a ningún lado: así no se manda al login a alguien que sí tiene sesión.
+function VerificandoSesion() {
+  return <div style={{ padding: "2rem" }}>Verificando sesión...</div>;
+}
+
 // Envuelve TODAS las rutas del dashboard: si no hay usuario logueado,
 // redirige a /login en vez de dejar pasar a cualquiera de las pantallas hijas.
 function ProtectedRoute({ user, cargando }) {
   if (cargando) {
-    return <div style={{ padding: "2rem" }}>Verificando sesión...</div>;
+    return <VerificandoSesion />;
   }
   if (!user) {
     return <Navigate to="/login" replace />;
   }
   return <Outlet />;
+}
+
+// Para "/" y para cualquier ruta que no existe (SGDE-94): con sesión va a
+// /inicio (igual que RoleRoute con una ruta prohibida); sin sesión, a /login.
+function SegunSesion({ user, cargando }) {
+  if (cargando) {
+    return <VerificandoSesion />;
+  }
+  return <Navigate to={user ? "/inicio" : "/login"} replace />;
+}
+
+// Para /login y /registro (SGDE-94): con la sesión ya iniciada no tiene sentido
+// mostrarlos, se va directo a /inicio.
+function SoloSinSesion({ user, cargando, children }) {
+  if (cargando) {
+    return <VerificandoSesion />;
+  }
+  if (user) {
+    return <Navigate to="/inicio" replace />;
+  }
+  return children;
 }
 
 // Redirige a /inicio si el rol del usuario no puede ver la ruta actual, según
@@ -88,13 +115,24 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<SegunSesion user={user} cargando={cargando} />} />
 
         <Route
           path="/login"
-          element={<Login onLoginSuccess={handleLoginSuccess} />}
+          element={
+            <SoloSinSesion user={user} cargando={cargando}>
+              <Login onLoginSuccess={handleLoginSuccess} />
+            </SoloSinSesion>
+          }
         />
-        <Route path="/registro" element={<Registrar />} />
+        <Route
+          path="/registro"
+          element={
+            <SoloSinSesion user={user} cargando={cargando}>
+              <Registrar />
+            </SoloSinSesion>
+          }
+        />
 
         {/* Todo lo de aquí adentro exige sesión iniciada */}
         <Route element={<ProtectedRoute user={user} cargando={cargando} />}>
@@ -130,7 +168,8 @@ export default function App() {
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* Ruta que no existe: /inicio con sesión, /login sin sesión */}
+        <Route path="*" element={<SegunSesion user={user} cargando={cargando} />} />
       </Routes>
     </BrowserRouter>
   );
