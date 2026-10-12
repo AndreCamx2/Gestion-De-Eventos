@@ -1,55 +1,11 @@
 import { apiFetch } from "./client";
 
-/**
- * @param {Object} filters
- * @returns {string}
- * @returns {Promise<Array|Object>} 
- * @param {Object} filters
- * @param {Object} filters
- * @returns {Promise<Array|Object>} 
- */
-
-function buildQueryParams(filters = {}) {
+export async function getCotizaciones({ desde, hasta } = {}) {
     const params = new URLSearchParams();
-
-    if (filters.estado && filters.estado !== "Todos") {
-        params.append("estado", filters.estado.toLowerCase());
-    }
-
-    if (filters.tipo && filters.tipo !== "Todos") {
-        const tipoMap = {
-            Persona: "natural",
-            Empresa: "juridica",
-        };
-        if (tipoMap[filters.tipo]) {
-            params.append("tipo_cliente", tipoMap[filters.tipo]);
-        }
-    }
-
-    if (filters.rangoFecha && filters.rangoFecha !== "Todos") {
-        params.append("rango", filters.rangoFecha);
-    }
-
-    if (filters.page && Number.isInteger(Number(filters.page)) && Number(filters.page) > 0) {
-        params.append("page", filters.page);
-    }
-
-    const queryString = params.toString();
-    return queryString ? `?${queryString}` : "";
-}
-
-export async function getCotizaciones(filters = {}) {
-    try {
-        const query = buildQueryParams(filters);
-        const endpoint = `/cotizaciones/${query}`;
-
-        return await apiFetch(endpoint, { method: "GET" });
-    } catch (error) {
-        console.error("Error en getCotizaciones API:", error);
-        throw new Error(
-            error.message || "No se pudieron obtener las cotizaciones del servidor."
-        );
-    }
+    if (desde) params.append("desde", desde);
+    if (hasta) params.append("hasta", hasta);
+    const query = params.toString();
+    return apiFetch(`/cotizaciones/${query ? `?${query}` : ""}`, { method: "GET" });
 }
 
 export async function crearCotizacion(cotizacionData) {
