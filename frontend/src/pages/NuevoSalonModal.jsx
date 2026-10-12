@@ -1,165 +1,168 @@
 import { useState } from "react";
-import "../styles/nuevo-salon.css";
+import { Link } from "react-router-dom";
+import { crearSalon } from "../api/salones";
+import { erroresDesdeApi } from "../utils/erroresApi";
+import { Boton, Campo } from "../components/ui";
+import SalonDialogo, { cerrarDialogoDe } from "./SalonDialogo";
 
-const MONTAJES_DISPONIBLES = ["Teatro", "Banquete", "Cóctel", "Escuela"];
+const CAMPOS = ["sitio", "nombre", "ancho", "altura", "foto_url"];
 
-const INITIAL_FORM = {
-  nombre: "",
-  capacidad: "",
-  montajes: [],
-  foto: null,
-};
+// "Nuevo salón": POST /api/salones/ con sitio, nombre, ancho, altura y foto_url.
+// La foto es una URL (el API guarda URLs, nunca archivos).
+// - sitios: lista de /api/sitios/ para el select.
+// - onCreado(salon): recibe el salón que devolvió el API.
+// - onSesionVencida(): 401 aunque se intentó renovar el token.
+export default function NuevoSalonModal({ sitios, onCreado, onCerrar, onSesionVencida }) {
+  // Con un solo sitio no hay nada que elegir: viene marcado.
+  const [form, setForm] = useState(() => ({
+    sitio: sitios.length === 1 ? String(sitios[0].id) : "",
+    nombre: "",
+    ancho: "",
+    altura: "",
+    foto_url: "",
+  }));
+  const [errores, setErrores] = useState({});
+  const [errorGeneral, setErrorGeneral] = useState(null);
+  const [guardando, setGuardando] = useState(false);
 
-export default function NuevoSalonModal({ onClose, onCreate }) {
-  const [form, setForm] = useState(INITIAL_FORM);
-  const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState(null);
-
-  function handleChange(event) {
-    const { name, value } = event.target;
+  function handleChange(e) {
+    const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    setErrores((prev) => ({ ...prev, [name]: undefined }));
   }
 
-  function handleToggleMontaje(montaje) {
-    setForm((prev) => {
-      const yaEstaba = prev.montajes.includes(montaje);
-      const montajes = yaEstaba
-        ? prev.montajes.filter((item) => item !== montaje)
-        : [...prev.montajes, montaje];
-      return { ...prev, montajes };
-    });
-  }
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setErrorGeneral(null);
 
-  function handleFotoChange(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setForm((prev) => ({ ...prev, foto: file }));
-    setPreviewUrl(URL.createObjectURL(file));
-  }
+    const locales = {};
+    if (!form.sitio) locales.sitio = "Elige el sitio donde está el salón.";
+    if (!form.nombre.trim()) locales.nombre = "Escribe el nombre del salón.";
+    setErrores(locales);
+    if (Object.keys(locales).length > 0) return;
 
-  function validate() {
-    const nextErrors = {};
-    if (!form.nombre.trim()) nextErrors.nombre = "El nombre del salón es obligatorio.";
-    if (!form.capacidad) {
-      nextErrors.capacidad = "Ingresa la capacidad máxima.";
-    } else if (Number(form.capacidad) <= 0) {
-      nextErrors.capacidad = "La capacidad debe ser mayor a 0.";
+    setGuardando(true);
+    try {
+      const creado = await crearSalon({ ...form, sitio: Number(form.sitio) });
+      onCreado(creado);
+    } catch (err) {
+      if (err.status === 400 && err.body && typeof err.body === "object") {
+        // La regla "nombre único por sitio" llega como non_field_errors, no en
+        // "nombre": se muestra debajo del nombre, que es lo que hay que cambiar.
+        const { non_field_errors, ...porCampo } = err.body;
+        const { campos, general } = erroresDesdeApi(porCampo, CAMPOS);
+        if (non_field_errors) campos.nombre = "Ya existe un salón con ese nombre en este sitio.";
+        setErrores(campos);
+        setErrorGeneral(general);
+      } else if (err.status === 401) {
+        // El fondo queda inactivo mientras la ventana está abierta: hay que cerrarla
+        // para usar el aviso de abajo.
+        onSesionVencida();
+        setErrorGeneral("Tu sesión expiró. Cierra esta ventana y vuelve a entrar con el aviso de abajo.");
+      } else if (err.status === 403) {
+        setErrorGeneral("No tienes permisos suficientes para crear salones.");
+      } else {
+        setErrorGeneral("Error inesperado en el servidor al crear el salón.");
+      }
+      setGuardando(false);
     }
-    if (form.montajes.length === 0) nextErrors.montajes = "Selecciona al menos un tipo de montaje.";
-    return nextErrors;
   }
 
-  function handleSubmit(event) {
-    event.preventDefault();
-    const nextErrors = validate();
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) return;
-
-    setSubmitting(true);
-    setTimeout(() => {
-      onCreate({
-        id: Date.now(),
-        nombre: form.nombre.trim(),
-        estado: "Disponible",
-        capacidad: Number(form.capacidad),
-        montajes: form.montajes,
-        foto: previewUrl,
-      });
-      setSubmitting(false);
-      onClose();
-    }, 600);
-  }
+  const idSitio = "nuevo-salon-sitio";
+  const sinSitios = sitios.length === 0;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(event) => event.stopPropagation()}>
-        <div className="modal-card__header">
-          <h2>Nuevo salón</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Cerrar">
-            ×
-          </button>
+    <SalonDialogo idTitulo="nuevo-salon-titulo" titulo="Nuevo salón" bloqueado={guardando} onCerrar={onCerrar}>
+      <form className="salones-dialogo__form" onSubmit={handleSubmit} noValidate>
+        {/* Campo solo pinta <input>: el select usa sus mismas clases, como en ClienteForm. */}
+        <div className={["campo", errores.sitio && "campo--error"].filter(Boolean).join(" ")}>
+          <label className="campo__etiqueta" htmlFor={idSitio}>Sitio</label>
+          <select
+            id={idSitio}
+            name="sitio"
+            className="campo__input"
+            value={form.sitio}
+            onChange={handleChange}
+            disabled={sinSitios}
+            aria-invalid={errores.sitio ? true : undefined}
+            aria-describedby={errores.sitio ? `${idSitio}-error` : undefined}
+          >
+            <option value="">{sinSitios ? "No hay sitios" : "Elige un sitio..."}</option>
+            {sitios.map((s) => (
+              <option key={s.id} value={s.id}>{s.nombre}</option>
+            ))}
+          </select>
+          {errores.sitio && (
+            <p id={`${idSitio}-error`} className="campo__error">{errores.sitio}</p>
+          )}
+          {sinSitios && (
+            <p className="salones-dialogo__ayuda">
+              Todo salón pertenece a un sitio. Primero crea uno en <Link to="/sitios">Sitios</Link>.
+            </p>
+          )}
         </div>
 
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="field">
-            <label className="field__label" htmlFor="nombre">
-              Nombre del salón <span className="field__required">*</span>
-            </label>
-            <input
-              className="field__input"
-              type="text"
-              id="nombre"
-              name="nombre"
-              placeholder="Salón Imperial"
-              value={form.nombre}
-              onChange={handleChange}
-            />
-            {errors.nombre && <p className="field__error">{errors.nombre}</p>}
-          </div>
+        <Campo
+          id="nuevo-salon-nombre"
+          etiqueta="Nombre"
+          name="nombre"
+          type="text"
+          autoComplete="off"
+          value={form.nombre}
+          onChange={handleChange}
+          error={errores.nombre}
+        />
 
-          <div className="field">
-            <label className="field__label" htmlFor="capacidad">
-              Capacidad máxima <span className="field__required">*</span>
-            </label>
-            <input
-              className="field__input"
-              type="number"
-              id="capacidad"
-              name="capacidad"
-              placeholder="200"
-              min="1"
-              value={form.capacidad}
-              onChange={handleChange}
-            />
-            {errors.capacidad && <p className="field__error">{errors.capacidad}</p>}
-          </div>
+        <div className="salones-dialogo__par">
+          <Campo
+            id="nuevo-salon-ancho"
+            etiqueta="Ancho (m)"
+            name="ancho"
+            type="text"
+            inputMode="decimal"
+            placeholder="Opcional"
+            value={form.ancho}
+            onChange={handleChange}
+            error={errores.ancho}
+          />
+          <Campo
+            id="nuevo-salon-altura"
+            etiqueta="Altura (m)"
+            name="altura"
+            type="text"
+            inputMode="decimal"
+            placeholder="Opcional"
+            value={form.altura}
+            onChange={handleChange}
+            error={errores.altura}
+          />
+        </div>
 
-          <div className="field">
-            <span className="field__label">
-              Tipos de montaje <span className="field__required">*</span>
-            </span>
-            <div className="montaje-options">
-              {MONTAJES_DISPONIBLES.map((montaje) => (
-                <label className="montaje-chip" key={montaje}>
-                  <input
-                    type="checkbox"
-                    checked={form.montajes.includes(montaje)}
-                    onChange={() => handleToggleMontaje(montaje)}
-                  />
-                  {montaje}
-                </label>
-              ))}
-            </div>
-            {errors.montajes && <p className="field__error">{errors.montajes}</p>}
-          </div>
+        <Campo
+          id="nuevo-salon-foto"
+          etiqueta="URL de la foto (opcional)"
+          name="foto_url"
+          type="url"
+          inputMode="url"
+          placeholder="https://..."
+          value={form.foto_url}
+          onChange={handleChange}
+          error={errores.foto_url}
+        />
 
-          <div className="field">
-            <label className="field__label" htmlFor="foto">Foto del salón (opcional)</label>
-            <label className="upload-box" htmlFor="foto">
-              {previewUrl ? (
-                <img src={previewUrl} alt="Vista previa del salón" className="upload-preview" />
-              ) : (
-                <span>Arrastra una imagen o haz clic para subir</span>
-              )}
-            </label>
-            <input
-              type="file"
-              id="foto"
-              accept="image/*"
-              onChange={handleFotoChange}
-              hidden
-            />
-          </div>
+        {errorGeneral && (
+          <p className="salones-dialogo__error" role="alert">Error: {errorGeneral}</p>
+        )}
 
-          <div className="modal-actions">
-            <button type="button" className="btn btn--outline" onClick={onClose}>Cancelar</button>
-            <button type="submit" className="btn btn--primary" disabled={submitting}>
-              {submitting ? "Guardando…" : "Guardar salón"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="salones-dialogo__acciones">
+          <Boton variante="secundario" disabled={guardando} onClick={(e) => cerrarDialogoDe(e.currentTarget)}>
+            Cancelar
+          </Boton>
+          <Boton type="submit" variante="oscuro" disabled={guardando || sinSitios}>
+            {guardando ? "Guardando..." : "Crear salón"}
+          </Boton>
+        </div>
+      </form>
+    </SalonDialogo>
   );
 }
