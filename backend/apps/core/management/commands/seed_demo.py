@@ -23,6 +23,10 @@ from apps.usuarios.models import Rol, Usuario
 
 NOMBRE_SITIO = "Hotel Demo Cartagena"
 
+# NIT de la empresa demo. Vive SOLO en Empresa.identificacion: el cliente
+# jurídico deja Cliente.identificacion en null (SGDE-56).
+NIT_EMPRESA_DEMO = "900000001-1"
+
 # (nombre, altura, ancho, {codigo_montaje: aforo})
 SALONES = [
     ("Salón Bolívar", Decimal("4.50"), Decimal("20.00"),
@@ -144,7 +148,7 @@ class Command(BaseCommand):
             },
         )
         empresa, _ = Empresa.objects.get_or_create(
-            identificacion="900000001-1",
+            identificacion=NIT_EMPRESA_DEMO,
             defaults={
                 "razon_social": "Eventos del Caribe S.A.S. (demo)",
                 "contacto": "Carlos Gómez",
@@ -152,13 +156,37 @@ class Command(BaseCommand):
                 "ciudad": ciudad,
             },
         )
-        Cliente.objects.get_or_create(
-            identificacion="900000001-1",
-            defaults={
-                "tipo": Cliente.JURIDICA,
-                "nombre": "Eventos del Caribe S.A.S. (demo)",
-                "correo": "contacto@eventoscaribe.example.com",
-                "telefono": "6055550101",
-                "empresa": empresa,
-            },
+        self._cliente_juridico(empresa)
+
+    def _cliente_juridico(self, empresa):
+        """Cliente jurídico demo: el NIT vive en su Empresa, no en el Cliente.
+
+        Se busca por tipo + empresa (no por identificación) para seguir siendo
+        idempotente. Con filter().first() y no get_or_create: si alguien creó a
+        mano otro jurídico para la misma empresa, se toma el más antiguo en vez
+        de fallar con MultipleObjectsReturned.
+        """
+        cliente = (
+            Cliente.objects.filter(tipo=Cliente.JURIDICA, empresa=empresa)
+            .order_by("id")
+            .first()
         )
+        if cliente is None:
+            Cliente.objects.create(
+                tipo=Cliente.JURIDICA,
+                nombre="Eventos del Caribe S.A.S. (demo)",
+                correo="contacto@eventoscaribe.example.com",
+                telefono="6055550101",
+                empresa=empresa,
+            )
+            return
+
+        # Bases creadas con el seed anterior: el jurídico tenía el NIT repetido en
+        # Cliente.identificacion. Se corrige a null; es seguro con el unique porque
+        # PostgreSQL permite varias filas con NULL en un índice único.
+        if cliente.identificacion is not None:
+            cliente.identificacion = None
+            cliente.save(update_fields=["identificacion"])
+            self.stdout.write(
+                "  cliente jurídico demo: se quitó el NIT repetido de Cliente.identificacion"
+            )

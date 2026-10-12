@@ -25,7 +25,29 @@ class ClienteAdminSerializer(serializers.ModelSerializer):
         # distingue al cliente inactivo (el validador automático diría solo "duplicado").
         extra_kwargs = {"identificacion": {"validators": []}}
 
+    MSG_JURIDICO_CON_IDENTIFICACION = (
+        "Un cliente jurídico no lleva identificación: el NIT es el de su empresa."
+    )
+
+    def _tipo_final(self):
+        """Tipo con el que quedará el cliente: el del payload o, si no viene, el guardado.
+
+        Se lee de initial_data (lo que llegó en la petición) porque los validadores
+        de cada campo corren antes que validate(); así la regla del jurídico se
+        aplica en validate_identificacion, antes de revisar duplicados.
+        """
+        tipo = getattr(self, "initial_data", {}).get("tipo")
+        if tipo is None and self.instance is not None:
+            tipo = self.instance.tipo
+        return tipo
+
     def validate_identificacion(self, value):
+        # SGDE-87: el NIT de un jurídico vive en su Empresa. Cliente.identificacion
+        # solo es de personas naturales; en un jurídico se guarda null.
+        if self._tipo_final() == Cliente.JURIDICA:
+            if value:
+                raise serializers.ValidationError(self.MSG_JURIDICO_CON_IDENTIFICACION)
+            return None
         if not value:
             return value
         existente = Cliente.objects.filter(identificacion=value)
@@ -59,6 +81,17 @@ class ClienteAdminSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"empresa": "Debes asociar una empresa existente si el cliente es jurídico."}
             )
+        # Jurídico sin "identificacion" en el payload (por ejemplo, la pantalla al
+        # pasar un natural a jurídico, o un PATCH de otro campo de un jurídico viejo):
+        # si tenía una guardada, se borra. Escribir null no choca con el unique
+        # (PostgreSQL admite varias filas con NULL).
+        if (
+            tipo == Cliente.JURIDICA
+            and "identificacion" not in data
+            and self.instance is not None
+            and self.instance.identificacion is not None
+        ):
+            data["identificacion"] = None
         return data
 
 
