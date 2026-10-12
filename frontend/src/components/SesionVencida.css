@@ -49,7 +49,31 @@
     gap: var(--espacio-3);
 }
 
+/* Aviso dentro de una ventana modal abierta (AvisoSesionEnVentana, SGDE-94) */
+.aviso-sesion-ventana {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+    padding: var(--espacio-3) var(--espacio-4);
+    border-radius: var(--radio-control);
+    background: var(--estado-vencida-fondo);
+}
+
+.aviso-sesion-ventana__texto {
+    flex: 1 1 220px;
+    margin: 0;
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-semi);
+    color: var(--color-texto);
+}
+
 @media (max-width: 600px) {
+    .aviso-sesion-ventana .boton {
+        flex: 1 1 100%;
+    }
+
     .sesion-dialogo__contenido {
         padding: var(--espacio-5);
     }
