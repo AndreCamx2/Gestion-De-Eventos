@@ -8,8 +8,10 @@ from django.test import TestCase, override_settings
 from apps.catalogo.models import Concepto
 from apps.clientes.models import Cliente, Empresa
 from apps.salones.models import Salon, SalonMontaje
-from apps.sitios.models import Sitio
+from apps.sitios.models import Ciudad, Sitio
 from apps.usuarios.models import Usuario
+
+from .management.commands.seed_demo import NIT_EMPRESA_DEMO
 
 
 def sembrar(**kwargs):
@@ -48,6 +50,45 @@ class SeedDemoTests(TestCase):
         primero = conteos()
         sembrar()
         self.assertEqual(conteos(), primero)
+
+    def test_juridico_sin_identificacion_y_nit_en_empresa(self):
+        # SGDE-56: el NIT de un jurídico vive en Empresa; Cliente.identificacion queda en null.
+        sembrar()
+        juridico = Cliente.objects.get(tipo=Cliente.JURIDICA)
+        self.assertIsNone(juridico.identificacion)
+        self.assertEqual(juridico.empresa.identificacion, NIT_EMPRESA_DEMO)
+        self.assertEqual(Cliente.objects.get(tipo=Cliente.NATURAL).identificacion, "1000000001")
+
+    def test_dos_ejecuciones_no_duplican_clientes_ni_empresas(self):
+        sembrar()
+        sembrar()
+        self.assertEqual(Cliente.objects.filter(tipo=Cliente.NATURAL).count(), 1)
+        self.assertEqual(Cliente.objects.filter(tipo=Cliente.JURIDICA).count(), 1)
+        self.assertEqual(Empresa.objects.filter(identificacion=NIT_EMPRESA_DEMO).count(), 1)
+        self.assertEqual(Empresa.objects.count(), 1)
+
+    def test_corrige_el_juridico_viejo_con_nit_repetido(self):
+        # Así dejaba los datos el seed anterior: el NIT también en Cliente.identificacion.
+        empresa = Empresa.objects.create(
+            identificacion=NIT_EMPRESA_DEMO,
+            razon_social="Eventos del Caribe S.A.S. (demo)",
+            ciudad=Ciudad.objects.get(codigo="CTG"),
+        )
+        viejo = Cliente.objects.create(
+            tipo=Cliente.JURIDICA,
+            nombre="Eventos del Caribe S.A.S. (demo)",
+            identificacion=NIT_EMPRESA_DEMO,
+            empresa=empresa,
+        )
+
+        sembrar()
+
+        juridicos = Cliente.objects.filter(tipo=Cliente.JURIDICA)
+        self.assertEqual(juridicos.count(), 1)
+        corregido = juridicos.get()
+        self.assertEqual(corregido.pk, viejo.pk)
+        self.assertIsNone(corregido.identificacion)
+        self.assertEqual(corregido.empresa_id, empresa.pk)
 
     def test_usa_la_contrasena_de_la_variable_de_entorno(self):
         with mock.patch.dict("os.environ", {"SEED_ADMIN_PASSWORD": "clave-de-prueba-9"}):
