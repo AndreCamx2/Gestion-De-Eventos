@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { logout } from "../api/auth";
 import {
   listarConceptos,
   crearConcepto,
@@ -50,8 +51,8 @@ export default function Conceptos() {
   }, []);
 
   function cerrarSesionExpirada() {
-    sessionStorage.removeItem("access_token");
-    sessionStorage.removeItem("refresh_token");
+    // logout() también invalida el refresh en el servidor (SGDE-92); no se espera.
+    logout();
     navigate("/login");
   }
 

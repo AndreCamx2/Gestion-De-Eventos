@@ -2,6 +2,7 @@ from django.db import transaction
 from rest_framework import serializers
 from apps.usuarios.models import Usuario, Rol
 from apps.usuarios.validators import errores_password
+from apps.sitios.acceso import sitios_del_usuario
 from apps.sitios.models import Ciudad
 from apps.cotizaciones.models import Cotizacion
 from .models import Cliente, Empresa
@@ -14,7 +15,9 @@ class CotizacionResumenSerializer(serializers.ModelSerializer):
 
 
 class ClienteAdminSerializer(serializers.ModelSerializer):
-    cotizaciones = CotizacionResumenSerializer(many=True, read_only=True)
+    # El cliente es compartido entre sitios, pero sus cotizaciones no: solo se
+    # muestran las de los sitios del usuario (SGDE-90).
+    cotizaciones = serializers.SerializerMethodField()
 
     class Meta:
         model = Cliente
@@ -24,6 +27,29 @@ class ClienteAdminSerializer(serializers.ModelSerializer):
         # La unicidad se valida en validate_identificacion, con un mensaje que
         # distingue al cliente inactivo (el validador automático diría solo "duplicado").
         extra_kwargs = {"identificacion": {"validators": []}}
+
+    def _sitios_permitidos(self):
+        """Ids de sitio que puede ver el usuario; None = todos (superusuario).
+
+        Se calcula una vez por petición. Se filtra en Python sobre el prefetch de la
+        vista, porque tras un PATCH DRF borra esa caché y releería todo sin filtro.
+        """
+        if not hasattr(self, "_sitios_cache"):
+            request = self.context.get("request")
+            if request is None:
+                self._sitios_cache = set()
+            elif request.user.is_superuser:
+                self._sitios_cache = None
+            else:
+                self._sitios_cache = set(sitios_del_usuario(request.user).values_list("id", flat=True))
+        return self._sitios_cache
+
+    def get_cotizaciones(self, cliente):
+        permitidos = self._sitios_permitidos()
+        cotizaciones = [
+            c for c in cliente.cotizaciones.all() if permitidos is None or c.sitio_id in permitidos
+        ]
+        return CotizacionResumenSerializer(cotizaciones, many=True).data
 
     MSG_JURIDICO_CON_IDENTIFICACION = (
         "Un cliente jurídico no lleva identificación: el NIT es el de su empresa."

@@ -1,8 +1,13 @@
 from rest_framework import serializers
+from apps.sitios.acceso import CampoDeSitio
+from apps.sitios.models import Sitio
 from .models import Concepto, HistorialPrecioConcepto
 
 
 class ConceptoSerializer(serializers.ModelSerializer):
+    # Al crear o editar, solo un sitio propio: uno ajeno da 400 (SGDE-90).
+    sitio = CampoDeSitio(queryset=Sitio.objects.all(), campo_sitio="id")
+
     class Meta:
         model = Concepto
         fields = ["id", "sitio", "nombre", "precio", "impuesto_pct", "activo"]

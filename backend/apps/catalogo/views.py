@@ -1,22 +1,35 @@
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions
+from apps.sitios.acceso import filtrar_por_sitio
 from apps.usuarios.permissions import EsAdministrador
 from .models import Concepto, HistorialPrecioConcepto
 from .serializers import ConceptoSerializer, HistorialPrecioConceptoSerializer
 
 
+def conceptos_del_usuario(usuario):
+    return filtrar_por_sitio(Concepto.objects.all(), usuario)
+
+
 class ConceptoListCreateView(generics.ListCreateAPIView):
-    queryset = Concepto.objects.all()
     serializer_class = ConceptoSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+    def get_queryset(self):
+        return conceptos_del_usuario(self.request.user)
 
 
 class ConceptoRetrieveUpdateView(generics.RetrieveUpdateAPIView):
-    """Ver y editar un concepto. Si cambia el precio, guarda quién y cuándo."""
+    """Ver y editar un concepto. Si cambia el precio, guarda quién y cuándo.
 
-    queryset = Concepto.objects.all()
+    Un concepto de otro sitio da 404: no revela que existe.
+    """
+
     serializer_class = ConceptoSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+    def get_queryset(self):
+        return conceptos_del_usuario(self.request.user)
 
     @transaction.atomic
     def perform_update(self, serializer):
@@ -40,6 +53,6 @@ class ConceptoHistorialListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def get_queryset(self):
-        return HistorialPrecioConcepto.objects.filter(
-            concepto_id=self.kwargs["pk"]
-        ).select_related("modificado_por")
+        # 404 si el concepto no existe o es de otro sitio (antes devolvía una lista vacía).
+        concepto = get_object_or_404(conceptos_del_usuario(self.request.user), pk=self.kwargs["pk"])
+        return HistorialPrecioConcepto.objects.filter(concepto=concepto).select_related("modificado_por")

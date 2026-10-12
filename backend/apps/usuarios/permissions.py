@@ -5,8 +5,8 @@ class EsAdministrador(BasePermission):
     """
     Permite el acceso solo a usuarios autenticados con rol "administrador".
 
-    Verifica el rol, no el sitio: filtrar por request.user.sitios (multi-tenant)
-    queda pendiente, ver SEG-005 en la bóveda.
+    Verifica el rol, no el sitio. El filtro por sitio lo hace cada vista con
+    apps/sitios/acceso.py (SGDE-90).
     """
 
     message = "Solo los administradores pueden realizar esta acción."
