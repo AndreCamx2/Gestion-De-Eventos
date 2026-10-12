@@ -241,8 +241,8 @@ class CrearEnOtroSitioTests(MultiSitioBaseTest):
             "/api/cotizaciones/", self.payload_cotizacion(self.a["salon"], self.b["concepto"]), format="json"
         )
         self.assert_400_en(r, "items")
-        # Error de campo dentro de una lista: DRF lo devuelve por posición, {"0": {...}}.
-        self.assertIn("concepto", r.json()["items"]["0"])
+        # Una posición por item, como las demás reglas de la cotización.
+        self.assertIn("concepto", r.json()["items"][0])
         self.assertEqual(Cotizacion.objects.count(), antes)
 
     def test_cotizacion_en_sitio_propio_se_crea(self):

@@ -39,10 +39,33 @@ def validar_validez_oferta(validez, fecha_evento):
 
 # --- Entrada: crear cotización ---------------------------------------------
 
+class ItemsEntradaListSerializer(serializers.ListSerializer):
+    """Errores de `items` siempre como lista, una posición por item ({} si está bien).
+
+    DRF devuelve los errores de campo de una lista anidada como {posición: error},
+    solo con los items que fallan; las reglas de CotizacionCrearSerializer.validate()
+    los devuelven como lista. Aquí se pasa todo a lista para que el frontend lea un
+    solo formato: [{}, {"concepto": [...]}, {"cantidad": [...]}].
+    Los errores de la lista entera ("no es una lista", "vacía") no cambian.
+    """
+
+    def to_internal_value(self, data):
+        try:
+            return super().to_internal_value(data)
+        except serializers.ValidationError as exc:
+            detalle = exc.detail
+            if isinstance(data, list) and isinstance(detalle, dict) and all(isinstance(k, int) for k in detalle):
+                raise serializers.ValidationError([detalle.get(i, {}) for i in range(len(data))])
+            raise
+
+
 class CotizacionItemEntradaSerializer(serializers.Serializer):
     # Solo conceptos de los sitios del usuario: uno de un sitio ajeno da 400 (SGDE-90).
     concepto = CampoDeSitio(queryset=Concepto.objects.all())
     cantidad = serializers.IntegerField(min_value=1)
+
+    class Meta:
+        list_serializer_class = ItemsEntradaListSerializer
 
 
 class CotizacionCrearSerializer(serializers.ModelSerializer):
