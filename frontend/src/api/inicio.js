@@ -8,13 +8,17 @@ function comoLista(data) {
 }
 
 // GET /api/cotizaciones/ → [{ id, estado, vencida, cliente_nombre, salon_nombre,
-// fecha_evento, cantidad_personas, validez_oferta, total }]
+// montaje_nombre, fecha_evento, cantidad_personas, validez_oferta, bloqueo_hasta,
+// creado_en, confirmado_en, total, garantia }]
+// confirmado_en es null si no se ha confirmado o si se confirmó a mano en /admin/.
+// garantia es null o { tipo, monto, registrada_en, registrada_por }.
 export async function listarCotizaciones() {
   return comoLista(await apiFetch("/cotizaciones/", { method: "GET" }));
 }
 
 // GET /api/calendario/?desde=AAAA-MM-DD&hasta=AAAA-MM-DD → [{ id, salon,
-// salon_nombre, cliente, cliente_nombre, estado, fecha_evento, cantidad_personas }]
+// salon_nombre, cliente, cliente_nombre, montaje, montaje_nombre, estado, vencida,
+// fecha_evento, cantidad_personas, validez_oferta }]
 // No incluye las canceladas. Las fechas son inclusivas.
 export async function listarCalendario({ desde, hasta }) {
   const query = new URLSearchParams({ desde, hasta }).toString();

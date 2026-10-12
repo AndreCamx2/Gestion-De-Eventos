@@ -19,12 +19,15 @@ DIAS_VIGENCIA_POR_DEFECTO = 15
 class CotizacionCalendarioSerializer(serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source="cliente.nombre", read_only=True)
     salon_nombre = serializers.CharField(source="salon.nombre", read_only=True)
+    montaje_nombre = serializers.CharField(source="montaje.nombre", read_only=True)
+    vencida = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Cotizacion
         fields = [
             "id", "salon", "salon_nombre", "cliente", "cliente_nombre",
-            "estado", "fecha_evento", "cantidad_personas",
+            "montaje", "montaje_nombre", "estado", "vencida", "fecha_evento",
+            "cantidad_personas", "validez_oferta",
         ]
 
 
@@ -192,6 +195,20 @@ def _totales(cotizacion):
     return cotizacion._totales
 
 
+def garantia_de(cotizacion):
+    """La garantía como la muestran el detalle y el listado: null hasta la aceptación (SGDE-20)."""
+    if not cotizacion.garantia_tipo:
+        return None
+    return {
+        "tipo": cotizacion.garantia_tipo,
+        "monto": str(redondear(cotizacion.garantia_monto)) if cotizacion.garantia_monto is not None else None,
+        "registrada_en": serializers.DateTimeField().to_representation(cotizacion.garantia_registrada_en)
+        if cotizacion.garantia_registrada_en else None,
+        "registrada_por": cotizacion.garantia_registrada_por.username
+        if cotizacion.garantia_registrada_por else None,
+    }
+
+
 class CotizacionDetalleSerializer(serializers.ModelSerializer):
     vencida = serializers.BooleanField(read_only=True)
     sitio = SitioResumenSerializer(read_only=True)
@@ -205,13 +222,16 @@ class CotizacionDetalleSerializer(serializers.ModelSerializer):
     impuestos = serializers.SerializerMethodField()
     total = serializers.SerializerMethodField()
     garantia = serializers.SerializerMethodField()
+    # Solo la aceptación (SGDE-20) confirma, y en el mismo save registra la garantía:
+    # esa fecha es la de confirmación. Lo confirmado a mano en /admin/ queda en null.
+    confirmado_en = serializers.DateTimeField(source="garantia_registrada_en", read_only=True)
 
     class Meta:
         model = Cotizacion
         fields = [
             "id", "estado", "vencida", "sitio", "cliente", "salon", "montaje", "aforo",
-            "fecha_evento", "cantidad_personas", "validez_oferta", "creado_en", "creado_por",
-            "items", "subtotal", "impuestos", "total", "garantia",
+            "fecha_evento", "cantidad_personas", "validez_oferta", "bloqueo_hasta", "creado_en",
+            "creado_por", "confirmado_en", "items", "subtotal", "impuestos", "total", "garantia",
         ]
         read_only_fields = fields
 
@@ -232,34 +252,33 @@ class CotizacionDetalleSerializer(serializers.ModelSerializer):
         return str(_totales(obj)["total"])
 
     def get_garantia(self, obj):
-        """null hasta que se registre la aceptación (SGDE-20)."""
-        if not obj.garantia_tipo:
-            return None
-        return {
-            "tipo": obj.garantia_tipo,
-            "monto": str(redondear(obj.garantia_monto)) if obj.garantia_monto is not None else None,
-            "registrada_en": serializers.DateTimeField().to_representation(obj.garantia_registrada_en)
-            if obj.garantia_registrada_en else None,
-            "registrada_por": obj.garantia_registrada_por.username if obj.garantia_registrada_por else None,
-        }
+        return garantia_de(obj)
 
 
 class CotizacionListaSerializer(serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source="cliente.nombre", read_only=True)
     salon_nombre = serializers.CharField(source="salon.nombre", read_only=True)
+    montaje_nombre = serializers.CharField(source="montaje.nombre", read_only=True)
     vencida = serializers.BooleanField(read_only=True)
     total = serializers.SerializerMethodField()
+    garantia = serializers.SerializerMethodField()
+    # Misma regla que en el detalle: la fecha de la aceptación es la de confirmación.
+    confirmado_en = serializers.DateTimeField(source="garantia_registrada_en", read_only=True)
 
     class Meta:
         model = Cotizacion
         fields = [
-            "id", "estado", "vencida", "cliente_nombre", "salon_nombre",
-            "fecha_evento", "cantidad_personas", "validez_oferta", "total",
+            "id", "estado", "vencida", "cliente_nombre", "salon_nombre", "montaje_nombre",
+            "fecha_evento", "cantidad_personas", "validez_oferta", "bloqueo_hasta",
+            "creado_en", "confirmado_en", "total", "garantia",
         ]
         read_only_fields = fields
 
     def get_total(self, obj):
         return str(_totales(obj)["total"])
+
+    def get_garantia(self, obj):
+        return garantia_de(obj)
 
 
 # --- Entrada: cambiar la vigencia (SGDE-19) ----------------------------------
