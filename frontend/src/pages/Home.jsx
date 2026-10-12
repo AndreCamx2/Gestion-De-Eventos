@@ -23,6 +23,7 @@ import {
   sumarDias,
   tasaDeCierre,
 } from "./inicioCifras";
+import { nombreVisible } from "../utils/nombreUsuario";
 import "../styles/home.css";
 
 // Ventana de la agenda y de la ocupación: hoy y los 29 días siguientes.
@@ -85,7 +86,7 @@ export default function Home() {
   const [sesionVencida, setSesionVencida] = useState(false);
 
   const rol = usuario.datos?.rol?.codigo;
-  const nombre = usuario.datos?.username ?? "";
+  const nombre = nombreVisible(usuario.datos);
   const esAdmin = rol === "administrador";
 
   // Pide un bloque y guarda su resultado. Si falla, solo ese bloque muestra el error.
@@ -217,13 +218,9 @@ function InicioAdministrador({
   onReintentarCalendario,
   onReintentarSalones,
 }) {
-  const cotizacionesPorId = useMemo(
-    () => (cotizaciones.fase === "listo" ? new Map(cotizaciones.datos.map((c) => [c.id, c])) : null),
-    [cotizaciones],
-  );
   const agenda = useMemo(
-    () => (calendario.fase === "listo" ? armarAgenda(calendario.datos, cotizacionesPorId, hoy) : []),
-    [calendario, cotizacionesPorId, hoy],
+    () => (calendario.fase === "listo" ? armarAgenda(calendario.datos, hoy) : []),
+    [calendario, hoy],
   );
 
   return (
@@ -235,7 +232,7 @@ function InicioAdministrador({
 
         <div className="inicio-lateral">
           <Confirmados hoy={hoy} cotizaciones={cotizaciones} />
-          <TasaCierre cotizaciones={cotizaciones} />
+          <TasaCierre hoy={hoy} cotizaciones={cotizaciones} />
           <Ocupacion
             rol={rol}
             calendario={calendario}
@@ -373,6 +370,7 @@ const ETIQUETAS_CONTEO = {
   vencida: ["vencida", "vencidas"],
 };
 
+// Como la maqueta: en la agenda, este aviso va en lugar de las personas.
 function textoVence(dias) {
   if (dias === 0) return "la oferta vence hoy";
   if (dias === 1) return "la oferta vence mañana";
@@ -436,8 +434,8 @@ function Agenda({ rol, calendario, agenda, onReintentar }) {
                 <div className="inicio-evento__textos">
                   <p className="inicio-evento__cliente">{e.cliente_nombre}</p>
                   <p className={`inicio-evento__detalle ${e.venceEn !== null ? "inicio-evento__detalle--alerta" : ""}`}>
-                    {e.salon_nombre} · {plural(e.cantidad_personas, "persona", "personas")}
-                    {e.venceEn !== null && ` · ${textoVence(e.venceEn)}`}
+                    {e.salon_nombre} · {e.montaje_nombre} ·{" "}
+                    {e.venceEn !== null ? textoVence(e.venceEn) : plural(e.cantidad_personas, "persona", "personas")}
                   </p>
                 </div>
                 <EstadoBadge estado={e.estadoVisible} />
@@ -511,8 +509,9 @@ function Confirmados({ hoy, cotizaciones }) {
   );
 }
 
-function TasaCierre({ cotizaciones }) {
-  const tasa = cotizaciones.fase === "listo" ? tasaDeCierre(cotizaciones.datos) : null;
+function TasaCierre({ hoy, cotizaciones }) {
+  const tasa = cotizaciones.fase === "listo" ? tasaDeCierre(cotizaciones.datos, hoy) : null;
+  const mes = nombreMes(hoy);
 
   return (
     <Tarjeta as="section" className="inicio-cifra" aria-labelledby="inicio-tasa-titulo">
@@ -526,14 +525,13 @@ function TasaCierre({ cotizaciones }) {
         <h2 id="inicio-tasa-titulo" className="inicio-cifra__titulo">Tasa de cierre</h2>
         {cotizaciones.fase === "cargando" && <Esqueleto filas={1} avatar={false} etiqueta="Cargando…" />}
         {cotizaciones.fase === "error" && <SinDatos>Sin datos: no se pudieron cargar las cotizaciones.</SinDatos>}
-        {tasa && tasa.porcentaje === null && (
-          <SinDatos>Aún no hay cotizaciones resueltas (confirmadas, canceladas o vencidas).</SinDatos>
-        )}
-        {tasa && tasa.porcentaje !== null && (
+        {tasa && (
           <>
-            <p className="inicio-cifra__valor">{tasa.porcentaje}%</p>
+            <p className="inicio-cifra__valor">{tasa.porcentaje === null ? "—" : `${tasa.porcentaje}%`}</p>
             <p className="inicio-cifra__nota">
-              Confirmadas de {plural(tasa.resueltas, "cotización resuelta", "cotizaciones resueltas")}.
+              {tasa.porcentaje === null
+                ? `Ninguna cotización se ha resuelto en ${mes}.`
+                : `Confirmadas de ${plural(tasa.resueltas, "cotización resuelta", "cotizaciones resueltas")} en ${mes}.`}
             </p>
           </>
         )}

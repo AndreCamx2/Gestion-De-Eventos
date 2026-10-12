@@ -56,6 +56,14 @@ export function mesCorto(fecha) {
   return MESES_CORTOS[fecha.getMonth()];
 }
 
+// Fecha y hora del API ("2026-10-12T15:30:00-05:00") → ¿cae en el mes de `fecha`?
+// new Date() respeta la zona que trae el texto, y getMonth() lo pasa a la hora local.
+function enElMes(textoFechaHora, fecha) {
+  if (!textoFechaHora) return false;
+  const momento = new Date(textoFechaHora);
+  return momento.getFullYear() === fecha.getFullYear() && momento.getMonth() === fecha.getMonth();
+}
+
 export function saludoPorHora(hora) {
   if (hora < 12) return "Buenos días";
   if (hora < 19) return "Buenas tardes";
@@ -98,27 +106,31 @@ export function resumenPorConfirmar(cotizaciones, hoy) {
   return { cantidad: porConfirmar.length, total, vencenSemana };
 }
 
-// Eventos confirmados cuya fecha_evento cae en el mes de `fecha`. La lista no trae
-// la fecha en que se confirmó, así que se cuenta por la fecha del evento.
+// Cotizaciones confirmadas en el mes de `fecha`, según confirmado_en (la fecha en
+// que se registró la aceptación), no según la fecha del evento.
+// Las confirmadas a mano en /admin/ traen confirmado_en null: no tienen fecha y no cuentan.
 export function confirmadosDelMes(cotizaciones, fecha) {
-  return cotizaciones.filter((c) => {
-    if (c.estado !== "confirmado" || !c.fecha_evento) return false;
-    const evento = desdeISO(c.fecha_evento);
-    return evento.getFullYear() === fecha.getFullYear() && evento.getMonth() === fecha.getMonth();
-  }).length;
+  return cotizaciones.filter((c) => c.estado === "confirmado" && enElMes(c.confirmado_en, fecha)).length;
 }
 
-// Tasa de cierre (histórica): de las cotizaciones ya resueltas, cuántas se confirmaron.
-//   confirmadas ÷ (confirmadas + canceladas + cotizadas vencidas)
+// Tasa de cierre del mes: de las cotizaciones RESUELTAS en el mes de `hoy`, cuántas
+// se confirmaron.
+//   confirmadas ÷ (confirmadas + perdidas)
+//   - confirmadas: confirmado_en cae en el mes;
+//   - perdidas: cotizadas vencidas cuya validez_oferta cae en el mes (y ya pasó).
+// Las canceladas todavía no cuentan: no guardan la fecha en que se cancelaron.
+// Cuando SGDE-61 guarde cancelado_en, se suman a las perdidas del mes en que se cancelaron.
 // Las que siguen en curso (cotizadas vigentes y bloqueadas) no cuentan.
-// Límite: un evento confirmado y luego cancelado cuenta como "no cerrado".
 // Sin cotizaciones resueltas devuelve porcentaje null (no se inventa un 0 %).
-export function tasaDeCierre(cotizaciones) {
+export function tasaDeCierre(cotizaciones, hoy) {
   let confirmadas = 0;
   let perdidas = 0;
   cotizaciones.forEach((c) => {
-    if (c.estado === "confirmado") confirmadas += 1;
-    else if (c.estado === "cancelado" || (c.estado === "cotizado" && c.vencida)) perdidas += 1;
+    if (c.estado === "confirmado" && enElMes(c.confirmado_en, hoy)) confirmadas += 1;
+    else if (c.estado === "cotizado" && c.vencida && c.validez_oferta) {
+      const validez = desdeISO(c.validez_oferta);
+      if (validez.getFullYear() === hoy.getFullYear() && validez.getMonth() === hoy.getMonth()) perdidas += 1;
+    }
   });
   const resueltas = confirmadas + perdidas;
   return {
@@ -147,24 +159,22 @@ export function ocupacionPorSalon(eventos, salones, dias) {
     .sort((a, b) => b.porcentaje - a.porcentaje || a.nombre.localeCompare(b.nombre, "es"));
 }
 
-// Agenda: eventos del calendario ordenados por fecha. Como /calendario/ no trae
-// vencida ni validez_oferta, se completan con la fila de /cotizaciones/ (si cargó).
+// Agenda: eventos de /calendario/ ordenados por fecha, que ya trae vencida y validez_oferta.
 //   - estado "vencida" si la cotización ya venció;
 //   - venceEn: días que le quedan a la oferta de una cotizada (0 a 6), o null.
-export function armarAgenda(eventos, cotizacionesPorId, hoy) {
+export function armarAgenda(eventos, hoy) {
   return [...eventos]
     .sort((a, b) => a.fecha_evento.localeCompare(b.fecha_evento) || a.id - b.id)
     .map((e) => {
-      const fila = cotizacionesPorId?.get(e.id);
       let venceEn = null;
-      if (e.estado === "cotizado" && !fila?.vencida && fila?.validez_oferta) {
-        const dias = diasEntre(hoy, desdeISO(fila.validez_oferta));
+      if (e.estado === "cotizado" && !e.vencida && e.validez_oferta) {
+        const dias = diasEntre(hoy, desdeISO(e.validez_oferta));
         if (dias >= 0 && dias <= 6) venceEn = dias;
       }
       return {
         ...e,
         fecha: desdeISO(e.fecha_evento),
-        estadoVisible: e.estado === "cotizado" && fila?.vencida ? "vencida" : e.estado,
+        estadoVisible: e.vencida ? "vencida" : e.estado,
         venceEn,
       };
     });
