@@ -1,196 +1,232 @@
-import { useState, useEffect } from "react";
-import {
-  getProveedores,
-  crearProveedor,
-  eliminarProveedor,
-} from "../api/proveedores";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { listarProveedores, listarStock } from "../api/proveedores";
+import SesionVencida from "../components/SesionVencida";
+import { AvisoError, Boton, CabeceraPagina, Esqueleto, EstadoVacio, Tarjeta } from "../components/ui";
+import { conteoPorProveedor, porNombre, stockDe } from "./proveedores/proveedores";
+import TarjetasProveedores from "./proveedores/TarjetasProveedores";
+import StockTabla from "./proveedores/StockTabla";
+import DialogoNuevoProveedor from "./proveedores/DialogoNuevoProveedor";
+import DialogoNuevoElemento from "./proveedores/DialogoNuevoElemento";
 import "../styles/proveedores.css";
+
+// Pantalla de Proveedores y stock (SGDE-81 y SGDE-42, maqueta Proveedores.dc.html):
+// tarjetas de proveedor seleccionables y la tabla de stock del elegido. El API no
+// tiene editar ni borrar (editar stock es SGDE-98). Cada pieza vive en pages/proveedores/.
+
+// Tipo de error al cargar: "sesion" (401), "permiso" (403) o "servidor" (500 o sin red).
+function tipoDeError(err) {
+  if (err?.status === 401) return "sesion";
+  if (err?.status === 403) return "permiso";
+  return "servidor";
+}
 
 export default function Proveedores() {
   const [proveedores, setProveedores] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // Stock de todos los proveedores; null = /stock/ no cargó.
+  const [stock, setStock] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  // Error al cargar /proveedores/: null | "sesion" | "permiso" | "servidor".
+  const [errorCarga, setErrorCarga] = useState(null);
+  // 401: se avisa abajo sin salir de la pantalla (components/SesionVencida.jsx).
+  const [sesionVencida, setSesionVencida] = useState(false);
+  const [seleccionId, setSeleccionId] = useState(null);
+  // Ventana abierta: null | "proveedor" | "elemento".
+  const [dialogo, setDialogo] = useState(null);
 
-  const [mostrarModal, setMostrarModal] = useState(false);
-  const [form, setForm] = useState({
-    nombre: "",
-    servicio: "",
-    contacto: "",
-    email: "",
-  });
-  const [formSubmitting, setFormSubmitting] = useState(false);
-  const [formError, setFormError] = useState("");
+  // Si la sesión venció mientras se cargaba, al volver a entrar se carga otra vez.
+  const recargarAlEntrarRef = useRef(false);
+  // Botón que abrió la ventana: al cerrarla, el foco vuelve ahí.
+  const disparadorRef = useRef(null);
+  const nuevoRef = useRef(null);
+  const stockRef = useRef(null);
+  const sesionRef = useRef(null);
 
   useEffect(() => {
-    cargarProveedores();
+    cargarDatos();
   }, []);
 
-  const cargarProveedores = async () => {
-    setLoading(true);
-    try {
-      const data = await getProveedores();
-      setProveedores(Array.isArray(data) ? data : data.results || []);
-      setError(null);
-    } catch (err) {
-      setError(err.message || "Error al cargar la lista de proveedores.");
-    } finally {
-      setLoading(false);
+  // Al cerrarse una ventana, el foco vuelve al botón que la abrió. Va en un efecto
+  // porque mientras el <dialog> modal sigue montado, lo de afuera está inerte y
+  // focus() no funciona. Si ese botón ya no existe (el del estado vacío), va a
+  // "Nuevo proveedor".
+  useEffect(() => {
+    if (dialogo !== null || !disparadorRef.current) return;
+    const disparador = disparadorRef.current;
+    disparadorRef.current = null;
+    (disparador.isConnected ? disparador : nuevoRef.current)?.focus();
+  }, [dialogo]);
+
+  // Proveedores y stock van en paralelo. Si solo falla /stock/, las tarjetas se
+  // ven igual y la sección de stock ofrece reintentar.
+  async function cargarDatos() {
+    setCargando(true);
+    setErrorCarga(null);
+    const [rProveedores, rStock] = await Promise.allSettled([listarProveedores(), listarStock()]);
+
+    if (rProveedores.status === "fulfilled") setProveedores(rProveedores.value);
+    else setErrorCarga(tipoDeError(rProveedores.reason));
+    setStock(rStock.status === "fulfilled" ? rStock.value : null);
+
+    if ([rProveedores, rStock].some((r) => r.status === "rejected" && r.reason?.status === 401)) {
+      recargarAlEntrarRef.current = true;
+      setSesionVencida(true);
     }
-  };
+    setCargando(false);
+  }
 
-  const handleCrearProveedor = async (e) => {
-    e.preventDefault();
-    setFormError("");
-    setFormSubmitting(true);
-
+  async function cargarStock() {
     try {
-      await crearProveedor(form);
-      setMostrarModal(false);
-      setForm({ nombre: "", servicio: "", contacto: "", email: "" });
-      cargarProveedores(); // Refrescar la lista
+      setStock(await listarStock());
     } catch (err) {
-      setFormError(err.message || "No se pudo guardar el proveedor.");
-    } finally {
-      setFormSubmitting(false);
+      if (err.status === 401) {
+        recargarAlEntrarRef.current = true;
+        setSesionVencida(true);
+      }
     }
-  };
+  }
 
-  const handleEliminar = async (id) => {
-    if (!window.confirm("¿Está seguro de eliminar este proveedor?")) return;
+  const ordenados = useMemo(() => [...proveedores].sort(porNombre), [proveedores]);
+  const seleccionado = ordenados.find((p) => p.id === seleccionId) ?? ordenados[0] ?? null;
+  const conteos = useMemo(() => (stock ? conteoPorProveedor(stock) : null), [stock]);
+  const elementos = stock && seleccionado ? stockDe(stock, seleccionado.id) : null;
 
-    try {
-      await eliminarProveedor(id);
-      cargarProveedores();
-    } catch (err) {
-      alert(err.message || "Error al eliminar el proveedor.");
+  function elegir(proveedor) {
+    setSeleccionId(proveedor.id);
+    // En teléfono la tabla queda lejos, debajo de todas las tarjetas: se baja hasta ella.
+    if (window.matchMedia("(max-width: 600px)").matches) {
+      const suave = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      requestAnimationFrame(() =>
+        stockRef.current?.scrollIntoView({ behavior: suave ? "smooth" : "auto", block: "start" }),
+      );
     }
+  }
+
+  function abrir(tipo, boton) {
+    disparadorRef.current = boton;
+    setDialogo(tipo);
+  }
+
+  function cerrarDialogo() {
+    setDialogo(null);
+  }
+
+  function alCrearProveedor(proveedor) {
+    setProveedores((prev) => [...prev, proveedor]);
+    setSeleccionId(proveedor.id);
+    cerrarDialogo();
+  }
+
+  function alCrearElemento(elemento) {
+    // Si /stock/ no había cargado, se pide completo; si no, se suma a la lista.
+    if (stock) setStock((prev) => [...prev, elemento]);
+    else cargarStock();
+    cerrarDialogo();
+  }
+
+  // "Entrar de nuevo" desde dentro de una ventana abierta (SGDE-94): el login se
+  // abre encima y, al entrar, el foco vuelve a "Guardar" de la ventana.
+  function entrarDeNuevoDesdeVentana(boton) {
+    sesionRef.current?.abrir({ focoAlVolver: boton });
+  }
+
+  function alVolverAEntrar() {
+    setSesionVencida(false);
+    if (recargarAlEntrarRef.current) {
+      recargarAlEntrarRef.current = false;
+      cargarDatos();
+    }
+  }
+
+  let vista = "lista";
+  if (errorCarga === "permiso" || errorCarga === "servidor") vista = "error";
+  else if (proveedores.length === 0 && errorCarga === "sesion") vista = "sesion";
+  else if (proveedores.length === 0 && cargando) vista = "carga";
+  else if (proveedores.length === 0) vista = "vacio";
+
+  const propsSesion = {
+    onSesionVencida: () => setSesionVencida(true),
+    sesionVencida,
+    onEntrarDeNuevo: entrarDeNuevoDesdeVentana,
   };
 
   return (
-    <div className="proveedores-container">
-      <div className="toolbar">
-        <h2>Gestión de Proveedores (RF-12)</h2>
-        <button
-          className="btn btn--primary"
-          onClick={() => setMostrarModal(true)}
-        >
-          + Nuevo Proveedor
-        </button>
-      </div>
+    <div className="proveedores-pv">
+      <CabeceraPagina
+        antetitulo="Catálogo"
+        titulo="Proveedores y stock"
+        subtitulo="Quién provee qué, cuánto hay y cuánto vale."
+        acciones={
+          errorCarga !== "permiso" && (
+            <>
+              <Boton variante="secundario" disabled={!seleccionado} onClick={(e) => abrir("elemento", e.currentTarget)}>
+                Agregar elemento
+              </Boton>
+              <Boton ref={nuevoRef} onClick={(e) => abrir("proveedor", e.currentTarget)}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Nuevo proveedor
+              </Boton>
+            </>
+          )
+        }
+      />
 
-      {loading ? (
-        <p className="state-info">Cargando proveedores desde el servidor...</p>
-      ) : error ? (
-        <p className="state-error">{error}</p>
-      ) : (
-        <table className="proveedores-table">
-          <thead>
-            <tr>
-              <th>Nombre / Empresa</th>
-              <th>Servicio / Montaje</th>
-              <th>Contacto</th>
-              <th>Correo Electrónico</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {proveedores.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="table-empty">
-                  No hay proveedores registrados.
-                </td>
-              </tr>
-            ) : (
-              proveedores.map((p) => (
-                <tr key={p.id}>
-                  <td className="cell-strong">{p.nombre}</td>
-                  <td>{p.servicio || p.tipo_montaje || "General"}</td>
-                  <td>{p.contacto || p.telefono}</td>
-                  <td>{p.email || "N/A"}</td>
-                  <td>
-                    <button
-                      className="btn-danger"
-                      onClick={() => handleEliminar(p.id)}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      {vista === "error" && (
+        <Tarjeta>
+          <AvisoError tipo={errorCarga} onReintentar={cargarDatos} />
+        </Tarjeta>
       )}
 
-      {mostrarModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content">
-            <h3>Registrar Nuevo Proveedor</h3>
-            {formError && <p className="form-error">{formError}</p>}
-            <form onSubmit={handleCrearProveedor}>
-              <label>
-                Nombre del Proveedor / Empresa:
-                <input
-                  type="text"
-                  value={form.nombre}
-                  onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                  required
-                />
-              </label>
+      {vista === "sesion" && (
+        <Tarjeta>
+          <EstadoVacio titulo="Tu sesión expiró" texto="Vuelve a entrar con el aviso de abajo para ver los proveedores." />
+        </Tarjeta>
+      )}
 
-              <label>
-                Servicio o Tipo de Montaje:
-                <input
-                  type="text"
-                  value={form.servicio}
-                  onChange={(e) =>
-                    setForm({ ...form, servicio: e.target.value })
-                  }
-                  placeholder="Ej. Mantelería, Amplificación, Sonido"
-                />
-              </label>
+      {vista === "carga" && (
+        <Tarjeta>
+          <Esqueleto filas={3} columnas={2} etiqueta="Cargando proveedores…" />
+        </Tarjeta>
+      )}
 
-              <label>
-                Teléfono de Contacto:
-                <input
-                  type="text"
-                  value={form.contacto}
-                  onChange={(e) =>
-                    setForm({ ...form, contacto: e.target.value })
-                  }
-                  required
-                />
-              </label>
+      {vista === "vacio" && (
+        <Tarjeta>
+          <EstadoVacio
+            titulo="Aún no hay proveedores"
+            texto="Registra el primero y luego agrégale lo que provee: sonido, mobiliario, flores…"
+            accion={
+              <Boton variante="secundario" onClick={(e) => abrir("proveedor", e.currentTarget)}>
+                Nuevo proveedor
+              </Boton>
+            }
+          />
+        </Tarjeta>
+      )}
 
-              <label>
-                Correo Electrónico:
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
-              </label>
-
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  onClick={() => setMostrarModal(false)}
-                  disabled={formSubmitting}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn--primary"
-                  disabled={formSubmitting}
-                >
-                  {formSubmitting ? "Guardando..." : "Guardar Proveedor"}
-                </button>
-              </div>
-            </form>
+      {vista === "lista" && seleccionado && (
+        <>
+          <TarjetasProveedores proveedores={ordenados} seleccionadoId={seleccionado.id} conteos={conteos} onElegir={elegir} />
+          <div ref={stockRef} className="proveedores-stock-ancla">
+            <StockTabla
+              proveedor={seleccionado}
+              elementos={elementos}
+              onReintentar={cargarStock}
+              onAgregar={(boton) => abrir("elemento", boton)}
+            />
           </div>
-        </div>
+        </>
       )}
+
+      {dialogo === "proveedor" && (
+        <DialogoNuevoProveedor onCreado={alCrearProveedor} onCerrar={cerrarDialogo} {...propsSesion} />
+      )}
+
+      {dialogo === "elemento" && seleccionado && (
+        <DialogoNuevoElemento proveedor={seleccionado} onCreado={alCrearElemento} onCerrar={cerrarDialogo} {...propsSesion} />
+      )}
+
+      <SesionVencida ref={sesionRef} visible={sesionVencida} onReingreso={alVolverAEntrar} />
     </div>
   );
 }

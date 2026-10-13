@@ -21,6 +21,7 @@ export const ROLES_POR_RUTA = {
   "/sitios": SOLO_ADMIN, // /sitios/ (y /ciudades/)
   "/clientes": SOLO_ADMIN, // /clientes/, /empresas/
   "/conceptos": SOLO_ADMIN, // /conceptos/, /sitios/
+  "/proveedores": SOLO_ADMIN, // /proveedores/, /stock/
   "/rack": SOLO_ADMIN, // disponibilidad, solo administrador
 };
 
