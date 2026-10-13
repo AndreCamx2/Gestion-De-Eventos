@@ -1,96 +1,41 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { getCotizaciones } from "../api/cotizaciones";
 import {
   AvisoError,
   Boton,
   CabeceraPagina,
   Esqueleto,
-  EstadoBadge,
   EstadoVacio,
-  TablaContenedor,
   Tarjeta,
 } from "../components/ui";
 import SesionVencida from "../components/SesionVencida";
+import { hoyLocal, nombreMes } from "./inicioCifras";
+import {
+  FILTROS,
+  conteosPorEstado,
+  estadoVisible,
+  normalizar,
+  resumen,
+  tipoDeError,
+} from "./cotizaciones/cotizaciones";
+import CotizacionesCifras from "./cotizaciones/CotizacionesCifras";
+import CotizacionesTabla from "./cotizaciones/CotizacionesTabla";
 import "../styles/cotizaciones.css";
 
-const FILTROS = [
-  { clave: "todas", texto: "Todas" },
-  { clave: "cotizado", texto: "Cotizadas" },
-  { clave: "vencida", texto: "Vencidas" },
-  { clave: "bloqueado", texto: "Bloqueadas" },
-  { clave: "confirmado", texto: "Confirmadas" },
-  { clave: "cancelado", texto: "Canceladas" },
-];
-
-const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-const DIA_MS = 86400000;
-const formatoPesos = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
-const formatoMillones = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 });
-
-function aFecha(texto) {
-  const [anio, mes, dia] = texto.split("-").map(Number);
-  return new Date(anio, mes - 1, dia);
-}
-
-function hoy() {
-  const ahora = new Date();
-  return new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
-}
-
-function diasHasta(texto) {
-  return Math.round((aFecha(texto) - hoy()) / DIA_MS);
-}
-
-function fechaCorta(texto, conAnio = true) {
-  const f = aFecha(texto);
-  return `${f.getDate()} ${MESES[f.getMonth()]}${conAnio ? ` ${f.getFullYear()}` : ""}`;
-}
-
-function pesos(valor) {
-  return `$ ${formatoPesos.format(Math.round(valor))}`;
-}
-
-function millones(valor) {
-  return `$ ${formatoMillones.format(valor / 1e6)} M`;
-}
-
-function numeroCotizacion(id) {
-  return `#${String(id).padStart(3, "0")}`;
-}
-
-function normalizar(texto) {
-  return String(texto ?? "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase();
-}
-
-function estadoVisible(c) {
-  return c.vencida ? "vencida" : c.estado;
-}
-
-function vigencia(c) {
-  if ((c.estado !== "cotizado" && c.estado !== "bloqueado") || !c.validez_oferta) {
-    return { fecha: "—", nota: "", tono: "neutro" };
-  }
-  const dias = diasHasta(c.validez_oferta);
-  const fecha = fechaCorta(c.validez_oferta, false);
-  if (c.vencida || dias < 0) {
-    const pasados = Math.max(1, -dias);
-    return { fecha, nota: `venció hace ${pasados} ${pasados === 1 ? "día" : "días"}`, tono: "vencida" };
-  }
-  if (dias === 0) return { fecha, nota: "vence hoy", tono: "pronto" };
-  return {
-    fecha,
-    nota: `vence en ${dias} ${dias === 1 ? "día" : "días"}`,
-    tono: dias <= 7 ? "pronto" : "neutro",
-  };
-}
-
+// Pantalla de Cotizaciones: carga, filtros y qué vista se muestra. Las cifras,
+// la tabla y los formatos viven en pages/cotizaciones/.
 export default function Cotizaciones() {
+  // Regla: las cifras resumen TODAS las cotizaciones; los filtros (estado,
+  // búsqueda y fechas del evento) solo afectan la tabla.
+  // - todas: lista sin filtro de fechas, para las cifras.
+  // - cotizaciones: lista de la tabla (con el filtro de fechas, si lo hay).
+  const [todas, setTodas] = useState([]);
+  const [todasCargadas, setTodasCargadas] = useState(false);
   const [cotizaciones, setCotizaciones] = useState([]);
   const [cargando, setCargando] = useState(true);
+  // Errores: null | "permiso" (403) | "servidor" (500 o sin red) | "sesion" (401) | "fechas" (400).
   const [errorCarga, setErrorCarga] = useState(null);
+  const [errorCifras, setErrorCifras] = useState(null);
   const [sesionVencida, setSesionVencida] = useState(false);
 
   const [filtro, setFiltro] = useState("todas");
@@ -98,26 +43,37 @@ export default function Cotizaciones() {
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
 
+  // Cada cambio de fecha lanza una carga. Si una vieja (por ejemplo, solo con
+  // "desde") responde después de la nueva, se descarta: solo vale la última.
+  const ultimaPeticionRef = useRef(0);
+
+  // Sin fechas, una sola petición sirve para las cifras y la tabla. Con fechas,
+  // una sin fechas para las cifras y otra con fechas para la tabla.
   const cargarDatos = useCallback(async () => {
+    const peticion = ++ultimaPeticionRef.current;
+    const conFechas = Boolean(desde || hasta);
     setCargando(true);
     setErrorCarga(null);
-    try {
-      const data = await getCotizaciones({ desde, hasta });
-      setCotizaciones(Array.isArray(data) ? data : []);
-    } catch (err) {
-      if (err.status === 401) {
-        setErrorCarga("sesion");
-        setSesionVencida(true);
-      } else if (err.status === 403) {
-        setErrorCarga("permiso");
-      } else if (err.status === 400) {
-        setErrorCarga("fechas");
-      } else {
-        setErrorCarga("servidor");
-      }
-    } finally {
-      setCargando(false);
+    const [deTodas, deTabla] = await Promise.allSettled([
+      getCotizaciones(),
+      conFechas ? getCotizaciones({ desde, hasta }) : null,
+    ]);
+    if (peticion !== ultimaPeticionRef.current) return;
+
+    const lista = (r) => (Array.isArray(r.value) ? r.value : []);
+    const tabla = conFechas ? deTabla : deTodas;
+    if (deTodas.status === "fulfilled") {
+      setTodas(lista(deTodas));
+      setTodasCargadas(true);
     }
+    if (tabla.status === "fulfilled") setCotizaciones(lista(tabla));
+    // Si falla solo la de la tabla (por ejemplo, un 400 de fechas), las cifras siguen.
+    const tipoCifras = deTodas.status === "rejected" ? tipoDeError(deTodas.reason) : null;
+    const tipoTabla = tabla.status === "rejected" ? tipoDeError(tabla.reason) : null;
+    setErrorCifras(tipoCifras);
+    setErrorCarga(tipoTabla);
+    if (tipoCifras === "sesion" || tipoTabla === "sesion") setSesionVencida(true);
+    setCargando(false);
   }, [desde, hasta]);
 
   useEffect(() => {
@@ -126,33 +82,14 @@ export default function Cotizaciones() {
 
   function alVolverAEntrar() {
     setSesionVencida(false);
-    if (errorCarga === "sesion") cargarDatos();
+    if (errorCarga === "sesion" || errorCifras === "sesion") cargarDatos();
   }
 
-  const cifras = useMemo(() => {
-    const vigentes = cotizaciones.filter(
-      (c) => (c.estado === "cotizado" && !c.vencida) || c.estado === "bloqueado"
-    );
-    const noCanceladas = cotizaciones.filter((c) => c.estado !== "cancelado");
-    const totalNoCanceladas = noCanceladas.reduce((suma, c) => suma + Number(c.total || 0), 0);
-    return {
-      valorVigente: vigentes.reduce((suma, c) => suma + Number(c.total || 0), 0),
-      confirmadas: cotizaciones.filter((c) => c.estado === "confirmado").length,
-      ticketPromedio: noCanceladas.length ? totalNoCanceladas / noCanceladas.length : 0,
-      vencenPronto: cotizaciones.filter(
-        (c) => c.estado === "cotizado" && !c.vencida && c.validez_oferta && diasHasta(c.validez_oferta) <= 7
-      ).length,
-    };
-  }, [cotizaciones]);
-
-  const conteos = useMemo(() => {
-    const mapa = { todas: cotizaciones.length };
-    cotizaciones.forEach((c) => {
-      const clave = estadoVisible(c);
-      mapa[clave] = (mapa[clave] ?? 0) + 1;
-    });
-    return mapa;
-  }, [cotizaciones]);
+  // Hoy se toma al cargar la lista: así las notas de vigencia y la tasa del mes
+  // se calculan con la misma fecha que los datos.
+  const hoy = useMemo(() => hoyLocal(), [todas, cotizaciones]);
+  const cifras = useMemo(() => resumen(todas, hoy), [todas, hoy]);
+  const conteos = useMemo(() => conteosPorEstado(cotizaciones), [cotizaciones]);
 
   const filtradas = useMemo(() => {
     const texto = normalizar(busqueda.trim()).replace(/^#/, "");
@@ -180,7 +117,10 @@ export default function Cotizaciones() {
   else if (cotizaciones.length === 0 && !desde && !hasta) vista = "vacio";
   else if (filtradas.length === 0) vista = "sinCoincidencias";
 
-  const sinCifras = vista === "error" || vista === "sesion" || vista === "carga" || vista === "fechas";
+  // Los conteos de los botones de estado son de la tabla; las cifras, de todas.
+  const sinConteos = vista === "error" || vista === "sesion" || vista === "carga" || vista === "fechas";
+  // Mientras se recarga se siguen viendo las cifras anteriores: no dependen de las fechas.
+  const cifrasVisibles = todasCargadas && !errorCifras;
 
   return (
     <div className="cotizaciones-pv">
@@ -195,32 +135,7 @@ export default function Cotizaciones() {
         }
       />
 
-      <section className="cotizaciones-cifras" aria-label="Resumen de cotizaciones">
-        <div className="cotizaciones-cifra">
-          <p className="cotizaciones-cifra__etiqueta">Valor vigente</p>
-          <p className="cotizaciones-cifra__valor">{sinCifras ? "—" : millones(cifras.valorVigente)}</p>
-          <p className="cotizaciones-cifra__nota">Cotizadas al día y bloqueadas</p>
-        </div>
-        <div className="cotizaciones-cifra">
-          <p className="cotizaciones-cifra__etiqueta">Confirmadas</p>
-          <p className="cotizaciones-cifra__valor cotizaciones-cifra__valor--verde">
-            {sinCifras ? "—" : cifras.confirmadas}
-          </p>
-          <p className="cotizaciones-cifra__nota">Eventos con garantía</p>
-        </div>
-        <div className="cotizaciones-cifra">
-          <p className="cotizaciones-cifra__etiqueta">Ticket promedio</p>
-          <p className="cotizaciones-cifra__valor">{sinCifras ? "—" : millones(cifras.ticketPromedio)}</p>
-          <p className="cotizaciones-cifra__nota">Sin contar canceladas</p>
-        </div>
-        <div className="cotizaciones-cifra">
-          <p className="cotizaciones-cifra__etiqueta">Vencen en 7 días</p>
-          <p className="cotizaciones-cifra__valor cotizaciones-cifra__valor--amarillo">
-            {sinCifras ? "—" : cifras.vencenPronto}
-          </p>
-          <p className="cotizaciones-cifra__nota">Cotizadas aún vigentes</p>
-        </div>
-      </section>
+      <CotizacionesCifras cifras={cifrasVisibles ? cifras : null} mes={nombreMes(hoy)} />
 
       <div className="cotizaciones-filtros">
         <div className="cotizaciones-estados" role="group" aria-label="Filtrar por estado">
@@ -233,7 +148,7 @@ export default function Cotizaciones() {
               onClick={() => setFiltro(clave)}
             >
               {texto}
-              {!sinCifras && <span className="cotizaciones-estado__conteo">{conteos[clave] ?? 0}</span>}
+              {!sinConteos && <span className="cotizaciones-estado__conteo">{conteos[clave] ?? 0}</span>}
             </button>
           ))}
         </div>
@@ -328,49 +243,7 @@ export default function Cotizaciones() {
         </Tarjeta>
       )}
 
-      {vista === "lista" && (
-        <TablaContenedor etiqueta="Listado de cotizaciones">
-          <table className="cotizaciones-tabla">
-            <thead>
-              <tr>
-                <th scope="col">N.º</th>
-                <th scope="col">Cliente</th>
-                <th scope="col">Salón</th>
-                <th scope="col">Evento</th>
-                <th scope="col" className="cotizaciones-tabla__num">Personas</th>
-                <th scope="col">Vigencia</th>
-                <th scope="col" className="cotizaciones-tabla__num">Total</th>
-                <th scope="col">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtradas.map((c) => {
-                const v = vigencia(c);
-                return (
-                  <tr key={c.id}>
-                    <td className="cotizaciones-tabla__numero">{numeroCotizacion(c.id)}</td>
-                    <td className="cotizaciones-tabla__cliente">{c.cliente_nombre}</td>
-                    <td className="cotizaciones-tabla__suave">{c.salon_nombre}</td>
-                    <td>{fechaCorta(c.fecha_evento)}</td>
-                    <td className="cotizaciones-tabla__num">{c.cantidad_personas}</td>
-                    <td>
-                      {v.fecha}
-                      {v.nota && (
-                        <span className={`cotizaciones-vigencia cotizaciones-vigencia--${v.tono}`}>{v.nota}</span>
-                      )}
-                    </td>
-                    <td className="cotizaciones-tabla__num cotizaciones-tabla__total">{pesos(Number(c.total || 0))}</td>
-                    <td><EstadoBadge estado={estadoVisible(c)} /></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <p className="cotizaciones-pie" role="status">
-            Mostrando {filtradas.length} de {cotizaciones.length}
-          </p>
-        </TablaContenedor>
-      )}
+      {vista === "lista" && <CotizacionesTabla cotizaciones={filtradas} total={cotizaciones.length} hoy={hoy} />}
 
       <SesionVencida visible={sesionVencida} onReingreso={alVolverAEntrar} />
     </div>
