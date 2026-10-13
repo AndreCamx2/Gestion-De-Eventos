@@ -403,6 +403,22 @@ class UsuariosPorSitioTests(MultiSitioBaseTest):
         self.assertEqual(set(self.sin_sitios.sitios.all()), {self.a["sitio"]})
 
 
+class RutaDeBloqueosRetiradaTests(MultiSitioBaseTest):
+    """SEG-010: /api/rack/bloqueos/ veía y bloqueaba cotizaciones de otros sitios. Se retiró."""
+
+    def test_la_ruta_ya_no_existe_y_no_bloquea_nada(self):
+        self.client.force_authenticate(user=self.admin_a)
+        url = "/api/rack/bloqueos/"
+        self.assertEqual(self.client.get(url).status_code, status.HTTP_404_NOT_FOUND)
+        cotizacion = self.b["cotizacion"]
+        hasta = (timezone.now() + timedelta(days=1)).isoformat()
+        r = self.client.post(url, {"cotizacion": cotizacion.pk, "bloqueo_hasta": hasta}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+        cotizacion.refresh_from_db()
+        self.assertEqual(cotizacion.estado, "cotizado")
+        self.assertIsNone(cotizacion.bloqueo_hasta)
+
+
 class RevisarSitiosComandoTests(MultiSitioBaseTest):
     def test_lista_administradores_sin_sitios_y_no_cambia_nada(self):
         salida = StringIO()
