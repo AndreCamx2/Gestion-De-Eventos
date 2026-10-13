@@ -35,6 +35,7 @@ ENDPOINTS_ADMIN_DETALLE = [
     ("/api/salon-montajes/1/", ["get", "patch", "delete"]),
     ("/api/conceptos/1/", ["get", "put", "patch"]),
     ("/api/conceptos/1/historial/", ["get"]),
+    ("/api/stock/1/", ["get", "patch"]),
     ("/api/cotizaciones/1/", ["get", "patch"]),
     ("/api/cotizaciones/1/aceptacion/", ["post"]),
     ("/api/cotizaciones/1/bloqueo/", ["post", "delete"]),
