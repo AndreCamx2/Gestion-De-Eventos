@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { listarSitios, crearSitio, listarCiudades } from "../../api/sitios";
-import "../../styles/sitios.css";
+import { listarSitios, crearSitio, listarCiudades } from "../api/sitios";
+import "../styles/sitios.css";
 
 const FORM_INICIAL = { nombre: "", ciudad: "" };
 

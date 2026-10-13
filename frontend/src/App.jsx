@@ -13,7 +13,7 @@ import DashboardLayout from "./pages/DashboardLayout";
 import Home from "./pages/Home";
 import Cotizaciones from "./pages/Cotizaciones";
 import Salones from "./pages/Salones";
-import Sitios from "./pages/hoteles/Sitios";
+import Sitios from "./pages/Sitios";
 import Clientes from "./pages/Clientes";
 import Conceptos from "./pages/Conceptos";
 import Proveedores from "./pages/Proveedores";
