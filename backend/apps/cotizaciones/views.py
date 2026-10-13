@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import ValidationError
@@ -13,6 +14,7 @@ from .models import Cotizacion
 from .serializers import (
     AceptacionSerializer, BloqueoSerializer, CancelacionSerializer, CotizacionCalendarioSerializer,
     CotizacionCrearSerializer, CotizacionDetalleSerializer, CotizacionListaSerializer, CotizacionVigenciaSerializer,
+    MovimientoSerializer,
 )
 
 
@@ -102,7 +104,10 @@ def filtrar_por_fechas(queryset, params):
 
 
 class CotizacionListCreateView(generics.ListCreateAPIView):
-    """Listado con filtros (?estado, ?cliente, ?desde, ?hasta) y creación de cotizaciones."""
+    """Listado con filtros (?estado, ?cliente, ?salon, ?desde, ?hasta) y creación de cotizaciones.
+
+    Con ?salon es el histórico del salón (SGDE-62): un salón de otro sitio da la lista vacía.
+    """
 
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
@@ -125,6 +130,10 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
         if cliente:
             queryset = queryset.filter(cliente_id=cliente)
 
+        salon = _id_param(params, "salon", "Debe ser el id numérico del salón.")
+        if salon:
+            queryset = queryset.filter(salon_id=salon)
+
         return filtrar_por_fechas(queryset, params)
 
     def create(self, request, *args, **kwargs):
@@ -146,13 +155,22 @@ class CotizacionDetailView(generics.RetrieveUpdateAPIView):
         return cotizaciones_del_usuario(self.request.user)
 
     def partial_update(self, request, *args, **kwargs):
-        cotizacion = self.get_object()
-        # Se permite aunque esté vencida: así se extiende una oferta que ya venció.
-        exigir_estado_cotizado(cotizacion)
-        serializer = CotizacionVigenciaSerializer(cotizacion, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(CotizacionDetalleSerializer(self.get_queryset().get(pk=cotizacion.pk)).data)
+        estados.liberar_bloqueos_vencidos()
+        with transaction.atomic():
+            cotizacion = estados.tomar_para_cambio(
+                filtrar_por_sitio(Cotizacion.objects.all(), request.user), kwargs["pk"]
+            )
+            # Se permite aunque esté vencida: así se extiende una oferta que ya venció.
+            exigir_estado_cotizado(cotizacion)
+            anterior = cotizacion.validez_oferta
+            serializer = CotizacionVigenciaSerializer(cotizacion, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            estados.registrar(
+                cotizacion, "vigencia", request.user,
+                f"Vigencia: {estados.fecha_corta(anterior)} → {estados.fecha_corta(cotizacion.validez_oferta)}.",
+            )
+        return Response(CotizacionDetalleSerializer(cotizaciones_con_relaciones().get(pk=cotizacion.pk)).data)
 
 
 class AccionSobreCotizacionView(generics.GenericAPIView):
@@ -205,9 +223,9 @@ class CotizacionBloqueoView(AccionSobreCotizacionView):
 
     def ejecutar(self, cotizacion, datos):
         if self.request.method == "POST":
-            estados.bloquear(cotizacion, datos["bloqueo_hasta"])
+            estados.bloquear(cotizacion, datos["bloqueo_hasta"], self.request.user)
         else:
-            estados.liberar(cotizacion)
+            estados.liberar(cotizacion, self.request.user)
 
 
 class CotizacionCancelacionView(AccionSobreCotizacionView):
@@ -218,3 +236,16 @@ class CotizacionCancelacionView(AccionSobreCotizacionView):
 
     def ejecutar(self, cotizacion, datos):
         estados.cancelar(cotizacion, datos["penalizacion_pct"], datos["motivo"], self.request.user)
+
+
+class CotizacionMovimientosView(generics.ListAPIView):
+    """Los movimientos de una cotización, en orden (SGDE-62). Otro sitio da 404."""
+
+    serializer_class = MovimientoSerializer
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+    def get_queryset(self):
+        # Libera antes, para que un bloqueo vencido ya muestre su movimiento "liberada".
+        estados.liberar_bloqueos_vencidos()
+        cotizacion = get_object_or_404(filtrar_por_sitio(Cotizacion.objects.all(), self.request.user), pk=self.kwargs["pk"])
+        return cotizacion.movimientos.select_related("usuario")

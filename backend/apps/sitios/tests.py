@@ -222,6 +222,16 @@ class DetallesDeOtroSitioTests(MultiSitioBaseTest):
         cotizacion.refresh_from_db()
         self.assertEqual(cotizacion.estado, "confirmado")
 
+    def test_movimientos_de_otro_sitio_dan_404_y_su_salon_da_lista_vacia(self):
+        # SGDE-62
+        self.assertEqual(
+            self.client.get(f"/api/cotizaciones/{self.b['cotizacion'].pk}/movimientos/").status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+        r = self.client.get("/api/cotizaciones/", {"salon": self.b["salon"].pk})
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.json(), [])
+
     def test_historial_de_un_concepto_inexistente_da_404(self):
         self.assertEqual(self.client.get("/api/conceptos/999999/historial/").status_code, status.HTTP_404_NOT_FOUND)
 

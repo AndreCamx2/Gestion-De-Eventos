@@ -11,7 +11,8 @@ from apps.salones.models import Montaje, Salon, SalonMontaje
 from apps.sitios.acceso import CampoDeSitio
 from apps.sitios.models import Sitio
 
-from .models import Cotizacion, CotizacionItem
+from .estados import fecha_corta, registrar
+from .models import Cotizacion, CotizacionItem, MovimientoCotizacion
 from .services import redondear, totales_cotizacion, totales_linea
 
 DIAS_VIGENCIA_POR_DEFECTO = 15
@@ -145,6 +146,10 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
             )
             for item in items
         ])
+        registrar(
+            cotizacion, "creada", cotizacion.usuario,
+            f"Evento el {fecha_corta(cotizacion.fecha_evento)} para {cotizacion.cantidad_personas} personas.",
+        )
         return cotizacion
 
 
@@ -362,3 +367,17 @@ class CancelacionSerializer(serializers.Serializer):
     motivo = serializers.CharField(
         error_messages={"blank": "Escribe el motivo de la cancelación.", "required": "Escribe el motivo de la cancelación."},
     )
+
+
+# --- Salida: movimientos (SGDE-62) ------------------------------------------
+
+class MovimientoSerializer(serializers.ModelSerializer):
+    # El username de quien lo hizo, o "sistema" (usuario null).
+    usuario = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MovimientoCotizacion
+        fields = ["id", "tipo", "usuario", "fecha", "detalle"]
+
+    def get_usuario(self, obj):
+        return obj.usuario.username if obj.usuario else "sistema"

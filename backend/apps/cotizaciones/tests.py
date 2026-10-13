@@ -1,10 +1,11 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from io import StringIO
 
 from django.core.management import call_command
 from django.db import connection
-from django.test import SimpleTestCase
+from django.db.migrations.executor import MigrationExecutor
+from django.test import SimpleTestCase, TransactionTestCase
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 from rest_framework import status
@@ -16,7 +17,7 @@ from apps.salones.models import Montaje, Salon, SalonMontaje
 from apps.sitios.models import Ciudad, Sitio
 from apps.usuarios.models import Rol, Usuario
 
-from .models import Cotizacion, CotizacionItem
+from .models import Cotizacion, CotizacionItem, MovimientoCotizacion
 from .services import totales_linea
 
 PASSWORD = "Clave-Segura-123"
@@ -925,3 +926,157 @@ class CancelacionTests(CotizacionBaseTest):
     def test_inexistente_404(self):
         self.assertEqual(self.client.post(cancelacion(999999), self.datos, format="json").status_code,
                          status.HTTP_404_NOT_FOUND)
+
+
+def movimientos(pk):
+    return f"{detalle(pk)}movimientos/"
+
+
+class MovimientosTests(CotizacionBaseTest):
+    """SGDE-62: cada acción deja su movimiento con el usuario correcto, en la misma transacción."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+        self.otro_admin = crear_usuario("otro_admin@test.com", "administrador")
+        self.otro_admin.sitios.add(self.sitio)
+
+    def tipos_y_usuarios(self, cot):
+        return [(m["tipo"], m["usuario"]) for m in self.client.get(movimientos(cot.pk)).data]
+
+    def test_el_ciclo_completo_deja_un_movimiento_por_accion(self):
+        r = self.client.post(LISTA, self.payload(), format="json")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        pk = r.data["id"]
+        nueva = str(hoy() + timedelta(days=12))
+        self.assertEqual(self.client.patch(detalle(pk), {"validez_oferta": nueva}, format="json").status_code, 200)
+        self.assertEqual(self.client.post(bloqueo(pk), {"bloqueo_hasta": en(2)}, format="json").status_code, 200)
+        self.assertEqual(self.client.delete(bloqueo(pk)).status_code, 200)
+
+        # Otro administrador confirma y cancela: el movimiento lleva su usuario, no el del creador.
+        self.client.force_authenticate(user=self.otro_admin)
+        datos = {"tipo": "efectivo", "monto": "100"}
+        self.assertEqual(self.client.post(aceptacion(pk), datos, format="json").status_code, 200)
+        cancelar = {"penalizacion_pct": "10", "motivo": "Lluvia"}
+        self.assertEqual(self.client.post(cancelacion(pk), cancelar, format="json").status_code, 200)
+
+        r = self.client.get(movimientos(pk))
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual([(m["tipo"], m["usuario"]) for m in r.data], [
+            ("creada", "admin@test.com"),
+            ("vigencia", "admin@test.com"),
+            ("bloqueada", "admin@test.com"),
+            ("liberada", "admin@test.com"),
+            ("confirmada", "otro_admin@test.com"),
+            ("cancelada", "otro_admin@test.com"),
+        ])
+        self.assertEqual(set(r.data[0]), {"id", "tipo", "usuario", "fecha", "detalle"})
+        self.assertIn(nueva[8:10], r.data[1]["detalle"])
+        self.assertEqual(r.data[5]["detalle"], "Penalización 10.00 %. Motivo: Lluvia")
+
+    def test_la_liberacion_automatica_la_hace_el_sistema(self):
+        cot = self.crear_en_bd(estado="bloqueado")
+        cot.bloqueo_hasta = timezone.now() - timedelta(minutes=1)
+        cot.save()
+        self.client.get(LISTA)
+        movimiento = MovimientoCotizacion.objects.get(cotizacion=cot)
+        self.assertEqual((movimiento.tipo, movimiento.usuario), ("liberada", None))
+        self.assertEqual(self.tipos_y_usuarios(cot), [("liberada", "sistema")])
+
+    def test_una_accion_que_falla_no_deja_movimiento(self):
+        cot = self.crear_en_bd()
+        r = self.client.post(cancelacion(cot.pk), {"penalizacion_pct": "10", "motivo": "X"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        r = self.client.post(bloqueo(cot.pk), {"bloqueo_hasta": en(60)}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(MovimientoCotizacion.objects.filter(cotizacion=cot).exists())
+
+    def test_inexistente_404(self):
+        self.assertEqual(self.client.get(movimientos(999999)).status_code, status.HTTP_404_NOT_FOUND)
+
+
+class HistoricoPorSalonTests(CotizacionBaseTest):
+    """SGDE-62: el histórico de un salón es el listado con ?salon=."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+
+    def test_filtra_por_salon_con_todos_los_estados(self):
+        otro = Salon.objects.create(sitio=self.sitio, nombre="Salón Tierra Bomba")
+        cancelada = self.crear_en_bd(estado="cancelado")
+        confirmada = self.crear_en_bd(estado="confirmado", fecha_evento=hoy() + timedelta(days=31))
+        ajena = self.crear_en_bd()
+        ajena.salon = otro
+        ajena.save()
+        r = self.client.get(LISTA, {"salon": self.salon.pk})
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual({c["id"] for c in r.data}, {cancelada.pk, confirmada.pk})
+
+    def test_salon_no_numerico_400(self):
+        r = self.client.get(LISTA, {"salon": "abc"})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.json()["salon"], ["Debe ser el id numérico del salón."])
+
+
+class MigracionMovimientosExistentesTests(TransactionTestCase):
+    """SGDE-62: la 0006 crea "creada" y "confirmada" de lo viejo con su fecha original, no la de hoy."""
+
+    serialized_rollback = True
+    antes = [("cotizaciones", "0005_movimientos_de_cotizacion")]
+    despues = [("cotizaciones", "0006_movimientos_de_cotizaciones_existentes")]
+
+    def migrar(self, destino):
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        executor.migrate(destino)
+        # Modelos históricos: cotizaciones en `destino` y las demás apps al día (si no,
+        # Cliente sale en la versión que conocía la 0001 de cotizaciones).
+        otras = [nodo for nodo in executor.loader.graph.leaf_nodes() if nodo[0] != "cotizaciones"]
+        return executor.loader.project_state(otras + destino).apps
+
+    def tearDown(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+
+    def test_crea_los_movimientos_con_la_fecha_original(self):
+        apps = self.migrar(self.antes)
+        modelo = apps.get_model
+        admin = modelo("usuarios", "Usuario").objects.create(
+            username="viejo@test.com", rol=modelo("usuarios", "Rol").objects.get(codigo="administrador"),
+        )
+        sitio = modelo("sitios", "Sitio").objects.create(
+            nombre="Hotel Viejo", ciudad=modelo("sitios", "Ciudad").objects.get(codigo="CTG"),
+        )
+        comunes = dict(
+            sitio=sitio, usuario=admin, cantidad_personas=10,
+            cliente=modelo("clientes", "Cliente").objects.create(tipo="natural", nombre="Ana", identificacion="1"),
+            salon=modelo("salones", "Salon").objects.create(sitio=sitio, nombre="Salón Viejo"),
+            montaje=modelo("salones", "Montaje").objects.create(codigo="test_viejo", nombre="Viejo"),
+        )
+        creado = timezone.make_aware(datetime(2026, 9, 1, 10, 30))
+        confirmado = timezone.make_aware(datetime(2026, 9, 5, 16, 45))
+        Cotizacion = modelo("cotizaciones", "Cotizacion")
+        ids = {}
+        for i, (nombre, extra) in enumerate({
+            "cotizada": {"estado": "cotizado"},
+            "confirmada": {"estado": "confirmado", "garantia_tipo": "efectivo", "garantia_monto": Decimal("100"),
+                           "garantia_registrada_en": confirmado, "garantia_registrada_por": admin},
+            "confirmada_a_mano": {"estado": "confirmado"},
+            "cancelada": {"estado": "cancelado", "garantia_tipo": "efectivo", "garantia_monto": Decimal("100"),
+                          "garantia_registrada_en": confirmado, "garantia_registrada_por": admin},
+            "bloqueada": {"estado": "bloqueado", "bloqueo_hasta": timezone.now() + timedelta(days=1)},
+        }.items()):
+            cot = Cotizacion.objects.create(fecha_evento=timezone.localdate() + timedelta(days=30 + i), **comunes, **extra)
+            ids[nombre] = cot.pk
+        Cotizacion.objects.update(creado_en=creado)
+
+        Movimiento = self.migrar(self.despues).get_model("cotizaciones", "MovimientoCotizacion")
+
+        def de(nombre):
+            return [(m.tipo, m.usuario_id, m.fecha) for m in Movimiento.objects.filter(cotizacion_id=ids[nombre])]
+
+        self.assertEqual(de("cotizada"), [("creada", admin.pk, creado)])
+        self.assertEqual(de("confirmada"), [("creada", admin.pk, creado), ("confirmada", admin.pk, confirmado)])
+        # Sin registro de garantía (confirmada en /admin/), ni canceladas ni bloqueadas: solo "creada".
+        for nombre in ("confirmada_a_mano", "cancelada", "bloqueada"):
+            with self.subTest(caso=nombre):
+                self.assertEqual(de(nombre), [("creada", admin.pk, creado)])

@@ -15,7 +15,7 @@ from apps.clientes.views import (
 )
 from apps.cotizaciones.views import (
     CotizacionCalendarioView, CotizacionListCreateView, CotizacionDetailView, CotizacionAceptacionView,
-    CotizacionBloqueoView, CotizacionCancelacionView,
+    CotizacionBloqueoView, CotizacionCancelacionView, CotizacionMovimientosView,
 )
 
 urlpatterns = [
@@ -50,5 +50,6 @@ urlpatterns = [
     path('api/cotizaciones/<int:pk>/aceptacion/', CotizacionAceptacionView.as_view(), name='cotizacion_aceptacion'),
     path('api/cotizaciones/<int:pk>/bloqueo/', CotizacionBloqueoView.as_view(), name='cotizacion_bloqueo'),
     path('api/cotizaciones/<int:pk>/cancelacion/', CotizacionCancelacionView.as_view(), name='cotizacion_cancelacion'),
+    path('api/cotizaciones/<int:pk>/movimientos/', CotizacionMovimientosView.as_view(), name='cotizacion_movimientos'),
     path('api/calendario/', CotizacionCalendarioView.as_view(), name='calendario_cotizaciones'),
 ]

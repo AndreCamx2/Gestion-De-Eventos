@@ -26,7 +26,7 @@ from rest_framework.exceptions import ValidationError
 from apps.core.exceptions import Conflicto
 from apps.salones.models import Salon
 
-from .models import Cotizacion
+from .models import Cotizacion, MovimientoCotizacion
 
 ESTADO_EN_FEMENINO = {
     "cotizado": "cotizada", "bloqueado": "bloqueada", "confirmado": "confirmada", "cancelado": "cancelada",
@@ -40,6 +40,19 @@ def en_femenino(estado):
 def fecha_hora(valor):
     """14/10/2026 18:00 en la hora de Colombia, para los mensajes."""
     return date_format(timezone.localtime(valor), "d/m/Y H:i")
+
+
+def fecha_corta(valor):
+    """14/10/2026, o "sin fecha" si es None."""
+    return valor.strftime("%d/%m/%Y") if valor else "sin fecha"
+
+
+def registrar(cotizacion, tipo, usuario, detalle=""):
+    """Deja el movimiento (SGDE-62). Se llama dentro de la transacción de la acción.
+
+    usuario=None significa que lo hizo el sistema.
+    """
+    MovimientoCotizacion.objects.create(cotizacion=cotizacion, tipo=tipo, usuario=usuario, detalle=detalle[:255])
 
 
 def liberar_bloqueos_vencidos(ahora=None):
@@ -56,8 +69,9 @@ def liberar_bloqueos_vencidos(ahora=None):
             Cotizacion.objects.select_for_update(skip_locked=True)
             .filter(estado="bloqueado", bloqueo_hasta__lte=ahora)
         )
+        # Una por una (no un update masivo): cada una deja su movimiento del sistema.
         for cotizacion in vencidas:
-            _pasar_a_cotizado(cotizacion)
+            _liberar_por_vencimiento(cotizacion)
     return len(vencidas)
 
 
@@ -67,9 +81,15 @@ def _pasar_a_cotizado(cotizacion):
     cotizacion.save(update_fields=["estado", "bloqueo_hasta"])
 
 
+def _liberar_por_vencimiento(cotizacion):
+    hasta = cotizacion.bloqueo_hasta
+    _pasar_a_cotizado(cotizacion)
+    registrar(cotizacion, "liberada", None, f"El bloqueo venció ({fecha_hora(hasta)}).")
+
+
 def _liberar_si_vencio(cotizacion, ahora):
     if cotizacion.estado == "bloqueado" and cotizacion.bloqueo_hasta and cotizacion.bloqueo_hasta <= ahora:
-        _pasar_a_cotizado(cotizacion)
+        _liberar_por_vencimiento(cotizacion)
 
 
 def tomar_para_cambio(queryset, pk):
@@ -100,7 +120,7 @@ def _exigir_fecha_libre(cotizacion, ahora):
         )
 
 
-def bloquear(cotizacion, bloqueo_hasta):
+def bloquear(cotizacion, bloqueo_hasta, usuario):
     """Bloquea el salón y la fecha de la cotización hasta `bloqueo_hasta` (SGDE-40/60/15)."""
     if cotizacion.estado != "cotizado":
         raise Conflicto(f"Solo se puede bloquear una cotización cotizada; esta está {en_femenino(cotizacion.estado)}.")
@@ -117,13 +137,15 @@ def bloquear(cotizacion, bloqueo_hasta):
     cotizacion.estado = "bloqueado"
     cotizacion.bloqueo_hasta = bloqueo_hasta
     cotizacion.save(update_fields=["estado", "bloqueo_hasta"])
+    registrar(cotizacion, "bloqueada", usuario, f"Bloqueada hasta {fecha_hora(bloqueo_hasta)}.")
 
 
-def liberar(cotizacion):
+def liberar(cotizacion, usuario):
     """Quita a mano el bloqueo: vuelve a `cotizado` (SGDE-40/60/15)."""
     if cotizacion.estado != "bloqueado":
         raise Conflicto(f"La cotización no está bloqueada; está {en_femenino(cotizacion.estado)}.")
     _pasar_a_cotizado(cotizacion)
+    registrar(cotizacion, "liberada", usuario, "Liberada a mano.")
 
 
 def aceptar(cotizacion, tipo, monto, usuario):
@@ -154,6 +176,7 @@ def aceptar(cotizacion, tipo, monto, usuario):
             ])
     except IntegrityError:
         raise Conflicto("El salón ya está confirmado para esa fecha.")
+    registrar(cotizacion, "confirmada", usuario, f"Garantía: {tipo}, {monto}.")
 
 
 def cancelar(cotizacion, penalizacion_pct, motivo, usuario):
@@ -174,3 +197,4 @@ def cancelar(cotizacion, penalizacion_pct, motivo, usuario):
     cotizacion.save(update_fields=[
         "estado", "penalizacion_pct", "motivo_cancelacion", "cancelado_en", "cancelado_por",
     ])
+    registrar(cotizacion, "cancelada", usuario, f"Penalización {penalizacion_pct} %. Motivo: {motivo}")
