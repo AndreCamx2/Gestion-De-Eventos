@@ -1,103 +1,13 @@
-import { erroresDesdeApi as erroresDesdeApiComun } from "../utils/erroresApi";
+import {
+  OPCIONES_IMPUESTO,
+  formatCOP,
+  impuestoFueraDeLista,
+  precioConImpuesto,
+  precioValido,
+} from "./conceptos";
 
-export const OPCIONES_IMPUESTO = [
-  { value: "0", label: "0% (sin impuesto)" },
-  { value: "8", label: "8% impoconsumo (alimentos y bebidas)" },
-  { value: "19", label: "19% IVA" },
-];
-
-export const FORM_VACIO = {
-  sitio: "",
-  nombre: "",
-  precio: "",
-  impuesto_pct: "19",
-};
-
-export function formDesdeConcepto(c) {
-  return {
-    sitio: String(c.sitio),
-    nombre: c.nombre ?? "",
-    precio: c.precio != null ? String(Number(c.precio)) : "",
-    impuesto_pct: c.impuesto_pct != null ? String(Number(c.impuesto_pct)) : "0",
-  };
-}
-
-export function formatCOP(valor) {
-  return Number(valor || 0).toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
-}
-
-export function precioConImpuesto(precio, impuestoPct) {
-  const base = Number(precio || 0);
-  return base + (base * Number(impuestoPct || 0)) / 100;
-}
-
-export function etiquetaImpuesto(impuestoPct) {
-  return `${Number(impuestoPct || 0)}%`;
-}
-
-export function validarForm(form) {
-  const errores = {};
-  if (!form.sitio)
-    errores.sitio = "Selecciona el sitio al que pertenece el concepto.";
-  if (!form.nombre.trim()) errores.nombre = "El nombre es obligatorio.";
-  if (form.precio === "") {
-    errores.precio = "El precio es obligatorio.";
-  } else if (Number.isNaN(Number(form.precio))) {
-    errores.precio = "Ingresa un número válido.";
-  } else if (Number(form.precio) < 0) {
-    errores.precio = "El precio no puede ser negativo.";
-  }
-  return errores;
-}
-
-export function payloadCreacion(form) {
-  return {
-    sitio: Number(form.sitio),
-    nombre: form.nombre.trim(),
-    precio: form.precio,
-    impuesto_pct: form.impuesto_pct,
-  };
-}
-
-export function payloadEdicion(form) {
-  return {
-    nombre: form.nombre.trim(),
-    precio: form.precio,
-    impuesto_pct: form.impuesto_pct,
-  };
-}
-
-const CAMPOS = ["sitio", "nombre", "precio", "impuesto_pct"];
-
-const MSG_NOMBRE_DUPLICADO =
-  "Ya existe un concepto con ese nombre en este sitio.";
-
-export function erroresDesdeApi(body) {
-  const { non_field_errors, ...resto } = body ?? {};
-  const generales = [].concat(non_field_errors ?? []);
-  const esDuplicado = (msg) => /únic|unique/i.test(String(msg));
-
-  const duplicado = generales.some(esDuplicado);
-  const otros = generales.filter((msg) => !esDuplicado(msg));
-
-  const { campos, general } = erroresDesdeApiComun(
-    otros.length ? { ...resto, non_field_errors: otros } : resto,
-    CAMPOS,
-  );
-  if (duplicado) campos.nombre = MSG_NOMBRE_DUPLICADO;
-  return { campos, general };
-}
-
-export function claseImpuesto(impuestoPct) {
-  const valor = Number(impuestoPct || 0);
-  return [0, 8, 19].includes(valor) ? `conceptos-impuesto--${valor}` : "conceptos-impuesto--otro";
-}
-
+// Campos de la ventana "Nuevo concepto": sitio, nombre, precio e impuesto.
+// Las funciones sin estado (validar, payloads, errores del API) viven en conceptos.js.
 export default function ConceptoForm({
   idPrefix,
   form,
@@ -117,15 +27,7 @@ export default function ConceptoForm({
     );
   const clase = (campo) => ["conceptos-campo", errores[campo] && "conceptos-campo--error"].filter(Boolean).join(" ");
 
-  const impuestoFueraDeLista = !OPCIONES_IMPUESTO.some(
-    (o) => o.value === form.impuesto_pct,
-  );
-
   const total = precioConImpuesto(form.precio, form.impuesto_pct);
-  const precioValido =
-    form.precio !== "" &&
-    !Number.isNaN(Number(form.precio)) &&
-    Number(form.precio) >= 0;
 
   return (
     <>
@@ -206,7 +108,7 @@ export default function ConceptoForm({
                 {o.label}
               </option>
             ))}
-            {impuestoFueraDeLista && (
+            {impuestoFueraDeLista(form.impuesto_pct) && (
               <option value={form.impuesto_pct}>
                 {form.impuesto_pct}% (valor actual)
               </option>
@@ -218,7 +120,7 @@ export default function ConceptoForm({
 
       <p className="conceptos-total">
         Precio con impuesto
-        <strong>{precioValido ? formatCOP(total) : "—"}</strong>
+        <strong>{precioValido(form.precio) ? formatCOP(total) : "—"}</strong>
       </p>
     </>
   );
