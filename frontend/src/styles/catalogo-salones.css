@@ -281,7 +281,49 @@
     color: var(--color-texto-tenue);
 }
 
-/* "Ver disponibilidad" y "Habilitar montaje": abajo, lado a lado; en una
+/* Montajes habilitados con "Editar aforo" y "Quitar" (SGDE-88): una fila por
+   montaje; en una tarjeta angosta los botones bajan debajo del nombre */
+.salon-tarjeta__filas {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: var(--borde);
+}
+
+.salon-tarjeta__fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-2);
+    padding: var(--espacio-2) 0;
+    border-bottom: var(--borde);
+}
+
+.salon-tarjeta__fila-montaje {
+    display: flex;
+    flex: 1 1 120px;
+    align-items: baseline;
+    gap: var(--espacio-2);
+    min-width: 0;
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-negrita);
+    overflow-wrap: anywhere;
+}
+
+.salon-tarjeta__fila-montaje strong {
+    color: var(--color-mantequilla-texto);
+    font-variant-numeric: tabular-nums;
+}
+
+.salon-tarjeta__fila-accion {
+    min-height: var(--alto-tocable);
+    padding: 0 var(--espacio-3);
+    font-size: var(--texto-etiqueta);
+}
+
+/* "Ver disponibilidad", "Editar" y "Habilitar montaje": abajo, lado a lado; en una
    tarjeta angosta cada uno baja a su línea */
 .salon-tarjeta__acciones {
     display: flex;
@@ -293,6 +335,11 @@
 .salon-tarjeta__accion {
     flex: 1 1 150px;
     min-height: var(--alto-tocable);
+}
+
+/* "Editar" es corto: no necesita media fila (maqueta) */
+.salon-tarjeta__accion--corta {
+    flex: 0 1 auto;
 }
 
 /* ---- Tabla "Aforo por montaje" ---- */
@@ -445,6 +492,17 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--espacio-3);
+}
+
+/* Texto de contexto en las ventanas con Dialogo (editar, aforo, quitar, baja) */
+.salones-dialogo__para {
+    margin: 0;
+    color: var(--color-texto-suave);
+    overflow-wrap: anywhere;
+}
+
+.salones-dialogo__para strong {
+    color: var(--color-texto);
 }
 
 .salones-dialogo__ayuda {

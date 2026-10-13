@@ -13,5 +13,6 @@ export { default as EstadoVacio } from "./EstadoVacio";
 export { default as AvisoError } from "./AvisoError";
 export { default as AvisoSesion } from "./AvisoSesion";
 // Ventana modal con <dialog> nativo (SGDE-81). SalonDialogo y ConceptosDialogo
-// todavía usan su propia copia: migrarlos queda en SGDE-88.
+// todavía usan su propia copia: migrarlos es otra tarea (no SGDE-88, que solo
+// agregó ventanas nuevas con Dialogo).
 export { default as Dialogo, cerrarDialogoDe } from "./Dialogo";

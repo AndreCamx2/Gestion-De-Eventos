@@ -52,3 +52,26 @@ export function habilitarMontaje({ salon, montaje, aforo }) {
     body: JSON.stringify({ salon, montaje, aforo }),
   });
 }
+
+// PATCH /api/salones/<id>/ con solo lo que cambió: nombre, ancho, altura o
+// foto_url (SGDE-88). El sitio no se puede cambiar (el API da 400).
+export function editarSalon(id, cambios) {
+  const body = { ...cambios };
+  if ("nombre" in body) body.nombre = body.nombre.trim();
+  if ("ancho" in body) body.ancho = decimalOpcional(body.ancho);
+  if ("altura" in body) body.altura = decimalOpcional(body.altura);
+  if ("foto_url" in body) body.foto_url = body.foto_url.trim();
+  return apiFetch(`/salones/${id}/`, { method: "PATCH", body: JSON.stringify(body) });
+}
+
+// PATCH /api/salon-montajes/<id>/ con el aforo nuevo. Menor que una cotización
+// activa de ese salón y montaje → 400 en "aforo".
+export function editarAforo(id, aforo) {
+  return apiFetch(`/salon-montajes/${id}/`, { method: "PATCH", body: JSON.stringify({ aforo }) });
+}
+
+// DELETE /api/salon-montajes/<id>/ → 204. Con cotizaciones activas → 409, con
+// un detail que dice cuántas son.
+export function quitarMontaje(id) {
+  return apiFetch(`/salon-montajes/${id}/`, { method: "DELETE" });
+}

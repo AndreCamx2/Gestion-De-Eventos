@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Link } from "react-router-dom";
 import { listarSalones, listarMontajes, listarSalonMontajes } from "../api/salones";
 import { listarSitios } from "../api/sitios";
 import {
@@ -14,6 +13,11 @@ import {
 import SesionVencida from "../components/SesionVencida";
 import NuevoSalonModal from "./salones/NuevoSalonModal";
 import HabilitarMontajeModal from "./salones/HabilitarMontajeModal";
+import TarjetaSalon from "./salones/TarjetaSalon";
+import DialogoEditarSalon from "./salones/DialogoEditarSalon";
+import DialogoEditarAforo from "./salones/DialogoEditarAforo";
+import DialogoQuitarMontaje from "./salones/DialogoQuitarMontaje";
+import { aforoMaximo, formatoNumero } from "./salones/salones";
 import "../styles/catalogo-salones.css";
 
 // Minúsculas y sin tildes: así "bolivar" encuentra a "Bolívar".
@@ -22,18 +26,6 @@ function normalizar(texto) {
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase();
-}
-
-const formatoNumero = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 });
-
-// "20.00" → "20 m"; "4.50" → "4,5 m". Sin dato → "—" (nunca un número inventado).
-function metros(valor) {
-  if (valor === null || valor === undefined || valor === "") return "—";
-  return `${formatoNumero.format(Number(valor))} m`;
-}
-
-function aforoMaximo(habilitados) {
-  return habilitados.length ? Math.max(...habilitados.map((h) => h.aforo)) : null;
 }
 
 export default function Salones() {
@@ -51,7 +43,8 @@ export default function Salones() {
   const [filtroMontaje, setFiltroMontaje] = useState("");
   const [aforoMinimo, setAforoMinimo] = useState("");
 
-  // Diálogo abierto: null | { tipo: "salon" } | { tipo: "montaje", salonId }.
+  // Diálogo abierto: null | { tipo: "salon" } | { tipo: "montaje", salonId } |
+  // { tipo: "editar", salon } | { tipo: "aforo" | "quitar", salon, habilitado }.
   const [dialogo, setDialogo] = useState(null);
   const [aviso, setAviso] = useState(null);
 
@@ -70,10 +63,12 @@ export default function Salones() {
   // existe (p. ej. el "Nuevo salón" del estado vacío), va al de la cabecera.
   useEffect(() => {
     if (dialogo !== null) return;
+    // Puede ser un id: el botón que recibe el foco aparece al pintar (al quitar un montaje).
     const disparador = disparadorRef.current;
     if (!disparador) return;
     disparadorRef.current = null;
-    (disparador.isConnected ? disparador : nuevoSalonRef.current)?.focus();
+    const destino = typeof disparador === "string" ? document.getElementById(disparador) : disparador;
+    (destino?.isConnected ? destino : nuevoSalonRef.current)?.focus();
   }, [dialogo]);
 
   async function cargarDatos() {
@@ -172,6 +167,27 @@ export default function Salones() {
     );
   }
 
+  function alEditarSalon(salon) {
+    setSalones((prev) => prev.map((s) => (s.id === salon.id ? salon : s)));
+    setDialogo(null);
+    setAviso(`Salón «${salon.nombre}» actualizado.`);
+  }
+
+  function alEditarAforo(salonMontaje) {
+    setSalonMontajes((prev) => prev.map((sm) => (sm.id === salonMontaje.id ? salonMontaje : sm)));
+    setDialogo(null);
+    setAviso(`Aforo actualizado a ${formatoNumero.format(salonMontaje.aforo)} personas.`);
+  }
+
+  // El botón "Quitar" desaparece: el foco va a "Habilitar montaje" de su tarjeta.
+  function alQuitarMontaje(id) {
+    const { salon, habilitado } = dialogo;
+    setSalonMontajes((prev) => prev.filter((sm) => sm.id !== id));
+    disparadorRef.current = `salon-${salon.id}-habilitar`;
+    setDialogo(null);
+    setAviso(`${habilitado.nombre} ya no está habilitado en «${salon.nombre}».`);
+  }
+
   function quitarFiltros() {
     setBusqueda("");
     setFiltroMontaje("");
@@ -196,6 +212,14 @@ export default function Salones() {
   function etiquetaSalon(s) {
     return variosSitios ? `${s.nombre} · ${nombreSitio.get(s.sitio) ?? "Sitio"}` : s.nombre;
   }
+
+  // Lo común de las ventanas de Dialogo; "Entrar de nuevo" devuelve el foco al botón que se le pasa.
+  const propsVentana = {
+    onCerrar: cerrarDialogo,
+    onSesionVencida: () => setSesionVencida(true),
+    sesionVencida,
+    onEntrarDeNuevo: (boton) => sesionRef.current?.abrir({ focoAlVolver: boton }),
+  };
 
   let vista = "lista";
   if (errorCarga === "permiso" || errorCarga === "servidor") vista = "error";
@@ -344,7 +368,10 @@ export default function Salones() {
                 sitio={nombreSitio.get(s.sitio)}
                 habilitados={habilitadosDe(s.id)}
                 puedeHabilitar={habilitadosDe(s.id).length < montajes.length}
+                onEditar={(e) => abrirDialogo({ tipo: "editar", salon: s }, e)}
                 onHabilitar={(e) => abrirDialogo({ tipo: "montaje", salonId: s.id }, e)}
+                onEditarAforo={(h, e) => abrirDialogo({ tipo: "aforo", salon: s, habilitado: h }, e)}
+                onQuitarMontaje={(h, e) => abrirDialogo({ tipo: "quitar", salon: s, habilitado: h }, e)}
               />
             ))}
           </section>
@@ -438,89 +465,17 @@ export default function Salones() {
         />
       )}
 
+      {dialogo?.tipo === "editar" && (
+        <DialogoEditarSalon salon={dialogo.salon} sitio={nombreSitio.get(dialogo.salon.sitio)} onGuardado={alEditarSalon} {...propsVentana} />
+      )}
+      {dialogo?.tipo === "aforo" && (
+        <DialogoEditarAforo salon={dialogo.salon} habilitado={dialogo.habilitado} onGuardado={alEditarAforo} {...propsVentana} />
+      )}
+      {dialogo?.tipo === "quitar" && (
+        <DialogoQuitarMontaje salon={dialogo.salon} habilitado={dialogo.habilitado} onQuitado={alQuitarMontaje} {...propsVentana} />
+      )}
+
       <SesionVencida ref={sesionRef} visible={sesionVencida} onReingreso={alVolverAEntrar} />
     </div>
-  );
-}
-
-// Tarjeta de un salón (maqueta Salones): foto o marcador, medidas, aforo máximo
-// y sus montajes. "Ver disponibilidad" abre el Calendario con ese salón (SGDE-45).
-// "Editar" no está: aún no hay API para editar (pendiente de SGDE-79).
-function TarjetaSalon({ salon, sitio, habilitados, puedeHabilitar, onHabilitar }) {
-  // Si la URL de la foto no carga, se muestra el marcador en su lugar.
-  const [fotoFallo, setFotoFallo] = useState(false);
-  const conFoto = Boolean(salon.foto_url) && !fotoFallo;
-  const maximo = aforoMaximo(habilitados);
-  const idTitulo = `salon-${salon.id}-titulo`;
-  // Tres tonos de tokens.css que se alternan para distinguir los marcadores.
-  const tono = salon.id % 3;
-
-  return (
-    <article className="salon-tarjeta" aria-labelledby={idTitulo}>
-      <div className={`salon-tarjeta__foto ${conFoto ? "" : `salon-tarjeta__foto--tono-${tono}`}`}>
-        {conFoto && (
-          <img
-            className="salon-tarjeta__imagen"
-            src={salon.foto_url}
-            alt={`Foto del salón ${salon.nombre}`}
-            loading="lazy"
-            onError={() => setFotoFallo(true)}
-          />
-        )}
-        {sitio && <span className="salon-tarjeta__sitio">{sitio}</span>}
-        {!conFoto && (
-          <h2 id={idTitulo} className="salon-tarjeta__nombre-grande" title={salon.nombre}>
-            {salon.nombre}
-          </h2>
-        )}
-      </div>
-
-      <div className="salon-tarjeta__cuerpo">
-        {conFoto && (
-          <h2 id={idTitulo} className="salon-tarjeta__nombre">{salon.nombre}</h2>
-        )}
-
-        <ul className="salon-tarjeta__datos">
-          <li><strong>{metros(salon.ancho)}</strong> de ancho</li>
-          <li><strong>{metros(salon.altura)}</strong> de altura</li>
-          <li><strong>{maximo === null ? "—" : formatoNumero.format(maximo)}</strong> máx.</li>
-        </ul>
-
-        {habilitados.length > 0 ? (
-          <ul className="salon-tarjeta__montajes" aria-label={`Montajes de ${salon.nombre}`}>
-            {habilitados.map((h) => (
-              <li key={h.id} className="salon-tarjeta__montaje">
-                {h.nombre}
-                <strong>{formatoNumero.format(h.aforo)}</strong>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="salon-tarjeta__sin-montajes">Sin montajes habilitados.</p>
-        )}
-
-        <div className="salon-tarjeta__acciones">
-          <Boton
-            as={Link}
-            to={`/calendario?salon=${salon.id}`}
-            variante="oscuro"
-            className="salon-tarjeta__accion"
-            aria-label={`Ver disponibilidad de ${salon.nombre}`}
-          >
-            Ver disponibilidad
-          </Boton>
-          {puedeHabilitar && (
-            <Boton
-              variante="secundario"
-              className="salon-tarjeta__accion"
-              aria-label={`Habilitar montaje en ${salon.nombre}`}
-              onClick={onHabilitar}
-            >
-              Habilitar montaje
-            </Boton>
-          )}
-        </div>
-      </div>
-    </article>
   );
 }
