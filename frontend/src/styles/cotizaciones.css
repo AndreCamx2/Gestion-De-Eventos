@@ -229,6 +229,15 @@
     color: var(--estado-vencida-texto);
 }
 
+/* "bloqueado hasta el 15" y "garantía recibida": los colores de su EstadoBadge. */
+.cotizaciones-vigencia--bloqueado {
+    color: var(--estado-bloqueado-texto);
+}
+
+.cotizaciones-vigencia--confirmado {
+    color: var(--estado-confirmado-texto);
+}
+
 .cotizaciones-pie {
     margin: 0;
     padding: var(--espacio-4) var(--espacio-5);
