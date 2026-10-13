@@ -1,9 +1,10 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -509,3 +510,30 @@ class MigracionLimpiezaIdentificacionTests(TransactionTestCase):
         self.assertEqual(resultado, {
             "juridico_con_nit": None, "natural_vacio": None, "natural_real": "1047000111",
         })
+
+
+class HistorialVencidasTests(BaseClientesTests):
+    """SGDE-95: el historial del detalle del cliente marca las cotizaciones vencidas."""
+
+    def test_marca_vencida_la_cotizada_vencida_y_no_la_confirmada(self):
+        sitio = Sitio.objects.create(nombre="Hotel Test", ciudad=self.ciudad)
+        self.admin.sitios.set([sitio])  # Sin sitios no vería ninguna cotización (SGDE-90).
+        salon = Salon.objects.create(sitio=sitio, nombre="Salón Test")
+        cliente = self.crear_natural()
+        hoy = timezone.localdate()
+        comunes = {
+            "sitio": sitio, "cliente": cliente, "usuario": self.admin, "salon": salon,
+            "montaje": Montaje.objects.first(), "cantidad_personas": 50,
+            "fecha_evento": hoy + timedelta(days=30), "validez_oferta": hoy - timedelta(days=1),
+        }
+        vencida = Cotizacion.objects.create(estado="cotizado", **comunes)
+        confirmada = Cotizacion.objects.create(estado="confirmado", **comunes)
+
+        self.client.force_authenticate(user=self.admin)
+        respuesta = self.client.get(detalle(cliente.pk))
+
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        historial = {c["id"]: c for c in respuesta.json()["cotizaciones"]}
+        self.assertIs(historial[vencida.pk]["vencida"], True)
+        self.assertIs(historial[confirmada.pk]["vencida"], False)
+        self.assertEqual(historial[vencida.pk]["validez_oferta"], str(hoy - timedelta(days=1)))

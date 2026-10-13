@@ -9,9 +9,13 @@ from .models import Cliente, Empresa
 
 
 class CotizacionResumenSerializer(serializers.ModelSerializer):
+    # Historial del detalle del cliente. vencida usa la property del modelo y
+    # validez_oferta le dice a la pantalla cuándo venció (SGDE-95).
+    vencida = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = Cotizacion
-        fields = ["id", "estado", "fecha_evento", "cantidad_personas", "creado_en"]
+        fields = ["id", "estado", "vencida", "validez_oferta", "fecha_evento", "cantidad_personas", "creado_en"]
 
 
 class ClienteAdminSerializer(serializers.ModelSerializer):
