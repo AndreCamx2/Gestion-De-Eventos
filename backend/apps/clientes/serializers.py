@@ -51,10 +51,6 @@ class ClienteAdminSerializer(serializers.ModelSerializer):
         ]
         return CotizacionResumenSerializer(cotizaciones, many=True).data
 
-    MSG_JURIDICO_CON_IDENTIFICACION = (
-        "Un cliente jurídico no lleva identificación: el NIT es el de su empresa."
-    )
-
     def _tipo_final(self):
         """Tipo con el que quedará el cliente: el del payload o, si no viene, el guardado.
 
@@ -72,10 +68,11 @@ class ClienteAdminSerializer(serializers.ModelSerializer):
         # solo es de personas naturales; en un jurídico se guarda null.
         if self._tipo_final() == Cliente.JURIDICA:
             if value:
-                raise serializers.ValidationError(self.MSG_JURIDICO_CON_IDENTIFICACION)
+                raise serializers.ValidationError(Cliente.MSG_JURIDICO_CON_IDENTIFICACION)
             return None
+        # Vacía se guarda como null, nunca como "": dos "" chocarían con el unique (SGDE-91).
         if not value:
-            return value
+            return None
         existente = Cliente.objects.filter(identificacion=value)
         if self.instance:
             existente = existente.exclude(pk=self.instance.pk)

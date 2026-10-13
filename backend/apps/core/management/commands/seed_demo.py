@@ -165,28 +165,16 @@ class Command(BaseCommand):
         idempotente. Con filter().first() y no get_or_create: si alguien creó a
         mano otro jurídico para la misma empresa, se toma el más antiguo en vez
         de fallar con MultipleObjectsReturned.
+
+        Las bases del seed anterior (jurídico con el NIT repetido en
+        Cliente.identificacion) las corrige la migración 0007 de clientes (SGDE-91).
         """
-        cliente = (
-            Cliente.objects.filter(tipo=Cliente.JURIDICA, empresa=empresa)
-            .order_by("id")
-            .first()
-        )
-        if cliente is None:
+        existe = Cliente.objects.filter(tipo=Cliente.JURIDICA, empresa=empresa).exists()
+        if not existe:
             Cliente.objects.create(
                 tipo=Cliente.JURIDICA,
                 nombre="Eventos del Caribe S.A.S. (demo)",
                 correo="contacto@eventoscaribe.example.com",
                 telefono="6055550101",
                 empresa=empresa,
-            )
-            return
-
-        # Bases creadas con el seed anterior: el jurídico tenía el NIT repetido en
-        # Cliente.identificacion. Se corrige a null; es seguro con el unique porque
-        # PostgreSQL permite varias filas con NULL en un índice único.
-        if cliente.identificacion is not None:
-            cliente.identificacion = None
-            cliente.save(update_fields=["identificacion"])
-            self.stdout.write(
-                "  cliente jurídico demo: se quitó el NIT repetido de Cliente.identificacion"
             )

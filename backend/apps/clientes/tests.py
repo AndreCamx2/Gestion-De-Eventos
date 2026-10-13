@@ -1,5 +1,9 @@
 from datetime import date
 
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, connection, transaction
+from django.db.migrations.executor import MigrationExecutor
+from django.test import TransactionTestCase
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -358,16 +362,15 @@ class IdentificacionJuridicoTests(BaseClientesTests):
         self.assertEqual(respuesta.json()["identificacion"][0], self.MENSAJE)
         self.assertIdentificacionNula(juridico.pk)
 
-    def test_patch_de_otro_campo_en_juridico_viejo_borra_la_identificacion(self):
-        # Dato viejo: jurídico guardado con identificación antes de esta regla.
-        viejo = Cliente.objects.create(
-            tipo=Cliente.JURIDICA, nombre="Viejo", identificacion="900123", empresa=self.empresa
-        )
-        respuesta = self.client.patch(detalle(viejo.pk), {"telefono": "3001112233"}, format="json")
+    def test_patch_de_otro_campo_en_juridico_conserva_la_identificacion_nula(self):
+        # El "jurídico viejo con NIT" ya no puede existir: lo limpió la migración 0007
+        # y lo impide el constraint (ver ReglaNitEnBaseDeDatosTests, SGDE-91).
+        juridico = self.crear_juridico()
+        respuesta = self.client.patch(detalle(juridico.pk), {"telefono": "3001112233"}, format="json")
         self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
-        viejo.refresh_from_db()
-        self.assertIsNone(viejo.identificacion)
-        self.assertEqual(viejo.telefono, "3001112233")
+        juridico.refresh_from_db()
+        self.assertIsNone(juridico.identificacion)
+        self.assertEqual(juridico.telefono, "3001112233")
 
     # --- Natural: sin cambios ---
 
@@ -384,3 +387,125 @@ class IdentificacionJuridicoTests(BaseClientesTests):
         self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
         natural.refresh_from_db()
         self.assertEqual(natural.identificacion, "1047000111")
+
+    def test_natural_con_identificacion_vacia_se_guarda_null_y_no_choca(self):
+        # SGDE-91: antes se guardaba "" y el segundo natural sin documento chocaba con el unique.
+        for nombre in ("Sin documento 1", "Sin documento 2"):
+            with self.subTest(nombre=nombre):
+                respuesta = self.client.post(
+                    LISTA, {"tipo": "natural", "nombre": nombre, "identificacion": ""}, format="json"
+                )
+                self.assertEqual(respuesta.status_code, status.HTTP_201_CREATED)
+                self.assertIdentificacionNula(respuesta.json()["id"])
+
+
+class ReglaNitEnBaseDeDatosTests(BaseClientesTests):
+    """SGDE-91: la regla del NIT del jurídico también vale fuera del API."""
+
+    def test_constraint_rechaza_juridico_con_identificacion_guardado_directo(self):
+        for valor in ("900999", ""):
+            with self.subTest(valor=valor):
+                with self.assertRaises(IntegrityError), transaction.atomic():
+                    Cliente.objects.create(
+                        tipo=Cliente.JURIDICA, nombre="Directo", identificacion=valor, empresa=self.empresa
+                    )
+
+    def test_constraint_admite_juridico_sin_identificacion_y_natural_con_ella(self):
+        self.crear_juridico()
+        self.crear_natural(identificacion="1047000111")
+        self.assertEqual(Cliente.objects.count(), 2)
+
+    def test_clean_pone_el_error_en_identificacion_una_sola_vez(self):
+        cliente = Cliente(tipo=Cliente.JURIDICA, nombre="X", identificacion="900999", empresa=self.empresa)
+        with self.assertRaises(ValidationError) as error:
+            cliente.full_clean()
+        # Solo bajo el campo: el constraint no repite el error como error general.
+        self.assertEqual(error.exception.message_dict, {"identificacion": [Cliente.MSG_JURIDICO_CON_IDENTIFICACION]})
+
+
+class ClienteAdminTests(BaseClientesTests):
+    """SGDE-91: el admin de Django muestra el error del NIT bajo el campo."""
+
+    URL_CREAR = "/admin/clientes/cliente/add/"
+
+    def setUp(self):
+        superusuario = Usuario.objects.create_superuser(
+            username="super@test.com", password=PASSWORD, rol=Rol.objects.get(codigo="administrador")
+        )
+        self.client.force_login(superusuario)
+
+    def formulario(self, **extra):
+        return {
+            "tipo": "juridica", "nombre": "Contacto admin", "identificacion": "", "telefono": "",
+            "correo": "", "empresa": self.empresa.pk, "forma_pago": "", "observaciones_internas": "",
+            "activo": "on", **extra,
+        }
+
+    def test_juridico_con_identificacion_muestra_el_error_bajo_el_campo(self):
+        respuesta = self.client.post(self.URL_CREAR, self.formulario(identificacion="900999"))
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        errores = respuesta.context["adminform"].form.errors
+        self.assertEqual(errores["identificacion"], [Cliente.MSG_JURIDICO_CON_IDENTIFICACION])
+        self.assertNotIn("__all__", errores)
+        self.assertFalse(Cliente.objects.filter(nombre="Contacto admin").exists())
+
+    def test_juridico_sin_identificacion_se_guarda_con_null(self):
+        respuesta = self.client.post(self.URL_CREAR, self.formulario())
+        self.assertEqual(respuesta.status_code, status.HTTP_302_FOUND)
+        self.assertIsNone(Cliente.objects.get(nombre="Contacto admin").identificacion)
+
+
+class MigracionLimpiezaIdentificacionTests(TransactionTestCase):
+    """SGDE-91: la 0007 deja los datos listos para el constraint de la 0008.
+
+    Baja clientes a la 0006 (sin la regla), siembra los casos y vuelve a subir.
+    serialized_rollback: TransactionTestCase vacía la BD al terminar; así se
+    restauran las semillas (roles, ciudades, montajes) para las pruebas siguientes.
+    """
+
+    serialized_rollback = True
+    antes = [("clientes", "0006_cliente_activo")]
+    despues = [("clientes", "0008_cliente_juridico_sin_identificacion")]
+
+    def migrar(self, destino):
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        executor.migrate(destino)
+        return executor.loader.project_state(destino).apps
+
+    def tearDown(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+
+    def sembrar_y_migrar(self, casos):
+        """casos: {nombre: (tipo, identificacion)} → {nombre: identificacion tras la 0008}."""
+        Cliente = self.migrar(self.antes).get_model("clientes", "Cliente")
+        ids = {
+            nombre: Cliente.objects.create(tipo=tipo, nombre=nombre, identificacion=ident).pk
+            for nombre, (tipo, ident) in casos.items()
+        }
+        Cliente = self.migrar(self.despues).get_model("clientes", "Cliente")
+        return {nombre: Cliente.objects.get(pk=pk).identificacion for nombre, pk in ids.items()}
+
+    # El unique de identificacion solo admite un "" en toda la tabla: por eso el
+    # jurídico con "" y el natural con "" van en escenarios separados.
+
+    def test_limpia_el_juridico_con_nit_y_el_juridico_con_vacia(self):
+        resultado = self.sembrar_y_migrar({
+            "juridico_con_nit": ("juridica", "900111"),
+            "juridico_vacio": ("juridica", ""),
+            "natural_real": ("natural", "1047000111"),
+        })
+        self.assertEqual(resultado, {
+            "juridico_con_nit": None, "juridico_vacio": None, "natural_real": "1047000111",
+        })
+
+    def test_limpia_el_natural_con_vacia_y_conserva_el_nit_real(self):
+        resultado = self.sembrar_y_migrar({
+            "juridico_con_nit": ("juridica", "900111"),
+            "natural_vacio": ("natural", ""),
+            "natural_real": ("natural", "1047000111"),
+        })
+        self.assertEqual(resultado, {
+            "juridico_con_nit": None, "natural_vacio": None, "natural_real": "1047000111",
+        })
