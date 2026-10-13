@@ -468,7 +468,9 @@ function TarjetaSalon({ salon, sitio, habilitados, puedeHabilitar, onHabilitar }
         )}
         {sitio && <span className="salon-tarjeta__sitio">{sitio}</span>}
         {!conFoto && (
-          <h2 id={idTitulo} className="salon-tarjeta__nombre-grande">{salon.nombre}</h2>
+          <h2 id={idTitulo} className="salon-tarjeta__nombre-grande" title={salon.nombre}>
+            {salon.nombre}
+          </h2>
         )}
       </div>
 

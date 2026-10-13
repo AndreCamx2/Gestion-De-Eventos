@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { ROLES_POR_RUTA } from "../routes/rutasPorRol";
 import "../styles/dashboard-layout.css";
 
-// Única fuente de las pestañas de la barra superior (y del título accesible).
+// Única fuente de las pestañas de la barra superior.
 // El orden sigue la maqueta de Piedra viva.
 export const NAV_ITEMS = [
   // Los roles de cada pestaña salen de rutasPorRol.js (SGDE-54), la misma lista que usa
@@ -77,11 +77,6 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
 
   const visibleItems = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(user.role));
 
-  // Las pantallas aún no tienen su propio <h1>: mientras se migran a
-  // CabeceraPagina, el título de la ruta activa se anuncia de forma invisible.
-  const currentItem = NAV_ITEMS.find((item) => location.pathname.startsWith(item.to));
-  const pageTitle = currentItem?.label ?? "SGDE";
-
   return (
     <div className="panel">
       <header className="barra-superior">
@@ -138,8 +133,8 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
       </header>
 
       <main className="panel__contenido">
-        <h1 className="visually-hidden">{pageTitle}</h1>
-        {/* Aquí se inserta la pantalla activa: Home, Cotizaciones, Salones, etc. */}
+        {/* Aquí se inserta la pantalla activa: Home, Cotizaciones, Salones, etc.
+            Cada pantalla trae su único <h1> (CabeceraPagina o el saludo del Inicio). */}
         <Outlet />
       </main>
     </div>
