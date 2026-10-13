@@ -31,6 +31,8 @@ ENDPOINTS_ADMIN = [
 # El id no necesita existir: el permiso se revisa antes de buscar el objeto.
 ENDPOINTS_ADMIN_DETALLE = [
     ("/api/roles/", ["get"]),
+    ("/api/calendario/", ["get"]),
+    ("/api/stock/comparar/", ["get"]),
     ("/api/usuarios/1/", ["get", "patch", "delete"]),
     ("/api/clientes/1/", ["get", "put", "patch", "delete"]),
     ("/api/salones/1/", ["get", "patch"]),

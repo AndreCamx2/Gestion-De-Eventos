@@ -11,7 +11,9 @@ from apps.salones.views import (
 from apps.catalogo.views import (
     ConceptoListCreateView, ConceptoRetrieveUpdateView, ConceptoHistorialListView,
 )
-from apps.proveedores.views import ProveedorListCreateView, StockElementoListCreateView, StockElementoDetailView, StockCompararView
+from apps.proveedores.views import (
+    ProveedorListCreateView, StockElementoListCreateView, StockElementoDetailView, StockCompararView,
+)
 from apps.clientes.views import (
     RegistroPublicoView, ClienteAdminListCreateView, ClienteAdminRetrieveUpdateDestroyView, EmpresaListCreateView,
 )
