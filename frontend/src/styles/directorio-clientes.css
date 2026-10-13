@@ -488,6 +488,28 @@
     color: var(--color-texto-tenue);
 }
 
+.directorio-form__enlace {
+    align-self: flex-start;
+    min-height: var(--alto-tocable);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-mandarina-texto);
+    font-family: inherit;
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-extra);
+    cursor: pointer;
+}
+
+.directorio-form__enlace:hover {
+    text-decoration: underline;
+}
+
+.directorio-form__enlace:focus-visible {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
 .directorio-form__ayuda strong {
     color: var(--color-texto-suave);
 }

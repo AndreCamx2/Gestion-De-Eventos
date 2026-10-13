@@ -24,6 +24,7 @@ import {
   Tarjeta,
 } from "../components/ui";
 import SesionVencida, { AvisoSesionEnVentana } from "../components/SesionVencida";
+import DialogoNuevaEmpresa from "./clientes/DialogoNuevaEmpresa";
 import "../styles/directorio-clientes.css";
 
 const FILTROS_TIPO = [
@@ -99,6 +100,7 @@ export default function Clientes() {
   const [errorBaja, setErrorBaja] = useState(null);
   const [aviso, setAviso] = useState(null);
   const [procesando, setProcesando] = useState(false);
+  const [creandoEmpresa, setCreandoEmpresa] = useState(false);
 
   const tablaRef = useRef(null);
   const buscarRef = useRef(null);
@@ -376,6 +378,28 @@ export default function Clientes() {
     buscarRef.current?.focus();
   }
 
+  function abrirNuevaEmpresa(evento) {
+    disparadorRef.current = evento.currentTarget;
+    setCreandoEmpresa(true);
+  }
+
+  function cerrarNuevaEmpresa() {
+    setCreandoEmpresa(false);
+    const disparador = disparadorRef.current;
+    disparadorRef.current = null;
+    if (disparador?.isConnected) disparador.focus();
+  }
+
+  function alCrearEmpresa(empresa) {
+    setEmpresas((prev) => [...prev, empresa].sort((a, b) => a.razon_social.localeCompare(b.razon_social, "es")));
+    setForm((prev) => ({ ...prev, empresa: String(empresa.id) }));
+    setErroresCampo((prev) => ({ ...prev, empresa: undefined }));
+    setAviso(`Empresa "${empresa.razon_social}" creada y asignada.`);
+    disparadorRef.current = null;
+    setCreandoEmpresa(false);
+    requestAnimationFrame(() => document.getElementById(`${panel?.modo}-empresa`)?.focus());
+  }
+
   function alVolverAEntrar() {
     setSesionVencida(false);
     // Si la sesión venció al cargar, la lista nunca llegó: se pide otra vez.
@@ -623,6 +647,7 @@ export default function Clientes() {
                   errores={erroresCampo}
                   empresas={empresas}
                   onChange={handleChange}
+                  onNuevaEmpresa={abrirNuevaEmpresa}
                 />
 
                 {errorAccion && (
@@ -752,6 +777,16 @@ export default function Clientes() {
       >
         <p className="directorio-dialogo__texto">Tienes cambios sin guardar. ¿Descartarlos?</p>
       </DialogoConfirmacion>
+
+      {creandoEmpresa && (
+        <DialogoNuevaEmpresa
+          onCreada={alCrearEmpresa}
+          onCerrar={cerrarNuevaEmpresa}
+          onSesionVencida={() => setSesionVencida(true)}
+          sesionVencida={sesionVencida}
+          onEntrarDeNuevo={(boton) => sesionRef.current?.abrir({ focoAlVolver: boton })}
+        />
+      )}
 
       <SesionVencida ref={sesionRef} visible={sesionVencida} onReingreso={alVolverAEntrar} />
     </div>
