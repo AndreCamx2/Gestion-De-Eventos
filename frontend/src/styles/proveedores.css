@@ -203,6 +203,255 @@
     font-size: var(--texto-etiqueta);
 }
 
+/* ===== Selector de vista (SGDE-71) ===== */
+
+.proveedores-vistas {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-self: flex-start;
+    gap: 6px;
+    max-width: 100%;
+    padding: 6px;
+    border: var(--borde);
+    border-radius: var(--radio-tarjeta);
+    background: var(--color-superficie);
+}
+
+.proveedores-vistas__opcion {
+    min-height: var(--alto-tocable);
+    padding: 0 var(--espacio-4);
+    border: 0;
+    border-radius: var(--radio-control);
+    background: transparent;
+    color: var(--color-texto-suave);
+    font: inherit;
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-extra);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform var(--duracion-presion) var(--curva-salida);
+}
+
+.proveedores-vistas__opcion[aria-pressed="true"] {
+    background: var(--color-tinta);
+    color: var(--color-sobre-oscuro);
+}
+
+.proveedores-vistas__opcion:active {
+    transform: scale(0.97);
+}
+
+.proveedores-vistas__opcion:focus-visible {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+/* ===== Comparar precios (SGDE-71) ===== */
+
+.comparar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+}
+
+.comparar__buscar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--espacio-3) var(--espacio-5);
+}
+
+.comparar__buscar .campo {
+    flex: 0 1 420px;
+    min-width: 0;
+}
+
+.comparar__estado {
+    margin: 0 0 var(--espacio-3);
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-semi);
+    color: var(--color-texto-suave);
+}
+
+.comparar__estado:empty {
+    display: none;
+}
+
+.comparar__lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+}
+
+/* Mientras llega la búsqueda nueva, lo anterior se queda pero se atenúa */
+.comparar__lista--cargando {
+    opacity: 0.6;
+}
+
+.comparar-bloque {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+}
+
+.comparar-bloque__cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--espacio-2) var(--espacio-5);
+}
+
+.comparar-bloque__elemento {
+    margin: 0;
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-seccion);
+    overflow-wrap: anywhere;
+}
+
+.comparar-bloque__mejor,
+.comparar-bloque__sin-precio {
+    margin: 0;
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-negrita);
+    color: var(--color-texto-suave);
+}
+
+.comparar-bloque__mejor strong {
+    margin-left: 6px;
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    font-variant-numeric: tabular-nums;
+    color: var(--estado-confirmado-texto);
+}
+
+.comparar-tabla {
+    /* En teléfono la tabla se desplaza dentro de TablaContenedor */
+    min-width: 560px;
+    font-variant-numeric: tabular-nums;
+}
+
+.comparar-tabla .comparar-tabla__num {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.comparar-tabla .comparar-tabla__proveedor {
+    font-weight: var(--peso-extra);
+    text-align: left;
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: var(--texto-cuerpo);
+    color: var(--color-texto);
+    /* TablaContenedor pone nowrap a todo th: el nombre sí se parte */
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.comparar-tabla__valor {
+    font-weight: var(--peso-extra);
+}
+
+.comparar-tabla__contacto {
+    color: var(--color-texto-suave);
+    overflow-wrap: anywhere;
+}
+
+.comparar-tabla__fila--mejor {
+    background: var(--estado-confirmado-fondo);
+}
+
+.comparar-tabla__fila--agotada :is(th, td) {
+    opacity: 0.6;
+}
+
+.comparar-etiqueta {
+    display: inline-block;
+    margin-left: var(--espacio-2);
+    padding: 2px var(--espacio-2);
+    border-radius: var(--radio-pildora);
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-extra);
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.comparar-etiqueta--mejor {
+    background: var(--estado-confirmado-fondo);
+    color: var(--estado-confirmado-texto);
+    border: 1px solid var(--estado-confirmado-punto);
+}
+
+.comparar-etiqueta--agotado {
+    margin-left: 0;
+    background: var(--estado-cancelado-fondo);
+    color: var(--estado-cancelado-texto);
+}
+
+/* Teléfono: cada oferta es una tarjeta (proveedor arriba; disponible y valor en
+   una línea; contacto abajo), para que precio y contacto se vean sin desplazar */
+@media (max-width: 600px) {
+    .comparar-tabla {
+        min-width: 0;
+    }
+
+    .comparar-tabla thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+    }
+
+    .comparar-tabla tbody {
+        display: block;
+    }
+
+    .comparar-tabla tbody tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--espacio-2) var(--espacio-3);
+        padding: var(--espacio-4);
+        border-bottom: var(--borde);
+    }
+
+    .comparar-tabla tbody tr:last-child {
+        border-bottom: 0;
+    }
+
+    .comparar-tabla tbody :is(th, td) {
+        display: block;
+        padding: 0;
+        border: 0;
+        text-align: left;
+    }
+
+    .comparar-tabla .comparar-tabla__proveedor,
+    .comparar-tabla .comparar-tabla__contacto {
+        grid-column: 1 / -1;
+    }
+
+    .comparar-tabla td.comparar-tabla__cantidad {
+        text-align: left;
+    }
+
+    .comparar-tabla td.comparar-tabla__valor {
+        text-align: right;
+    }
+
+    /* Solo visual: el lector de pantalla ya oye el encabezado de la columna
+       (el texto alternativo vacío, "/ \"\"", lo deja fuera; el primero es respaldo) */
+    .comparar-tabla tbody td::before {
+        content: attr(data-etiqueta);
+        content: attr(data-etiqueta) / "";
+        display: block;
+        font-size: var(--texto-pequeno);
+        font-weight: var(--peso-negrita);
+        color: var(--color-texto-tenue);
+    }
+}
+
 /* ===== Ventanas ===== */
 
 .proveedores-dialogo__para {
@@ -227,11 +476,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .proveedor-tarjeta {
+    .proveedor-tarjeta,
+    .proveedores-vistas__opcion {
         transition: none;
     }
 
-    .proveedor-tarjeta:active {
+    .proveedor-tarjeta:active,
+    .proveedores-vistas__opcion:active {
         transform: none;
     }
 }
