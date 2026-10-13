@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { listarProveedores, listarStock } from "../api/proveedores";
 import SesionVencida from "../components/SesionVencida";
 import { AvisoError, Boton, CabeceraPagina, Esqueleto, EstadoVacio, Tarjeta } from "../components/ui";
@@ -8,11 +9,14 @@ import StockTabla from "./proveedores/StockTabla";
 import DialogoNuevoProveedor from "./proveedores/DialogoNuevoProveedor";
 import DialogoNuevoElemento from "./proveedores/DialogoNuevoElemento";
 import DialogoEditarStock from "./proveedores/DialogoEditarStock";
+import SelectorVista from "./proveedores/SelectorVista";
+import ComparadorPrecios from "./proveedores/ComparadorPrecios";
 import "../styles/proveedores.css";
 
 // Pantalla de Proveedores y stock (SGDE-81 y SGDE-42, maqueta Proveedores.dc.html):
 // tarjetas de proveedor seleccionables y la tabla de stock del elegido, con su
-// cantidad y valor editables (SGDE-98). Cada pieza vive en pages/proveedores/.
+// cantidad y valor editables (SGDE-98). Con ?vista=comparar, "Comparar precios"
+// entre proveedores por elemento (SGDE-71). Cada pieza vive en pages/proveedores/.
 
 // Tipo de error al cargar: "sesion" (401), "permiso" (403) o "servidor" (500 o sin red).
 function tipoDeError(err) {
@@ -35,6 +39,9 @@ export default function Proveedores() {
   const [dialogo, setDialogo] = useState(null);
   // Elemento del stock que se edita (con dialogo === "editar").
   const [editando, setEditando] = useState(null);
+  // ?vista=comparar muestra "Comparar precios" (SGDE-71); sin parámetro, el stock.
+  const [parametros, setParametros] = useSearchParams();
+  const enComparar = parametros.get("vista") === "comparar";
 
   // Si la sesión venció mientras se cargaba, al volver a entrar se carga otra vez.
   const recargarAlEntrarRef = useRef(false);
@@ -172,9 +179,11 @@ export default function Proveedores() {
         acciones={
           errorCarga !== "permiso" && (
             <>
-              <Boton variante="secundario" disabled={!seleccionado} onClick={(e) => abrir("elemento", e.currentTarget)}>
-                Agregar elemento
-              </Boton>
+              {!enComparar && (
+                <Boton variante="secundario" disabled={!seleccionado} onClick={(e) => abrir("elemento", e.currentTarget)}>
+                  Agregar elemento
+                </Boton>
+              )}
               <Boton ref={nuevoRef} onClick={(e) => abrir("proveedor", e.currentTarget)}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
                   <path d="M12 5v14M5 12h14" />
@@ -186,25 +195,33 @@ export default function Proveedores() {
         }
       />
 
-      {vista === "error" && (
+      {errorCarga !== "permiso" && (
+        <SelectorVista vista={enComparar ? "comparar" : "stock"} onCambiar={(v) => setParametros(v === "comparar" ? { vista: v } : {}, { replace: true })} />
+      )}
+
+      {enComparar && errorCarga !== "permiso" && (
+        <ComparadorPrecios sesionVencida={sesionVencida} onSesionVencida={() => setSesionVencida(true)} />
+      )}
+
+      {vista === "error" && (!enComparar || errorCarga === "permiso") && (
         <Tarjeta>
           <AvisoError tipo={errorCarga} onReintentar={cargarDatos} />
         </Tarjeta>
       )}
 
-      {vista === "sesion" && (
+      {!enComparar && vista === "sesion" && (
         <Tarjeta>
           <EstadoVacio titulo="Tu sesión expiró" texto="Vuelve a entrar con el aviso de abajo para ver los proveedores." />
         </Tarjeta>
       )}
 
-      {vista === "carga" && (
+      {!enComparar && vista === "carga" && (
         <Tarjeta>
           <Esqueleto filas={3} columnas={2} etiqueta="Cargando proveedores…" />
         </Tarjeta>
       )}
 
-      {vista === "vacio" && (
+      {!enComparar && vista === "vacio" && (
         <Tarjeta>
           <EstadoVacio
             titulo="Aún no hay proveedores"
@@ -218,7 +235,7 @@ export default function Proveedores() {
         </Tarjeta>
       )}
 
-      {vista === "lista" && seleccionado && (
+      {!enComparar && vista === "lista" && seleccionado && (
         <>
           <TarjetasProveedores proveedores={ordenados} seleccionadoId={seleccionado.id} conteos={conteos} onElegir={elegir} />
           <div ref={stockRef} className="proveedores-stock-ancla">

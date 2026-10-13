@@ -45,3 +45,15 @@ export function editarStock(id, cambios) {
     body: JSON.stringify(cambios),
   });
 }
+
+// GET /api/stock/comparar/?elemento=<texto> (SGDE-31): el stock agrupado por
+// elemento, sin distinguir mayúsculas, tildes ni espacios de más. Sin texto, todos.
+// → [{ elemento, mejor_precio, ofertas: [{ stock_id, proveedor_id, proveedor,
+//      contacto, cantidad, valor, actualizado_en, es_mejor_precio }] }]
+// Las ofertas llegan ordenadas: disponibles de la más barata a la más cara y las
+// agotadas al final. mejor_precio es null si todas están agotadas.
+export async function compararStock(elemento = "") {
+  const texto = elemento.trim();
+  const query = texto ? `?elemento=${encodeURIComponent(texto)}` : "";
+  return comoLista(await apiFetch(`/stock/comparar/${query}`, { method: "GET" }));
+}
