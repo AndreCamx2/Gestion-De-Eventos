@@ -6,10 +6,12 @@ from rest_framework.views import APIView
 from apps.cotizaciones.models import Cotizacion
 from .serializers import BloquearSalonSerializer, BloqueoSerializer
 from .services import bloquear_salon, liberar_bloqueos_vencidos
+from apps.usuarios.permissions import EsAdministrador
 
 
 class BloqueoListCreateView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+    
 
     def get(self, request):
         """Lista los bloqueos vigentes (opcional: ?salon_id=)."""
