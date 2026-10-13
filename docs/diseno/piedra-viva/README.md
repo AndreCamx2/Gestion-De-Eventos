@@ -120,7 +120,7 @@ Alto 44–48 px, peso 700–800, radio 12 px. Deshabilitado: opacidad 0.5 y `cur
 | `Conceptos.dc.html` | `/conceptos` | `pages/Conceptos.jsx` | Existe, se reestiliza |
 | `Proveedores.dc.html` | `/proveedores` | `pages/Proveedores.jsx` | Existe, se reestiliza |
 | `Clientes.dc.html` | `/clientes` | `pages/Clientes.jsx` | Existe, se reestiliza |
-| `Sitios.dc.html` | `/sitios` | `pages/hoteles/Sitios.jsx` | Existe, se reestiliza |
+| `Sitios.dc.html` | `/sitios` | `pages/Sitios.jsx` | Existe, se reestiliza |
 | `Usuarios.dc.html` | `/usuarios` | — | Nueva |
 | `Sistema.dc.html` | — | — | Referencia de esta guía |
 | `CasosLimite.dc.html` | — | — | Cómo se ven carga, vacío, 401, 403, 409, 400 y 500 |

@@ -1,248 +1,224 @@
-import { useState, useEffect, useCallback } from "react";
-import { listarSitios, crearSitio, listarCiudades } from "../api/sitios";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { listarCiudades, listarSitios } from "../api/sitios";
+import { listarSalones } from "../api/salones";
+import { listarConceptos } from "../api/conceptos";
+import { listarUsuarios } from "../api/usuarios";
+import SesionVencida from "../components/SesionVencida";
+import { AvisoError, Boton, CabeceraPagina, Esqueleto, EstadoVacio, Tarjeta } from "../components/ui";
+import { contarPorSitio } from "./sitios/conteos";
+import TarjetaSitio from "./sitios/TarjetaSitio";
+import FormNuevoSitio from "./sitios/FormNuevoSitio";
 import "../styles/sitios.css";
 
-const FORM_INICIAL = { nombre: "", ciudad: "" };
+// Pantalla de Sitios (SGDE-83, maqueta Sitios.dc.html): una tarjeta por sitio con
+// sus conteos, la tarjeta "Agregar otro sitio" y el formulario "Nuevo sitio".
 
-// Texto que se muestra para una ciudad del catálogo.
-function etiquetaCiudad(ciudad) {
-  return ciudad.nombre ?? ciudad.codigo ?? String(ciudad.id);
+// DRF puede devolver una lista o { results }.
+function comoLista(data) {
+  return Array.isArray(data) ? data : data?.results ?? [];
 }
 
-// El API de sitios devuelve la ciudad como id (clave primaria). Lo traducimos
-// al nombre usando el catálogo; si no se encuentra, mostramos el valor tal cual.
-function nombreCiudad(valor, ciudades) {
-  if (valor && typeof valor === "object") return valor.nombre ?? valor.codigo ?? "—";
-  const ciudad = ciudades.find((c) => c.id === valor || c.codigo === valor);
-  return ciudad ? etiquetaCiudad(ciudad) : valor ?? "—";
+// Resultado de Promise.allSettled → la lista, o null si esa petición falló.
+function listaO(resultado) {
+  return resultado.status === "fulfilled" ? comoLista(resultado.value) : null;
 }
 
-// Traduce el error de apiFetch (error.status, error.body) a mensajes para el
-// formulario. DRF responde los errores de validación como
-// { campo: ["mensaje"] } y los demás como { detail: "mensaje" }.
-function erroresDeServidor(error) {
-  const campos = {};
-  let general = "";
+// Tipo de error al cargar: "sesion" (401), "permiso" (403) o "servidor" (500 o sin red).
+function tipoDeError(err) {
+  if (err?.status === 401) return "sesion";
+  if (err?.status === 403) return "permiso";
+  return "servidor";
+}
 
-  if (error.status === 401) {
-    general = "Tu sesión expiró. Vuelve a iniciar sesión.";
-  } else if (error.status === 403) {
-    general = "No tienes permiso para crear sitios.";
-  } else if (error.body && typeof error.body === "object") {
-    for (const [clave, valor] of Object.entries(error.body)) {
-      const texto = Array.isArray(valor) ? valor.join(" ") : String(valor);
-      if (clave === "detail" || clave === "non_field_errors") general = texto;
-      else campos[clave] = texto;
-    }
-  }
-
-  if (!general && Object.keys(campos).length === 0) {
-    general = error.message || "No se pudo crear el sitio.";
-  }
-  return { campos, general };
+function IconoMas() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
 }
 
 export default function Sitios() {
   const [sitios, setSitios] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [errorLista, setErrorLista] = useState("");
-
   const [ciudades, setCiudades] = useState([]);
-  const [errorCiudades, setErrorCiudades] = useState("");
+  const [ciudadesFallaron, setCiudadesFallaron] = useState(false);
+  // Listas para contar; null = esa petición falló y su número muestra "—".
+  const [listas, setListas] = useState({ salones: null, conceptos: null, usuarios: null });
+  const [cargando, setCargando] = useState(true);
+  // Error al cargar /sitios/: null | "sesion" | "permiso" | "servidor".
+  const [errorCarga, setErrorCarga] = useState(null);
+  // 401: se avisa abajo sin salir de la pantalla (components/SesionVencida.jsx).
+  const [sesionVencida, setSesionVencida] = useState(false);
 
-  const [form, setForm] = useState(FORM_INICIAL);
-  const [errores, setErrores] = useState({});
-  const [errorGeneral, setErrorGeneral] = useState("");
-  const [exito, setExito] = useState("");
-  const [enviando, setEnviando] = useState(false);
-
-  const cargarSitios = useCallback(async () => {
-    setCargando(true);
-    setErrorLista("");
-    try {
-      setSitios(await listarSitios());
-    } catch (error) {
-      setErrorLista(error.message || "No se pudieron cargar los sitios.");
-    } finally {
-      setCargando(false);
-    }
-  }, []);
-
-  const cargarCiudades = useCallback(async () => {
-    setErrorCiudades("");
-    try {
-      setCiudades(await listarCiudades());
-    } catch (error) {
-      setErrorCiudades(error.message || "No se pudieron cargar las ciudades.");
-    }
-  }, []);
+  // Si la sesión venció mientras se cargaba, al volver a entrar se carga otra vez.
+  const recargarAlEntrarRef = useRef(false);
+  const nombreRef = useRef(null);
+  const sesionRef = useRef(null);
 
   useEffect(() => {
-    cargarSitios();
-    cargarCiudades();
-  }, [cargarSitios, cargarCiudades]);
+    cargarDatos();
+  }, []);
 
-  function handleChange(event) {
-    const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    // Al corregir un campo, quitamos su aviso de error.
-    setErrores((prev) => ({ ...prev, [name]: undefined }));
+  // Las cinco peticiones van en paralelo. Solo /sitios/ es indispensable: si
+  // falla una de las de conteo, ese número queda en "—"; si fallan las ciudades,
+  // la tarjeta no muestra el código y el formulario ofrece reintentar.
+  async function cargarDatos() {
+    setCargando(true);
+    setErrorCarga(null);
+    const resultados = await Promise.allSettled([
+      listarSitios(),
+      listarCiudades(),
+      listarSalones(),
+      listarConceptos(),
+      listarUsuarios(),
+    ]);
+    const [rSitios, rCiudades, rSalones, rConceptos, rUsuarios] = resultados;
+
+    if (rSitios.status === "fulfilled") setSitios(listaO(rSitios));
+    else setErrorCarga(tipoDeError(rSitios.reason));
+
+    setCiudades(listaO(rCiudades) ?? []);
+    setCiudadesFallaron(rCiudades.status !== "fulfilled");
+    setListas({ salones: listaO(rSalones), conceptos: listaO(rConceptos), usuarios: listaO(rUsuarios) });
+
+    if (resultados.some((r) => r.status === "rejected" && r.reason?.status === 401)) {
+      recargarAlEntrarRef.current = true;
+      setSesionVencida(true);
+    }
+    setCargando(false);
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setExito("");
-    setErrorGeneral("");
-
-    const nuevos = {};
-    if (!form.nombre.trim()) nuevos.nombre = "El nombre del sitio es obligatorio.";
-    if (!form.ciudad) nuevos.ciudad = "Selecciona una ciudad.";
-    setErrores(nuevos);
-    if (Object.keys(nuevos).length > 0) return;
-
-    // El select entrega texto; el API espera el id como número.
-    const idCiudad = Number(form.ciudad);
-
-    setEnviando(true);
+  async function cargarCiudades() {
     try {
-      await crearSitio({
-        nombre: form.nombre.trim(),
-        ciudad: Number.isNaN(idCiudad) ? form.ciudad : idCiudad,
-      });
-      setForm(FORM_INICIAL);
-      setExito("Sitio creado correctamente.");
-      await cargarSitios(); // refresca la lista con lo que quedó guardado
-    } catch (error) {
-      const { campos, general } = erroresDeServidor(error);
-      setErrores(campos);
-      setErrorGeneral(general);
-    } finally {
-      setEnviando(false);
+      setCiudades(comoLista(await listarCiudades()));
+      setCiudadesFallaron(false);
+    } catch (err) {
+      if (err.status === 401) setSesionVencida(true);
     }
   }
 
+  const conteos = useMemo(() => contarPorSitio(sitios, listas), [sitios, listas]);
+  // /api/sitios/ no garantiza un orden: se ordena por nombre para que la tarjeta
+  // recién creada quede donde estará al recargar.
+  const sitiosOrdenados = useMemo(
+    () => [...sitios].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
+    [sitios],
+  );
+  const ciudadPorId = useMemo(() => new Map(ciudades.map((c) => [c.id, c])), [ciudades]);
+
+  // El sitio nuevo aparece sin recargar, con salones y conceptos en 0. Los
+  // usuarios se piden otra vez porque el backend le asigna el sitio a quien lo
+  // crea (SGDE-90): así el conteo sale del API (1, o 0 si lo creó un superusuario,
+  // que no aparece en /usuarios/). La tarjeta se agrega cuando llega esa
+  // respuesta, para que el número no cambie solo. Si falla, se queda la lista
+  // anterior; con un 401, todo se vuelve a cargar al entrar de nuevo.
+  async function alCrear(sitio) {
+    let usuarios = null;
+    try {
+      usuarios = await listarUsuarios();
+    } catch (err) {
+      if (err.status === 401) {
+        recargarAlEntrarRef.current = true;
+        setSesionVencida(true);
+      }
+    }
+    setSitios((prev) => [...prev, sitio]);
+    if (usuarios) setListas((prev) => ({ ...prev, usuarios }));
+  }
+
+  function alVolverAEntrar() {
+    setSesionVencida(false);
+    if (recargarAlEntrarRef.current) {
+      recargarAlEntrarRef.current = false;
+      cargarDatos();
+    }
+  }
+
+  // "Agregar otro sitio" lleva al formulario: en teléfono, enfocar el campo lo trae a la vista.
+  const irAlFormulario = () => nombreRef.current?.focus();
+
+  let vista = "lista";
+  if (errorCarga === "permiso" || errorCarga === "servidor") vista = "error";
+  else if (sitios.length === 0 && errorCarga === "sesion") vista = "sesion";
+  else if (sitios.length === 0 && cargando) vista = "carga";
+  else if (sitios.length === 0) vista = "vacio";
+
   return (
-    <div className="sitios">
-      <section className="sitios__panel">
-        <div className="sitios__encabezado">
-          <h2 className="sitios__titulo">Sitios registrados</h2>
-          {!cargando && !errorLista && (
-            <span className="sitios__contador">{sitios.length}</span>
-          )}
-        </div>
+    <div className="sitios-pv">
+      <CabeceraPagina
+        antetitulo="Administración"
+        titulo="Sitios"
+        subtitulo="Cada hotel o sede tiene sus propios salones, conceptos y precios."
+      />
 
-        {cargando && <p className="sitios__estado">Cargando sitios…</p>}
-
-        {errorLista && (
-          <div className="sitios__alerta sitios__alerta--error" role="alert">
-            <span>{errorLista}</span>
-            <button type="button" className="sitios__reintentar" onClick={cargarSitios}>
-              Reintentar
-            </button>
-          </div>
-        )}
-
-        {!cargando && !errorLista && sitios.length === 0 && (
-          <p className="sitios__estado">
-            Aún no hay sitios registrados. Crea el primero con el formulario.
-          </p>
-        )}
-
-        {!cargando && !errorLista && sitios.length > 0 && (
-          <div className="sitios__tabla-wrap">
-            <table className="sitios__tabla">
-              <thead>
-                <tr>
-                  <th>Nombre</th>
-                  <th>Ciudad</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sitios.map((sitio) => (
-                  <tr key={sitio.id}>
-                    <td className="sitios__nombre">{sitio.nombre}</td>
-                    <td>{nombreCiudad(sitio.ciudad, ciudades)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <aside className="sitios__panel">
-        <h2 className="sitios__titulo">Nuevo sitio</h2>
-
-        {exito && (
-          <div className="sitios__alerta sitios__alerta--exito" role="status">
-            {exito}
-          </div>
-        )}
-        {errorGeneral && (
-          <div className="sitios__alerta sitios__alerta--error" role="alert">
-            {errorGeneral}
-          </div>
-        )}
-
-        <form noValidate onSubmit={handleSubmit}>
-          <div className="field">
-            <label className="field__label" htmlFor="nombre">
-              Nombre <span className="field__required">*</span>
-            </label>
-            <div className="field__control">
-              <input
-                className="field__input"
-                type="text"
-                id="nombre"
-                name="nombre"
-                placeholder="Hotel Las Américas"
-                value={form.nombre}
-                onChange={handleChange}
-              />
-            </div>
-            {errores.nombre && <p className="field__error">{errores.nombre}</p>}
-          </div>
-
-          <div className="field">
-            <label className="field__label" htmlFor="ciudad">
-              Ciudad <span className="field__required">*</span>
-            </label>
-            <div className="field__control">
-              <select
-                className="field__input"
-                id="ciudad"
-                name="ciudad"
-                value={form.ciudad}
-                onChange={handleChange}
-              >
-                <option value="">Selecciona una ciudad</option>
-                {ciudades.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {etiquetaCiudad(c)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {errorCiudades && (
-              <p className="field__error">
-                {errorCiudades}{" "}
-                <button type="button" className="sitios__reintentar" onClick={cargarCiudades}>
-                  Reintentar
-                </button>
-              </p>
+      {/* Un 403 no deja ver ni crear: solo el aviso. */}
+      {errorCarga === "permiso" ? (
+        <Tarjeta>
+          <AvisoError tipo="permiso" />
+        </Tarjeta>
+      ) : (
+        <div className="sitios-cuerpo">
+          <section className="sitios-lista" aria-label="Sitios registrados">
+            {vista === "error" && (
+              <Tarjeta>
+                <AvisoError tipo="servidor" onReintentar={cargarDatos} />
+              </Tarjeta>
             )}
-            {errores.ciudad && <p className="field__error">{errores.ciudad}</p>}
-          </div>
 
-          <button
-            type="submit"
-            className="btn btn--primary btn--block"
-            disabled={enviando}
-          >
-            {enviando ? "Guardando…" : "Crear sitio"}
-          </button>
-        </form>
-      </aside>
+            {vista === "sesion" && (
+              <Tarjeta>
+                <EstadoVacio titulo="Tu sesión expiró" texto="Vuelve a entrar con el aviso de abajo para ver los sitios." />
+              </Tarjeta>
+            )}
+
+            {vista === "carga" && (
+              <div className="sitios-grilla" role="status" aria-busy="true">
+                <span className="visually-hidden">Cargando sitios…</span>
+                {[0, 1].map((i) => (
+                  <div key={i} className="sitio-tarjeta sitio-tarjeta--cargando" aria-hidden="true">
+                    <div className="sitio-tarjeta__cabecera" />
+                    <Esqueleto filas={2} avatar={false} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {vista === "vacio" && (
+              <Tarjeta>
+                <EstadoVacio
+                  titulo="Aún no tienes sitios"
+                  texto="Crea el primero con el formulario. Si el sitio ya existe, pide a quien lo administra que te lo asigne."
+                  accion={<Boton variante="secundario" onClick={irAlFormulario}>Crear el primero</Boton>}
+                />
+              </Tarjeta>
+            )}
+
+            {vista === "lista" && (
+              <div className="sitios-grilla">
+                {sitiosOrdenados.map((sitio) => (
+                  <TarjetaSitio key={sitio.id} sitio={sitio} ciudad={ciudadPorId.get(sitio.ciudad)} conteos={conteos[sitio.id]} />
+                ))}
+                <button type="button" className="sitios-agregar" onClick={irAlFormulario}>
+                  <span className="sitios-agregar__icono"><IconoMas /></span>
+                  <span className="sitios-agregar__titulo">Agregar otro sitio</span>
+                  <span className="sitios-agregar__nota">Una sede nueva arranca sin salones ni precios</span>
+                </button>
+              </div>
+            )}
+          </section>
+
+          <FormNuevoSitio
+            ciudades={ciudades}
+            ciudadesFallaron={ciudadesFallaron}
+            onReintentarCiudades={cargarCiudades}
+            onCreado={alCrear}
+            onSesionVencida={() => setSesionVencida(true)}
+            nombreRef={nombreRef}
+          />
+        </div>
+      )}
+
+      <SesionVencida ref={sesionRef} visible={sesionVencida} onReingreso={alVolverAEntrar} />
     </div>
   );
 }
