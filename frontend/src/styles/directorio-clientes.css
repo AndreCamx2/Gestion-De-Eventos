@@ -1,7 +1,6 @@
 /* Pantalla de Clientes — rediseño Piedra viva (maqueta Clientes.dc.html).
    Solo variables de tokens.css: ningún color en hex.
-   Todas las clases llevan el prefijo "directorio-" para no chocar con
-   clientes.css, que sigue cargado mientras Conceptos lo use. */
+   Todas las clases llevan el prefijo "directorio-". */
 
 .directorio {
     display: flex;

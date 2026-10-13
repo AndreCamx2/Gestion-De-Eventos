@@ -46,8 +46,9 @@ export function erroresDesdeApi(body) {
   return erroresDesdeApiComun(body, CAMPOS);
 }
 
-// Cuerpo del PATCH. En jurídica NO se envía identificacion: así no se borra la que
-// ya tenga el cliente (p. ej. el jurídico del seed) y el NIT sigue siendo el de la empresa.
+// Cuerpo del PATCH. En jurídica NO se envía identificacion: el NIT es el de su
+// empresa y el backend deja la del cliente en null (SGDE-87; la base de datos lo
+// exige desde SGDE-91). Al pasar un natural a jurídico, el backend la borra solo.
 export function payloadEdicion(form) {
   const body = {
     tipo: form.tipo,
@@ -59,7 +60,8 @@ export function payloadEdicion(form) {
     observaciones_internas: form.observaciones_internas,
   };
   if (form.tipo !== "juridica") {
-    // identificacion es única en la BD: un "" chocaría con otros vacíos, se envía null.
+    // identificacion es única en la BD: vacía se envía null (el backend también
+    // convierte "" en null desde SGDE-91).
     body.identificacion = form.identificacion.trim() || null;
   }
   return body;
