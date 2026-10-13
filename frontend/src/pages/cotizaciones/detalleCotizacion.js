@@ -107,3 +107,82 @@ export function resumenCancelacion(c) {
     motivo: c.motivo_cancelacion,
   };
 }
+
+export const TIPOS_GARANTIA = [
+  { valor: "transferencia", texto: "Transferencia" },
+  { valor: "tarjeta", texto: "Tarjeta" },
+  { valor: "consignacion", texto: "Consignación" },
+  { valor: "efectivo", texto: "Efectivo" },
+];
+
+export function nombreGarantia(tipo) {
+  return TIPOS_GARANTIA.find((t) => t.valor === tipo)?.texto.toLowerCase() ?? tipo;
+}
+
+export const ACEPTACION_VACIA = { tipo: "", monto: "" };
+
+export function puedeAceptar(c) {
+  return (c.estado === "cotizado" && !c.vencida) || c.estado === "bloqueado";
+}
+
+export function parsearMonto(texto) {
+  const limpio = String(texto ?? "").trim().replace(/\s|\$/g, "");
+  if (!limpio) return null;
+  if (!/^[\d.,]+$/.test(limpio)) return NaN;
+  const coma = limpio.lastIndexOf(",");
+  const puntos = limpio.split(".").length - 1;
+  const decimalConPunto = coma < 0 && puntos === 1 && /\.\d{1,2}$/.test(limpio);
+  let normal;
+  if (coma >= 0) normal = `${limpio.slice(0, coma).replace(/[.,]/g, "")}.${limpio.slice(coma + 1)}`;
+  else if (decimalConPunto) normal = limpio;
+  else normal = limpio.replace(/\./g, "");
+  const numero = Number(normal);
+  if (!Number.isFinite(numero)) return NaN;
+  return Math.round(numero * 100) / 100;
+}
+
+export function porcentajeDelTotal(monto, total) {
+  const base = Number(total);
+  if (monto == null || Number.isNaN(monto) || !base) return null;
+  return Math.round((monto / base) * 1000) / 10;
+}
+
+export function validarAceptacion(form) {
+  const campos = {};
+  if (!form.tipo) campos.tipo = "Elige cómo dejó la garantía el cliente.";
+  const monto = parsearMonto(form.monto);
+  if (monto == null) campos.monto = "Escribe el monto recibido.";
+  else if (Number.isNaN(monto)) campos.monto = "Escribe solo números, por ejemplo 3.220.000.";
+  else if (monto <= 0) campos.monto = "El monto debe ser mayor que 0.";
+  else if (monto >= 1e10) campos.monto = "El monto es demasiado grande.";
+  return Object.keys(campos).length ? { tipo: "datos", campos, texto: null } : null;
+}
+
+export function payloadAceptacion(form) {
+  return { tipo: form.tipo, monto: parsearMonto(form.monto).toFixed(2) };
+}
+
+export function mensajeAceptacion(error) {
+  const tipo = tipoDeError(error);
+  if (tipo === "datos") {
+    const { tipo: errTipo, monto, detail, non_field_errors } = error.body ?? {};
+    const campos = {};
+    if (errTipo) campos.tipo = textoError(errTipo);
+    if (monto) campos.monto = textoError(monto);
+    const general = detail ?? non_field_errors;
+    return {
+      tipo,
+      campos,
+      texto: general ? textoError(general) : Object.keys(campos).length ? null : "El servidor no aceptó los datos.",
+    };
+  }
+  if (tipo === "conflicto") {
+    return { tipo, campos: {}, texto: error.body?.detail || "La cotización cambió de estado. Recarga la página." };
+  }
+  if (tipo === "permiso") return { tipo, campos: {}, texto: "Solo un administrador puede registrar la aceptación." };
+  if (tipo === "sesion") {
+    return { tipo, campos: {}, texto: "Tu sesión expiró. Vuelve a entrar con el aviso de abajo: lo escrito no se pierde." };
+  }
+  if (tipo === "noExiste") return { tipo, campos: {}, texto: "Esta cotización ya no existe." };
+  return { tipo, campos: {}, texto: "No pudimos hablar con el servidor. Inténtalo de nuevo." };
+}

@@ -15,8 +15,9 @@ function decimalOpcional(valor) {
 }
 
 // GET /api/salones/ → [{ id, sitio, nombre, altura, ancho, foto_url }]
-export async function listarSalones() {
-  return comoLista(await apiFetch("/salones/", { method: "GET" }));
+export async function listarSalones({ incluirInactivos = false } = {}) {
+  const query = incluirInactivos ? "?incluir_inactivos=true" : "";
+  return comoLista(await apiFetch(`/salones/${query}`, { method: "GET" }));
 }
 
 // POST /api/salones/. El nombre es único dentro de cada sitio.

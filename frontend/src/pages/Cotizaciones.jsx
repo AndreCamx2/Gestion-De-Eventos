@@ -130,9 +130,14 @@ export default function Cotizaciones() {
         titulo="Cotizaciones"
         subtitulo="Todo lo que se ha ofrecido, en qué estado está y cuánto vale."
         acciones={
-          <Boton as={Link} to="/cotizaciones/nueva">
-            <span aria-hidden="true">+</span> Nueva cotización
-          </Boton>
+          <>
+            <Boton as={Link} to="/cotizaciones/historico" variante="secundario">
+              Histórico
+            </Boton>
+            <Boton as={Link} to="/cotizaciones/nueva">
+              <span aria-hidden="true">+</span> Nueva cotización
+            </Boton>
+          </>
         }
       />
 

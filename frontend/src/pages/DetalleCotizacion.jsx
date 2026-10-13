@@ -4,14 +4,18 @@ import { AvisoError, Boton, CabeceraPagina, Esqueleto, EstadoBadge, EstadoVacio,
 import SesionVencida from "../components/SesionVencida";
 import { hoyLocal } from "../utils/inicioCifras";
 import DetalleConceptos from "./cotizaciones/DetalleConceptos";
+import MovimientosCotizacion from "./cotizaciones/MovimientosCotizacion";
+import PanelAceptacion from "./cotizaciones/PanelAceptacion";
 import PanelVigencia, { AvisoAceptacionVencida } from "./cotizaciones/PanelVigencia";
-import { estadoVisible, numeroCotizacion, vigencia } from "./cotizaciones/cotizaciones";
+import { estadoVisible, fechaCorta, numeroCotizacion, vigencia } from "./cotizaciones/cotizaciones";
 import {
   datosCliente,
   diaCorto,
   fechaDelEvento,
   idDeRuta,
+  nombreGarantia,
   progreso,
+  puedeAceptar,
   puedeExtender,
   resumenCancelacion,
   textoAforo,
@@ -20,13 +24,6 @@ import {
 import { pesos } from "./cotizaciones/nuevaCotizacion";
 import { useDetalleCotizacion } from "./cotizaciones/useDetalleCotizacion";
 import "../styles/detalle-cotizacion.css";
-
-const TIPOS_GARANTIA = {
-  transferencia: "transferencia",
-  tarjeta: "tarjeta",
-  consignacion: "consignación",
-  efectivo: "efectivo",
-};
 
 function ChipVigencia({ cotizacion, hoy }) {
   const v = vigencia(cotizacion, hoy);
@@ -64,17 +61,29 @@ function Dato({ etiqueta, principal, secundario }) {
   );
 }
 
-function PanelConfirmada({ cotizacion }) {
+function PanelConfirmada({ cotizacion, recien }) {
   const g = cotizacion.garantia;
-  if (!g) return null;
+  if (!g || cotizacion.estado !== "confirmado") return null;
   const dia = diaCorto(g.registrada_en);
   return (
-    <section className="dc-panel dc-panel--confirmada" aria-labelledby="dc-confirmada-titulo">
-      <h2 id="dc-confirmada-titulo" className="dc-panel__titulo">Evento confirmado</h2>
+    <section
+      className={["dc-panel", "dc-panel--confirmada", recien && "dc-panel--recien"].filter(Boolean).join(" ")}
+      aria-labelledby="dc-confirmada-titulo"
+      role={recien ? "status" : undefined}
+    >
+      {recien && (
+        <span className="dc-panel__check" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12l5 5 9-10" />
+          </svg>
+        </span>
+      )}
+      <h2 id="dc-confirmada-titulo" className="dc-panel__titulo">{recien ? "¡Evento confirmado!" : "Evento confirmado"}</h2>
       <p className="dc-panel__texto">
-        Garantía por {TIPOS_GARANTIA[g.tipo] ?? g.tipo} de {pesos(g.monto)}
+        Garantía por {nombreGarantia(g.tipo)} de {pesos(g.monto)}
         {g.registrada_por && `, registrada por ${g.registrada_por}`}
         {dia && ` el ${dia}`}.
+        {recien && cotizacion.salon?.nombre && ` El salón ${cotizacion.salon.nombre} queda reservado el ${fechaCorta(cotizacion.fecha_evento)}.`}
       </p>
     </section>
   );
@@ -116,12 +125,14 @@ function Contenido({ d, hoy }) {
             <Dato etiqueta="Evento" principal={fechaDelEvento(c.fecha_evento)} secundario={textoCreacion(c)} />
           </div>
           <DetalleConceptos cotizacion={c} />
+          <MovimientosCotizacion d={d} />
         </div>
 
         <div className="dc-lateral">
           {puedeExtender(c) && <PanelVigencia d={d} />}
           {c.vencida && <AvisoAceptacionVencida />}
-          <PanelConfirmada cotizacion={c} />
+          {puedeAceptar(c) && <PanelAceptacion d={d} />}
+          <PanelConfirmada cotizacion={c} recien={d.recienConfirmada} />
           <PanelCancelada cotizacion={c} />
         </div>
       </div>

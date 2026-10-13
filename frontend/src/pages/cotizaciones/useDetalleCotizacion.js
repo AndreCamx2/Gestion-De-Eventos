@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { extenderVigencia, getCotizacion } from "../../api/cotizaciones";
-import { mensajeVigencia, tipoDeError, validarVigencia } from "./detalleCotizacion";
+import { extenderVigencia, getCotizacion, getMovimientos, registrarAceptacion } from "../../api/cotizaciones";
+import {
+  ACEPTACION_VACIA,
+  mensajeAceptacion,
+  mensajeVigencia,
+  payloadAceptacion,
+  tipoDeError,
+  validarAceptacion,
+  validarVigencia,
+} from "./detalleCotizacion";
 
 export function useDetalleCotizacion(id) {
   const [cotizacion, setCotizacion] = useState(null);
@@ -13,7 +21,33 @@ export function useDetalleCotizacion(id) {
   const [extendiendo, setExtendiendo] = useState(false);
   const [vigenciaExtendida, setVigenciaExtendida] = useState(false);
 
+  const [aceptacion, setAceptacion] = useState(ACEPTACION_VACIA);
+  const [errorAceptacion, setErrorAceptacion] = useState(null);
+  const [aceptando, setAceptando] = useState(false);
+  const [recienConfirmada, setRecienConfirmada] = useState(false);
+
+  const [movimientos, setMovimientos] = useState([]);
+  const [cargandoMovimientos, setCargandoMovimientos] = useState(true);
+  const [errorMovimientos, setErrorMovimientos] = useState(false);
+
   const peticionRef = useRef(0);
+  const movimientosRef = useRef(0);
+
+  const cargarMovimientos = useCallback(async () => {
+    const peticion = ++movimientosRef.current;
+    if (id == null) return;
+    setCargandoMovimientos(true);
+    setErrorMovimientos(false);
+    try {
+      const data = await getMovimientos(id);
+      if (peticion !== movimientosRef.current) return;
+      setMovimientos(Array.isArray(data) ? data : data?.results ?? []);
+    } catch {
+      if (peticion === movimientosRef.current) setErrorMovimientos(true);
+    } finally {
+      if (peticion === movimientosRef.current) setCargandoMovimientos(false);
+    }
+  }, [id]);
 
   const cargar = useCallback(async () => {
     const peticion = ++peticionRef.current;
@@ -41,7 +75,8 @@ export function useDetalleCotizacion(id) {
 
   useEffect(() => {
     cargar();
-  }, [cargar]);
+    cargarMovimientos();
+  }, [cargar, cargarMovimientos]);
 
   function cambiarVigencia(valor) {
     setNuevaVigencia(valor);
@@ -62,6 +97,7 @@ export function useDetalleCotizacion(id) {
       setCotizacion(actualizada);
       setNuevaVigencia(actualizada.validez_oferta ?? "");
       setVigenciaExtendida(true);
+      cargarMovimientos();
     } catch (error) {
       const resultado = mensajeVigencia(error);
       setErrorVigencia(resultado);
@@ -76,11 +112,54 @@ export function useDetalleCotizacion(id) {
     if (!extendiendo) enviarVigencia();
   }
 
+  function cambiarAceptacion(campo, valor) {
+    setAceptacion((prev) => ({ ...prev, [campo]: valor }));
+    setErrorAceptacion((prev) => {
+      if (!prev) return prev;
+      const { [campo]: _, ...campos } = prev.campos ?? {};
+      const quedan = Object.keys(campos).length > 0 || prev.texto;
+      return quedan ? { ...prev, campos } : null;
+    });
+  }
+
+  async function enviarAceptacion() {
+    const local = validarAceptacion(aceptacion);
+    if (local) {
+      setErrorAceptacion(local);
+      return;
+    }
+    setAceptando(true);
+    setErrorAceptacion(null);
+    try {
+      const confirmada = await registrarAceptacion(cotizacion.id, payloadAceptacion(aceptacion));
+      setCotizacion(confirmada);
+      setAceptacion(ACEPTACION_VACIA);
+      setRecienConfirmada(true);
+      cargarMovimientos();
+      setVigenciaExtendida(false);
+    } catch (error) {
+      const resultado = mensajeAceptacion(error);
+      setErrorAceptacion(resultado);
+      if (resultado.tipo === "sesion") setSesionVencida("aceptacion");
+    } finally {
+      setAceptando(false);
+    }
+  }
+
+  function aceptar(evento) {
+    evento.preventDefault();
+    if (!aceptando) enviarAceptacion();
+  }
+
   function alVolverAEntrar() {
     const motivo = sesionVencida;
     setSesionVencida(null);
-    if (motivo === "carga") cargar();
+    if (motivo === "carga") {
+      cargar();
+      cargarMovimientos();
+    }
     if (motivo === "vigencia") enviarVigencia();
+    if (motivo === "aceptacion") enviarAceptacion();
   }
 
   return {
@@ -96,5 +175,15 @@ export function useDetalleCotizacion(id) {
     extendiendo,
     vigenciaExtendida,
     extender,
+    aceptacion,
+    cambiarAceptacion,
+    errorAceptacion,
+    aceptando,
+    recienConfirmada,
+    aceptar,
+    movimientos,
+    cargandoMovimientos,
+    errorMovimientos,
+    cargarMovimientos,
   };
 }
