@@ -38,19 +38,12 @@ class CotizacionCalendarioView(generics.ListAPIView):
             self.request.user,
         )
 
-        salon = self.request.query_params.get("salon")
+        # Se validan como en el listado: un valor mal formado daba 500 (SGDE-14).
+        params = self.request.query_params
+        salon = _id_param(params, "salon", "Debe ser el id numérico del salón.")
         if salon:
-            queryset = queryset.filter(salon=salon)
-
-        desde = self.request.query_params.get("desde")
-        if desde:
-            queryset = queryset.filter(fecha_evento__gte=desde)
-
-        hasta = self.request.query_params.get("hasta")
-        if hasta:
-            queryset = queryset.filter(fecha_evento__lte=hasta)
-
-        return queryset
+            queryset = queryset.filter(salon_id=salon)
+        return filtrar_por_fechas(queryset, params)
 
 
 def cotizaciones_con_relaciones():
@@ -71,10 +64,37 @@ def _fecha_param(params, nombre):
     valor = params.get(nombre)
     if not valor:
         return None
-    fecha = parse_date(valor)
+    try:
+        fecha = parse_date(valor)
+    except ValueError:
+        # Con el formato correcto pero imposible (2026-13-40) parse_date lanza en vez de devolver None.
+        fecha = None
     if fecha is None:
         raise ValidationError({nombre: ["Fecha inválida. Usa el formato AAAA-MM-DD."]})
     return fecha
+
+
+def _id_param(params, nombre, mensaje):
+    """Un filtro por id: vacío → None; no numérico → 400 con `mensaje`."""
+    valor = params.get(nombre)
+    if not valor:
+        return None
+    if not valor.isdigit():
+        raise ValidationError({nombre: [mensaje]})
+    return int(valor)
+
+
+def filtrar_por_fechas(queryset, params):
+    """Aplica ?desde y ?hasta sobre fecha_evento (inclusive). Inválidas o invertidas → 400."""
+    desde = _fecha_param(params, "desde")
+    hasta = _fecha_param(params, "hasta")
+    if desde and hasta and desde > hasta:
+        raise ValidationError({"hasta": ["La fecha final no puede ser anterior a la inicial."]})
+    if desde:
+        queryset = queryset.filter(fecha_evento__gte=desde)
+    if hasta:
+        queryset = queryset.filter(fecha_evento__lte=hasta)
+    return queryset
 
 
 class CotizacionListCreateView(generics.ListCreateAPIView):
@@ -97,21 +117,11 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
                 raise ValidationError({"estado": [f"Estado inválido: {estado}."]})
             queryset = queryset.filter(estado=estado)
 
-        cliente = params.get("cliente")
+        cliente = _id_param(params, "cliente", "Debe ser el id numérico del cliente.")
         if cliente:
-            if not cliente.isdigit():
-                raise ValidationError({"cliente": ["Debe ser el id numérico del cliente."]})
             queryset = queryset.filter(cliente_id=cliente)
 
-        desde = _fecha_param(params, "desde")
-        if desde:
-            queryset = queryset.filter(fecha_evento__gte=desde)
-
-        hasta = _fecha_param(params, "hasta")
-        if hasta:
-            queryset = queryset.filter(fecha_evento__lte=hasta)
-
-        return queryset
+        return filtrar_por_fechas(queryset, params)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

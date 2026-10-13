@@ -274,6 +274,18 @@ class ListadoCotizacionesTests(CotizacionBaseTest):
         self.client.force_authenticate(user=self.admin)
         self.assertEqual(self.client.get(LISTA, {"desde": "20-11-2026"}).status_code,
                          status.HTTP_400_BAD_REQUEST)
+        # Formato correcto pero fecha imposible: parse_date lanza ValueError (antes, 500).
+        self.assertEqual(self.client.get(LISTA, {"hasta": "2026-13-40"}).status_code,
+                         status.HTTP_400_BAD_REQUEST)
+
+    def test_rango_de_fechas_invertido_400(self):
+        self.client.force_authenticate(user=self.admin)
+        r = self.client.get(LISTA, {"desde": str(hoy() + timedelta(days=10)), "hasta": str(hoy())})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.json()["hasta"], ["La fecha final no puede ser anterior a la inicial."])
+        # El mismo día en los dos extremos es un rango válido.
+        self.assertEqual(self.client.get(LISTA, {"desde": str(hoy()), "hasta": str(hoy())}).status_code,
+                         status.HTTP_200_OK)
 
     def test_listado_no_hace_n_mas_1(self):
         for dias in range(20, 25):
@@ -524,6 +536,40 @@ class CalendarioCamposTests(CotizacionBaseTest):
             r = self.client.get(self.URL)
         self.assertEqual(len(r.data), 5)
         self.assertEqual(len({c["montaje_nombre"] for c in r.data}), 5)
+
+
+class CalendarioFiltrosTests(CotizacionBaseTest):
+    """SGDE-14: ?salon, ?desde y ?hasta se validan; antes un valor mal formado daba 500."""
+
+    URL = "/api/calendario/"
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+
+    def test_valores_invalidos_dan_400_con_el_campo(self):
+        for params, campo in (
+            ({"salon": "abc"}, "salon"),
+            ({"desde": "abc"}, "desde"),
+            ({"hasta": "2026-13-40"}, "hasta"),
+            ({"desde": str(hoy() + timedelta(days=10)), "hasta": str(hoy())}, "hasta"),
+        ):
+            with self.subTest(params=params):
+                r = self.client.get(self.URL, params)
+                self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertIn(campo, r.json())
+
+    def test_filtros_validos_siguen_funcionando(self):
+        otro_salon = Salon.objects.create(sitio=self.sitio, nombre="Salón Tierra Bomba")
+        dentro = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=20))
+        self.crear_en_bd(fecha_evento=hoy() + timedelta(days=60))
+        fuera_de_salon = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=20))
+        fuera_de_salon.salon = otro_salon
+        fuera_de_salon.save()
+        r = self.client.get(self.URL, {
+            "salon": self.salon.pk, "desde": str(hoy() + timedelta(days=20)), "hasta": str(hoy() + timedelta(days=20)),
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual([c["id"] for c in r.data], [dentro.pk])
 
 
 class ListadoCamposSGDE89Tests(CotizacionBaseTest):
