@@ -101,7 +101,9 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
         # para que nadie quite el montaje (ni baje el aforo) entre esta revisión y el guardado.
         # Mismo orden que el resto del API: primero el Salón. Requiere transaction.atomic():
         # la vista de creación corre is_valid() y save() dentro de una.
-        Salon.objects.select_for_update().get(pk=salon.pk)
+        if not Salon.objects.select_for_update().get(pk=salon.pk).activo:
+            # Leído de la fila bloqueada: una baja simultánea no se cuela (SGDE-99).
+            raise serializers.ValidationError({"salon": ["El salón está dado de baja."]})
         salon_montaje = (
             SalonMontaje.objects.select_for_update().filter(salon=salon, montaje=attrs["montaje"]).first()
         )

@@ -19,7 +19,7 @@ class SalonSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Salon
-        fields = ["id", "sitio", "nombre", "altura", "ancho", "foto_url"]
+        fields = ["id", "sitio", "nombre", "altura", "ancho", "foto_url", "activo"]
 
     def validate_sitio(self, value):
         # Sus cotizaciones, conceptos y montajes son de ese sitio: moverlo los dejaría cruzados.

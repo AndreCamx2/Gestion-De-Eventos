@@ -4,6 +4,7 @@ El 404 de un id de otro sitio está en apps/sitios/tests.py y el 401/403 por rol
 en ENDPOINTS_ADMIN_DETALLE (apps/usuarios/tests.py).
 """
 from datetime import timedelta
+from decimal import Decimal
 
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
@@ -11,6 +12,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from apps.catalogo.models import Concepto
 from apps.clientes.models import Cliente
 from apps.cotizaciones.models import Cotizacion
 from apps.sitios.models import Ciudad, Sitio
@@ -213,3 +215,81 @@ class BloqueoDelMontajeTests(BaseSalonesTests):
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertEqual(tablas, {"salones_salon", "salones_salonmontaje"})
+
+
+class BajaDeSalonTests(BaseSalonesTests):
+    """SGDE-99: dar de baja (borrado lógico) y reactivar un salón."""
+
+    def baja(self, activo=False):
+        return self.client.patch(salon_url(self.salon.pk), {"activo": activo}, format="json")
+
+    def ids_del_listado(self, **params):
+        return {s["id"] for s in self.client.get("/api/salones/", params).json()}
+
+    def test_da_de_baja_y_sale_del_listado_salvo_con_incluir_inactivos(self):
+        r = self.baja()
+        self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+        self.assertIs(r.json()["activo"], False)
+        self.assertNotIn(self.salon.pk, self.ids_del_listado())
+        self.assertIn(self.salon.pk, self.ids_del_listado(incluir_inactivos="true"))
+        # El detalle sí lo muestra, para poder reactivarlo.
+        self.assertEqual(self.client.get(salon_url(self.salon.pk)).status_code, status.HTTP_200_OK)
+
+    def test_con_cotizaciones_activas_da_409_y_no_cambia(self):
+        self.cotizar(estado="confirmado")
+        self.cotizar(estado="cotizado", dias_evento=40)
+        r = self.baja()
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("No se puede dar de baja el salón: tiene 2 cotizaciones activas", r.json()["detail"])
+        self.salon.refresh_from_db()
+        self.assertTrue(self.salon.activo)
+
+    def test_eventos_pasados_canceladas_o_vencidas_no_impiden_la_baja(self):
+        self.cotizar(estado="confirmado", dias_evento=-1, dias_validez=-10)
+        self.cotizar(estado="cancelado")
+        self.cotizar(estado="cotizado", dias_validez=-1)
+        self.assertEqual(self.baja().status_code, status.HTTP_200_OK)
+
+    def test_reactivar_siempre_se_puede(self):
+        Salon.objects.filter(pk=self.salon.pk).update(activo=False)
+        self.cotizar(estado="cotizado", dias_validez=-1)
+        r = self.baja(activo=True)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.salon.refresh_from_db()
+        self.assertTrue(self.salon.activo)
+
+    def test_un_salon_inactivo_no_se_puede_cotizar(self):
+        concepto = Concepto.objects.create(sitio=self.sitio, nombre="Almuerzo", precio=Decimal("1000"))
+        self.baja()
+        r = self.client.post("/api/cotizaciones/", {
+            "cliente": self.cliente.pk, "salon": self.salon.pk, "montaje": self.auditorio.pk,
+            "fecha_evento": str(timezone.localdate() + timedelta(days=30)), "cantidad_personas": 10,
+            "items": [{"concepto": concepto.pk, "cantidad": 1}],
+        }, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.json()["salon"], ["El salón está dado de baja."])
+
+    def test_sigue_en_sus_cotizaciones_viejas(self):
+        vieja = self.cotizar(estado="confirmado", dias_evento=-5, dias_validez=-10)
+        self.baja()
+        r = self.client.get(f"/api/cotizaciones/{vieja.pk}/")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.json()["salon"]["nombre"], "Salón Mar")
+        historial = self.client.get("/api/cotizaciones/", {"salon": self.salon.pk}).json()
+        self.assertEqual([c["id"] for c in historial], [vieja.pk])
+
+    def test_una_cotizada_vencida_no_revive_en_un_salon_inactivo(self):
+        # Dar de baja solo mira las activas: la vencida no se puede extender, bloquear ni confirmar.
+        vencida = self.cotizar(estado="cotizado", dias_validez=-1)
+        self.baja()
+        url = f"/api/cotizaciones/{vencida.pk}/"
+        hasta = (timezone.now() + timedelta(days=1)).isoformat()
+        for peticion in (
+            lambda: self.client.patch(url, {"validez_oferta": str(timezone.localdate() + timedelta(days=5))},
+                                      format="json"),
+            lambda: self.client.post(f"{url}bloqueo/", {"bloqueo_hasta": hasta}, format="json"),
+            lambda: self.client.post(f"{url}aceptacion/", {"tipo": "efectivo", "monto": "10"}, format="json"),
+        ):
+            r = peticion()
+            self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+            self.assertEqual(r.json()["detail"], "El salón está dado de baja.")

@@ -165,6 +165,7 @@ class CotizacionDetailView(generics.RetrieveUpdateAPIView):
             )
             # Se permite aunque esté vencida: así se extiende una oferta que ya venció.
             exigir_estado_cotizado(cotizacion)
+            estados.exigir_salon_activo(cotizacion)
             anterior = cotizacion.validez_oferta
             serializer = CotizacionVigenciaSerializer(cotizacion, data=request.data)
             serializer.is_valid(raise_exception=True)

@@ -17,6 +17,9 @@ class Salon(models.Model):
     altura = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     ancho = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     foto_url = models.URLField(blank=True)
+    # Borrado lógico (SGDE-99): un salón con cotizaciones no se borra (PROTECT) y se
+    # conserva en su historial. Inactivo: no se cotiza y no sale en el listado.
+    activo = models.BooleanField(default=True)
 
     class Meta:
         constraints = [

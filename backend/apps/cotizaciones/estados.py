@@ -99,10 +99,21 @@ def tomar_para_cambio(queryset, pk):
     get no bloquea; solo sirve para saber qué salón bloquear primero.
     """
     salon_id = get_object_or_404(queryset.values_list("salon_id", flat=True), pk=pk)
-    Salon.objects.select_for_update().get(pk=salon_id)
+    salon = Salon.objects.select_for_update().get(pk=salon_id)
     cotizacion = Cotizacion.objects.select_for_update().get(pk=pk)
+    cotizacion.salon = salon  # La fila ya bloqueada: su `activo` no cambia hasta terminar.
     _liberar_si_vencio(cotizacion, timezone.now())
     return cotizacion
+
+
+def exigir_salon_activo(cotizacion):
+    """409 si el salón está dado de baja (SGDE-99): no se bloquea, confirma ni extiende ahí.
+
+    Dar de baja solo revisa las cotizaciones activas; sin esto, una cotizada vencida del
+    salón podría extender su vigencia y confirmarse en un salón inactivo.
+    """
+    if not cotizacion.salon.activo:
+        raise Conflicto("El salón está dado de baja.")
 
 
 def _exigir_fecha_libre(cotizacion, ahora):
@@ -124,6 +135,7 @@ def bloquear(cotizacion, bloqueo_hasta, usuario):
     """Bloquea el salón y la fecha de la cotización hasta `bloqueo_hasta` (SGDE-40/60/15)."""
     if cotizacion.estado != "cotizado":
         raise Conflicto(f"Solo se puede bloquear una cotización cotizada; esta está {en_femenino(cotizacion.estado)}.")
+    exigir_salon_activo(cotizacion)
     if cotizacion.vencida:
         raise Conflicto("La cotización está vencida: extiende su vigencia antes de bloquear.")
 
@@ -156,6 +168,7 @@ def aceptar(cotizacion, tipo, monto, usuario):
     """
     if cotizacion.estado not in ("cotizado", "bloqueado"):
         raise Conflicto(f"La cotización está {en_femenino(cotizacion.estado)}.")
+    exigir_salon_activo(cotizacion)
     if cotizacion.vencida:
         raise Conflicto("La cotización está vencida.")
     _exigir_fecha_libre(cotizacion, timezone.now())
