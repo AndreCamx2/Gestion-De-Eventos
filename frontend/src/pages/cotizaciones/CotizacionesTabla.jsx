@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { EstadoBadge, TablaContenedor } from "../../components/ui";
 import { estadoVisible, fechaCorta, numeroCotizacion, pesos, vigencia } from "./cotizaciones";
 
@@ -27,7 +28,9 @@ export default function CotizacionesTabla({ cotizaciones, total, hoy }) {
             return (
               <tr key={c.id}>
                 <td className="cotizaciones-tabla__numero">{numeroCotizacion(c.id)}</td>
-                <td className="cotizaciones-tabla__cliente">{c.cliente_nombre}</td>
+                <td className="cotizaciones-tabla__cliente">
+                  <Link to={`/cotizaciones/${c.id}`} className="cotizaciones-tabla__enlace">{c.cliente_nombre}</Link>
+                </td>
                 <td className="cotizaciones-tabla__suave">
                   {c.salon_nombre} · {c.montaje_nombre}
                 </td>

@@ -206,6 +206,16 @@
     font-weight: var(--peso-negrita);
 }
 
+.cotizaciones-tabla__enlace {
+    color: inherit;
+    text-decoration: none;
+}
+
+.cotizaciones-tabla__enlace:hover {
+    color: var(--color-mandarina-texto);
+    text-decoration: underline;
+}
+
 .cotizaciones-tabla__suave {
     color: var(--color-texto-suave);
 }

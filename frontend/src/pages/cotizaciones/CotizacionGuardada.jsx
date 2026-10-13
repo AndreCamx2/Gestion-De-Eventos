@@ -53,7 +53,7 @@ export default function CotizacionGuardada({ cotizacion, onOtra }) {
       </dl>
 
       <div className="nc-guardada__acciones">
-        <Boton as={Link} to="/cotizaciones">Ver cotizaciones</Boton>
+        <Boton as={Link} to={`/cotizaciones/${cotizacion.id}`}>Ver cotización</Boton>
         <Boton variante="secundario" onClick={onOtra}>Armar otra cotización</Boton>
       </div>
     </Tarjeta>

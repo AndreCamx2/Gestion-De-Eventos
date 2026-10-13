@@ -6,6 +6,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import Home from "./pages/Home";
 import Cotizaciones from "./pages/Cotizaciones";
 import NuevaCotizacion from "./pages/NuevaCotizacion";
+import DetalleCotizacion from "./pages/DetalleCotizacion";
 import Salones from "./pages/Salones";
 import Sitios from "./pages/Sitios";
 import Clientes from "./pages/Clientes";
@@ -99,6 +100,7 @@ export default function App() {
               <Route path="/inicio" element={<Home />} />
               <Route path="/cotizaciones" element={<Cotizaciones />} />
               <Route path="/cotizaciones/nueva" element={<NuevaCotizacion />} />
+              <Route path="/cotizaciones/:id" element={<DetalleCotizacion />} />
               <Route path="/salones" element={<Salones />} />
               <Route path="/sitios" element={<Sitios />} />
               <Route path="/clientes" element={<Clientes />} />
