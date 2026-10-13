@@ -154,6 +154,7 @@ export default function App() {
               <Route path="/sitios" element={<Sitios />} />
               <Route path="/clientes" element={<Clientes />} />
               <Route path="/conceptos" element={<Conceptos />} />
+              <Route path="/proveedores" element={<Proveedores />} />
               <Route path="/rack" element={<Rack />} />
 
               {/* Aún pendiente de construir */}

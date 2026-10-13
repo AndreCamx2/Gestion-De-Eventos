@@ -13,6 +13,7 @@ export const NAV_ITEMS = [
   { to: "/calendario", label: "Calendario", roles: ROLES_POR_RUTA["/calendario"] },
   { to: "/salones", label: "Salones", roles: ROLES_POR_RUTA["/salones"] },
   { to: "/conceptos", label: "Conceptos", roles: ROLES_POR_RUTA["/conceptos"] },
+  { to: "/proveedores", label: "Proveedores", roles: ROLES_POR_RUTA["/proveedores"] },
   { to: "/clientes", label: "Clientes", roles: ROLES_POR_RUTA["/clientes"] },
   { to: "/sitios", label: "Sitios", roles: ROLES_POR_RUTA["/sitios"] },
 ];

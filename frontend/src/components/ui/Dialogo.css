@@ -1,0 +1,89 @@
+/* Ventana modal — guía Piedra viva, secciones 4 y 8. Solo variables de tokens.css. */
+.dialogo {
+    width: min(520px, calc(100% - 2 * var(--espacio-4)));
+    max-width: none;
+    max-height: calc(100dvh - 2 * var(--espacio-4));
+    overflow-y: auto;
+    padding: var(--espacio-6);
+    border: 0;
+    border-radius: var(--radio-tarjeta-grande);
+    background: var(--color-superficie);
+    color: var(--color-texto);
+    box-shadow: var(--sombra-flotante);
+}
+
+.dialogo::backdrop {
+    background: color-mix(in srgb, var(--color-texto) 45%, transparent);
+}
+
+.dialogo__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+    margin-bottom: var(--espacio-5);
+}
+
+.dialogo__titulo {
+    margin: 0;
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-seccion);
+    overflow-wrap: anywhere;
+}
+
+.dialogo__cerrar {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--alto-tocable);
+    height: var(--alto-tocable);
+    border: 0;
+    border-radius: var(--radio-control);
+    background: transparent;
+    color: var(--color-texto-suave);
+    cursor: pointer;
+}
+
+.dialogo__cerrar:focus-visible {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+.dialogo__cerrar:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .dialogo__cerrar:hover:not(:disabled) {
+        background: var(--color-superficie-2);
+        color: var(--color-texto);
+    }
+}
+
+.dialogo__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+}
+
+.dialogo__error {
+    margin: 0;
+    padding: var(--espacio-3) var(--espacio-4);
+    border-radius: var(--radio-control);
+    background: var(--estado-vencida-fondo);
+    color: var(--color-peligro);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-semi);
+    overflow-wrap: anywhere;
+}
+
+.dialogo__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--espacio-3);
+    margin-top: var(--espacio-1);
+}

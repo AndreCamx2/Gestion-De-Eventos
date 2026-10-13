@@ -1,37 +1,37 @@
 import { apiFetch } from "./client";
 
-
-export async function getProveedores() {
-    try {
-        return await apiFetch("/proveedores/", { method: "GET" });
-    } catch (error) {
-        console.error("Error en getProveedores API:", error);
-        throw new Error(
-            error.message || "No se pudieron obtener los proveedores del servidor."
-        );
-    }
+// Todo este módulo es solo para administrador (EsAdministrador en el backend).
+// Usa apiFetch directo: los errores conservan error.status y error.body, así la
+// pantalla distingue un 401 de un 400. DRF puede devolver una lista simple o un
+// objeto paginado { count, results }: las listas aceptan ambas formas.
+// El API no tiene editar ni borrar, ni de proveedores ni de stock.
+function comoLista(data) {
+  return Array.isArray(data) ? data : data?.results ?? [];
 }
 
-
-export async function crearProveedor(proveedorData) {
-    if (!proveedorData.nombre || !proveedorData.nombre.trim()) {
-        throw new Error("El nombre del proveedor es obligatorio.");
-    }
-    if (!proveedorData.contacto || !proveedorData.contacto.trim()) {
-        throw new Error("El contacto o teléfono del proveedor es obligatorio.");
-    }
-
-    return await apiFetch("/proveedores/", {
-        method: "POST",
-        body: JSON.stringify(proveedorData),
-    });
+// GET /api/proveedores/ → [{ id, nombre, identificacion, contacto }]
+export async function listarProveedores() {
+  return comoLista(await apiFetch("/proveedores/", { method: "GET" }));
 }
 
+// POST /api/proveedores/. Solo el nombre es obligatorio.
+export function crearProveedor({ nombre, identificacion, contacto }) {
+  return apiFetch("/proveedores/", {
+    method: "POST",
+    body: JSON.stringify({ nombre, identificacion, contacto }),
+  });
+}
 
-export async function eliminarProveedor(id) {
-    if (!id) throw new Error("ID de proveedor no válido.");
+// GET /api/stock/ → [{ id, proveedor, nombre_elemento, cantidad, valor, actualizado_en }]
+// Trae el stock de TODOS los proveedores: la pantalla lo filtra por proveedor.
+export async function listarStock() {
+  return comoLista(await apiFetch("/stock/", { method: "GET" }));
+}
 
-    return await apiFetch(`/proveedores/${id}/`, {
-        method: "DELETE",
-    });
+// POST /api/stock/. Un elemento no se repite en el mismo proveedor.
+export function crearElementoStock({ proveedor, nombre_elemento, cantidad, valor }) {
+  return apiFetch("/stock/", {
+    method: "POST",
+    body: JSON.stringify({ proveedor, nombre_elemento, cantidad, valor }),
+  });
 }
