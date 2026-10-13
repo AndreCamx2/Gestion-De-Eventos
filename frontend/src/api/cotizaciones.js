@@ -8,22 +8,19 @@ export async function getCotizaciones({ desde, hasta } = {}) {
     return apiFetch(`/cotizaciones/${query ? `?${query}` : ""}`, { method: "GET" });
 }
 
-export async function crearCotizacion(cotizacionData) {
-    if (!cotizacionData.salon_id) {
-        throw new Error("Debes seleccionar un salón válido.");
-    }
-    if (!cotizacionData.montaje_id) {
-        throw new Error("Debes seleccionar un tipo de montaje.");
-    }
-    if (!cotizacionData.asistentes || Number(cotizacionData.asistentes) <= 0) {
-        throw new Error("La cantidad de asistentes debe ser mayor a 0.");
-    }
-    if (!cotizacionData.fecha_evento) {
-        throw new Error("La fecha del evento es obligatoria.");
-    }
-
-    return await apiFetch("/cotizaciones/", {
+// POST /api/cotizaciones/<id>/bloqueo/ { bloqueo_hasta: ISO con zona } → detalle (SGDE-40).
+// 409 { detail }: no está cotizada, está vencida, el salón está dado de baja, o la
+// fecha ya está confirmada o bloqueada por otra. 400 { bloqueo_hasta: [...] }:
+// en el pasado o después del día del evento.
+export function bloquearCotizacion(id, bloqueoHasta) {
+    return apiFetch(`/cotizaciones/${id}/bloqueo/`, {
         method: "POST",
-        body: JSON.stringify(cotizacionData),
+        body: JSON.stringify({ bloqueo_hasta: bloqueoHasta }),
     });
+}
+
+// DELETE /api/cotizaciones/<id>/bloqueo/ → detalle, de vuelta en "cotizado".
+// 409 si no está bloqueada.
+export function liberarBloqueo(id) {
+    return apiFetch(`/cotizaciones/${id}/bloqueo/`, { method: "DELETE" });
 }

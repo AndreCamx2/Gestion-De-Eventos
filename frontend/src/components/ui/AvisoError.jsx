@@ -7,6 +7,8 @@ import "./AvisoError.css";
 // - tipo="servidor" → 500 o sin red: wifi tachado y botón "Reintentar", que
 //   llama a onReintentar (normalmente la función que vuelve a cargar los datos).
 //   Si no pasas onReintentar, no se muestra el botón.
+// - tipo="conflicto" → 409: la acción choca con el estado actual (por ejemplo,
+//   la fecha ya está bloqueada). Triángulo de alerta; pasa el `detail` del API como texto.
 // titulo y texto son opcionales: cada tipo trae los de la maqueta.
 // No trae caja propia: envuélvelo en Tarjeta.
 const TIPOS = {
@@ -19,6 +21,11 @@ const TIPOS = {
     titulo: "No pudimos hablar con el servidor",
     texto: "Revisa tu conexión. Si sigue fallando, avisa al equipo técnico.",
     icono: <path d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0M12 19h.01M3 3l18 18" />,
+  },
+  conflicto: {
+    titulo: "No se pudo hacer el cambio",
+    texto: "La cotización cambió de estado. Cierra y vuelve a abrir el día.",
+    icono: <path d="M12 3.5 22 20.5H2zM12 10v4.5M12 17.5h.01" />,
   },
 };
 

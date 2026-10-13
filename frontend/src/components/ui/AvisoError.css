@@ -30,6 +30,11 @@
     color: var(--color-mantequilla-texto);
 }
 
+.aviso-error--conflicto .aviso-error__icono {
+    background: var(--estado-vencida-fondo);
+    color: var(--estado-vencida-texto);
+}
+
 .aviso-error__textos {
     min-width: 0;
 }
