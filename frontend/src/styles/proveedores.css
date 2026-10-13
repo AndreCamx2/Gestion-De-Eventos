@@ -192,6 +192,17 @@
     white-space: nowrap;
 }
 
+.proveedores-tabla .proveedores-tabla__acciones {
+    text-align: right;
+}
+
+/* "Editar" de cada fila: más bajo que un botón normal, pero tocable */
+.proveedores-tabla__editar {
+    min-height: var(--alto-tocable);
+    padding: 0 var(--espacio-4);
+    font-size: var(--texto-etiqueta);
+}
+
 /* ===== Ventanas ===== */
 
 .proveedores-dialogo__para {
