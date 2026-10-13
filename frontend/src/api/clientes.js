@@ -58,3 +58,10 @@ export async function buscarClientes(texto = "") {
   const query = texto ? `?search=${encodeURIComponent(texto)}` : "";
   return apiFetch(`/clientes/${query}`, { method: "GET" });
 }
+
+export async function crearEmpresa(datos) {
+  return apiFetch("/empresas/", {
+    method: "POST",
+    body: JSON.stringify(datos),
+  });
+}

@@ -70,7 +70,7 @@ export function payloadEdicion(form) {
 // Los <input> usan el componente Campo. Campo solo pinta <input>, así que el
 // <select> y el <textarea> se arman a mano con sus mismas clases (campo,
 // campo__etiqueta, campo__input) para que se vean iguales sin modificar Campo.
-export default function ClienteForm({ idPrefix, form, errores, empresas, onChange }) {
+export default function ClienteForm({ idPrefix, form, errores, empresas, onChange, onNuevaEmpresa }) {
   const esJuridica = form.tipo === "juridica";
   const id = (campo) => `${idPrefix}-${campo}`;
   const idError = (campo) => `${id(campo)}-error`;
@@ -138,6 +138,11 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
         </select>
         {error("empresa")}
         {/* En jurídica el NIT no se escribe: se lee de la empresa elegida. */}
+        {esJuridica && onNuevaEmpresa && (
+          <button type="button" className="directorio-form__enlace" onClick={onNuevaEmpresa}>
+            + Crear empresa nueva
+          </button>
+        )}
         {esJuridica && (
           <p id={id("nit")} className="directorio-form__ayuda">
             {nit ? (
