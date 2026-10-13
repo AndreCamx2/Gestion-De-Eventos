@@ -73,10 +73,11 @@ export function vigencia(c, hoy) {
   }
   const dias = diasEntre(hoy, desdeISO(c.validez_oferta));
   const fecha = fechaCorta(c.validez_oferta, false);
-  if (c.vencida || dias < 0) {
+  if (c.vencida) {
     const pasados = Math.max(1, -dias);
     return { fecha, nota: `venció hace ${pasados} ${pasados === 1 ? "día" : "días"}`, tono: "vencida" };
   }
+  if (dias < 0) return { fecha, nota: "", tono: "neutro" };
   if (dias === 0) return { fecha, nota: "vence hoy", tono: "pronto" };
   return {
     fecha,

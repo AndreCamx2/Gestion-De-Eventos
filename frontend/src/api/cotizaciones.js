@@ -31,3 +31,14 @@ export function crearCotizacion(datos) {
         body: JSON.stringify(datos),
     });
 }
+
+export function getCotizacion(id) {
+    return apiFetch(`/cotizaciones/${id}/`, { method: "GET" });
+}
+
+export function extenderVigencia(id, validezOferta) {
+    return apiFetch(`/cotizaciones/${id}/`, {
+        method: "PATCH",
+        body: JSON.stringify({ validez_oferta: validezOferta }),
+    });
+}

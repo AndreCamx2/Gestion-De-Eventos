@@ -1,0 +1,109 @@
+import { desdeISO, fechaISO, fechaLarga, hoyLocal, mesCorto } from "../../utils/inicioCifras";
+import { textoError } from "../../utils/erroresApi";
+import { fechaCorta } from "./cotizaciones";
+
+export function idDeRuta(valor) {
+  return /^\d+$/.test(String(valor ?? "")) ? Number(valor) : null;
+}
+
+export function fechaDelEvento(iso) {
+  const fecha = desdeISO(iso);
+  return `${fechaLarga(fecha)} de ${fecha.getFullYear()}`;
+}
+
+export function diaCorto(fechaHora) {
+  if (!fechaHora) return null;
+  const fecha = new Date(fechaHora);
+  if (Number.isNaN(fecha.getTime())) return null;
+  return `${fecha.getDate()} ${mesCorto(fecha)}`;
+}
+
+export function textoAforo(c) {
+  return c.aforo ? `${c.cantidad_personas} de ${c.aforo} personas` : `${c.cantidad_personas} personas`;
+}
+
+export function textoCreacion(c) {
+  const dia = diaCorto(c.creado_en);
+  return [c.creado_por && `Creada por ${c.creado_por}`, dia].filter(Boolean).join(" · ");
+}
+
+export function datosCliente(cliente) {
+  return {
+    principal: cliente?.identificacion || "Sin identificación",
+    secundario: cliente?.correo || "Sin correo",
+  };
+}
+
+export function progreso(c, hoy = hoyLocal()) {
+  const confirmada = c.estado === "confirmado";
+  const eventoPasado = desdeISO(c.fecha_evento) < hoy;
+  const pasos = [
+    { clave: "creada", texto: ["Creada", diaCorto(c.creado_en)].filter(Boolean).join(" · "), hecho: true },
+  ];
+  if (c.estado === "bloqueado" || c.bloqueo_hasta) {
+    pasos.push({ clave: "bloqueada", texto: "Fecha bloqueada", hecho: c.estado !== "cotizado" });
+  }
+  pasos.push({
+    clave: "aceptada",
+    texto: ["Aceptada con garantía", confirmada && diaCorto(c.confirmado_en)].filter(Boolean).join(" · "),
+    hecho: confirmada,
+  });
+  pasos.push({
+    clave: "evento",
+    texto: `Evento · ${fechaCorta(c.fecha_evento, false)}`,
+    hecho: confirmada && eventoPasado,
+  });
+  return pasos;
+}
+
+export function puedeExtender(c) {
+  return c.estado === "cotizado";
+}
+
+export function limitesVigencia(c, hoy = hoyLocal()) {
+  return { min: fechaISO(hoy), max: c.fecha_evento };
+}
+
+export function validarVigencia(fecha, c, hoy = hoyLocal()) {
+  const { min, max } = limitesVigencia(c, hoy);
+  if (!fecha) return "Elige la nueva fecha de vigencia.";
+  if (fecha < min) return "No puede ser anterior a hoy.";
+  if (fecha > max) return "No puede pasar de la fecha del evento.";
+  if (fecha === c.validez_oferta) return "Es la misma vigencia que ya tiene.";
+  return null;
+}
+
+export function tipoDeError(error) {
+  if (error?.status === 401) return "sesion";
+  if (error?.status === 403) return "permiso";
+  if (error?.status === 404) return "noExiste";
+  if (error?.status === 409) return "conflicto";
+  if (error?.status === 400) return "datos";
+  return "servidor";
+}
+
+export function mensajeVigencia(error) {
+  const tipo = tipoDeError(error);
+  if (tipo === "datos") {
+    const { validez_oferta, detail, non_field_errors } = error.body ?? {};
+    const texto = validez_oferta ?? detail ?? non_field_errors;
+    return { tipo, texto: texto ? textoError(texto) : "El servidor no aceptó esa fecha." };
+  }
+  if (tipo === "conflicto") {
+    return { tipo, texto: error.body?.detail || "La cotización cambió de estado. Recarga la página." };
+  }
+  if (tipo === "permiso") return { tipo, texto: "Solo un administrador puede cambiar la vigencia." };
+  if (tipo === "sesion") return { tipo, texto: "Tu sesión expiró. Vuelve a entrar con el aviso de abajo." };
+  return { tipo, texto: "No pudimos hablar con el servidor. Inténtalo de nuevo." };
+}
+
+export function resumenCancelacion(c) {
+  if (c.estado !== "cancelado") return null;
+  return {
+    dia: diaCorto(c.cancelado_en),
+    por: c.cancelado_por,
+    penalizacion: c.penalizacion_pct != null ? Number(c.penalizacion_pct) : null,
+    retenido: c.monto_retenido,
+    motivo: c.motivo_cancelacion,
+  };
+}
