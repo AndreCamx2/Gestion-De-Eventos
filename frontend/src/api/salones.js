@@ -14,7 +14,8 @@ function decimalOpcional(valor) {
   return limpio === "" ? null : limpio;
 }
 
-// GET /api/salones/ → [{ id, sitio, nombre, altura, ancho, foto_url }]
+// GET /api/salones/ → [{ id, sitio, nombre, altura, ancho, foto_url, activo }]
+// Solo los activos, salvo incluirInactivos (SGDE-99).
 export async function listarSalones({ incluirInactivos = false } = {}) {
   const query = incluirInactivos ? "?incluir_inactivos=true" : "";
   return comoLista(await apiFetch(`/salones/${query}`, { method: "GET" }));
@@ -74,4 +75,10 @@ export function editarAforo(id, aforo) {
 // un detail que dice cuántas son.
 export function quitarMontaje(id) {
   return apiFetch(`/salon-montajes/${id}/`, { method: "DELETE" });
+}
+
+// PATCH /api/salones/<id>/ con { activo } (SGDE-99): la baja es lógica. Darlo de
+// baja con cotizaciones activas → 409, con un detail que dice cuántas son.
+export function cambiarActivoSalon(id, activo) {
+  return apiFetch(`/salones/${id}/`, { method: "PATCH", body: JSON.stringify({ activo }) });
 }

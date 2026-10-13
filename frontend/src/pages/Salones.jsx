@@ -17,6 +17,8 @@ import TarjetaSalon from "./salones/TarjetaSalon";
 import DialogoEditarSalon from "./salones/DialogoEditarSalon";
 import DialogoEditarAforo from "./salones/DialogoEditarAforo";
 import DialogoQuitarMontaje from "./salones/DialogoQuitarMontaje";
+import DialogoBajaSalon from "./salones/DialogoBajaSalon";
+import InterruptorBajas from "./salones/InterruptorBajas";
 import { aforoMaximo, formatoNumero } from "./salones/salones";
 import "../styles/catalogo-salones.css";
 
@@ -42,9 +44,11 @@ export default function Salones() {
   // "" = todos; si no, el id del montaje (como texto, igual que el <select>).
   const [filtroMontaje, setFiltroMontaje] = useState("");
   const [aforoMinimo, setAforoMinimo] = useState("");
+  // "Mostrar dados de baja" (SGDE-99): pide también los inactivos.
+  const [mostrarBajas, setMostrarBajas] = useState(false);
 
   // Diálogo abierto: null | { tipo: "salon" } | { tipo: "montaje", salonId } |
-  // { tipo: "editar", salon } | { tipo: "aforo" | "quitar", salon, habilitado }.
+  // { tipo: "editar" | "baja", salon } | { tipo: "aforo" | "quitar", salon, habilitado }.
   const [dialogo, setDialogo] = useState(null);
   const [aviso, setAviso] = useState(null);
 
@@ -76,7 +80,7 @@ export default function Salones() {
     setErrorCarga(null);
     try {
       const [salonesData, montajesData, salonMontajesData, sitiosData] = await Promise.all([
-        listarSalones(),
+        listarSalones({ incluirInactivos: mostrarBajas }),
         listarMontajes(),
         listarSalonMontajes(),
         listarSitios(),
@@ -188,6 +192,27 @@ export default function Salones() {
     setAviso(`${habilitado.nombre} ya no está habilitado en «${salon.nombre}».`);
   }
 
+  // Al reactivar, o con los dados de baja a la vista, la tarjeta sigue ahí y el foco
+  // va a su botón nuevo; si desaparece, va al interruptor "Mostrar dados de baja".
+  function alCambiarActivo(salon) {
+    const sigue = salon.activo || mostrarBajas;
+    setSalones((prev) => (sigue ? prev.map((s) => (s.id === salon.id ? salon : s)) : prev.filter((s) => s.id !== salon.id)));
+    disparadorRef.current = sigue ? `salon-${salon.id}-estado` : "salones-mostrar-bajas";
+    setDialogo(null);
+    setAviso(`Salón «${salon.nombre}» ${salon.activo ? "reactivado: vuelve a aparecer en el Rack, el Calendario y Nueva cotización" : "dado de baja"}.`);
+  }
+
+  // Solo se vuelven a pedir los salones; los montajes y sitios no cambian.
+  async function cambiarMostrarBajas(valor) {
+    setMostrarBajas(valor);
+    try {
+      setSalones(await listarSalones({ incluirInactivos: valor }));
+    } catch (err) {
+      if (err.status === 401) setSesionVencida(true);
+      setErrorCarga(err.status === 401 ? "sesion" : err.status === 403 ? "permiso" : "servidor");
+    }
+  }
+
   function quitarFiltros() {
     setBusqueda("");
     setFiltroMontaje("");
@@ -249,7 +274,7 @@ export default function Salones() {
         }
       />
 
-      {datosListos && salones.length > 0 && (
+      {datosListos && (salones.length > 0 || mostrarBajas) && (
         <div className="salones-filtros">
           <div className="salones-filtro salones-filtro--buscar">
             <label className="salones-filtro__etiqueta" htmlFor="salones-buscar">Buscar</label>
@@ -300,6 +325,8 @@ export default function Salones() {
             />
           </div>
 
+          <InterruptorBajas activo={mostrarBajas} onCambiar={cambiarMostrarBajas} />
+
           <p className="salones-filtros__conteo" role="status">
             {hayFiltros ? `${salonesFiltrados.length} de ${salones.length} salones` : ""}
           </p>
@@ -333,12 +360,15 @@ export default function Salones() {
       {vista === "vacio" && (
         <Tarjeta>
           <EstadoVacio
-            titulo="Aún no hay salones"
+            titulo={mostrarBajas ? "Aún no hay salones" : "No hay salones activos"}
             texto="Crea el primero con sus medidas. Después habilitas sus montajes con el aforo de cada uno."
             accion={
-              <Boton variante="secundario" onClick={(e) => abrirDialogo({ tipo: "salon" }, e)}>
-                Nuevo salón
-              </Boton>
+              <>
+                <Boton variante="secundario" onClick={(e) => abrirDialogo({ tipo: "salon" }, e)}>
+                  Nuevo salón
+                </Boton>
+                {!mostrarBajas && <Boton variante="secundario" onClick={() => cambiarMostrarBajas(true)}>Mostrar dados de baja</Boton>}
+              </>
             }
           />
         </Tarjeta>
@@ -372,6 +402,7 @@ export default function Salones() {
                 onHabilitar={(e) => abrirDialogo({ tipo: "montaje", salonId: s.id }, e)}
                 onEditarAforo={(h, e) => abrirDialogo({ tipo: "aforo", salon: s, habilitado: h }, e)}
                 onQuitarMontaje={(h, e) => abrirDialogo({ tipo: "quitar", salon: s, habilitado: h }, e)}
+                onCambiarActivo={(e) => abrirDialogo({ tipo: "baja", salon: s }, e)}
               />
             ))}
           </section>
@@ -406,8 +437,11 @@ export default function Salones() {
                     const habilitados = habilitadosDe(s.id);
                     const maximo = aforoMaximo(habilitados);
                     return (
-                      <tr key={s.id}>
-                        <th scope="row">{etiquetaSalon(s)}</th>
+                      <tr key={s.id} className={s.activo === false ? "salones-aforo__fila--baja" : undefined}>
+                        <th scope="row">
+                          {etiquetaSalon(s)}
+                          {s.activo === false && <span className="salones-aforo__baja">Dado de baja</span>}
+                        </th>
                         {montajes.map((m) => {
                           const h = habilitados.find((x) => x.montajeId === m.id);
                           if (!h) {
@@ -452,7 +486,7 @@ export default function Salones() {
 
       {dialogo?.tipo === "montaje" && (
         <HabilitarMontajeModal
-          salones={salones}
+          salones={salones.filter((s) => s.activo !== false)}
           montajes={montajes}
           habilitados={(salonId) => new Set(habilitadosDe(salonId).map((h) => h.montajeId))}
           etiquetaSalon={etiquetaSalon}
@@ -474,6 +508,8 @@ export default function Salones() {
       {dialogo?.tipo === "quitar" && (
         <DialogoQuitarMontaje salon={dialogo.salon} habilitado={dialogo.habilitado} onQuitado={alQuitarMontaje} {...propsVentana} />
       )}
+
+      {dialogo?.tipo === "baja" && <DialogoBajaSalon salon={dialogo.salon} onCambiado={alCambiarActivo} {...propsVentana} />}
 
       <SesionVencida ref={sesionRef} visible={sesionVencida} onReingreso={alVolverAEntrar} />
     </div>

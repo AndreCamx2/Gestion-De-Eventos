@@ -108,6 +108,58 @@
     display: none;
 }
 
+/* "Mostrar dados de baja" (SGDE-99): mismo interruptor que "Mostrar inactivos" de Clientes */
+.salones-interruptor {
+    display: inline-flex;
+    align-self: center;
+    align-items: center;
+    gap: 10px;
+    min-height: var(--alto-tocable);
+    padding: 0 var(--espacio-1);
+    border: 0;
+    background: transparent;
+    color: var(--color-texto-suave);
+    font: inherit;
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-negrita);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.salones-interruptor:focus-visible {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+.salones-interruptor__pista {
+    position: relative;
+    flex-shrink: 0;
+    width: 40px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--color-linea-fuerte);
+}
+
+.salones-interruptor__perilla {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    background: var(--color-texto);
+    transition: transform var(--duracion-menu) var(--curva-salida);
+}
+
+.salones-interruptor[aria-checked="true"] .salones-interruptor__pista {
+    background: var(--color-tinta);
+}
+
+.salones-interruptor[aria-checked="true"] .salones-interruptor__perilla {
+    background: var(--color-superficie);
+    transform: translateX(16px);
+}
+
 /* ---- Aviso de "creado" / "habilitado" ---- */
 .salones-aviso {
     margin: 0;
@@ -147,6 +199,27 @@
     border: var(--borde);
     border-radius: var(--radio-tarjeta-grande);
     background: var(--color-superficie);
+}
+
+/* Dado de baja (SGDE-99): foto, medidas y montajes atenuados; la etiqueta y
+   "Reactivar" conservan su contraste */
+.salon-tarjeta--inactiva {
+    background: var(--color-superficie-2);
+}
+
+.salon-tarjeta--inactiva :is(.salon-tarjeta__foto, .salon-tarjeta__datos, .salon-tarjeta__filas) {
+    opacity: 0.55;
+}
+
+.salon-tarjeta__baja {
+    align-self: flex-start;
+    margin: 0;
+    padding: var(--espacio-1) var(--espacio-3);
+    border-radius: var(--radio-pildora);
+    background: var(--estado-cancelado-fondo);
+    color: var(--estado-cancelado-texto);
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-extra);
 }
 
 .salon-tarjeta__foto {
@@ -535,8 +608,24 @@
     margin-top: var(--espacio-1);
 }
 
+/* Fila de un salón dado de baja en "Aforo por montaje" */
+.salones-aforo__fila--baja :is(th, td) {
+    opacity: 0.6;
+}
+
+.salones-aforo__baja {
+    display: block;
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-negrita);
+    color: var(--estado-cancelado-texto);
+}
+
 /* ---- Hover solo con mouse: en pantallas táctiles se quedaría "pegado" ---- */
 @media (hover: hover) and (pointer: fine) {
+    .salones-interruptor:hover {
+        color: var(--color-texto);
+    }
+
     .salones-dialogo__cerrar:hover:not(:disabled) {
         background: var(--color-campo);
         color: var(--color-texto);
@@ -568,5 +657,11 @@
     }
 }
 
-/* Esta pantalla no anima nada propio: el único movimiento es el de Boton
-   (scale al presionar), que ya se apaga con prefers-reduced-motion en Boton.css. */
+@media (prefers-reduced-motion: reduce) {
+    .salones-interruptor__perilla {
+        transition: none;
+    }
+}
+
+/* Además de la perilla del interruptor (apagada arriba), el único movimiento es el
+   de Boton (scale al presionar), que ya se apaga con prefers-reduced-motion en Boton.css. */
