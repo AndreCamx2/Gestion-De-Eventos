@@ -24,3 +24,10 @@ export function bloquearCotizacion(id, bloqueoHasta) {
 export function liberarBloqueo(id) {
     return apiFetch(`/cotizaciones/${id}/bloqueo/`, { method: "DELETE" });
 }
+
+export function crearCotizacion(datos) {
+    return apiFetch("/cotizaciones/", {
+        method: "POST",
+        body: JSON.stringify(datos),
+    });
+}
