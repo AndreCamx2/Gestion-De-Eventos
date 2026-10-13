@@ -1,11 +1,6 @@
+import { fechaHoraColombia } from "../../utils/fechasBloqueo";
 import { fechaISO } from "../../utils/inicioCifras";
-import {
-  ABREVIATURAS,
-  encabezadoDia,
-  esFinDeSemana,
-  etiquetaCelda,
-  fechaHoraColombia,
-} from "./rack";
+import { ABREVIATURAS, encabezadoDia, esFinDeSemana, etiquetaCelda } from "./rack";
 
 // Rejilla del Rack: filas = salones, columnas = días.
 // - Cada celda es un <button>: Enter y Espacio la abren sin código extra.

@@ -384,7 +384,7 @@ function Agenda({ rol, calendario, agenda, onReintentar }) {
   const conteos = Object.keys(ETIQUETAS_CONTEO)
     .map((estado) => ({ estado, cantidad: agenda.filter((e) => e.estadoVisible === estado).length }))
     .filter((c) => c.cantidad > 0);
-  const puedeVerCotizaciones = puedeEntrar("/cotizaciones", rol);
+  const puedeVerCalendario = puedeEntrar("/calendario", rol);
 
   return (
     <Tarjeta as="section" className="inicio-bloque inicio-agenda" aria-labelledby="inicio-agenda-titulo">
@@ -399,8 +399,8 @@ function Agenda({ rol, calendario, agenda, onReintentar }) {
             ))}
           </ul>
         )}
-        {puedeVerCotizaciones && calendario.fase === "listo" && agenda.length > 0 && (
-          <Link to="/cotizaciones" className="inicio-enlace">Ver cotizaciones</Link>
+        {puedeVerCalendario && calendario.fase === "listo" && agenda.length > 0 && (
+          <Link to="/calendario" className="inicio-enlace">Ver todo</Link>
         )}
       </div>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { Link } from "react-router-dom";
 import { listarSalones, listarMontajes, listarSalonMontajes } from "../api/salones";
 import { listarSitios } from "../api/sitios";
 import {
@@ -443,8 +444,8 @@ export default function Salones() {
 }
 
 // Tarjeta de un salón (maqueta Salones): foto o marcador, medidas, aforo máximo
-// y sus montajes. "Editar" y "Ver disponibilidad" no están: aún no hay API
-// para editar ni pantalla de calendario (pendientes de SGDE-79).
+// y sus montajes. "Ver disponibilidad" abre el Calendario con ese salón (SGDE-45).
+// "Editar" no está: aún no hay API para editar (pendiente de SGDE-79).
 function TarjetaSalon({ salon, sitio, habilitados, puedeHabilitar, onHabilitar }) {
   // Si la URL de la foto no carga, se muestra el marcador en su lugar.
   const [fotoFallo, setFotoFallo] = useState(false);
@@ -498,16 +499,27 @@ function TarjetaSalon({ salon, sitio, habilitados, puedeHabilitar, onHabilitar }
           <p className="salon-tarjeta__sin-montajes">Sin montajes habilitados.</p>
         )}
 
-        {puedeHabilitar && (
+        <div className="salon-tarjeta__acciones">
           <Boton
-            variante="secundario"
+            as={Link}
+            to={`/calendario?salon=${salon.id}`}
+            variante="oscuro"
             className="salon-tarjeta__accion"
-            aria-label={`Habilitar montaje en ${salon.nombre}`}
-            onClick={onHabilitar}
+            aria-label={`Ver disponibilidad de ${salon.nombre}`}
           >
-            Habilitar montaje
+            Ver disponibilidad
           </Boton>
-        )}
+          {puedeHabilitar && (
+            <Boton
+              variante="secundario"
+              className="salon-tarjeta__accion"
+              aria-label={`Habilitar montaje en ${salon.nombre}`}
+              onClick={onHabilitar}
+            >
+              Habilitar montaje
+            </Boton>
+          )}
+        </div>
       </div>
     </article>
   );

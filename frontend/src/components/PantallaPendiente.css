@@ -1,6 +1,0 @@
-/* Separa la cabecera del aviso, igual que las demás pantallas (por ejemplo .sitios-pv). */
-.pantalla-pendiente {
-    display: flex;
-    flex-direction: column;
-    gap: var(--espacio-7);
-}

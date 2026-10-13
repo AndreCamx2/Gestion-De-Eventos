@@ -11,7 +11,7 @@ import Clientes from "./pages/Clientes";
 import Conceptos from "./pages/Conceptos";
 import Proveedores from "./pages/Proveedores";
 import Rack from "./pages/Rack";
-import PantallaPendiente from "./components/PantallaPendiente";
+import Calendario from "./pages/Calendario";
 import { getUsuarioActual, logout } from "./api/auth";
 import {
   ProtectedRoute,
@@ -103,9 +103,7 @@ export default function App() {
               <Route path="/conceptos" element={<Conceptos />} />
               <Route path="/proveedores" element={<Proveedores />} />
               <Route path="/rack" element={<Rack />} />
-
-              {/* Aún pendiente de construir */}
-              <Route path="/calendario" element={<PantallaPendiente titulo="Calendario" />} />
+              <Route path="/calendario" element={<Calendario />} />
             </Route>
           </Route>
         </Route>

@@ -1,0 +1,412 @@
+/* Calendario de disponibilidad (SGDE-45), maqueta Calendario.
+   Solo variables de tokens.css: ningún color en hex. */
+
+.calendario {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-6);
+}
+
+/* ---- Cabecera: mes y filtros ---- */
+.calendario-filtros {
+    display: flex;
+    flex-wrap: wrap; /* en teléfono bajan a varias líneas */
+    align-items: center;
+    gap: var(--espacio-3);
+}
+
+.calendario-filtros__mes {
+    display: flex;
+    gap: 6px;
+}
+
+.calendario-filtros__flecha {
+    width: var(--alto-tocable);
+    padding: 0;
+}
+
+/* Chips: control segmentado como el de la maqueta (Todos / Bolívar / ...) */
+.calendario-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 4px;
+    border: var(--borde);
+    border-radius: var(--radio-control);
+    background: var(--color-superficie);
+}
+
+.calendario-chips__chip {
+    min-height: 36px;
+    padding: 0 var(--espacio-3);
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--color-texto-suave);
+    font: inherit;
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-negrita);
+    cursor: pointer;
+}
+
+.calendario-chips__chip[aria-pressed="true"] {
+    background: var(--color-texto);
+    color: var(--color-fondo);
+}
+
+.calendario-chips__chip:focus-visible {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+/* ---- Cuerpo: el mes y el panel del día ---- */
+.calendario__cuerpo {
+    display: flex;
+    flex-wrap: wrap; /* por debajo de ~980 px el panel baja, a todo el ancho */
+    align-items: flex-start;
+    gap: var(--espacio-5);
+}
+
+.calendario__mes {
+    display: flex;
+    flex: 3 1 640px;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    min-width: 0;
+}
+
+.calendario__mes[aria-busy="true"] .calendario-mes {
+    opacity: 0.55;
+    transition: opacity 160ms ease;
+}
+
+/* ---- Cuadrícula ---- */
+.calendario-mes {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: var(--espacio-2);
+}
+
+.calendario-mes__semana {
+    padding: 0 var(--espacio-2);
+    color: var(--color-texto-tenue);
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-extra);
+    letter-spacing: 0.08em;
+}
+
+.calendario-mes__semana--sabado {
+    color: var(--color-mandarina-texto);
+}
+
+.calendario-dia {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    min-height: 112px;
+    padding: 10px;
+    border: 1.5px solid var(--color-linea);
+    border-radius: 14px;
+    background: var(--color-superficie);
+    color: var(--color-texto);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--duracion-presion) ease, background-color var(--duracion-presion) ease;
+}
+
+.calendario-dia:focus-visible {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+/* Días de otro mes: atenuados, como en la maqueta */
+.calendario-dia--fuera {
+    background: var(--color-superficie-2);
+}
+
+.calendario-dia--fuera > * {
+    opacity: 0.5;
+}
+
+/* Día seleccionado: borde de tinta y fondo durazno */
+.calendario-dia[aria-pressed="true"] {
+    border-color: var(--color-tinta);
+    background: var(--color-durazno);
+}
+
+.calendario-dia__numero {
+    align-self: flex-start;
+    font-size: 18px;
+    font-weight: var(--peso-extra);
+    line-height: 1.2;
+}
+
+/* Hoy: el número sobre una píldora tinta suave, como en el Rack */
+.calendario-dia--hoy .calendario-dia__numero {
+    margin: -2px 0 0 -6px;
+    padding: 0 6px;
+    border-radius: var(--radio-pildora);
+    background: var(--color-tinta-suave);
+    color: var(--color-tinta);
+}
+
+.calendario-dia__pildoras {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-1);
+    min-width: 0;
+}
+
+.calendario-pildora {
+    --pildora-fondo: var(--color-campo);
+    --pildora-texto: var(--color-texto-suave);
+
+    display: block;
+    padding: var(--espacio-1) 6px;
+    border-radius: 7px;
+    background: var(--pildora-fondo);
+    color: var(--pildora-texto);
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-extra);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.calendario-pildora--cotizado {
+    --pildora-fondo: var(--estado-cotizado-fondo);
+    --pildora-texto: var(--estado-cotizado-texto);
+}
+
+.calendario-pildora--bloqueado {
+    --pildora-fondo: var(--estado-bloqueado-fondo);
+    --pildora-texto: var(--estado-bloqueado-texto);
+}
+
+.calendario-pildora--confirmado {
+    --pildora-fondo: var(--estado-confirmado-fondo);
+    --pildora-texto: var(--estado-confirmado-texto);
+}
+
+.calendario-dia__mas {
+    padding-left: 6px;
+    color: var(--color-texto-suave);
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-negrita);
+}
+
+/* Puntos: solo en teléfono (ver abajo) */
+.calendario-dia__puntos {
+    display: none;
+    flex-wrap: wrap;
+    gap: 3px;
+}
+
+.calendario-punto {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radio-pildora);
+}
+
+.calendario-punto--cotizado {
+    background: var(--estado-cotizado-punto);
+}
+
+.calendario-punto--bloqueado {
+    background: var(--estado-bloqueado-punto);
+}
+
+.calendario-punto--confirmado {
+    background: var(--estado-confirmado-punto);
+}
+
+/* Esqueleto: 42 casillas con el pulso de Esqueleto (components/ui/Esqueleto.css) */
+.calendario-dia--esqueleto {
+    cursor: default;
+}
+
+.calendario-dia__bloque {
+    width: 24px;
+    height: 16px;
+    border-radius: 6px;
+}
+
+.calendario__leyenda {
+    margin-top: var(--espacio-2);
+}
+
+/* ---- Panel del día ---- */
+.calendario-panel {
+    display: flex;
+    flex: 1 1 300px;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    min-width: 0;
+}
+
+.calendario-panel__semana {
+    margin: 0;
+    color: var(--color-mandarina-texto);
+    font-size: var(--texto-antetitulo);
+    font-weight: var(--peso-extra);
+    letter-spacing: 0.08em;
+}
+
+.calendario-panel__titulo {
+    margin: 0;
+    font-size: clamp(28px, 18px + 2vw, 40px);
+    font-weight: var(--peso-extra);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+}
+
+.calendario-salon {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+    padding: 14px;
+    border: 1px solid var(--color-linea-fuerte);
+    border-radius: 16px;
+    background: var(--color-campo);
+}
+
+.calendario-salon__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-2);
+}
+
+.calendario-salon__nombre {
+    margin: 0;
+    min-width: 0;
+    font-size: var(--texto-cuerpo);
+    font-weight: var(--peso-extra);
+    overflow-wrap: anywhere;
+}
+
+.calendario-salon__vacio {
+    margin: 0;
+    color: var(--color-texto-suave);
+    font-size: var(--texto-etiqueta);
+}
+
+.calendario-salon__lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.calendario-salon__cotizacion + .calendario-salon__cotizacion {
+    padding-top: var(--espacio-2);
+    border-top: 1px solid var(--color-linea-fuerte);
+}
+
+.calendario-salon__cliente {
+    margin: 0;
+    font-weight: var(--peso-negrita);
+    overflow-wrap: anywhere;
+}
+
+.calendario-salon__detalle,
+.calendario-salon__nota {
+    margin: 0;
+    color: var(--color-texto-suave);
+    font-size: var(--texto-etiqueta);
+}
+
+.calendario-salon__nota {
+    font-weight: var(--peso-negrita);
+}
+
+.calendario-salon__nota--cotizado {
+    color: var(--estado-cotizado-texto);
+}
+
+.calendario-salon__nota--bloqueado {
+    color: var(--estado-bloqueado-texto);
+}
+
+.calendario-salon__nota--confirmado {
+    color: var(--estado-confirmado-texto);
+}
+
+.calendario-salon__nota--vencida {
+    color: var(--estado-vencida-texto);
+}
+
+.calendario-salon__gestionar {
+    align-self: flex-start;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .calendario-dia:not(.calendario-dia--esqueleto):hover {
+        border-color: var(--color-linea-fuerte);
+    }
+
+    .calendario-dia[aria-pressed="true"]:hover {
+        border-color: var(--color-tinta);
+    }
+
+    .calendario-chips__chip[aria-pressed="false"]:hover {
+        background: var(--color-campo);
+        color: var(--color-texto);
+    }
+}
+
+/* ---- Teléfono: número y un punto por estado, sin píldoras ---- */
+@media (max-width: 640px) {
+    .calendario-mes {
+        gap: var(--espacio-1);
+    }
+
+    .calendario-mes__semana {
+        padding: 0;
+        text-align: center;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+    }
+
+    .calendario-dia {
+        align-items: center;
+        gap: var(--espacio-1);
+        min-height: 56px;
+        padding: 6px 2px;
+        border-radius: 10px;
+    }
+
+    .calendario-dia__numero {
+        align-self: center;
+        font-size: var(--texto-cuerpo);
+    }
+
+    .calendario-dia--hoy .calendario-dia__numero {
+        margin: 0;
+    }
+
+    .calendario-dia__pildoras {
+        display: none;
+    }
+
+    .calendario-dia__puntos {
+        display: flex;
+        justify-content: center;
+    }
+
+    .calendario-dia__bloque {
+        width: 16px;
+        height: 12px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .calendario-dia,
+    .calendario__mes[aria-busy="true"] .calendario-mes {
+        transition: none;
+    }
+}
