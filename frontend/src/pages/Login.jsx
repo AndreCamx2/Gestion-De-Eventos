@@ -1,176 +1,153 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { login } from "../api/auth";
-import { useNavigate } from "react-router-dom";
-import "../styles/auth.css";
-import image0 from "../img/images(0).jpg";
-import image1 from "../img/images (1).jpg";
-import image2 from "../img/images(2).jpg";
-import image3 from "../img/images (3).jpg";
-import image4 from "../img/images(4).jpg";
-import image5 from "../img/images(5).jpg";
-import image6 from "../img/images(6).jpg";
-import image7 from "../img/images(7).jpg";
-import image8 from "../img/images(8).jpg";
-import image9 from "../img/images(9).jpg";
+import { Boton, Campo } from "../components/ui";
+import "../styles/acceso.css";
 
-const COLUMN_A = [image0, image1, image2, image3, image4];
-const COLUMN_B = [image5, image6, image7, image8, image9];
-
-function CarouselColumn({ images, direction = "up" }) {
-  const loopedImages = [...images, ...images];
-
-  return (
-    <div className="auth-carousel__column">
-      <div className={`auth-carousel__track auth-carousel__track--${direction}`}>
-        {loopedImages.map((src, index) => (
-          <div className="auth-carousel__item" key={`${src}-${index}`}>
-            <img src={src} alt="" aria-hidden="true" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+// Pasos que se muestran junto al formulario (maqueta Main.dc.html).
+const PASOS = [
+  { numero: 1, texto: "Cotiza con aforo y precios al día", tono: "tinta" },
+  { numero: 2, texto: "Ve qué salón está libre cada día", tono: "durazno" },
+  { numero: 3, texto: "Confirma con la garantía del cliente", tono: "mantequilla" },
+];
 
 function LoginForm({ onLoginSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
-async function handleSubmit(event) {
-  event.preventDefault();
-  const form = new FormData(event.target);
-  const email = form.get("email")?.toString().trim();
-  const password = form.get("password")?.toString();
+  async function handleSubmit(event) {
+    event.preventDefault();
+    const form = new FormData(event.target);
+    const email = form.get("email")?.toString().trim();
+    const password = form.get("password")?.toString();
 
-  const nextErrors = {};
-  if (!email) nextErrors.email = "Ingresa tu usuario o correo.";
-  if (!password) nextErrors.password = "Ingresa tu contraseña.";
-  setErrors(nextErrors);
+    const nextErrors = {};
+    if (!email) nextErrors.email = "Ingresa tu usuario o correo.";
+    if (!password) nextErrors.password = "Ingresa tu contraseña.";
+    setErrors(nextErrors);
 
-  if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(nextErrors).length > 0) return;
 
-  setSubmitting(true);
+    setSubmitting(true);
 
-  try {
-    await login(email, password);
-    await onLoginSuccess?.({ email });
-    navigate("/inicio");
-  } catch (err) {
-    setErrors({ password: "Usuario o contraseña incorrectos." });
-  } finally {
-    setSubmitting(false);
+    try {
+      await login(email, password);
+      await onLoginSuccess?.({ email });
+      navigate("/inicio");
+    } catch (err) {
+      setErrors({ password: "Usuario o contraseña incorrectos." });
+    } finally {
+      setSubmitting(false);
+    }
   }
-}
 
   return (
-    <main className="auth-main">
-      <div className="auth-card">
-        <p className="auth-mark--mobile">SGDE</p>
+    <div className="acceso-tarjeta-envoltura">
+      <span className="acceso-circulo acceso-circulo--grande" aria-hidden="true" />
+      <span className="acceso-circulo acceso-circulo--mediano" aria-hidden="true" />
+      <span className="acceso-circulo acceso-circulo--pequeno" aria-hidden="true" />
 
-        <h2 className="auth-title">Inicia sesión</h2>
-        <p className="auth-subtitle">Accede a tu panel de gestión de eventos y salones.</p>
+      <form className="acceso-tarjeta" noValidate onSubmit={handleSubmit}>
+        <div>
+          <h2 className="acceso-tarjeta__titulo">Inicia sesión</h2>
+          <p className="acceso-tarjeta__subtitulo">Accede a tu panel de gestión de eventos y salones.</p>
+        </div>
 
-        <form className="auth-form" noValidate onSubmit={handleSubmit}>
-          <div className="field" id="fieldEmail">
-            <label className="field__label" htmlFor="email">
-              Usuario o correo electrónico <span className="field__required">*</span>
-            </label>
-            <div className="field__control">
-              <input
-                className="field__input"
-                type="text"
-                id="email"
-                name="email"
-                autoComplete="username"
-                placeholder="nombre@empresa.com"
-              />
-            </div>
-            {errors.email && <p className="field__error">{errors.email}</p>}
-          </div>
+        <Campo
+          etiqueta={<>Usuario o correo electrónico <span className="acceso-obligatorio" aria-hidden="true">*</span></>}
+          id="email"
+          name="email"
+          type="text"
+          autoComplete="username"
+          placeholder="nombre@empresa.com"
+          required
+          error={errors.email}
+        />
 
-          <div className="field" id="fieldPassword">
-            <label className="field__label" htmlFor="password">
-              Contraseña <span className="field__required">*</span>
-            </label>
-            <div className="field__control">
-              <input
-                className="field__input field__input--with-action"
-                type={showPassword ? "text" : "password"}
-                id="password"
-                name="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                className="field__action"
-                onClick={() => setShowPassword((value) => !value)}
-              >
-                {showPassword ? "Ocultar" : "Ver"}
-              </button>
-            </div>
-            {errors.password && <p className="field__error">{errors.password}</p>}
-          </div>
-
-          <div className="auth-form__row">
-            <label className="checkbox-row">
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={() => setRemember((value) => !value)}
-              />
-              Recordarme
-            </label>
-            <button type="button" className="link">
-              Olvidé mi contraseña
+        {/* Contraseña con botón de mostrar/ocultar: Campo no admite un botón
+            dentro del input, así que se arma con sus mismas clases. */}
+        <div className={`campo${errors.password ? " campo--error" : ""}`}>
+          <label className="campo__etiqueta" htmlFor="password">
+            Contraseña <span className="acceso-obligatorio" aria-hidden="true">*</span>
+          </label>
+          <div className="acceso-clave">
+            <input
+              className="campo__input acceso-clave__input"
+              type={showPassword ? "text" : "password"}
+              id="password"
+              name="password"
+              autoComplete="current-password"
+              placeholder="••••••••"
+              required
+              aria-invalid={errors.password ? true : undefined}
+              aria-describedby={errors.password ? "password-error" : undefined}
+            />
+            <button
+              type="button"
+              className="acceso-clave__ver"
+              onClick={() => setShowPassword((value) => !value)}
+              aria-pressed={showPassword}
+            >
+              {showPassword ? "Ocultar" : "Ver"}
             </button>
           </div>
+          {errors.password && (
+            <p id="password-error" className="campo__error">
+              {errors.password}
+            </p>
+          )}
+        </div>
 
-          <button type="submit" className="btn btn--primary btn--block" disabled={submitting}>
-            {submitting ? <span className="btn__spinner" aria-hidden="true" /> : null}
-            <span className="btn__label">{submitting ? "Ingresando…" : "Iniciar sesión"}</span>
-          </button>
-        </form>
+        <Boton type="submit" variante="principal" className="acceso-enviar" disabled={submitting}>
+          {submitting ? <span className="btn__spinner acceso-spinner" aria-hidden="true" /> : null}
+          {submitting ? "Ingresando…" : "Iniciar sesión"}
+        </Boton>
 
-        <p className="auth-footer">
-          ¿Aún no tienes cuenta? <a href="/registro" className="link">Regístrate aquí</a>
+        <div className="acceso-divisor" />
+
+        <p className="acceso-pie">
+          ¿Aún no tienes cuenta? <Link to="/registro" className="acceso-enlace">Regístrate aquí</Link>
         </p>
-      </div>
-    </main>
+      </form>
+    </div>
   );
-} // <--- FALTABA CERRAR LoginForm AQUÍ
+}
 
 export default function Login({ onLoginSuccess }) {
   return (
-    <div className="auth-shell">
-      <aside className="auth-brand">
-        <div className="auth-carousel" aria-hidden="true">
-          <CarouselColumn images={COLUMN_A} direction="up" />
-          <CarouselColumn images={COLUMN_B} direction="down" />
-        </div>
+    <div className="acceso">
+      <header className="acceso__cabecera">
+        <span className="acceso-logo">
+          <span className="acceso-logo__marca" aria-hidden="true">S</span>
+          SGDE
+        </span>
+      </header>
 
-        <div className="auth-brand__scrim" />
+      <main className="acceso__cuerpo">
+        <section className="acceso-presentacion">
+          <p className="acceso-pildora">
+            <span className="acceso-pildora__punto" aria-hidden="true" />
+            Gestión de eventos y salones · Cartagena
+          </p>
+          <h1 className="acceso-presentacion__titular">
+            Todo el evento, en <span className="acceso-resaltado">una sola vista</span>.
+          </h1>
+          <ol className="acceso-pasos">
+            {PASOS.map((paso) => (
+              <li key={paso.numero} className="acceso-pasos__item">
+                <span className={`acceso-pasos__numero acceso-pasos__numero--${paso.tono}`} aria-hidden="true">
+                  {paso.numero}
+                </span>
+                {paso.texto}
+              </li>
+            ))}
+          </ol>
+        </section>
 
-        <div className="auth-brand__content">
-          <div className="auth-brand__top">
-            <p className="auth-brand__mark">SGDE</p>
-            <p className="auth-brand__tag">Gestión de Eventos &amp; Salones · Cartagena</p>
-          </div>
-          <div className="auth-brand__bottom">
-            <h1 className="auth-brand__headline">Cada evento merece un salón a su altura.</h1>
-            <p className="auth-brand__copy">
-              Coordina cotizaciones, disponibilidad y clientes desde un solo lugar,
-              con la precisión que exige la organización de eventos en Cartagena.
-            </p>
-            <div className="auth-brand__rule" />
-          </div>
-        </div>
-      </aside>
-
-      <LoginForm onLoginSuccess={onLoginSuccess} />
+        <LoginForm onLoginSuccess={onLoginSuccess} />
+      </main>
     </div>
   );
 }

@@ -1,64 +1,50 @@
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { logout } from "../api/auth";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { listarConceptos, listarSitios } from "../api/conceptos";
+import SesionVencida from "../components/SesionVencida";
 import {
-  listarConceptos,
-  crearConcepto,
-  actualizarConcepto,
-  cambiarEstadoConcepto,
-  historialConcepto,
-  listarSitios,
-} from "../api/conceptos";
-import ConceptoForm, {
-  FORM_VACIO,
-  formDesdeConcepto,
-  formatCOP,
-  precioConImpuesto,
-  etiquetaImpuesto,
-  validarForm,
-  payloadCreacion,
-  payloadEdicion,
-  erroresDesdeApi,
-} from "./ConceptoForm";
-import "../styles/clientes.css";
+  AvisoError,
+  Boton,
+  CabeceraPagina,
+  Esqueleto,
+  EstadoVacio,
+  Tarjeta,
+} from "../components/ui";
+import { BuscarConcepto, FiltrosCabecera } from "./conceptos/ConceptosFiltros";
+import ConceptosTabla from "./conceptos/ConceptosTabla";
+import PanelConcepto from "./conceptos/PanelConcepto";
+import DialogoNuevoConcepto from "./conceptos/DialogoNuevoConcepto";
+import DialogoEstadoConcepto from "./conceptos/DialogoEstadoConcepto";
 import "../styles/conceptos.css";
 
+// Pantalla de Conceptos y precios: arma la cabecera con los filtros, la tabla,
+// el panel del concepto elegido y las ventanas. Cada pieza vive en pages/conceptos/.
 export default function Conceptos() {
   const [conceptos, setConceptos] = useState([]);
   const [sitios, setSitios] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(null);
+  // Error al cargar: null | "permiso" (403) | "servidor" (500 o sin red) | "sesion" (401).
+  const [errorCarga, setErrorCarga] = useState(null);
+  // 401: se avisa abajo sin salir de la pantalla (components/SesionVencida.jsx).
+  const [sesionVencida, setSesionVencida] = useState(false);
   const [filtroSitio, setFiltroSitio] = useState("todos");
   const [busqueda, setBusqueda] = useState("");
   const [mostrarInactivos, setMostrarInactivos] = useState(false);
-  const navigate = useNavigate();
+  const [seleccionId, setSeleccionId] = useState(null);
+  // Ventana abierta: null | { tipo: "nuevo" } | { tipo: "estado", concepto, activar }.
+  const [dialogo, setDialogo] = useState(null);
 
-  const [modalForm, setModalForm] = useState(null);
-  const [form, setForm] = useState(FORM_VACIO);
-  const [erroresCampo, setErroresCampo] = useState({});
-  const [errorAccion, setErrorAccion] = useState(null);
-  const [procesando, setProcesando] = useState(false);
-
-  const [verConcepto, setVerConcepto] = useState(null);
-  const [historial, setHistorial] = useState([]);
-  const [cargandoHistorial, setCargandoHistorial] = useState(false);
-  const [errorHistorial, setErrorHistorial] = useState(null);
-
-  const [cambioEstado, setCambioEstado] = useState(null);
+  const panelRef = useRef(null);
+  const nuevoRef = useRef(null);
+  const buscarRef = useRef(null);
+  const sesionRef = useRef(null);
 
   useEffect(() => {
     cargarDatos();
   }, []);
 
-  function cerrarSesionExpirada() {
-    // logout() también invalida el refresh en el servidor (SGDE-92); no se espera.
-    logout();
-    navigate("/login");
-  }
-
   async function cargarDatos() {
     setCargando(true);
-    setError(null);
+    setErrorCarga(null);
     try {
       const [conceptosData, sitiosData] = await Promise.all([
         listarConceptos(),
@@ -68,11 +54,12 @@ export default function Conceptos() {
       setSitios(sitiosData);
     } catch (err) {
       if (err.status === 401) {
-        cerrarSesionExpirada();
+        setErrorCarga("sesion");
+        setSesionVencida(true);
       } else if (err.status === 403) {
-        setError("No tienes permisos para consultar el catálogo de conceptos.");
+        setErrorCarga("permiso");
       } else {
-        setError("Error al comunicarse con el servidor. Intenta de nuevo.");
+        setErrorCarga("servidor");
       }
     } finally {
       setCargando(false);
@@ -99,488 +86,197 @@ export default function Conceptos() {
       );
   }, [conceptos, sitios, filtroSitio, busqueda, mostrarInactivos]);
 
-  function abrirModalForm(modo, concepto) {
-    if (concepto) {
-      setForm(formDesdeConcepto(concepto));
-    } else {
-      const sitioInicial =
-        filtroSitio !== "todos"
-          ? filtroSitio
-          : sitios.length === 1
-            ? String(sitios[0].id)
-            : "";
-      setForm({ ...FORM_VACIO, sitio: sitioInicial });
-    }
-    setErroresCampo({});
-    setErrorAccion(null);
-    setModalForm({ modo, concepto });
-  }
+  const seleccionado =
+    conceptosFiltrados.find((c) => c.id === seleccionId) ?? conceptosFiltrados[0] ?? null;
 
-  async function abrirVer(concepto) {
-    setVerConcepto(concepto);
-    setHistorial([]);
-    setErrorHistorial(null);
-    setCargandoHistorial(true);
-    try {
-      setHistorial(await historialConcepto(concepto.id));
-    } catch (err) {
-      if (err.status === 401) {
-        cerrarSesionExpirada();
-      } else {
-        setErrorHistorial("No se pudo cargar el historial de precios.");
-      }
-    } finally {
-      setCargandoHistorial(false);
+  function elegir(concepto) {
+    setSeleccionId(concepto.id);
+    if (window.matchMedia("(max-width: 960px)").matches) {
+      const suave = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      requestAnimationFrame(() =>
+        panelRef.current?.scrollIntoView({ behavior: suave ? "smooth" : "auto", block: "start" }),
+      );
     }
   }
 
-  function abrirCambioEstado(concepto) {
-    setErrorAccion(null);
-    setCambioEstado({ concepto, activar: !concepto.activo });
+  // Sitio ya elegido en "Nuevo concepto": el del filtro, o el único que hay.
+  function sitioInicial() {
+    if (filtroSitio !== "todos") return filtroSitio;
+    return sitios.length === 1 ? String(sitios[0].id) : "";
   }
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    setErroresCampo((prev) => ({ ...prev, [name]: undefined }));
+  function cerrarDialogo() {
+    const eraNuevo = dialogo?.tipo === "nuevo";
+    setDialogo(null);
+    if (eraNuevo) nuevoRef.current?.focus();
   }
 
-  async function handleSubmitForm(e) {
-    e.preventDefault();
-    const esCrear = modalForm.modo === "crear";
-    setErrorAccion(null);
-
-    const erroresLocales = validarForm(form);
-    setErroresCampo(erroresLocales);
-    if (Object.keys(erroresLocales).length > 0) return;
-
-    setProcesando(true);
-    try {
-      if (esCrear) {
-        await crearConcepto(payloadCreacion(form));
-      } else {
-        await actualizarConcepto(modalForm.concepto.id, payloadEdicion(form));
-      }
-      setModalForm(null);
-      await cargarDatos();
-    } catch (err) {
-      if (err.status === 400 && err.body && typeof err.body === "object") {
-        // Los errores por campo se muestran junto a su input; el resto, abajo.
-        const { campos, general } = erroresDesdeApi(err.body);
-        setErroresCampo(campos);
-        setErrorAccion(general);
-      } else if (err.status === 401) {
-        cerrarSesionExpirada();
-      } else if (err.status === 403) {
-        setErrorAccion(
-          `No tienes permisos suficientes para ${esCrear ? "crear" : "editar"} conceptos.`,
-        );
-      } else if (err.status === 404) {
-        setErrorAccion(
-          "Este concepto ya no existe. Cierra y actualiza la lista.",
-        );
-      } else {
-        setErrorAccion(
-          `Error inesperado en el servidor al ${esCrear ? "crear el concepto" : "guardar los cambios"}.`,
-        );
-      }
-    } finally {
-      setProcesando(false);
-    }
+  async function alCrear(creado) {
+    if (creado?.id) setSeleccionId(creado.id);
+    setDialogo(null);
+    await cargarDatos();
+    nuevoRef.current?.focus();
   }
 
-  async function handleConfirmarCambioEstado() {
-    const { concepto, activar } = cambioEstado;
-    setErrorAccion(null);
-    setProcesando(true);
-    try {
-      await cambiarEstadoConcepto(concepto.id, activar);
-      setCambioEstado(null);
-      await cargarDatos();
-    } catch (err) {
-      if (err.status === 401) {
-        cerrarSesionExpirada();
-      } else if (err.status === 403) {
-        setErrorAccion(
-          `No tienes permisos suficientes para ${activar ? "reactivar" : "desactivar"} conceptos.`,
-        );
-      } else if (err.status === 404) {
-        setErrorAccion(
-          "Este concepto ya no existe. Cierra y actualiza la lista.",
-        );
-      } else {
-        setErrorAccion(
-          `Error inesperado en el servidor al ${activar ? "reactivar" : "desactivar"} el concepto.`,
-        );
-      }
-    } finally {
-      setProcesando(false);
-    }
+  async function alCambiarEstado() {
+    if (!dialogo.activar && !mostrarInactivos) setSeleccionId(null);
+    setDialogo(null);
+    await cargarDatos();
   }
 
-  // Aviso al editar: el cambio de precio queda registrado en el historial.
-  const cambiaPrecio =
-    modalForm?.modo === "editar" &&
-    form.precio !== "" &&
-    Number(form.precio) !== Number(modalForm.concepto.precio);
+  // "Entrar de nuevo" desde dentro de una ventana abierta (SGDE-94): el diálogo de
+  // login se abre encima y, al entrar, el foco vuelve al botón de guardar de la ventana.
+  function entrarDeNuevoDesdeVentana(boton) {
+    sesionRef.current?.abrir({ focoAlVolver: boton });
+  }
+
+  function alVolverAEntrar() {
+    setSesionVencida(false);
+    // Si la sesión venció al cargar, los datos nunca llegaron: se piden otra vez.
+    // El historial se pide solo (HistorialPrecios mira sesionVencida).
+    if (errorCarga === "sesion") cargarDatos();
+  }
+
+  function quitarFiltros() {
+    setBusqueda("");
+    setFiltroSitio("todos");
+    setMostrarInactivos(true);
+    buscarRef.current?.focus();
+  }
+
+  // Si ya hay conceptos, la tabla se mantiene mientras se recarga o si la sesión
+  // vence al recargar (no salta ni pierde lo escrito en el panel).
+  let vista = "lista";
+  if (errorCarga === "permiso" || errorCarga === "servidor") vista = "error";
+  else if (conceptos.length === 0 && errorCarga === "sesion") vista = "sesion";
+  else if (conceptos.length === 0 && cargando) vista = "carga";
+  else if (conceptos.length === 0) vista = "vacio";
+  else if (conceptosFiltrados.length === 0) vista = "sinCoincidencias";
+
+  const abrirNuevo = () => setDialogo({ tipo: "nuevo" });
 
   return (
-    <div className="clientes conceptos">
-      <div className="toolbar">
-        <h2>Catálogo de conceptos</h2>
-        <button
-          type="button"
-          className="btn btn--primary"
-          onClick={() => abrirModalForm("crear")}
-        >
-          + Nuevo concepto
-        </button>
-      </div>
+    <div className="conceptos-pv">
+      <CabeceraPagina
+        antetitulo="Catálogo"
+        titulo="Conceptos y precios"
+        subtitulo="Cada cambio de precio queda registrado con quién y cuándo."
+        acciones={
+          <>
+            <FiltrosCabecera
+              sitios={sitios}
+              filtroSitio={filtroSitio}
+              onFiltroSitio={setFiltroSitio}
+              mostrarInactivos={mostrarInactivos}
+              onMostrarInactivos={setMostrarInactivos}
+            />
+            <Boton ref={nuevoRef} onClick={abrirNuevo}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Nuevo concepto
+            </Boton>
+          </>
+        }
+      />
 
-      <div className="toolbar toolbar--filters conceptos-filtros">
-        <label className="filter">
-          <span>Sitio:</span>
-          <select
-            value={filtroSitio}
-            onChange={(e) => setFiltroSitio(e.target.value)}
-          >
-            <option value="todos">Todos</option>
-            {sitios.map((s) => (
-              <option key={s.id} value={String(s.id)}>
-                {s.nombre}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="filter">
-          <span>Buscar:</span>
-          <input
-            type="search"
-            className="conceptos-buscar"
-            placeholder="Nombre del concepto..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
+      {(vista === "lista" || vista === "sinCoincidencias") && (
+        <BuscarConcepto ref={buscarRef} valor={busqueda} onCambiar={setBusqueda} />
+      )}
+
+      {vista === "error" && (
+        <Tarjeta>
+          <AvisoError tipo={errorCarga} onReintentar={cargarDatos} />
+        </Tarjeta>
+      )}
+
+      {vista === "sesion" && (
+        <Tarjeta>
+          <EstadoVacio
+            titulo="Tu sesión expiró"
+            texto="Vuelve a entrar con el aviso de abajo para ver los conceptos."
           />
-        </label>
-        <label className="filter">
-          <input
-            type="checkbox"
-            checked={mostrarInactivos}
-            onChange={(e) => setMostrarInactivos(e.target.checked)}
+        </Tarjeta>
+      )}
+
+      {vista === "carga" && (
+        <Tarjeta>
+          <Esqueleto filas={5} avatar={false} columnas={3} etiqueta="Cargando conceptos…" />
+        </Tarjeta>
+      )}
+
+      {vista === "vacio" && (
+        <Tarjeta>
+          <EstadoVacio
+            titulo="Aún no hay conceptos"
+            texto="Crea el primero con su precio e impuesto: alquiler, alimentos, equipos o lo que se cobre en un evento."
+            accion={<Boton variante="secundario" onClick={abrirNuevo}>Nuevo concepto</Boton>}
           />
-          <span>Mostrar inactivos</span>
-        </label>
-      </div>
-
-      {cargando && <p>Cargando conceptos...</p>}
-      {error && <p className="clientes-error">Error: {error}</p>}
-
-      {!cargando && !error && (
-        <table className="conceptos-table">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Sitio</th>
-              <th className="num">Precio</th>
-              <th className="num">Impuesto</th>
-              <th className="num">Precio + imp.</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {conceptosFiltrados.map((c) => (
-              <tr
-                key={c.id}
-                className={c.activo ? "" : "clientes-table__row--inactivo"}
-              >
-                <td>
-                  {c.nombre}
-                  {!c.activo && (
-                    <span className="clientes-badge--inactivo">Inactivo</span>
-                  )}
-                </td>
-                <td>{obtenerNombreSitio(c.sitio)}</td>
-                <td className="num">{formatCOP(c.precio)}</td>
-                <td className="num">{etiquetaImpuesto(c.impuesto_pct)}</td>
-                <td className="num">
-                  {formatCOP(precioConImpuesto(c.precio, c.impuesto_pct))}
-                </td>
-                <td className="clientes-table__acciones">
-                  <div className="clientes-acciones">
-                    <button
-                      type="button"
-                      className="btn btn--ghost btn--sm"
-                      onClick={() => abrirVer(c)}
-                    >
-                      Ver
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn--ghost btn--sm"
-                      onClick={() => abrirModalForm("editar", c)}
-                    >
-                      Editar
-                    </button>
-                    {c.activo ? (
-                      <button
-                        type="button"
-                        className="btn btn--danger btn--sm"
-                        onClick={() => abrirCambioEstado(c)}
-                      >
-                        Desactivar
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn btn--gold btn--sm"
-                        onClick={() => abrirCambioEstado(c)}
-                      >
-                        Reactivar
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {conceptosFiltrados.length === 0 && (
-              <tr>
-                <td colSpan="6">
-                  {conceptos.length === 0
-                    ? "Aún no hay conceptos registrados."
-                    : "No hay conceptos que coincidan con los filtros."}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        </Tarjeta>
       )}
 
-      {verConcepto && (
-        <div className="modal-overlay" onClick={() => setVerConcepto(null)}>
-          <div
-            className="modal modal--ancho"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal__header">
-              <h3>
-                {verConcepto.nombre}
-                {!verConcepto.activo && (
-                  <span className="clientes-badge--inactivo">Inactivo</span>
-                )}
-              </h3>
-              <button
-                type="button"
-                className="modal__close"
-                onClick={() => setVerConcepto(null)}
-              >
-                ×
-              </button>
-            </div>
+      {vista === "sinCoincidencias" && (
+        <Tarjeta>
+          <EstadoVacio
+            titulo="Ningún concepto coincide"
+            texto="Prueba con otro nombre, otro sitio o muestra también los inactivos."
+            accion={<Boton variante="secundario" onClick={quitarFiltros}>Quitar filtros</Boton>}
+          />
+        </Tarjeta>
+      )}
 
-            <dl className="detalle">
-              <dt>Sitio</dt>
-              <dd>{obtenerNombreSitio(verConcepto.sitio)}</dd>
-              <dt>Precio</dt>
-              <dd>{formatCOP(verConcepto.precio)}</dd>
-              <dt>Impuesto</dt>
-              <dd>{etiquetaImpuesto(verConcepto.impuesto_pct)}</dd>
-              <dt>Precio con impuesto</dt>
-              <dd>
-                {formatCOP(
-                  precioConImpuesto(
-                    verConcepto.precio,
-                    verConcepto.impuesto_pct,
-                  ),
-                )}
-              </dd>
-              <dt>Estado</dt>
-              <dd>{verConcepto.activo ? "Activo" : "Inactivo"}</dd>
-            </dl>
+      {vista === "lista" && (
+        <div className="conceptos-cuerpo">
+          <ConceptosTabla
+            conceptos={conceptosFiltrados}
+            seleccionadoId={seleccionado?.id}
+            mostrarSitio={filtroSitio === "todos" && sitios.length > 1}
+            nombreSitio={obtenerNombreSitio}
+            onElegir={elegir}
+          />
 
-            <h4>Historial de precios</h4>
-            {cargandoHistorial ? (
-              <p>Cargando historial...</p>
-            ) : errorHistorial ? (
-              <p className="form-error">{errorHistorial}</p>
-            ) : historial.length ? (
-              <table className="clientes-table clientes-table--compacta">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th className="num">Anterior</th>
-                    <th className="num">Nuevo</th>
-                    <th>Modificado por</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {historial.map((h) => (
-                    <tr key={h.id}>
-                      <td>
-                        {new Date(h.fecha_modificacion).toLocaleString(
-                          "es-CO",
-                          {
-                            dateStyle: "short",
-                            timeStyle: "short",
-                          },
-                        )}
-                      </td>
-                      <td className="num">{formatCOP(h.precio_anterior)}</td>
-                      <td className="num">{formatCOP(h.precio_nuevo)}</td>
-                      <td>{h.modificado_por}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p>
-                El precio de este concepto no ha cambiado desde que se creó.
-              </p>
-            )}
-
-            <div className="form-actions">
-              <button
-                type="button"
-                className="btn btn--ghost"
-                onClick={() => setVerConcepto(null)}
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
+          {seleccionado && (
+            <PanelConcepto
+              key={seleccionado.id}
+              ref={panelRef}
+              concepto={seleccionado}
+              nombreSitio={obtenerNombreSitio}
+              onGuardado={cargarDatos}
+              onCambiarEstado={() =>
+                setDialogo({ tipo: "estado", concepto: seleccionado, activar: !seleccionado.activo })
+              }
+              sesionVencida={sesionVencida}
+              onSesionVencida={() => setSesionVencida(true)}
+            />
+          )}
         </div>
       )}
 
-      {modalForm && (
-        <div
-          className="modal-overlay"
-          onClick={() => !procesando && setModalForm(null)}
-        >
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h3>
-                {modalForm.modo === "crear"
-                  ? "Nuevo concepto"
-                  : "Editar concepto"}
-              </h3>
-              <button
-                type="button"
-                className="modal__close"
-                onClick={() => setModalForm(null)}
-              >
-                ×
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitForm} noValidate>
-              <ConceptoForm
-                idPrefix={modalForm.modo}
-                form={form}
-                errores={erroresCampo}
-                sitios={sitios}
-                onChange={handleChange}
-                esEdicion={modalForm.modo === "editar"}
-              />
-
-              {cambiaPrecio && (
-                <p className="conceptos-aviso">
-                  El precio cambia de {formatCOP(modalForm.concepto.precio)} a{" "}
-                  {formatCOP(form.precio)}. El cambio quedará registrado en el
-                  historial.
-                </p>
-              )}
-
-              {errorAccion && (
-                <p className="form-error">Error: {errorAccion}</p>
-              )}
-
-              <div className="form-actions">
-                <button
-                  type="button"
-                  className="btn btn--ghost"
-                  onClick={() => setModalForm(null)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="btn btn--primary"
-                  disabled={procesando}
-                >
-                  {procesando
-                    ? "Guardando..."
-                    : modalForm.modo === "crear"
-                      ? "Guardar"
-                      : "Guardar cambios"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {dialogo?.tipo === "nuevo" && (
+        <DialogoNuevoConcepto
+          sitios={sitios}
+          sitioInicial={sitioInicial()}
+          onCreado={alCrear}
+          onCerrar={cerrarDialogo}
+          onSesionVencida={() => setSesionVencida(true)}
+          sesionVencida={sesionVencida}
+          onEntrarDeNuevo={entrarDeNuevoDesdeVentana}
+        />
       )}
 
-      {cambioEstado && (
-        <div
-          className="modal-overlay"
-          onClick={() => !procesando && setCambioEstado(null)}
-        >
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h3>
-                {cambioEstado.activar
-                  ? "Reactivar concepto"
-                  : "Desactivar concepto"}
-              </h3>
-              <button
-                type="button"
-                className="modal__close"
-                onClick={() => setCambioEstado(null)}
-              >
-                ×
-              </button>
-            </div>
-
-            {cambioEstado.activar ? (
-              <p>
-                ¿Reactivar <strong>{cambioEstado.concepto.nombre}</strong>?
-                Volverá a estar disponible para nuevas cotizaciones con su
-                precio actual de {formatCOP(cambioEstado.concepto.precio)}.
-              </p>
-            ) : (
-              <p>
-                ¿Desactivar <strong>{cambioEstado.concepto.nombre}</strong>?
-                Dejará de ofrecerse en nuevas cotizaciones. El concepto y su
-                historial de precios se conservan, y puedes reactivarlo cuando
-                quieras.
-              </p>
-            )}
-
-            {errorAccion && <p className="form-error">Error: {errorAccion}</p>}
-
-            <div className="form-actions">
-              <button
-                type="button"
-                className="btn btn--ghost"
-                onClick={() => setCambioEstado(null)}
-                disabled={procesando}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className={`btn ${cambioEstado.activar ? "btn--primary" : "btn--danger"}`}
-                onClick={handleConfirmarCambioEstado}
-                disabled={procesando}
-              >
-                {procesando
-                  ? "Procesando..."
-                  : cambioEstado.activar
-                    ? "Reactivar"
-                    : "Desactivar"}
-              </button>
-            </div>
-          </div>
-        </div>
+      {dialogo?.tipo === "estado" && (
+        <DialogoEstadoConcepto
+          concepto={dialogo.concepto}
+          activar={dialogo.activar}
+          onHecho={alCambiarEstado}
+          onCerrar={cerrarDialogo}
+          onSesionVencida={() => setSesionVencida(true)}
+          sesionVencida={sesionVencida}
+          onEntrarDeNuevo={entrarDeNuevoDesdeVentana}
+        />
       )}
+
+      <SesionVencida ref={sesionRef} visible={sesionVencida} onReingreso={alVolverAEntrar} />
     </div>
   );
 }

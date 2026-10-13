@@ -1,0 +1,514 @@
+/* Salones y montajes — rediseño Piedra viva (SGDE-79).
+   Maqueta: docs/diseno/piedra-viva/maquetas/Salones.dc.html.
+   Solo variables de tokens.css. Todo vive dentro de .salones-pv o usa prefijos
+   propios (salones-, salon-tarjeta). */
+
+.salones-pv {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-7);
+}
+
+/* ---- Filtros ---- */
+.salones-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--espacio-3);
+}
+
+.salones-filtro {
+    display: flex;
+    flex: 0 1 220px;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.salones-filtro--buscar {
+    flex: 1 1 260px;
+}
+
+.salones-filtro--aforo {
+    flex-basis: 160px;
+}
+
+.salones-filtro__etiqueta {
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-semi);
+    color: var(--color-texto-suave);
+}
+
+.salones-filtro__control,
+.salones-buscar {
+    min-height: var(--alto-tocable);
+    border: 1.5px solid var(--color-linea-fuerte);
+    border-radius: var(--radio-control);
+    background: var(--color-superficie);
+    color: var(--color-texto);
+}
+
+.salones-filtro__control {
+    width: 100%;
+    padding: 0 var(--espacio-3);
+    font-family: inherit;
+    /* 16 px: con menos, iOS hace zoom a la página al enfocar el campo */
+    font-size: 16px;
+}
+
+.salones-buscar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    color: var(--color-texto-tenue);
+}
+
+.salones-buscar svg {
+    flex-shrink: 0;
+}
+
+.salones-buscar__input {
+    flex: 1;
+    min-width: 0;
+    min-height: 40px;
+    border: 0;
+    background: transparent;
+    color: var(--color-texto);
+    font-family: inherit;
+    font-size: 16px;
+}
+
+.salones-buscar__input::placeholder,
+.salones-filtro__control::placeholder {
+    color: var(--color-texto-tenue);
+}
+
+/* Foco: borde tinta + anillo suave, como Campo. En la búsqueda se marca la caja entera. */
+.salones-filtro__control:focus-visible,
+.salones-buscar:focus-within {
+    outline: none;
+    border-color: var(--color-tinta);
+    box-shadow: var(--anillo-campo);
+}
+
+.salones-buscar__input:focus-visible {
+    outline: none;
+}
+
+.salones-filtros__conteo {
+    align-self: center;
+    margin: 0;
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-semi);
+    color: var(--color-texto-suave);
+}
+
+.salones-filtros__conteo:empty {
+    display: none;
+}
+
+/* ---- Aviso de "creado" / "habilitado" ---- */
+.salones-aviso {
+    margin: 0;
+    padding: var(--espacio-3) var(--espacio-4);
+    border-radius: var(--radio-control);
+    background: var(--estado-confirmado-fondo);
+    color: var(--estado-confirmado-texto);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-semi);
+    overflow-wrap: anywhere;
+}
+
+/* Vacío no ocupa lugar, pero sigue en la página para que el lector de
+   pantalla anuncie el aviso cuando aparezca */
+.salones-aviso:empty {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+
+/* ---- Tarjetas de salón ---- */
+.salones-grilla {
+    display: grid;
+    /* min(): en teléfono la columna nunca es más ancha que la pantalla */
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+    gap: var(--espacio-5);
+}
+
+.salon-tarjeta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    border: var(--borde);
+    border-radius: var(--radio-tarjeta-grande);
+    background: var(--color-superficie);
+}
+
+.salon-tarjeta__foto {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+    /* min-height: un nombre largo hace crecer el marcador en vez de desbordarse */
+    min-height: 180px;
+    padding: var(--espacio-5);
+    background: var(--color-campo);
+}
+
+/* Marcador sin foto: tres pares de tokens que se alternan */
+.salon-tarjeta__foto--tono-0 {
+    background: var(--color-durazno);
+    color: var(--color-mandarina-texto);
+}
+
+.salon-tarjeta__foto--tono-1 {
+    background: var(--color-mantequilla);
+    color: var(--color-texto);
+}
+
+.salon-tarjeta__foto--tono-2 {
+    background: var(--color-tinta-suave);
+    color: var(--color-tinta);
+}
+
+.salon-tarjeta__imagen {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Chapita con el sitio: va encima de la foto, con fondo casi blanco para leerse */
+.salon-tarjeta__sitio {
+    position: relative;
+    align-self: flex-start;
+    max-width: 100%;
+    padding: 5px 10px;
+    border-radius: var(--radio-pildora);
+    background: color-mix(in srgb, var(--color-superficie) 90%, transparent);
+    color: var(--color-texto);
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-extra);
+    overflow-wrap: anywhere;
+}
+
+.salon-tarjeta__nombre-grande {
+    margin: 0;
+    font-size: clamp(36px, 28px + 1.2vw, 46px);
+    font-weight: var(--peso-extra);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    overflow-wrap: anywhere;
+    /* Un nombre largo no estira la tarjeta: máximo 2 líneas (SGDE-85).
+       El nombre completo queda en el atributo title. */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+}
+
+.salon-tarjeta__cuerpo {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 14px;
+    padding: var(--espacio-5);
+}
+
+.salon-tarjeta__nombre {
+    margin: 0;
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-seccion);
+    overflow-wrap: anywhere;
+}
+
+.salon-tarjeta__datos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2) var(--espacio-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--texto-etiqueta);
+    color: var(--color-texto-suave);
+    font-variant-numeric: tabular-nums;
+}
+
+.salon-tarjeta__datos strong {
+    font-size: var(--texto-cuerpo);
+    color: var(--color-texto);
+}
+
+.salon-tarjeta__montajes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.salon-tarjeta__montaje {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 0 var(--espacio-3);
+    border: 1px solid var(--color-linea-fuerte);
+    border-radius: var(--radio-pildora);
+    background: var(--color-campo);
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-negrita);
+    font-variant-numeric: tabular-nums;
+}
+
+.salon-tarjeta__montaje strong {
+    color: var(--color-mantequilla-texto);
+}
+
+.salon-tarjeta__sin-montajes {
+    margin: 0;
+    font-size: var(--texto-etiqueta);
+    color: var(--color-texto-tenue);
+}
+
+/* "Ver disponibilidad" y "Habilitar montaje": abajo, lado a lado; en una
+   tarjeta angosta cada uno baja a su línea */
+.salon-tarjeta__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+    margin-top: auto;
+}
+
+.salon-tarjeta__accion {
+    flex: 1 1 150px;
+    min-height: var(--alto-tocable);
+}
+
+/* ---- Tabla "Aforo por montaje" ---- */
+.salones-aforo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+}
+
+.salones-aforo__cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+}
+
+.salones-aforo__titulo {
+    margin: 0;
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-seccion);
+}
+
+.salones-aforo__nota {
+    margin: 6px 0 0;
+    font-size: var(--texto-etiqueta);
+    color: var(--color-texto-suave);
+}
+
+/* La tabla ya va dentro de una tarjeta: la caja con scroll no lleva borde propio.
+   Los selectores con .salones-pv ganan a los de TablaContenedor.css. */
+.salones-pv .salones-aforo__caja {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.salones-pv .salones-aforo__tabla {
+    /* En 390 px la tabla conserva su ancho y se desplaza dentro de la caja */
+    min-width: 680px;
+    border-collapse: separate;
+    border-spacing: 6px;
+    font-size: var(--texto-cuerpo);
+    font-variant-numeric: tabular-nums;
+}
+
+.salones-pv .salones-aforo__tabla th {
+    padding: var(--espacio-2);
+    border-bottom: 0;
+    text-align: center;
+}
+
+.salones-pv .salones-aforo__tabla th:first-child {
+    text-align: left;
+}
+
+.salones-pv .salones-aforo__tabla th[scope="row"] {
+    min-width: 140px;
+    font-size: var(--texto-cuerpo);
+    font-weight: var(--peso-extra);
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: normal;
+    color: var(--color-texto);
+    overflow-wrap: anywhere;
+}
+
+.salones-pv .salones-aforo__celda {
+    height: 52px;
+    padding: 0 var(--espacio-3);
+    border-bottom: 0;
+    border-radius: var(--radio-control);
+    background: var(--color-campo);
+    color: var(--color-texto);
+    text-align: center;
+    font-weight: var(--peso-extra);
+}
+
+/* El mayor aforo del salón (también se anuncia con texto oculto, no solo color) */
+.salones-pv .salones-aforo__celda--maximo {
+    background: var(--color-durazno);
+    color: var(--color-mandarina-texto);
+}
+
+.salones-pv .salones-aforo__celda--vacia {
+    background: transparent;
+    color: var(--color-texto-tenue);
+}
+
+/* ---- Diálogos "Nuevo salón" y "Habilitar montaje" ---- */
+.salones-dialogo {
+    width: min(480px, calc(100% - 2 * var(--espacio-4)));
+    max-width: none;
+    max-height: calc(100dvh - 2 * var(--espacio-4));
+    overflow-y: auto;
+    padding: var(--espacio-6);
+    border: 0;
+    border-radius: var(--radio-tarjeta-grande);
+    background: var(--color-superficie);
+    color: var(--color-texto);
+    box-shadow: var(--sombra-flotante);
+}
+
+.salones-dialogo::backdrop {
+    background: color-mix(in srgb, var(--color-texto) 45%, transparent);
+}
+
+.salones-dialogo__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+    margin-bottom: var(--espacio-5);
+}
+
+.salones-dialogo__titulo {
+    margin: 0;
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-seccion);
+}
+
+.salones-dialogo__cerrar {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--alto-tocable);
+    height: var(--alto-tocable);
+    border: 0;
+    border-radius: var(--radio-control);
+    background: transparent;
+    color: var(--color-texto-suave);
+    cursor: pointer;
+}
+
+.salones-dialogo__cerrar:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.salones-dialogo__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+}
+
+.salones-dialogo__par {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--espacio-3);
+}
+
+.salones-dialogo__ayuda {
+    margin: 0;
+    font-size: var(--texto-etiqueta);
+    color: var(--color-texto-suave);
+}
+
+.salones-dialogo__ayuda a {
+    color: var(--color-mandarina-texto);
+    font-weight: var(--peso-negrita);
+}
+
+.salones-dialogo__error {
+    margin: 0;
+    padding: var(--espacio-3) var(--espacio-4);
+    border-radius: var(--radio-control);
+    background: var(--estado-vencida-fondo);
+    color: var(--color-peligro);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-semi);
+    overflow-wrap: anywhere;
+}
+
+.salones-dialogo__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--espacio-3);
+    margin-top: var(--espacio-1);
+}
+
+/* ---- Hover solo con mouse: en pantallas táctiles se quedaría "pegado" ---- */
+@media (hover: hover) and (pointer: fine) {
+    .salones-dialogo__cerrar:hover:not(:disabled) {
+        background: var(--color-campo);
+        color: var(--color-texto);
+    }
+
+    /* TablaContenedor sombrea la fila al pasar el mouse; aquí cada celda ya tiene su fondo */
+    .salones-pv .salones-aforo__tabla tbody tr:hover {
+        background: transparent;
+    }
+}
+
+/* ---- Teléfono ---- */
+@media (max-width: 600px) {
+    /* Búsqueda a todo el ancho; montaje y aforo mínimo comparten la fila de abajo */
+    .salones-filtro {
+        flex: 1 1 140px;
+    }
+
+    .salones-filtro--buscar {
+        flex: 1 1 100%;
+    }
+
+    .salones-dialogo {
+        padding: var(--espacio-5);
+    }
+
+    .salones-dialogo__acciones > * {
+        flex: 1 1 auto;
+    }
+}
+
+/* Esta pantalla no anima nada propio: el único movimiento es el de Boton
+   (scale al presionar), que ya se apaga con prefers-reduced-motion en Boton.css. */

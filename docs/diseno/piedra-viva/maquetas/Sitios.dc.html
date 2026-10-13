@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SGDE · Piedra viva · Sitios</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F2F0}
+a{color:#B4562F}a:hover{color:#8F3F1F}
+.btn{transition:transform 160ms cubic-bezier(0.23,1,0.32,1),filter 160ms ease}
+.btn:active{transform:scale(0.97)}
+.field:focus-within{border-color:#2F4A6D;box-shadow:0 0 0 4px rgba(238,138,99,0.18)}
+@media (hover:hover) and (pointer:fine){.btn:hover{filter:brightness(1.08)}.nav[aria-current="false"]:hover{background:#F1EFEB !important;color:#1D232B !important}}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}.btn:active{transform:none}}
+.tab{transition:color 160ms ease}@media (hover:hover) and (pointer:fine){.tab[aria-current="false"]:hover{color:#1D232B !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; align-content: flex-start; background: #F3F2F0; color: #1D232B; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;">
+
+  <header style="flex: 1 1 100%; background: #FFFFFF; border-bottom: 1px solid #E4E2DE;">
+    <div style="max-width: 1320px; margin: 0 auto; padding: 0 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px; min-height: 68px;">
+      <a href="Inicio.dc.html" style="display: flex; align-items: center; gap: 10px; color: #1D232B; text-decoration: none;"><span style="position: relative; width: 34px; height: 34px; border-radius: 10px; background: #1D232B; color: #F3F2F0; display: flex; align-items: center; justify-content: center; font-weight: 800;">S<span style="position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 5px; background: #EE8A63; box-shadow: 0 0 0 2px #FFFFFF;"></span></span><span style="font-weight: 700;">SGDE</span></a>
+      <nav aria-label="Principal" style="display: flex; flex-wrap: wrap; gap: 2px; flex: 1; align-self: stretch;"><a class="tab" href="Inicio.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Inicio</a><a class="tab" href="Cotizaciones.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Cotizaciones</a><a class="tab" href="Calendario.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Calendario</a><a class="tab" href="Salones.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Salones</a><a class="tab" href="Conceptos.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Conceptos</a><a class="tab" href="Proveedores.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Proveedores</a><a class="tab" href="Clientes.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Clientes</a><a class="tab" href="Sitios.dc.html" aria-current="page" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid #EE8A63; color: #1D232B; font-weight: 700; font-size: 14px; text-decoration: none;">Sitios</a><a class="tab" href="Usuarios.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Usuarios</a></nav>
+      <a href="Main.dc.html" title="Cerrar sesión" style="width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; text-decoration: none;"><span style="width: 36px; height: 36px; border-radius: 18px; background: #FCE5D9; color: #B4562F; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">AF</span></a>
+    </div>
+  </header>
+
+  <main style="flex: 1 1 100%; max-width: 1320px; margin: 0 auto; min-width: 0; padding: 32px 40px 56px; box-sizing: border-box; display: flex; flex-direction: column; gap: 28px;">
+    <header>
+      <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #B4562F;">Administración</div>
+      <h1 style="margin: 8px 0 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 48px; line-height: 1; letter-spacing: -0.035em;">Sitios</h1>
+      <p style="margin: 10px 0 0; color: #5D6673; font-size: 16px;">Cada hotel o sede tiene sus propios salones, conceptos y precios.</p>
+    </header>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
+      <div style="flex: 2 1 520px; min-width: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        <article style="border-radius: 24px; overflow: hidden; background: #FFFFFF; border: 1px solid #E4E2DE;">
+          <div style="background: #2F4A6D; color: #FFFFFF; padding: 24px; min-height: 150px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; gap: 16px;">
+            <span style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800; padding: 5px 10px; border-radius: 999px; background: #F3F2F0; color: #1D232B;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12zM12 6.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></svg>Cartagena · CTG</span>
+            <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 36px; letter-spacing: -0.03em; line-height: 1;">Hotel Demo Cartagena</h2>
+          </div>
+          <div style="padding: 20px 24px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+            <a href="Salones.dc.html" style="text-decoration: none; color: inherit;"><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 32px;">3</div><div style="font-size: 13px; color: #5D6673;">salones</div></a>
+            <a href="Conceptos.dc.html" style="text-decoration: none; color: inherit;"><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 32px;">7</div><div style="font-size: 13px; color: #5D6673;">conceptos</div></a>
+            <a href="Usuarios.dc.html" style="text-decoration: none; color: inherit;"><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 32px;">4</div><div style="font-size: 13px; color: #5D6673;">usuarios</div></a>
+          </div>
+          <div style="padding: 0 24px 22px; font-size: 13px; color: #6E7581;">Creado el 21 de septiembre de 2026</div>
+        </article>
+
+        <button class="btn" type="button" style="min-height: 280px; border-radius: 24px; border: 2px dashed #CFCBC4; background: transparent; color: #5D6673; font: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; cursor: pointer;">
+          <span style="width: 56px; height: 56px; border-radius: 28px; background: #F1EFEB; color: #A86B00; display: flex; align-items: center; justify-content: center;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+          <span style="font-weight: 800; font-size: 16px; color: #1D232B;">Agregar otro sitio</span>
+          <span style="font-size: 13px;">Una sede nueva arranca sin salones ni precios</span>
+        </button>
+      </div>
+
+      <form aria-label="Nuevo sitio" style="flex: 1 1 320px; min-width: 0; border-radius: 22px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 22px; display: flex; flex-direction: column; gap: 14px;">
+        <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 22px;">Nuevo sitio</h2>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label for="s-nombre" style="font-size: 13px; font-weight: 700; color: #5D6673;">Nombre</label>
+          <div class="field" style="display: flex; align-items: center; height: 48px; padding: 0 12px; border-radius: 12px; background: #F1EFEB; border: 1.5px solid #D6D3CD;"><input id="s-nombre" placeholder="Ej. Hotel Bocagrande" style="flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: #1D232B; font: inherit; font-size: 15px;"></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label for="s-ciudad" style="font-size: 13px; font-weight: 700; color: #5D6673;">Ciudad</label>
+          <div class="field" style="display: flex; align-items: center; height: 48px; padding: 0 12px; border-radius: 12px; background: #F1EFEB; border: 1.5px solid #D6D3CD;"><select id="s-ciudad" style="flex: 1; background: transparent; border: 0; outline: 0; color: #1D232B; font: inherit; font-size: 15px; color-scheme: dark;"><option>Cartagena</option><option>[OTRAS CIUDADES REGISTRADAS]</option></select></div>
+        </div>
+        <button class="btn" type="button" style="height: 50px; border-radius: 12px; background: #2F4A6D; color: #FFFFFF; border: 0; font: inherit; font-weight: 800; font-size: 15px; cursor: pointer;">Crear sitio</button>
+        <p style="margin: 0; font-size: 12px; color: #6E7581; line-height: 1.5;">Solo los administradores pueden crear sitios.</p>
+      </form>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+const NAV_SGDE = [
+  ['Operación', [
+    ['Inicio', 'Inicio.dc.html', 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z'],
+    ['Cotizaciones', 'Cotizaciones.dc.html', 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6'],
+    ['Calendario', 'Calendario.dc.html', 'M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3 10h18M8 3v4M16 3v4']
+  ]],
+  ['Catálogo', [
+    ['Salones', 'Salones.dc.html', 'M4 21V5l8-2 8 2v16M9 21v-6h6v6'],
+    ['Conceptos y precios', 'Conceptos.dc.html', 'M20 12l-8 8-9-9V3h8zM7.5 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z'],
+    ['Proveedores', 'Proveedores.dc.html', 'M3 6h11v10H3zM14 10h4l3 3v3h-7M7 16a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM17 16a2 2 0 1 0 0 4 2 2 0 0 0 0-4z']
+  ]],
+  ['Administración', [
+    ['Clientes', 'Clientes.dc.html', 'M9 4.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zM2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c2 .6 3.2 2.5 3.5 5.5'],
+    ['Sitios', 'Sitios.dc.html', 'M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12zM12 6.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z'],
+    ['Usuarios', 'Usuarios.dc.html', 'M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6zM9 12l2 2 4-4']
+  ]]
+];
+function navSgde(activo) {
+  return NAV_SGDE.map((s) => ({
+    titulo: s[0],
+    items: s[1].map((i) => {
+      const on = i[0] === activo;
+      return { label: i[0], href: i[1], d: i[2], current: on ? 'page' : 'false', bg: on ? 'rgba(238,138,99,0.16)' : 'transparent', fg: on ? '#1D232B' : '#5D6673', weight: on ? 800 : 600 };
+    })
+  }));
+}
+class Component extends DCLogic {
+  renderVals() {
+    return { nav: navSgde('Sitios') };
+  }
+}
+</script>
+</body>
+</html>

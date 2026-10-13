@@ -1,6 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { logout } from "../api/auth";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   listarClientes,
   crearCliente,
@@ -15,45 +13,153 @@ import ClienteForm, {
   erroresDesdeApi,
   payloadEdicion,
 } from "./ClienteForm";
-import "../styles/clientes.css";
+import {
+  AvisoError,
+  Boton,
+  CabeceraPagina,
+  Esqueleto,
+  EstadoBadge,
+  EstadoVacio,
+  TablaContenedor,
+  Tarjeta,
+} from "../components/ui";
+import SesionVencida, { AvisoSesionEnVentana } from "../components/SesionVencida";
+import DialogoNuevaEmpresa from "./clientes/DialogoNuevaEmpresa";
+import "../styles/directorio-clientes.css";
 
 const FILTROS_TIPO = [
   { value: "todos", label: "Todos" },
-  { value: "natural", label: "Persona natural" },
+  { value: "natural", label: "Natural" },
   { value: "juridica", label: "Jurídica" },
 ];
+
+function iniciales(nombre) {
+  const letras = String(nombre ?? "")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0].toUpperCase())
+    .join("");
+  return letras || "?";
+}
+
+// Minúsculas y sin tildes: así "perez" encuentra a "Pérez".
+function normalizar(texto) {
+  return String(texto ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+}
+
+function hayDiferencias(a, b) {
+  return Object.keys(a).some((campo) => a[campo] !== b[campo]);
+}
+
+// Ventana de confirmación con <dialog> nativo. showModal() deja inactivo el
+// fondo, encierra el foco dentro y cierra con Escape (evento "cancel").
+// `bloqueado` impide cerrarla mientras se procesa la acción.
+function DialogoConfirmacion({ dialogoRef, idTitulo, titulo, bloqueado, onClose, children, acciones }) {
+  return (
+    <dialog
+      ref={dialogoRef}
+      className="directorio-dialogo"
+      aria-labelledby={idTitulo}
+      onCancel={(e) => bloqueado && e.preventDefault()}
+      onClose={onClose}
+      // Clic en el fondo oscuro: el destino es el propio <dialog>, no su contenido.
+      onClick={(e) => e.target === e.currentTarget && !bloqueado && e.currentTarget.close()}
+    >
+      <div className="directorio-dialogo__contenido">
+        <h2 id={idTitulo} className="directorio-dialogo__titulo">{titulo}</h2>
+        {children}
+        <div className="directorio-dialogo__acciones">{acciones}</div>
+      </div>
+    </dialog>
+  );
+}
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([]);
   const [empresas, setEmpresas] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(null);
+  // Error al cargar la lista: null | "permiso" (403) | "servidor" (500 o sin red) | "sesion" (401).
+  const [errorCarga, setErrorCarga] = useState(null);
+  // 401: se avisa abajo sin salir de la pantalla (components/SesionVencida.jsx).
+  const [sesionVencida, setSesionVencida] = useState(false);
   const [filtroTipo, setFiltroTipo] = useState("todos");
+  const [busqueda, setBusqueda] = useState("");
   const [mostrarInactivos, setMostrarInactivos] = useState(false);
-  const navigate = useNavigate();
 
-  // Un solo modal de formulario para crear y editar: { modo: "crear" | "editar", cliente? }.
-  const [modalForm, setModalForm] = useState(null);
+  // Panel lateral para crear y editar: null | { modo: "crear" } | { modo: "editar", cliente }.
+  const [panel, setPanel] = useState(null);
   const [form, setForm] = useState(FORM_VACIO);
-  const [verCliente, setVerCliente] = useState(null);
-  const [bajaCliente, setBajaCliente] = useState(null);
+  // Copia del formulario al abrir el panel: sirve para saber si hay cambios sin guardar.
+  const [formInicial, setFormInicial] = useState(FORM_VACIO);
   const [erroresCampo, setErroresCampo] = useState({});
   const [errorAccion, setErrorAccion] = useState(null);
+  const [errorBaja, setErrorBaja] = useState(null);
+  const [aviso, setAviso] = useState(null);
   const [procesando, setProcesando] = useState(false);
+  const [creandoEmpresa, setCreandoEmpresa] = useState(false);
+
+  const tablaRef = useRef(null);
+  const buscarRef = useRef(null);
+  const panelRef = useRef(null);
+  const tituloPanelRef = useRef(null);
+  const dialogoBajaRef = useRef(null);
+  // "Dar de baja" de la confirmación: recibe el foco al volver a entrar (SGDE-94).
+  const confirmarBajaRef = useRef(null);
+  // Para abrir "Entrar de nuevo" desde dentro de la confirmación modal (SGDE-94).
+  const sesionRef = useRef(null);
+  const dialogoDescartarRef = useRef(null);
+  // Elemento que abrió el diálogo: recibe el foco de vuelta al cerrarlo.
+  const disparadorRef = useRef(null);
+  // Acción que espera a que la persona confirme que descarta sus cambios.
+  const accionPendienteRef = useRef(null);
+  const guardarRef = useRef(null);
+  // A dónde mover el foco cuando el panel termine de pintarse:
+  // "titulo" | "campo" | "tabla" | "guardar".
+  const focoPendienteRef = useRef(null);
 
   useEffect(() => {
     cargarDatos();
   }, [mostrarInactivos]);
 
-  function cerrarSesionExpirada() {
-    // logout() también invalida el refresh en el servidor (SGDE-92); no se espera.
-    logout();
-    navigate("/login");
-  }
+  // El foco se mueve después de pintar, cuando el elemento destino ya existe.
+  useEffect(() => {
+    const destino = focoPendienteRef.current;
+    if (!destino) return;
+    focoPendienteRef.current = null;
 
+    if (destino === "tabla") {
+      tablaRef.current?.focus();
+      return;
+    }
+    // Tras guardar: el botón estuvo deshabilitado y perdió el foco; vuelve a él
+    // sin mover la página, junto al aviso "Cambios guardados".
+    if (destino === "guardar") {
+      guardarRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    const elemento =
+      destino === "titulo"
+        ? tituloPanelRef.current
+        : panelRef.current?.querySelector("select, input, textarea");
+    if (!elemento) return;
+    elemento.focus({ preventScroll: true });
+
+    // En pantallas angostas el panel queda debajo de la tabla: se baja hasta él.
+    const caja = panelRef.current.getBoundingClientRect();
+    if (caja.top < 0 || caja.top > window.innerHeight - 120) {
+      const reducir = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      panelRef.current.scrollIntoView({ block: "start", behavior: reducir ? "auto" : "smooth" });
+    }
+  }, [panel]);
+
+  // Devuelve la lista nueva (o null si falló) para refrescar el cliente del panel.
   async function cargarDatos() {
     setCargando(true);
-    setError(null);
+    setErrorCarga(null);
     try {
       const [clientesData, empresasData] = await Promise.all([
         listarClientes({ incluirInactivos: mostrarInactivos }),
@@ -61,23 +167,20 @@ export default function Clientes() {
       ]);
       setClientes(clientesData);
       setEmpresas(empresasData);
+      return clientesData;
     } catch (err) {
       if (err.status === 401) {
-        cerrarSesionExpirada();
+        setErrorCarga("sesion");
+        setSesionVencida(true);
       } else if (err.status === 403) {
-        setError("No tienes permisos para consultar los clientes o empresas.");
+        setErrorCarga("permiso");
       } else {
-        setError("Error al comunicarse con el servidor. Intenta de nuevo.");
+        setErrorCarga("servidor");
       }
+      return null;
     } finally {
       setCargando(false);
     }
-  }
-
-  function obtenerNombreEmpresa(id) {
-    if (!id) return "—";
-    const emp = empresas.find((e) => e.id === id);
-    return emp ? emp.razon_social : `Empresa #${id}`;
   }
 
   // Identificación propia del cliente; si no tiene (p. ej. jurídica del registro
@@ -87,33 +190,100 @@ export default function Clientes() {
   }
 
   const clientesFiltrados = useMemo(() => {
-    if (filtroTipo === "todos") return clientes;
-    return clientes.filter((c) => c.tipo === filtroTipo);
-  }, [clientes, filtroTipo]);
+    const texto = normalizar(busqueda.trim());
+    return clientes
+      .filter((c) => filtroTipo === "todos" || c.tipo === filtroTipo)
+      .filter(
+        (c) =>
+          !texto ||
+          [c.nombre, c.identificacion, nitDeEmpresa(empresas, c.empresa), c.correo].some((valor) =>
+            normalizar(valor).includes(texto),
+          ),
+      );
+  }, [clientes, empresas, filtroTipo, busqueda]);
 
-  function abrirModalForm(modo, cliente) {
-    setForm(cliente ? formDesdeCliente(cliente) : FORM_VACIO);
+  const hayCambios = panel !== null && hayDiferencias(form, formInicial);
+  const clienteSeleccionado = panel?.modo === "editar" ? panel.cliente : null;
+
+  function prepararPanel(datos) {
+    setForm(datos);
+    setFormInicial(datos);
     setErroresCampo({});
     setErrorAccion(null);
-    setModalForm({ modo, cliente });
+    setAviso(null);
   }
 
-  function abrirBaja(c) {
-    setErrorAccion(null);
-    setBajaCliente(c);
+  function abrirEditar(cliente, { enfocar = true } = {}) {
+    prepararPanel(formDesdeCliente(cliente));
+    setPanel({ modo: "editar", cliente });
+    if (enfocar) focoPendienteRef.current = "titulo";
+  }
+
+  function abrirCrear() {
+    prepararPanel(FORM_VACIO);
+    setPanel({ modo: "crear" });
+    focoPendienteRef.current = "campo";
+  }
+
+  function cerrarPanel() {
+    setPanel(null);
+    focoPendienteRef.current = "tabla";
+  }
+
+  function abrirDialogo(dialogoRef) {
+    disparadorRef.current = document.activeElement;
+    dialogoRef.current?.showModal();
+  }
+
+  // Al cerrar un diálogo (Escape, "Cancelar", clic afuera), el foco vuelve a
+  // quien lo abrió. Si la acción ya movió el foco, disparadorRef está vacío.
+  function alCerrarDialogo() {
+    const disparador = disparadorRef.current;
+    disparadorRef.current = null;
+    if (disparador?.isConnected) disparador.focus();
+  }
+
+  // Si el formulario tiene cambios sin guardar, pregunta antes de seguir.
+  function siNoHayCambios(accion) {
+    if (!hayCambios) {
+      accion();
+      return;
+    }
+    accionPendienteRef.current = accion;
+    abrirDialogo(dialogoDescartarRef);
+  }
+
+  function descartarCambios() {
+    const accion = accionPendienteRef.current;
+    accionPendienteRef.current = null;
+    disparadorRef.current = null;
+    dialogoDescartarRef.current?.close();
+    accion?.();
+  }
+
+  function seleccionar(cliente) {
+    if (clienteSeleccionado?.id === cliente.id) return;
+    siNoHayCambios(() => abrirEditar(cliente));
+  }
+
+  function abrirBaja() {
+    setErrorBaja(null);
+    abrirDialogo(dialogoBajaRef);
   }
 
   function handleChange(e) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     setErroresCampo((prev) => ({ ...prev, [name]: undefined }));
+    setAviso(null);
   }
 
   async function handleSubmitForm(e) {
     e.preventDefault();
-    const esCrear = modalForm.modo === "crear";
+    const esCrear = panel.modo === "crear";
     setErroresCampo({});
     setErrorAccion(null);
+    setAviso(null);
 
     if (esCrear && form.tipo === "natural" && !form.identificacion.trim()) {
       setErroresCampo({ identificacion: "La identificación es obligatoria para personas naturales." });
@@ -122,17 +292,27 @@ export default function Clientes() {
 
     setProcesando(true);
     try {
+      let idCliente = panel.cliente?.id;
       if (esCrear) {
-        await crearCliente({
+        const creado = await crearCliente({
           ...form,
           identificacion: form.identificacion.trim(),
           empresa: form.empresa ? Number(form.empresa) : undefined,
         });
+        idCliente = creado?.id;
       } else {
-        await actualizarCliente(modalForm.cliente.id, payloadEdicion(form));
+        await actualizarCliente(panel.cliente.id, payloadEdicion(form));
       }
-      setModalForm(null);
-      await cargarDatos();
+      // El panel queda abierto con los datos recién guardados.
+      const lista = await cargarDatos();
+      const guardado = lista?.find((c) => c.id === idCliente);
+      if (guardado) {
+        abrirEditar(guardado, { enfocar: esCrear });
+        if (!esCrear) focoPendienteRef.current = "guardar";
+        setAviso(esCrear ? "Cliente creado." : "Cambios guardados.");
+      } else {
+        cerrarPanel();
+      }
     } catch (err) {
       if (err.status === 400 && err.body && typeof err.body === "object") {
         // Los errores por campo se muestran junto a su input; el resto, abajo.
@@ -140,7 +320,8 @@ export default function Clientes() {
         setErroresCampo(campos);
         setErrorAccion(general);
       } else if (err.status === 401) {
-        cerrarSesionExpirada();
+        // El formulario se queda como está: al volver a entrar, se guarda de nuevo.
+        setSesionVencida(true);
       } else if (err.status === 403) {
         setErrorAccion(`No tienes permisos suficientes para ${esCrear ? "registrar" : "editar"} clientes.`);
       } else if (err.status === 404) {
@@ -154,230 +335,470 @@ export default function Clientes() {
   }
 
   async function handleConfirmarBaja() {
-    setErrorAccion(null);
+    setErrorBaja(null);
     setProcesando(true);
     try {
-      await darDeBajaCliente(bajaCliente.id);
-      setBajaCliente(null);
+      await darDeBajaCliente(clienteSeleccionado.id);
+      // El botón "Dar de baja" desaparece con el panel: el foco va a la tabla.
+      disparadorRef.current = null;
+      dialogoBajaRef.current?.close();
+      cerrarPanel();
       await cargarDatos();
     } catch (err) {
       if (err.status === 401) {
-        cerrarSesionExpirada();
+        // La confirmación sigue abierta y muestra el aviso dentro (la barra de abajo
+        // queda inerte con una ventana modal abierta). Al volver a entrar, se pulsa
+        // "Dar de baja" otra vez (SGDE-94).
+        setSesionVencida(true);
       } else if (err.status === 403) {
-        setErrorAccion("No tienes permisos suficientes para dar de baja clientes.");
+        setErrorBaja("No tienes permisos suficientes para dar de baja clientes.");
       } else if (err.status === 404) {
-        setErrorAccion("Este cliente ya no existe. Cierra y actualiza la lista.");
+        setErrorBaja("Este cliente ya no existe. Cierra y actualiza la lista.");
       } else {
-        setErrorAccion("Error inesperado en el servidor al dar de baja.");
+        setErrorBaja("Error inesperado en el servidor al dar de baja.");
       }
     } finally {
       setProcesando(false);
     }
   }
 
+  // Qué se ve en la zona de la lista. Si ya hay clientes, la tabla se mantiene
+  // mientras se recarga (no salta ni pierde el foco).
+  let vistaLista = "tabla";
+  if (errorCarga === "permiso" || errorCarga === "servidor") vistaLista = "error";
+  else if (clientes.length === 0 && errorCarga === "sesion") vistaLista = "sesion";
+  else if (clientes.length === 0 && cargando) vistaLista = "carga";
+  else if (clientes.length === 0) vistaLista = "vacio";
+  else if (clientesFiltrados.length === 0) vistaLista = "sinCoincidencias";
+
+  function quitarFiltros() {
+    setFiltroTipo("todos");
+    setBusqueda("");
+    // El botón "Quitar filtros" desaparece: el foco pasa a la búsqueda.
+    buscarRef.current?.focus();
+  }
+
+  function abrirNuevaEmpresa(evento) {
+    disparadorRef.current = evento.currentTarget;
+    setCreandoEmpresa(true);
+  }
+
+  function cerrarNuevaEmpresa() {
+    setCreandoEmpresa(false);
+    const disparador = disparadorRef.current;
+    disparadorRef.current = null;
+    if (disparador?.isConnected) disparador.focus();
+  }
+
+  function alCrearEmpresa(empresa) {
+    setEmpresas((prev) => [...prev, empresa].sort((a, b) => a.razon_social.localeCompare(b.razon_social, "es")));
+    setForm((prev) => ({ ...prev, empresa: String(empresa.id) }));
+    setErroresCampo((prev) => ({ ...prev, empresa: undefined }));
+    setAviso(`Empresa "${empresa.razon_social}" creada y asignada.`);
+    disparadorRef.current = null;
+    setCreandoEmpresa(false);
+    requestAnimationFrame(() => document.getElementById(`${panel?.modo}-empresa`)?.focus());
+  }
+
+  function alVolverAEntrar() {
+    setSesionVencida(false);
+    // Si la sesión venció al cargar, la lista nunca llegó: se pide otra vez.
+    if (errorCarga === "sesion") cargarDatos();
+  }
+
   return (
-    <div className="clientes">
-      <div className="toolbar">
-        <h2>Directorio de clientes</h2>
-        <button type="button" className="btn btn--primary" onClick={() => abrirModalForm("crear")}>
-          + Nuevo cliente
-        </button>
+    <div className="directorio">
+      <CabeceraPagina
+        antetitulo="Administración"
+        titulo="Clientes"
+        subtitulo="Personas y empresas. Dar de baja no borra su historia."
+        acciones={
+          <Boton variante="principal" onClick={() => siNoHayCambios(abrirCrear)}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Nuevo cliente
+          </Boton>
+        }
+      />
+
+      <div className="directorio-filtros">
+        <div className="directorio-segmentado" role="group" aria-label="Tipo de cliente">
+          {FILTROS_TIPO.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              className="directorio-segmentado__opcion"
+              aria-pressed={filtroTipo === f.value}
+              onClick={() => setFiltroTipo(f.value)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="directorio-filtros__derecha">
+          <label className="directorio-buscar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.5-3.5" />
+            </svg>
+            <input
+              ref={buscarRef}
+              type="search"
+              className="directorio-buscar__input"
+              aria-label="Buscar cliente"
+              placeholder="Nombre, NIT, cédula o correo"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+            />
+          </label>
+
+          <button
+            type="button"
+            role="switch"
+            className="directorio-interruptor"
+            aria-checked={mostrarInactivos}
+            onClick={() => setMostrarInactivos((valor) => !valor)}
+          >
+            <span className="directorio-interruptor__pista" aria-hidden="true">
+              <span className="directorio-interruptor__perilla" />
+            </span>
+            Mostrar inactivos
+          </button>
+        </div>
       </div>
 
-      <div className="toolbar toolbar--filters">
-        <label className="filter">
-          <span>Tipo:</span>
-          <select value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
-            {FILTROS_TIPO.map((f) => (
-              <option key={f.value} value={f.value}>{f.label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="filter">
-          <input
-            type="checkbox"
-            checked={mostrarInactivos}
-            onChange={(e) => setMostrarInactivos(e.target.checked)}
-          />
-          <span>Mostrar dados de baja</span>
-        </label>
-      </div>
+      <div className="directorio__cuerpo">
+        <div className="directorio__lista">
+          {vistaLista === "error" && (
+            <Tarjeta>
+              <AvisoError tipo={errorCarga} onReintentar={cargarDatos} />
+            </Tarjeta>
+          )}
 
-      {cargando && <p>Cargando clientes...</p>}
-      {error && <p className="clientes-error">Error: {error}</p>}
+          {vistaLista === "sesion" && (
+            <Tarjeta>
+              <EstadoVacio
+                titulo="Tu sesión expiró"
+                texto="Vuelve a entrar con el aviso de abajo para ver la lista de clientes."
+              />
+            </Tarjeta>
+          )}
 
-      {!cargando && !error && (
-        <table className="clientes-table">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Tipo</th>
-              <th>Identificación</th>
-              <th>Teléfono</th>
-              <th>Correo</th>
-              <th>Empresa</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clientesFiltrados.map((c) => (
-              <tr key={c.id} className={c.activo ? "" : "clientes-table__row--inactivo"}>
-                <td>
-                  {c.nombre}
-                  {!c.activo && <span className="clientes-badge--inactivo">Inactivo</span>}
-                </td>
-                <td>{c.tipo === "juridica" ? "Jurídica" : "Natural"}</td>
-                <td>{obtenerIdentificacion(c)}</td>
-                <td>{c.telefono || "—"}</td>
-                <td>{c.correo || "—"}</td>
-                <td>{c.empresa ? obtenerNombreEmpresa(c.empresa) : "—"}</td>
-                <td className="clientes-table__acciones">
-                  <div className="clientes-acciones">
-                    <button type="button" className="btn btn--ghost btn--sm" onClick={() => setVerCliente(c)}>
-                      Ver
-                    </button>
-                    <button type="button" className="btn btn--ghost btn--sm" onClick={() => abrirModalForm("editar", c)}>
-                      Editar
-                    </button>
-                    {c.activo && (
-                      <button type="button" className="btn btn--danger btn--sm" onClick={() => abrirBaja(c)}>
-                        Dar de baja
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {clientesFiltrados.length === 0 && (
-              <tr><td colSpan="7">No hay clientes que coincidan con el filtro.</td></tr>
-            )}
-          </tbody>
-        </table>
-      )}
+          {vistaLista === "carga" && (
+            <TablaContenedor>
+              <Esqueleto filas={6} columnas={3} etiqueta="Cargando clientes…" />
+            </TablaContenedor>
+          )}
 
-      {verCliente && (
-        <div className="modal-overlay" onClick={() => setVerCliente(null)}>
-          <div className="modal modal--ancho" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h3>
-                {verCliente.nombre}
-                {!verCliente.activo && <span className="clientes-badge--inactivo">Inactivo</span>}
-              </h3>
-              <button type="button" className="modal__close" onClick={() => setVerCliente(null)}>×</button>
-            </div>
+          {vistaLista === "vacio" && (
+            <Tarjeta>
+              <EstadoVacio
+                titulo={mostrarInactivos ? "Aún no hay clientes" : "No hay clientes activos"}
+                texto={
+                  mostrarInactivos
+                    ? "Cuando registres el primero, aparecerá aquí con su tipo y sus cotizaciones."
+                    : "Registra el primero, o activa «Mostrar inactivos» para ver los dados de baja."
+                }
+                accion={
+                  <Boton variante="secundario" onClick={() => siNoHayCambios(abrirCrear)}>
+                    Registrar el primero
+                  </Boton>
+                }
+              />
+            </Tarjeta>
+          )}
 
-            <dl className="detalle">
-              <dt>Tipo</dt>
-              <dd>{verCliente.tipo === "juridica" ? "Jurídica" : "Natural"}</dd>
-              <dt>{verCliente.tipo === "juridica" ? "NIT" : "Identificación"}</dt>
-              <dd>{obtenerIdentificacion(verCliente)}</dd>
-              <dt>Teléfono</dt>
-              <dd>{verCliente.telefono || "—"}</dd>
-              <dt>Correo</dt>
-              <dd>{verCliente.correo || "—"}</dd>
-              <dt>Empresa</dt>
-              <dd>{verCliente.empresa ? obtenerNombreEmpresa(verCliente.empresa) : "—"}</dd>
-              <dt>Forma de pago</dt>
-              <dd>{verCliente.forma_pago || "—"}</dd>
-              <dt>Observaciones internas</dt>
-              <dd>{verCliente.observaciones_internas || "—"}</dd>
-              <dt>Creado</dt>
-              <dd>{new Date(verCliente.creado_en).toLocaleDateString("es-CO")}</dd>
-            </dl>
+          {vistaLista === "sinCoincidencias" && (
+            <Tarjeta>
+              <EstadoVacio
+                titulo="Ningún cliente coincide"
+                texto="Prueba con otro nombre, NIT, cédula o correo, o quita los filtros."
+                accion={
+                  <Boton variante="secundario" onClick={quitarFiltros}>
+                    Quitar filtros
+                  </Boton>
+                }
+              />
+            </Tarjeta>
+          )}
 
-            <h4>Cotizaciones</h4>
-            {verCliente.cotizaciones?.length ? (
-              <table className="clientes-table clientes-table--compacta">
+          {vistaLista === "tabla" && (
+            <TablaContenedor
+              ref={tablaRef}
+              etiqueta="Listado de clientes"
+              aria-busy={cargando || undefined}
+              className={cargando ? "directorio-tabla-caja--recargando" : ""}
+            >
+              <table className="directorio-tabla">
+                <colgroup>
+                  <col />
+                  <col className="directorio-tabla__col-tipo" />
+                  <col className="directorio-tabla__col-ident" />
+                  <col className="directorio-tabla__col-cotiz" />
+                  <col className="directorio-tabla__col-estado" />
+                </colgroup>
                 <thead>
                   <tr>
-                    <th>N.º</th>
-                    <th>Estado</th>
-                    <th>Fecha del evento</th>
-                    <th>Personas</th>
+                    <th scope="col">Cliente</th>
+                    <th scope="col">Tipo</th>
+                    <th scope="col">Identificación</th>
+                    <th scope="col" className="directorio-tabla__num">
+                      <span aria-hidden="true">Cotiz.</span>
+                      <span className="visually-hidden">Cotizaciones</span>
+                    </th>
+                    <th scope="col">Estado</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {verCliente.cotizaciones.map((q) => (
-                    <tr key={q.id}>
-                      <td>#{q.id}</td>
-                      <td className="capitalizar">{q.estado}</td>
-                      <td>{q.fecha_evento || "—"}</td>
-                      <td>{q.cantidad_personas ?? "—"}</td>
-                    </tr>
-                  ))}
+                  {clientesFiltrados.map((c) => {
+                    const seleccionado = clienteSeleccionado?.id === c.id;
+                    const clases = [
+                      "directorio-tabla__fila",
+                      seleccionado && "directorio-tabla__fila--seleccionada",
+                      !c.activo && "directorio-tabla__fila--inactiva",
+                    ].filter(Boolean).join(" ");
+                    return (
+                      // Con mouse se puede hacer clic en toda la fila. El teclado y el
+                      // lector de pantalla usan el botón del nombre: su clic sube hasta aquí.
+                      <tr key={c.id} className={clases} onClick={() => seleccionar(c)}>
+                        <td>
+                          <button
+                            type="button"
+                            className="directorio-tabla__cliente"
+                            aria-current={seleccionado || undefined}
+                          >
+                            <span className="directorio-avatar" aria-hidden="true">{iniciales(c.nombre)}</span>
+                            <span className="directorio-tabla__textos">
+                              <span className="directorio-tabla__nombre">{c.nombre}</span>
+                              <span className="directorio-tabla__correo">{c.correo || "Sin correo"}</span>
+                            </span>
+                          </button>
+                        </td>
+                        <td className="directorio-tabla__tipo">{c.tipo === "juridica" ? "Jurídica" : "Natural"}</td>
+                        <td className="directorio-tabla__ident">{obtenerIdentificacion(c)}</td>
+                        <td className="directorio-tabla__num directorio-tabla__cotiz">{c.cotizaciones?.length ?? 0}</td>
+                        <td>
+                          <EstadoCliente activo={c.activo} />
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
-            ) : (
-              <p>Este cliente aún no tiene cotizaciones.</p>
-            )}
-
-            <div className="form-actions">
-              <button type="button" className="btn btn--ghost" onClick={() => setVerCliente(null)}>
-                Cerrar
-              </button>
-            </div>
-          </div>
+            </TablaContenedor>
+          )}
         </div>
-      )}
 
-      {modalForm && (
-        <div className="modal-overlay" onClick={() => !procesando && setModalForm(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h3>{modalForm.modo === "crear" ? "Nuevo cliente" : "Editar cliente"}</h3>
-              <button type="button" className="modal__close" onClick={() => setModalForm(null)}>×</button>
+        <aside
+          ref={panelRef}
+          className={["directorio-panel", !panel && "directorio-panel--vacio"].filter(Boolean).join(" ")}
+          aria-labelledby="directorio-panel-titulo"
+        >
+          {!panel ? (
+            <div className="directorio-panel__vacio">
+              <h2 id="directorio-panel-titulo" className="directorio-panel__vacio-titulo">Ningún cliente seleccionado</h2>
+              <p>Selecciona un cliente para ver y editar sus datos, o crea uno nuevo.</p>
             </div>
-
-            <form onSubmit={handleSubmitForm} noValidate>
-              <ClienteForm
-                idPrefix={modalForm.modo}
-                form={form}
-                errores={erroresCampo}
-                empresas={empresas}
-                onChange={handleChange}
-              />
-
-              {errorAccion && <p className="form-error">Error: {errorAccion}</p>}
-
-              <div className="form-actions">
-                <button type="button" className="btn btn--ghost" onClick={() => setModalForm(null)}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn--primary" disabled={procesando}>
-                  {procesando ? "Guardando..." : modalForm.modo === "crear" ? "Guardar" : "Guardar cambios"}
+          ) : (
+            <>
+              <div className="directorio-panel__cabecera">
+                {clienteSeleccionado && (
+                  <span className="directorio-avatar directorio-avatar--grande" aria-hidden="true">
+                    {iniciales(clienteSeleccionado.nombre)}
+                  </span>
+                )}
+                <div className="directorio-panel__textos">
+                  <p className="directorio-panel__antetitulo">
+                    {clienteSeleccionado ? "Editar cliente" : "Nuevo cliente"}
+                  </p>
+                  <h2
+                    id="directorio-panel-titulo"
+                    ref={tituloPanelRef}
+                    tabIndex={-1}
+                    className="directorio-panel__titulo"
+                  >
+                    {clienteSeleccionado ? clienteSeleccionado.nombre : "Datos del cliente"}
+                  </h2>
+                  {clienteSeleccionado && (
+                    <p className="directorio-panel__meta">
+                      Cliente desde {new Date(clienteSeleccionado.creado_en).toLocaleDateString("es-CO")}
+                      {!clienteSeleccionado.activo && <EstadoCliente activo={false} />}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="directorio-panel__cerrar"
+                  aria-label="Cerrar panel"
+                  onClick={() => siNoHayCambios(cerrarPanel)}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6L6 18" />
+                  </svg>
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
+
+              <form className="directorio-panel__form" onSubmit={handleSubmitForm} noValidate>
+                <ClienteForm
+                  idPrefix={panel.modo}
+                  form={form}
+                  errores={erroresCampo}
+                  empresas={empresas}
+                  onChange={handleChange}
+                  onNuevaEmpresa={abrirNuevaEmpresa}
+                />
+
+                {errorAccion && (
+                  <p className="directorio-aviso directorio-aviso--error" role="alert">Error: {errorAccion}</p>
+                )}
+                {/* Siempre presente (aunque vacío) para que el lector de pantalla anuncie el aviso. */}
+                <p className="directorio-aviso directorio-aviso--exito" role="status">
+                  {aviso}
+                </p>
+
+                <div className="directorio-panel__acciones">
+                  <Boton
+                    ref={guardarRef}
+                    type="submit"
+                    variante="oscuro"
+                    className="directorio-panel__guardar"
+                    disabled={procesando}
+                  >
+                    {procesando ? "Guardando..." : clienteSeleccionado ? "Guardar cambios" : "Guardar"}
+                  </Boton>
+                  {clienteSeleccionado ? (
+                    clienteSeleccionado.activo && (
+                      <Boton variante="peligro" onClick={abrirBaja} disabled={procesando}>
+                        Dar de baja
+                      </Boton>
+                    )
+                  ) : (
+                    <Boton variante="secundario" onClick={() => siNoHayCambios(cerrarPanel)} disabled={procesando}>
+                      Cancelar
+                    </Boton>
+                  )}
+                </div>
+
+                {clienteSeleccionado && (
+                  <p className="directorio-panel__nota">
+                    {clienteSeleccionado.activo
+                      ? "Dar de baja también le quita el acceso al sistema. Sus cotizaciones se conservan."
+                      : "Este cliente está dado de baja: no puede iniciar sesión. Sus cotizaciones se conservan."}
+                  </p>
+                )}
+              </form>
+
+              {clienteSeleccionado && (
+                <section className="directorio-historial" aria-labelledby="directorio-historial-titulo">
+                  <h3 id="directorio-historial-titulo" className="directorio-historial__titulo">Cotizaciones</h3>
+                  {clienteSeleccionado.cotizaciones?.length ? (
+                    <div className="directorio-historial__caja">
+                      <table className="directorio-historial__tabla">
+                        <thead>
+                          <tr>
+                            <th scope="col">N.º</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col">Fecha del evento</th>
+                            <th scope="col" className="directorio-tabla__num">Personas</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {clienteSeleccionado.cotizaciones.map((q) => (
+                            <tr key={q.id}>
+                              <td className="directorio-historial__id">#{q.id}</td>
+                              <td><EstadoBadge estado={q.estado} /></td>
+                              <td>{q.fecha_evento || "—"}</td>
+                              <td className="directorio-tabla__num">{q.cantidad_personas ?? "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="directorio-historial__vacio">Este cliente aún no tiene cotizaciones.</p>
+                  )}
+                </section>
+              )}
+            </>
+          )}
+        </aside>
+      </div>
+
+      <DialogoConfirmacion
+        dialogoRef={dialogoBajaRef}
+        idTitulo="directorio-baja-titulo"
+        titulo="Dar de baja"
+        bloqueado={procesando}
+        onClose={alCerrarDialogo}
+        acciones={
+          <>
+            {/* "Cancelar" va primero: al abrir, el foco cae en la opción segura. */}
+            <Boton variante="secundario" onClick={() => dialogoBajaRef.current?.close()} disabled={procesando}>
+              Cancelar
+            </Boton>
+            <Boton ref={confirmarBajaRef} variante="peligro" onClick={handleConfirmarBaja} disabled={procesando}>
+              {procesando ? "Procesando..." : "Dar de baja"}
+            </Boton>
+          </>
+        }
+      >
+        <p className="directorio-dialogo__texto">
+          ¿Dar de baja a <strong>{clienteSeleccionado?.nombre}</strong>? El cliente dejará de aparecer en la lista y su
+          usuario no podrá iniciar sesión. Sus datos y cotizaciones se conservan.
+        </p>
+        {sesionVencida && (
+          <AvisoSesionEnVentana
+            onEntrar={() => sesionRef.current?.abrir({ focoAlVolver: confirmarBajaRef.current })}
+          />
+        )}
+        {errorBaja && (
+          <p className="directorio-aviso directorio-aviso--error" role="alert">Error: {errorBaja}</p>
+        )}
+      </DialogoConfirmacion>
+
+      <DialogoConfirmacion
+        dialogoRef={dialogoDescartarRef}
+        idTitulo="directorio-descartar-titulo"
+        titulo="Cambios sin guardar"
+        bloqueado={false}
+        onClose={alCerrarDialogo}
+        acciones={
+          <>
+            <Boton variante="secundario" onClick={() => dialogoDescartarRef.current?.close()}>
+              Seguir editando
+            </Boton>
+            <Boton variante="peligro" onClick={descartarCambios}>
+              Descartar
+            </Boton>
+          </>
+        }
+      >
+        <p className="directorio-dialogo__texto">Tienes cambios sin guardar. ¿Descartarlos?</p>
+      </DialogoConfirmacion>
+
+      {creandoEmpresa && (
+        <DialogoNuevaEmpresa
+          onCreada={alCrearEmpresa}
+          onCerrar={cerrarNuevaEmpresa}
+          onSesionVencida={() => setSesionVencida(true)}
+          sesionVencida={sesionVencida}
+          onEntrarDeNuevo={(boton) => sesionRef.current?.abrir({ focoAlVolver: boton })}
+        />
       )}
 
-      {bajaCliente && (
-        <div className="modal-overlay" onClick={() => !procesando && setBajaCliente(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal__header">
-              <h3>Dar de baja</h3>
-              <button type="button" className="modal__close" onClick={() => setBajaCliente(null)}>×</button>
-            </div>
-
-            <p>
-              ¿Dar de baja a <strong>{bajaCliente.nombre}</strong>? El cliente dejará de aparecer en la lista y su
-              usuario no podrá iniciar sesión. Sus datos y cotizaciones se conservan.
-            </p>
-
-            {errorAccion && <p className="form-error">Error: {errorAccion}</p>}
-
-            <div className="form-actions">
-              <button type="button" className="btn btn--ghost" onClick={() => setBajaCliente(null)} disabled={procesando}>
-                Cancelar
-              </button>
-              <button type="button" className="btn btn--danger" onClick={handleConfirmarBaja} disabled={procesando}>
-                {procesando ? "Procesando..." : "Dar de baja"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SesionVencida ref={sesionRef} visible={sesionVencida} onReingreso={alVolverAEntrar} />
     </div>
+  );
+}
+
+// Activo / Inactivo con texto y punto, como EstadoBadge (que es solo para cotizaciones).
+function EstadoCliente({ activo }) {
+  return (
+    <span className={`directorio-estado ${activo ? "directorio-estado--activo" : "directorio-estado--inactivo"}`}>
+      <span className="directorio-estado__punto" aria-hidden="true" />
+      {activo ? "Activo" : "Inactivo"}
+    </span>
   );
 }

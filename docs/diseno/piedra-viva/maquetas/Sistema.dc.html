@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SGDE · Piedra viva · Sistema visual</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F2F0}
+a{color:#B4562F}a:hover{color:#8F3F1F}
+.btn{transition:transform 160ms cubic-bezier(0.23,1,0.32,1),filter 160ms ease}
+.btn:active{transform:scale(0.97)}
+@media (hover:hover) and (pointer:fine){.btn:hover{filter:brightness(1.08)}}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}.btn:active{transform:none}}
+.tab{transition:color 160ms ease}@media (hover:hover) and (pointer:fine){.tab[aria-current="false"]:hover{color:#1D232B !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F3F2F0; color: #1D232B; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; padding: 56px 48px 72px; box-sizing: border-box;">
+  <div style="max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 48px;">
+
+    <header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 24px;">
+      <div>
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #B4562F;">Sistema visual del SGDE</div>
+        <h1 style="margin: 8px 0 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 76px; line-height: 0.95; letter-spacing: -0.045em;">Piedra viva</h1>
+        <p style="margin: 14px 0 0; max-width: 620px; font-size: 18px; line-height: 1.5; color: #5D6673;">Gris piedra de fondo, azul tinta para actuar, y toques de mandarina y mantequilla para darle alegría sin gritar.</p>
+      </div>
+      <div aria-hidden="true" style="display: flex; align-items: flex-end; gap: 10px;">
+        <div style="width: 64px; height: 120px; border-radius: 999px 999px 0 0; background: #2F4A6D;"></div>
+        <div style="width: 64px; height: 160px; border-radius: 999px 999px 0 0; background: #EE8A63;"></div>
+        <div style="width: 64px; height: 96px; border-radius: 999px 999px 0 0; background: #F0B429;"></div>
+        <div style="width: 64px; height: 136px; border-radius: 999px 999px 0 0; background: #CFDAEA;"></div>
+      </div>
+    </header>
+
+    <section style="display: flex; flex-direction: column; gap: 16px;">
+      <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: -0.02em;">Color</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+        <sc-for list="{{ colores }}" as="c" hint-placeholder-count="12">
+          <div style="border-radius: 18px; overflow: hidden; background: #FFFFFF; border: 1px solid #E4E2DE;">
+            <div style="height: 88px; background: {{ c.hex }}; border-bottom: 1px solid #E4E2DE;"></div>
+            <div style="padding: 12px 14px;"><div style="font-weight: 800; font-size: 14px;">{{ c.nombre }}</div><div style="font-size: 12px; color: #5D6673; font-variant-numeric: tabular-nums;">{{ c.hex }}</div><div style="font-size: 12px; color: #6E7581; margin-top: 4px;">{{ c.uso }}</div></div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-wrap: wrap; gap: 24px;">
+      <div style="flex: 1 1 520px; min-width: 0; border-radius: 22px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 28px; display: flex; flex-direction: column; gap: 18px;">
+        <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: -0.02em;">Tipografía</h2>
+        <div style="display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;"><span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 76px; line-height: 0.95; letter-spacing: -0.045em;">Aa 76</span><span style="font-size: 13px; color: #5D6673;">Plus Jakarta Sans 800 · portada · tracking −4,5%</span></div>
+        <div style="display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;"><span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 48px; line-height: 1; letter-spacing: -0.035em;">Título 48</span><span style="font-size: 13px; color: #5D6673;">Encabezado de pantalla · −3,5%</span></div>
+        <div style="display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;"><span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: -0.02em;">Sección 22</span><span style="font-size: 13px; color: #5D6673;">Tarjetas y paneles</span></div>
+        <div style="display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;"><span style="font-size: 16px;">Cuerpo 16 · Plus Jakarta Sans 400–700</span><span style="font-size: 13px; color: #5D6673;">Texto y formularios, interlineado 1,5</span></div>
+        <div style="display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;"><span style="font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #B4562F;">Etiqueta 12</span><span style="font-size: 13px; color: #5D6673;">Mayúsculas con +12%; cifras siempre tabulares</span></div>
+      </div>
+
+      <div style="flex: 1 1 520px; min-width: 0; border-radius: 22px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 28px; display: flex; flex-direction: column; gap: 20px;">
+        <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: -0.02em;">Botones</h2>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+          <button class="btn" type="button" style="height: 48px; padding: 0 20px; border-radius: 14px; background: #2F4A6D; color: #FFFFFF; border: 0; font: inherit; font-weight: 800; cursor: pointer;">Principal</button>
+          <button class="btn" type="button" style="height: 48px; padding: 0 20px; border-radius: 14px; background: #1D232B; color: #F3F2F0; border: 0; font: inherit; font-weight: 800; cursor: pointer;">Confirmar en panel</button>
+          <button class="btn" type="button" style="height: 48px; padding: 0 20px; border-radius: 14px; background: transparent; color: #1D232B; border: 1px solid #D6D3CD; font: inherit; font-weight: 800; cursor: pointer;">Secundario</button>
+          <button class="btn" type="button" style="height: 48px; padding: 0 20px; border-radius: 14px; background: #34A86A; color: #0E3B24; border: 0; font: inherit; font-weight: 800; cursor: pointer;">Éxito</button>
+          <button class="btn" type="button" style="height: 48px; padding: 0 20px; border-radius: 14px; background: transparent; color: #B4562F; border: 1.5px solid rgba(238,138,99,0.6); font: inherit; font-weight: 800; cursor: pointer;">Dar de baja</button>
+          <button type="button" disabled style="height: 48px; padding: 0 20px; border-radius: 14px; background: #2F4A6D; color: #FFFFFF; border: 0; font: inherit; font-weight: 800; opacity: 0.45; cursor: not-allowed;">Deshabilitado</button>
+        </div>
+        <p style="margin: 0; font-size: 13px; color: #5D6673; line-height: 1.5;">Una sola acción azul tinta por pantalla. Al presionar, el botón se encoge a 0,97; al pasar el puntero se ilumina un 8%. Todo control táctil mide mínimo 44 px.</p>
+        <h3 style="margin: 4px 0 0; font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #6E7581;">Estados de cotización</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <sc-for list="{{ estados }}" as="e" hint-placeholder-count="5">
+            <span style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 999px; background: {{ e.bg }}; color: {{ e.fg }}; font-size: 13px; font-weight: 800;"><span style="width: 7px; height: 7px; border-radius: 4px; background: {{ e.dot }};"></span>{{ e.nombre }}</span>
+          </sc-for>
+        </div>
+        <h3 style="margin: 4px 0 0; font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #6E7581;">Campos</h3>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+          <div style="display: flex; flex-direction: column; gap: 6px;"><label for="ds-1" style="font-size: 12px; font-weight: 700; color: #5D6673;">Normal</label><input id="ds-1" value="Salón Heredia" style="height: 46px; padding: 0 12px; border-radius: 12px; background: #F1EFEB; border: 1.5px solid #D6D3CD; color: #1D232B; font: inherit; min-width: 0;"></div>
+          <div style="display: flex; flex-direction: column; gap: 6px;"><label for="ds-2" style="font-size: 12px; font-weight: 700; color: #5D6673;">Enfocado</label><input id="ds-2" value="80 personas" style="height: 46px; padding: 0 12px; border-radius: 12px; background: #F1EFEB; border: 1.5px solid #2F4A6D; box-shadow: 0 0 0 4px rgba(238,138,99,0.18); color: #1D232B; font: inherit; min-width: 0;"></div>
+          <div style="display: flex; flex-direction: column; gap: 6px;"><label for="ds-3" style="font-size: 12px; font-weight: 700; color: #5D6673;">Con error</label><input id="ds-3" value="130" aria-invalid="true" aria-describedby="ds-3-e" style="height: 46px; padding: 0 12px; border-radius: 12px; background: #F1EFEB; border: 1.5px solid #2F4A6D; color: #1D232B; font: inherit; min-width: 0;"><span id="ds-3-e" style="font-size: 12px; font-weight: 700; color: #B4562F;">Supera el aforo (120)</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section style="border-radius: 22px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 28px; display: flex; flex-direction: column; gap: 16px;">
+      <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: -0.02em;">Movimiento</h2>
+      <p style="margin: 0; font-size: 14px; color: #5D6673;">Rápido y con propósito: solo se anima <code style="color: #9A6700;">transform</code> y <code style="color: #9A6700;">opacity</code>, siempre interrumpible, y nada se mueve con atajos de teclado.</p>
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14px;">
+          <thead><tr style="text-align: left; color: #6E7581; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;">
+            <th scope="col" style="padding: 10px 12px 10px 0; font-weight: 800;">Interacción</th>
+            <th scope="col" style="padding: 10px 12px; font-weight: 800;">Duración</th>
+            <th scope="col" style="padding: 10px 12px; font-weight: 800;">Curva</th>
+            <th scope="col" style="padding: 10px 0 10px 12px; font-weight: 800;">Cómo se ve</th>
+          </tr></thead>
+          <tbody>
+            <sc-for list="{{ movimiento }}" as="m" hint-placeholder-count="7">
+              <tr style="border-top: 1px solid #E4E2DE;">
+                <td style="padding: 14px 12px 14px 0; font-weight: 800;">{{ m.que }}</td>
+                <td style="padding: 14px 12px; font-variant-numeric: tabular-nums; color: #9A6700; font-weight: 800; white-space: nowrap;">{{ m.dur }}</td>
+                <td style="padding: 14px 12px;"><code style="font-size: 13px; color: #5D6673;">{{ m.curva }}</code></td>
+                <td style="padding: 14px 0 14px 12px; color: #5D6673;">{{ m.nota }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+      <div style="border-radius: 20px; background: #2F4A6D; color: #FFFFFF; padding: 24px;"><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 22px; line-height: 1.15;">Una acción principal por pantalla</div><p style="margin: 10px 0 0; font-size: 14px; font-weight: 700; line-height: 1.5;">El azul tinta marca lo que hay que hacer ahora; la mandarina solo acompaña. Si todo resalta, nada resalta.</p></div>
+      <div style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 24px;"><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 22px; line-height: 1.15;">El estado tiene un color fijo</div><p style="margin: 10px 0 0; font-size: 14px; color: #5D6673; line-height: 1.5;">Amarillo cotizado, lavanda bloqueado, verde confirmado, mandarina vencido. Siempre con texto, nunca solo color.</p></div>
+      <div style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 24px;"><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 22px; line-height: 1.15;">Avisar antes, no después</div><p style="margin: 10px 0 0; font-size: 14px; color: #5D6673; line-height: 1.5;">El aforo y la contraseña se validan mientras se escriben. El servidor sigue teniendo la última palabra.</p></div>
+      <div style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 24px;"><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 22px; line-height: 1.15;">Celebrar lo que importa</div><p style="margin: 10px 0 0; font-size: 14px; color: #5D6673; line-height: 1.5;">Confirmar un evento merece un momento verde. Guardar un filtro, no.</p></div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1360}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const colores = [
+      ['Piedra', '#F3F2F0', 'Fondo de todas las pantallas'],
+      ['Barra superior', '#FFFFFF', 'Navegación con pestañas'],
+      ['Superficie', '#FFFFFF', 'Tarjetas y paneles'],
+      ['Superficie 2', '#F1EFEB', 'Campos y filas'],
+      ['Línea', '#D6D3CD', 'Bordes y divisores'],
+      ['Texto', '#1D232B', 'Texto principal'],
+      ['Texto suave', '#5D6673', 'Texto secundario'],
+      ['Texto tenue', '#6E7581', 'Etiquetas y ayudas'],
+      ['Tinta', '#2F4A6D', 'Acción principal'],
+      ['Mandarina', '#EE8A63', 'Acentos, pestaña activa y vencidas'],
+      ['Mantequilla', '#F0B429', 'Cotizado y alertas'],
+      ['Verde', '#34A86A', 'Confirmado y éxito'],
+      ['Lavanda', '#6F83D9', 'Bloqueado y proveedores'],
+      ['Durazno', '#FCE5D9', 'Fondos suaves y resaltados']
+    ].map((c) => ({ nombre: c[0], hex: c[1], uso: c[2] }));
+    const estados = [
+      ['Cotizado', 'rgba(240,180,41,0.16)', '#9A6700', '#F0B429'],
+      ['Bloqueado', 'rgba(111,131,217,0.18)', '#3A4C99', '#6F83D9'],
+      ['Confirmado', 'rgba(52,168,106,0.14)', '#1F6E44', '#34A86A'],
+      ['Vencida', 'rgba(238,138,99,0.16)', '#B4562F', '#EE8A63'],
+      ['Cancelado', 'rgba(93,102,115,0.18)', '#5D6673', '#6E7581']
+    ].map((e) => ({ nombre: e[0], bg: e[1], fg: e[2], dot: e[3] }));
+    const movimiento = [
+      ['Presionar un botón', '160 ms', 'cubic-bezier(0.23, 1, 0.32, 1)', 'Se encoge a 0,97 al presionar, vuelve al soltar'],
+      ['Pasar el puntero', '160 ms', 'ease', 'Brillo +8 %; solo con mouse, nunca en pantallas táctiles'],
+      ['Menú o desplegable', '200 ms', 'cubic-bezier(0.23, 1, 0.32, 1)', 'Aparece desde su botón: scale 0,96 y opacidad'],
+      ['Panel lateral o modal', '240 ms', 'resorte sin rebote', 'Entra y sale por el mismo lado; el fondo se oscurece'],
+      ['Barra de aforo', '240 ms', 'cubic-bezier(0.23, 1, 0.32, 1)', 'Crece con cada persona; pasa a mandarina al superar el aforo'],
+      ['Evento confirmado', '320 ms', 'cubic-bezier(0.23, 1, 0.32, 1)', 'La tarjeta verde aparece desde 0,96 con un leve ascenso'],
+      ['Lista que carga', '40 ms entre filas', 'ease-out', 'Escalonado corto; nunca bloquea los clics'],
+      ['Movimiento reducido', '150 ms', 'ease', 'Solo cambia la opacidad, sin desplazamientos']
+    ].map((m) => ({ que: m[0], dur: m[1], curva: m[2], nota: m[3] }));
+    return { colores, estados, movimiento };
+  }
+}
+</script>
+</body>
+</html>
