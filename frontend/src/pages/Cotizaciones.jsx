@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Link } from "react-router-dom";
 import { getCotizaciones } from "../api/cotizaciones";
 import {
   AvisoError,
@@ -129,7 +130,7 @@ export default function Cotizaciones() {
         titulo="Cotizaciones"
         subtitulo="Todo lo que se ha ofrecido, en qué estado está y cuánto vale."
         acciones={
-          <Boton disabled title="Disponible cuando esté la pantalla de nueva cotización">
+          <Boton as={Link} to="/cotizaciones/nueva">
             <span aria-hidden="true">+</span> Nueva cotización
           </Boton>
         }
@@ -229,6 +230,7 @@ export default function Cotizaciones() {
           <EstadoVacio
             titulo="Aún no hay cotizaciones"
             texto="Cuando se arme la primera cotización aparecerá aquí con su vigencia y su estado."
+            accion={<Boton as={Link} to="/cotizaciones/nueva" variante="secundario">Armar la primera</Boton>}
           />
         </Tarjeta>
       )}

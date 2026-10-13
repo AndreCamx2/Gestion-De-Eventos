@@ -53,3 +53,8 @@ export async function crearCliente({
     body: JSON.stringify(body),
   });
 }
+
+export async function buscarClientes(texto = "") {
+  const query = texto ? `?search=${encodeURIComponent(texto)}` : "";
+  return apiFetch(`/clientes/${query}`, { method: "GET" });
+}
