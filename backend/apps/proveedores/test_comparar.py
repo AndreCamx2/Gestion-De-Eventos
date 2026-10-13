@@ -1,5 +1,7 @@
+import secrets
 from decimal import Decimal
 
+from django.urls import reverse_lazy
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -7,8 +9,8 @@ from apps.usuarios.models import Rol, Usuario
 
 from .models import Proveedor, StockElemento
 
-PASSWORD = "Clave-Segura-123"
-URL = "/api/stock/comparar/"
+PASSWORD = secrets.token_urlsafe(16)
+URL = reverse_lazy("stock_comparar")
 
 
 def crear_usuario(username, codigo_rol):
