@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from apps.sitios.models import Ciudad
 
@@ -21,6 +22,9 @@ class Cliente(models.Model):
         (NATURAL, "Natural"),
         (JURIDICA, "Jurídica"),
     ]
+    MSG_JURIDICO_CON_IDENTIFICACION = (
+        "Un cliente jurídico no lleva identificación: el NIT es el de su empresa."
+    )
 
     usuario = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
@@ -41,6 +45,22 @@ class Cliente(models.Model):
     # y en un sistema comercial no se pierde historia.
     activo = models.BooleanField(default=True)
     creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            # SGDE-91: el NIT de un jurídico vive en su Empresa. La base de datos lo
+            # garantiza aunque se guarde desde el admin, el shell o código futuro.
+            models.CheckConstraint(
+                condition=models.Q(tipo="natural") | models.Q(identificacion__isnull=True),
+                name="cliente_juridico_sin_identificacion",
+            )
+        ]
+
+    def clean(self):
+        # Lo usa el admin (full_clean): el error sale bajo el campo, no como el
+        # IntegrityError del constraint.
+        if self.tipo == self.JURIDICA and self.identificacion:
+            raise ValidationError({"identificacion": self.MSG_JURIDICO_CON_IDENTIFICACION})
 
     def set_activo(self, activo):
         """Activa o desactiva al cliente y a su Usuario vinculado.

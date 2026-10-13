@@ -1,11 +1,14 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
+from io import StringIO
 
+from django.core.management import call_command
 from django.db import connection
-from django.test import SimpleTestCase
+from django.db.migrations.executor import MigrationExecutor
+from django.test import SimpleTestCase, TransactionTestCase
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.test import APITestCase
 
 from apps.catalogo.models import Concepto
@@ -14,7 +17,7 @@ from apps.salones.models import Montaje, Salon, SalonMontaje
 from apps.sitios.models import Ciudad, Sitio
 from apps.usuarios.models import Rol, Usuario
 
-from .models import Cotizacion, CotizacionItem
+from .models import Cotizacion, CotizacionItem, MovimientoCotizacion
 from .services import totales_linea
 
 PASSWORD = "Clave-Segura-123"
@@ -274,13 +277,26 @@ class ListadoCotizacionesTests(CotizacionBaseTest):
         self.client.force_authenticate(user=self.admin)
         self.assertEqual(self.client.get(LISTA, {"desde": "20-11-2026"}).status_code,
                          status.HTTP_400_BAD_REQUEST)
+        # Formato correcto pero fecha imposible: parse_date lanza ValueError (antes, 500).
+        self.assertEqual(self.client.get(LISTA, {"hasta": "2026-13-40"}).status_code,
+                         status.HTTP_400_BAD_REQUEST)
+
+    def test_rango_de_fechas_invertido_400(self):
+        self.client.force_authenticate(user=self.admin)
+        r = self.client.get(LISTA, {"desde": str(hoy() + timedelta(days=10)), "hasta": str(hoy())})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.json()["hasta"], ["La fecha final no puede ser anterior a la inicial."])
+        # El mismo día en los dos extremos es un rango válido.
+        self.assertEqual(self.client.get(LISTA, {"desde": str(hoy()), "hasta": str(hoy())}).status_code,
+                         status.HTTP_200_OK)
 
     def test_listado_no_hace_n_mas_1(self):
         for dias in range(20, 25):
             self.crear_en_bd(fecha_evento=hoy() + timedelta(days=dias))
         self.client.force_authenticate(user=self.admin)
-        # cotizaciones (con joins) + items + conceptos, sin importar cuántas haya
-        with self.assertNumQueries(3):
+        # cotizaciones (con joins) + items + conceptos, sin importar cuántas haya, más 3
+        # fijas de liberar los bloqueos vencidos: savepoint, SELECT ... FOR UPDATE y release.
+        with self.assertNumQueries(6):
             self.client.get(LISTA)
 
 
@@ -500,6 +516,17 @@ class CalendarioCamposTests(CotizacionBaseTest):
         self.assertEqual(fila["montaje"], self.montaje.pk)
         self.assertEqual(fila["montaje_nombre"], "Auditorio Test")
 
+    def test_trae_bloqueo_hasta_para_el_rack(self):
+        # SGDE-40: el Rack muestra hasta cuándo está bloqueado un salón.
+        libre = self.crear_en_bd()
+        bloqueada = self.crear_en_bd(estado="bloqueado", fecha_evento=hoy() + timedelta(days=31))
+        hasta = timezone.now() + timedelta(days=1)
+        bloqueada.bloqueo_hasta = hasta
+        bloqueada.save()
+        filas = self.por_id(self.client.get(self.URL))
+        self.assertIsNone(filas[libre.pk]["bloqueo_hasta"])
+        self.assertEqual(filas[bloqueada.pk]["bloqueo_hasta"], serializers.DateTimeField().to_representation(hasta))
+
     def crear_con_relaciones_propias(self, n):
         """Cotización con cliente, salón y montaje propios: si vuelve el N+1, sube el conteo."""
         cliente = Cliente.objects.create(
@@ -524,6 +551,40 @@ class CalendarioCamposTests(CotizacionBaseTest):
             r = self.client.get(self.URL)
         self.assertEqual(len(r.data), 5)
         self.assertEqual(len({c["montaje_nombre"] for c in r.data}), 5)
+
+
+class CalendarioFiltrosTests(CotizacionBaseTest):
+    """SGDE-14: ?salon, ?desde y ?hasta se validan; antes un valor mal formado daba 500."""
+
+    URL = "/api/calendario/"
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+
+    def test_valores_invalidos_dan_400_con_el_campo(self):
+        for params, campo in (
+            ({"salon": "abc"}, "salon"),
+            ({"desde": "abc"}, "desde"),
+            ({"hasta": "2026-13-40"}, "hasta"),
+            ({"desde": str(hoy() + timedelta(days=10)), "hasta": str(hoy())}, "hasta"),
+        ):
+            with self.subTest(params=params):
+                r = self.client.get(self.URL, params)
+                self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertIn(campo, r.json())
+
+    def test_filtros_validos_siguen_funcionando(self):
+        otro_salon = Salon.objects.create(sitio=self.sitio, nombre="Salón Tierra Bomba")
+        dentro = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=20))
+        self.crear_en_bd(fecha_evento=hoy() + timedelta(days=60))
+        fuera_de_salon = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=20))
+        fuera_de_salon.salon = otro_salon
+        fuera_de_salon.save()
+        r = self.client.get(self.URL, {
+            "salon": self.salon.pk, "desde": str(hoy() + timedelta(days=20)), "hasta": str(hoy() + timedelta(days=20)),
+        })
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual([c["id"] for c in r.data], [dentro.pk])
 
 
 class ListadoCamposSGDE89Tests(CotizacionBaseTest):
@@ -579,3 +640,477 @@ class DetalleCamposSGDE89Tests(CotizacionBaseTest):
         data = self.client.get(detalle(cot.pk)).data
         self.assertIsNotNone(data["confirmado_en"])
         self.assertEqual(data["confirmado_en"], data["garantia"]["registrada_en"])
+
+
+def bloqueo(pk):
+    return f"{detalle(pk)}bloqueo/"
+
+
+def en(dias, hora=12):
+    """Fecha y hora local (Colombia) a `dias` de hoy, en ISO para el payload."""
+    momento = timezone.localtime().replace(hour=hora, minute=0, second=0, microsecond=0) + timedelta(days=dias)
+    return momento.isoformat()
+
+
+class BloqueoTests(CotizacionBaseTest):
+    """SGDE-40/60/15: bloquear y liberar el salón y la fecha de una cotización."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+        self.fecha = hoy() + timedelta(days=30)
+
+    def bloquear(self, pk, hasta=None):
+        return self.client.post(bloqueo(pk), {"bloqueo_hasta": hasta or en(2)}, format="json")
+
+    def bloqueada_en_bd(self, hasta, fecha_evento=None):
+        cot = self.crear_en_bd(fecha_evento=fecha_evento or self.fecha, estado="bloqueado")
+        cot.bloqueo_hasta = hasta
+        cot.save()
+        return cot
+
+    def test_bloquea_y_responde_con_el_detalle(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        r = self.bloquear(cot.pk, en(2))
+        self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+        self.assertEqual(r.data["estado"], "bloqueado")
+        self.assertIsNotNone(r.data["bloqueo_hasta"])
+        cot.refresh_from_db()
+        self.assertEqual(cot.estado, "bloqueado")
+
+    def test_se_puede_bloquear_hasta_el_mismo_dia_del_evento(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        self.assertEqual(self.bloquear(cot.pk, en(30, hora=23)).status_code, status.HTTP_200_OK)
+
+    def test_desde_un_estado_que_no_es_cotizado_da_409(self):
+        for i, estado in enumerate(("bloqueado", "confirmado", "cancelado")):
+            cot = self.crear_en_bd(fecha_evento=self.fecha + timedelta(days=i), estado=estado)
+            if estado == "bloqueado":
+                cot.bloqueo_hasta = timezone.now() + timedelta(days=1)
+                cot.save()
+            with self.subTest(estado=estado):
+                r = self.bloquear(cot.pk)
+                self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+                self.assertIn("Solo se puede bloquear una cotización cotizada", r.data["detail"])
+
+    def test_una_cotizada_vencida_da_409(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha, validez_oferta=hoy() - timedelta(days=1))
+        r = self.bloquear(cot.pk)
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("vencida", r.data["detail"])
+
+    def test_fecha_pasada_o_despues_del_evento_da_400(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        for hasta, mensaje in (
+            (en(-1), "Debe ser posterior al momento actual."),
+            (en(31), "No puede ser posterior al día del evento."),
+        ):
+            with self.subTest(hasta=hasta):
+                r = self.bloquear(cot.pk, hasta)
+                self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(r.data["bloqueo_hasta"], [mensaje])
+        r = self.client.post(bloqueo(cot.pk), {}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        cot.refresh_from_db()
+        self.assertEqual(cot.estado, "cotizado")
+
+    def test_otra_cotizacion_con_bloqueo_vigente_da_409_y_dice_hasta_cuando(self):
+        self.bloqueada_en_bd(timezone.now() + timedelta(days=3))
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        r = self.bloquear(cot.pk)
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("bloqueado para esa fecha por otra cotización hasta", r.data["detail"])
+
+    def test_salon_confirmado_esa_fecha_da_409(self):
+        self.crear_en_bd(fecha_evento=self.fecha, estado="confirmado")
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        r = self.bloquear(cot.pk)
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(r.data["detail"], "El salón ya está confirmado para esa fecha.")
+
+    def test_otro_dia_o_un_bloqueo_vencido_no_estorban(self):
+        self.bloqueada_en_bd(timezone.now() + timedelta(days=3), fecha_evento=self.fecha + timedelta(days=1))
+        vencido = self.bloqueada_en_bd(timezone.now() - timedelta(minutes=1))
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        self.assertEqual(self.bloquear(cot.pk).status_code, status.HTTP_200_OK)
+        vencido.refresh_from_db()
+        self.assertEqual((vencido.estado, vencido.bloqueo_hasta), ("cotizado", None))
+
+    def test_liberar_a_mano(self):
+        cot = self.bloqueada_en_bd(timezone.now() + timedelta(days=1))
+        r = self.client.delete(bloqueo(cot.pk))
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual((r.data["estado"], r.data["bloqueo_hasta"]), ("cotizado", None))
+
+    def test_liberar_una_que_no_esta_bloqueada_da_409(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        r = self.client.delete(bloqueo(cot.pk))
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(r.data["detail"], "La cotización no está bloqueada; está cotizada.")
+
+    def test_inexistente_404(self):
+        self.assertEqual(self.bloquear(999999).status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(self.client.delete(bloqueo(999999)).status_code, status.HTTP_404_NOT_FOUND)
+
+
+class LiberacionAutomaticaTests(CotizacionBaseTest):
+    """Los bloqueos vencidos se liberan al leer (no hay tareas programadas en Render Free)."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+        self.vencido = self.crear_en_bd(estado="bloqueado")
+        self.vencido.bloqueo_hasta = timezone.now() - timedelta(minutes=1)
+        self.vencido.save()
+        self.vigente = self.crear_en_bd(estado="bloqueado", fecha_evento=hoy() + timedelta(days=31))
+        self.vigente.bloqueo_hasta = timezone.now() + timedelta(days=1)
+        self.vigente.save()
+
+    def assertLiberado(self):
+        self.vencido.refresh_from_db()
+        self.vigente.refresh_from_db()
+        self.assertEqual((self.vencido.estado, self.vencido.bloqueo_hasta), ("cotizado", None))
+        self.assertEqual(self.vigente.estado, "bloqueado")
+
+    def test_al_listar(self):
+        filas = {c["id"]: c for c in self.client.get(LISTA).data}
+        self.assertEqual(filas[self.vencido.pk]["estado"], "cotizado")
+        self.assertIsNone(filas[self.vencido.pk]["bloqueo_hasta"])
+        self.assertLiberado()
+
+    def test_al_ver_el_detalle(self):
+        self.assertEqual(self.client.get(detalle(self.vencido.pk)).data["estado"], "cotizado")
+        self.assertLiberado()
+
+    def test_al_ver_el_calendario(self):
+        filas = {c["id"]: c for c in self.client.get("/api/calendario/").data}
+        self.assertEqual(filas[self.vencido.pk]["estado"], "cotizado")
+        self.assertEqual(filas[self.vigente.pk]["estado"], "bloqueado")
+        self.assertLiberado()
+
+    def test_con_el_comando(self):
+        salida = StringIO()
+        call_command("liberar_bloqueos", stdout=salida)
+        self.assertIn("Bloqueos vencidos liberados: 1", salida.getvalue())
+        self.assertLiberado()
+
+
+class AceptarConBloqueoTests(CotizacionBaseTest):
+    """La aceptación (SGDE-20) acepta una bloqueada y respeta el bloqueo de otra cotización."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+        self.datos = {"tipo": "transferencia", "monto": "500000"}
+
+    def bloqueada(self, fecha_evento=None, validez_oferta=None):
+        cot = self.crear_en_bd(estado="bloqueado", fecha_evento=fecha_evento, validez_oferta=validez_oferta)
+        cot.bloqueo_hasta = timezone.now() + timedelta(days=1)
+        cot.save()
+        return cot
+
+    def test_acepta_una_bloqueada_y_quita_el_bloqueo(self):
+        cot = self.bloqueada()
+        r = self.client.post(aceptacion(cot.pk), self.datos, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+        self.assertEqual((r.data["estado"], r.data["bloqueo_hasta"]), ("confirmado", None))
+
+    def test_acepta_una_bloqueada_aunque_su_vigencia_haya_pasado(self):
+        cot = self.bloqueada(validez_oferta=hoy() - timedelta(days=1))
+        self.assertEqual(self.client.post(aceptacion(cot.pk), self.datos, format="json").status_code,
+                         status.HTTP_200_OK)
+
+    def test_otra_cotizacion_con_bloqueo_vigente_da_409_y_dice_hasta_cuando(self):
+        fecha = hoy() + timedelta(days=30)
+        self.bloqueada(fecha_evento=fecha)
+        otra = self.crear_en_bd(fecha_evento=fecha)
+        r = self.client.post(aceptacion(otra.pk), self.datos, format="json")
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("bloqueado para esa fecha por otra cotización hasta", r.data["detail"])
+        otra.refresh_from_db()
+        self.assertEqual(otra.estado, "cotizado")
+
+
+def cancelacion(pk):
+    return f"{detalle(pk)}cancelacion/"
+
+
+class CancelacionTests(CotizacionBaseTest):
+    """SGDE-61: cancelar un evento confirmado con penalización."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+        self.fecha = hoy() + timedelta(days=30)
+        self.datos = {"penalizacion_pct": "20", "motivo": "El cliente pospuso el congreso."}
+
+    def confirmada(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        r = self.client.post(aceptacion(cot.pk), {"tipo": "transferencia", "monto": "500000"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        return cot
+
+    def test_cancela_una_confirmada_y_registra_todo(self):
+        cot = self.confirmada()
+        r = self.client.post(cancelacion(cot.pk), self.datos, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+        self.assertEqual(r.data["estado"], "cancelado")
+        self.assertEqual(r.data["penalizacion_pct"], "20.00")
+        self.assertEqual(r.data["motivo_cancelacion"], "El cliente pospuso el congreso.")
+        self.assertEqual(r.data["cancelado_por"], "admin@test.com")
+        self.assertIsNotNone(r.data["cancelado_en"])
+        # Total: 50 × 45.000 + 8 % = 2.430.000; el 20 % retenido = 486.000.
+        self.assertEqual(r.data["monto_retenido"], "486000.00")
+        cot.refresh_from_db()
+        self.assertEqual((cot.estado, cot.cancelado_por), ("cancelado", self.admin))
+
+    def test_el_listado_trae_los_campos_de_la_cancelacion(self):
+        cot = self.confirmada()
+        self.client.post(cancelacion(cot.pk), self.datos, format="json")
+        fila = {c["id"]: c for c in self.client.get(LISTA).data}[cot.pk]
+        self.assertEqual(
+            (fila["estado"], fila["penalizacion_pct"], fila["monto_retenido"], fila["cancelado_por"]),
+            ("cancelado", "20.00", "486000.00", "admin@test.com"),
+        )
+
+    def test_una_no_cancelada_trae_los_campos_en_null(self):
+        data = self.client.get(detalle(self.crear_en_bd().pk)).data
+        self.assertEqual(
+            [data[campo] for campo in ("cancelado_en", "cancelado_por", "penalizacion_pct", "monto_retenido")],
+            [None, None, None, None],
+        )
+        self.assertEqual(data["motivo_cancelacion"], "")
+
+    def test_el_monto_retenido_se_redondea_como_los_totales(self):
+        cot = self.confirmada()
+        r = self.client.post(cancelacion(cot.pk), {"penalizacion_pct": "33.33", "motivo": "X"}, format="json")
+        # 2.430.000 × 33,33 % = 809.919,00
+        self.assertEqual(r.data["monto_retenido"], "809919.00")
+
+    def test_cotizada_bloqueada_o_cancelada_da_409(self):
+        bloqueada = self.crear_en_bd(fecha_evento=self.fecha + timedelta(days=1), estado="bloqueado")
+        bloqueada.bloqueo_hasta = timezone.now() + timedelta(days=1)
+        bloqueada.save()
+        casos = {
+            "cotizada": self.crear_en_bd(fecha_evento=self.fecha + timedelta(days=2)),
+            "bloqueada": bloqueada,
+            "cancelada": self.crear_en_bd(fecha_evento=self.fecha + timedelta(days=3), estado="cancelado"),
+        }
+        for nombre, cot in casos.items():
+            with self.subTest(estado=nombre):
+                r = self.client.post(cancelacion(cot.pk), self.datos, format="json")
+                self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+                self.assertEqual(
+                    r.data["detail"],
+                    f"Solo se puede cancelar un evento confirmado; esta cotización está {nombre}.",
+                )
+
+    def test_penalizacion_fuera_de_rango_o_motivo_vacio_da_400(self):
+        cot = self.confirmada()
+        for datos, campo in (
+            ({"penalizacion_pct": "-1", "motivo": "X"}, "penalizacion_pct"),
+            ({"penalizacion_pct": "100.01", "motivo": "X"}, "penalizacion_pct"),
+            ({"motivo": "X"}, "penalizacion_pct"),
+            ({"penalizacion_pct": "10", "motivo": "   "}, "motivo"),
+            ({"penalizacion_pct": "10"}, "motivo"),
+        ):
+            with self.subTest(datos=datos):
+                r = self.client.post(cancelacion(cot.pk), datos, format="json")
+                self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertIn(campo, r.data)
+        cot.refresh_from_db()
+        self.assertEqual(cot.estado, "confirmado")
+
+    def test_los_extremos_0_y_100_son_validos(self):
+        for pct in ("0", "100"):
+            with self.subTest(pct=pct):
+                cot = self.confirmada()
+                r = self.client.post(cancelacion(cot.pk), {"penalizacion_pct": pct, "motivo": "X"}, format="json")
+                self.assertEqual(r.status_code, status.HTTP_200_OK)
+
+    def test_despues_de_cancelar_otra_cotizacion_puede_confirmarse_ese_dia(self):
+        cot = self.confirmada()
+        otra = self.crear_en_bd(fecha_evento=self.fecha)
+        datos = {"tipo": "efectivo", "monto": "100"}
+        self.assertEqual(self.client.post(aceptacion(otra.pk), datos, format="json").status_code,
+                         status.HTTP_409_CONFLICT)
+        self.client.post(cancelacion(cot.pk), self.datos, format="json")
+        self.assertEqual(self.client.post(aceptacion(otra.pk), datos, format="json").status_code,
+                         status.HTTP_200_OK)
+
+    def test_inexistente_404(self):
+        self.assertEqual(self.client.post(cancelacion(999999), self.datos, format="json").status_code,
+                         status.HTTP_404_NOT_FOUND)
+
+
+def movimientos(pk):
+    return f"{detalle(pk)}movimientos/"
+
+
+class MovimientosTests(CotizacionBaseTest):
+    """SGDE-62: cada acción deja su movimiento con el usuario correcto, en la misma transacción."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+        self.otro_admin = crear_usuario("otro_admin@test.com", "administrador")
+        self.otro_admin.sitios.add(self.sitio)
+
+    def tipos_y_usuarios(self, cot):
+        return [(m["tipo"], m["usuario"]) for m in self.client.get(movimientos(cot.pk)).data]
+
+    def test_el_ciclo_completo_deja_un_movimiento_por_accion(self):
+        r = self.client.post(LISTA, self.payload(), format="json")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        pk = r.data["id"]
+        nueva = str(hoy() + timedelta(days=12))
+        self.assertEqual(self.client.patch(detalle(pk), {"validez_oferta": nueva}, format="json").status_code, 200)
+        self.assertEqual(self.client.post(bloqueo(pk), {"bloqueo_hasta": en(2)}, format="json").status_code, 200)
+        self.assertEqual(self.client.delete(bloqueo(pk)).status_code, 200)
+
+        # Otro administrador confirma y cancela: el movimiento lleva su usuario, no el del creador.
+        self.client.force_authenticate(user=self.otro_admin)
+        datos = {"tipo": "efectivo", "monto": "100"}
+        self.assertEqual(self.client.post(aceptacion(pk), datos, format="json").status_code, 200)
+        cancelar = {"penalizacion_pct": "10", "motivo": "Lluvia"}
+        self.assertEqual(self.client.post(cancelacion(pk), cancelar, format="json").status_code, 200)
+
+        r = self.client.get(movimientos(pk))
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual([(m["tipo"], m["usuario"]) for m in r.data], [
+            ("creada", "admin@test.com"),
+            ("vigencia", "admin@test.com"),
+            ("bloqueada", "admin@test.com"),
+            ("liberada", "admin@test.com"),
+            ("confirmada", "otro_admin@test.com"),
+            ("cancelada", "otro_admin@test.com"),
+        ])
+        self.assertEqual(set(r.data[0]), {"id", "tipo", "usuario", "fecha", "detalle"})
+        self.assertIn(nueva[8:10], r.data[1]["detalle"])
+        self.assertEqual(r.data[5]["detalle"], "Penalización 10.00 %. Motivo: Lluvia")
+
+    def test_la_liberacion_automatica_la_hace_el_sistema(self):
+        cot = self.crear_en_bd(estado="bloqueado")
+        cot.bloqueo_hasta = timezone.now() - timedelta(minutes=1)
+        cot.save()
+        self.client.get(LISTA)
+        movimiento = MovimientoCotizacion.objects.get(cotizacion=cot)
+        self.assertEqual((movimiento.tipo, movimiento.usuario), ("liberada", None))
+        self.assertEqual(self.tipos_y_usuarios(cot), [("liberada", "sistema")])
+
+    def test_una_accion_que_falla_no_deja_movimiento(self):
+        cot = self.crear_en_bd()
+        r = self.client.post(cancelacion(cot.pk), {"penalizacion_pct": "10", "motivo": "X"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        r = self.client.post(bloqueo(cot.pk), {"bloqueo_hasta": en(60)}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(MovimientoCotizacion.objects.filter(cotizacion=cot).exists())
+
+    def test_inexistente_404(self):
+        self.assertEqual(self.client.get(movimientos(999999)).status_code, status.HTTP_404_NOT_FOUND)
+
+
+class HistoricoPorSalonTests(CotizacionBaseTest):
+    """SGDE-62: el histórico de un salón es el listado con ?salon=."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+
+    def test_filtra_por_salon_con_todos_los_estados(self):
+        otro = Salon.objects.create(sitio=self.sitio, nombre="Salón Tierra Bomba")
+        cancelada = self.crear_en_bd(estado="cancelado")
+        confirmada = self.crear_en_bd(estado="confirmado", fecha_evento=hoy() + timedelta(days=31))
+        ajena = self.crear_en_bd()
+        ajena.salon = otro
+        ajena.save()
+        r = self.client.get(LISTA, {"salon": self.salon.pk})
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual({c["id"] for c in r.data}, {cancelada.pk, confirmada.pk})
+
+    def test_salon_no_numerico_400(self):
+        r = self.client.get(LISTA, {"salon": "abc"})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.json()["salon"], ["Debe ser el id numérico del salón."])
+
+
+class MigracionMovimientosExistentesTests(TransactionTestCase):
+    """SGDE-62: la 0006 crea "creada" y "confirmada" de lo viejo con su fecha original, no la de hoy."""
+
+    serialized_rollback = True
+    antes = [("cotizaciones", "0005_movimientos_de_cotizacion")]
+    despues = [("cotizaciones", "0006_movimientos_de_cotizaciones_existentes")]
+
+    def migrar(self, destino):
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        executor.migrate(destino)
+        # Modelos históricos: cotizaciones en `destino` y las demás apps al día (si no,
+        # Cliente sale en la versión que conocía la 0001 de cotizaciones).
+        otras = [nodo for nodo in executor.loader.graph.leaf_nodes() if nodo[0] != "cotizaciones"]
+        return executor.loader.project_state(otras + destino).apps
+
+    def tearDown(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+
+    def test_crea_los_movimientos_con_la_fecha_original(self):
+        apps = self.migrar(self.antes)
+        modelo = apps.get_model
+        admin = modelo("usuarios", "Usuario").objects.create(
+            username="viejo@test.com", rol=modelo("usuarios", "Rol").objects.get(codigo="administrador"),
+        )
+        sitio = modelo("sitios", "Sitio").objects.create(
+            nombre="Hotel Viejo", ciudad=modelo("sitios", "Ciudad").objects.get(codigo="CTG"),
+        )
+        comunes = dict(
+            sitio=sitio, usuario=admin, cantidad_personas=10,
+            cliente=modelo("clientes", "Cliente").objects.create(tipo="natural", nombre="Ana", identificacion="1"),
+            salon=modelo("salones", "Salon").objects.create(sitio=sitio, nombre="Salón Viejo"),
+            montaje=modelo("salones", "Montaje").objects.create(codigo="test_viejo", nombre="Viejo"),
+        )
+        creado = timezone.make_aware(datetime(2026, 9, 1, 10, 30))
+        confirmado = timezone.make_aware(datetime(2026, 9, 5, 16, 45))
+        Cotizacion = modelo("cotizaciones", "Cotizacion")
+        ids = {}
+        for i, (nombre, extra) in enumerate({
+            "cotizada": {"estado": "cotizado"},
+            "confirmada": {"estado": "confirmado", "garantia_tipo": "efectivo", "garantia_monto": Decimal("100"),
+                           "garantia_registrada_en": confirmado, "garantia_registrada_por": admin},
+            "confirmada_a_mano": {"estado": "confirmado"},
+            "cancelada": {"estado": "cancelado", "garantia_tipo": "efectivo", "garantia_monto": Decimal("100"),
+                          "garantia_registrada_en": confirmado, "garantia_registrada_por": admin},
+            "bloqueada": {"estado": "bloqueado", "bloqueo_hasta": timezone.now() + timedelta(days=1)},
+        }.items()):
+            cot = Cotizacion.objects.create(fecha_evento=timezone.localdate() + timedelta(days=30 + i), **comunes, **extra)
+            ids[nombre] = cot.pk
+        Cotizacion.objects.update(creado_en=creado)
+
+        Movimiento = self.migrar(self.despues).get_model("cotizaciones", "MovimientoCotizacion")
+
+        def de(nombre):
+            return [(m.tipo, m.usuario_id, m.fecha) for m in Movimiento.objects.filter(cotizacion_id=ids[nombre])]
+
+        self.assertEqual(de("cotizada"), [("creada", admin.pk, creado)])
+        self.assertEqual(de("confirmada"), [("creada", admin.pk, creado), ("confirmada", admin.pk, confirmado)])
+        # Sin registro de garantía (confirmada en /admin/), ni canceladas ni bloqueadas: solo "creada".
+        for nombre in ("confirmada_a_mano", "cancelada", "bloqueada"):
+            with self.subTest(caso=nombre):
+                self.assertEqual(de(nombre), [("creada", admin.pk, creado)])
+
+
+def consultas_for_update(contexto):
+    """Las tablas que una petición bloqueó con SELECT ... FOR UPDATE."""
+    tablas = ("salones_salonmontaje", "salones_salon", "cotizaciones_cotizacion")
+    bloqueadas = set()
+    for consulta in contexto.captured_queries:
+        sql = consulta["sql"]
+        if "FOR UPDATE" in sql:
+            desde = sql.split(" FROM ", 1)[1]
+            bloqueadas.update(t for t in tablas if desde.startswith(f'"{t}"'))
+    return bloqueadas
+
+
+class CrearConBloqueoDelMontajeTests(CotizacionBaseTest):
+    """SGDE-100: crear una cotización bloquea el salón y su montaje habilitado hasta guardar."""
+
+    def test_la_creacion_pide_el_bloqueo_y_sigue_funcionando(self):
+        self.client.force_authenticate(user=self.admin)
+        with CaptureQueriesContext(connection) as contexto:
+            r = self.client.post(LISTA, self.payload(), format="json")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED, r.data)
+        self.assertEqual(consultas_for_update(contexto), {"salones_salon", "salones_salonmontaje"})

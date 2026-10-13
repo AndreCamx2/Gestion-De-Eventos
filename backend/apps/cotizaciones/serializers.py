@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.db import transaction
 from django.utils import timezone
@@ -10,7 +11,8 @@ from apps.salones.models import Montaje, Salon, SalonMontaje
 from apps.sitios.acceso import CampoDeSitio
 from apps.sitios.models import Sitio
 
-from .models import Cotizacion, CotizacionItem
+from .estados import fecha_corta, registrar
+from .models import Cotizacion, CotizacionItem, MovimientoCotizacion
 from .services import redondear, totales_cotizacion, totales_linea
 
 DIAS_VIGENCIA_POR_DEFECTO = 15
@@ -27,7 +29,7 @@ class CotizacionCalendarioSerializer(serializers.ModelSerializer):
         fields = [
             "id", "salon", "salon_nombre", "cliente", "cliente_nombre",
             "montaje", "montaje_nombre", "estado", "vencida", "fecha_evento",
-            "cantidad_personas", "validez_oferta",
+            "cantidad_personas", "validez_oferta", "bloqueo_hasta",
         ]
 
 
@@ -95,7 +97,16 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
         salon = attrs["salon"]
         errores = {}
 
-        salon_montaje = SalonMontaje.objects.filter(salon=salon, montaje=attrs["montaje"]).first()
+        # SGDE-100: se bloquean el salón y su montaje habilitado hasta guardar la cotización,
+        # para que nadie quite el montaje (ni baje el aforo) entre esta revisión y el guardado.
+        # Mismo orden que el resto del API: primero el Salón. Requiere transaction.atomic():
+        # la vista de creación corre is_valid() y save() dentro de una.
+        if not Salon.objects.select_for_update().get(pk=salon.pk).activo:
+            # Leído de la fila bloqueada: una baja simultánea no se cuela (SGDE-99).
+            raise serializers.ValidationError({"salon": ["El salón está dado de baja."]})
+        salon_montaje = (
+            SalonMontaje.objects.select_for_update().filter(salon=salon, montaje=attrs["montaje"]).first()
+        )
         if salon_montaje is None:
             errores["montaje"] = ["El montaje no está habilitado para este salón."]
         elif attrs["cantidad_personas"] > salon_montaje.aforo:
@@ -144,6 +155,10 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
             )
             for item in items
         ])
+        registrar(
+            cotizacion, "creada", cotizacion.usuario,
+            f"Evento el {fecha_corta(cotizacion.fecha_evento)} para {cotizacion.cantidad_personas} personas.",
+        )
         return cotizacion
 
 
@@ -209,7 +224,30 @@ def garantia_de(cotizacion):
     }
 
 
-class CotizacionDetalleSerializer(serializers.ModelSerializer):
+CAMPOS_CANCELACION = ["cancelado_en", "cancelado_por", "penalizacion_pct", "motivo_cancelacion", "monto_retenido"]
+
+
+class CancelacionSalidaMixin(serializers.Serializer):
+    """Campos de la cancelación (SGDE-61), iguales en el detalle y el listado.
+
+    monto_retenido = total × penalizacion_pct ÷ 100, redondeado como los totales;
+    null si la cotización no está cancelada.
+    """
+
+    cancelado_en = serializers.DateTimeField(read_only=True)
+    cancelado_por = serializers.SerializerMethodField()
+    monto_retenido = serializers.SerializerMethodField()
+
+    def get_cancelado_por(self, obj):
+        return obj.cancelado_por.username if obj.cancelado_por else None
+
+    def get_monto_retenido(self, obj):
+        if obj.estado != "cancelado" or obj.penalizacion_pct is None:
+            return None
+        return str(redondear(_totales(obj)["total"] * obj.penalizacion_pct / 100))
+
+
+class CotizacionDetalleSerializer(CancelacionSalidaMixin, serializers.ModelSerializer):
     vencida = serializers.BooleanField(read_only=True)
     sitio = SitioResumenSerializer(read_only=True)
     cliente = ClienteResumenSerializer(read_only=True)
@@ -232,6 +270,7 @@ class CotizacionDetalleSerializer(serializers.ModelSerializer):
             "id", "estado", "vencida", "sitio", "cliente", "salon", "montaje", "aforo",
             "fecha_evento", "cantidad_personas", "validez_oferta", "bloqueo_hasta", "creado_en",
             "creado_por", "confirmado_en", "items", "subtotal", "impuestos", "total", "garantia",
+            *CAMPOS_CANCELACION,
         ]
         read_only_fields = fields
 
@@ -255,7 +294,7 @@ class CotizacionDetalleSerializer(serializers.ModelSerializer):
         return garantia_de(obj)
 
 
-class CotizacionListaSerializer(serializers.ModelSerializer):
+class CotizacionListaSerializer(CancelacionSalidaMixin, serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source="cliente.nombre", read_only=True)
     salon_nombre = serializers.CharField(source="salon.nombre", read_only=True)
     montaje_nombre = serializers.CharField(source="montaje.nombre", read_only=True)
@@ -270,7 +309,7 @@ class CotizacionListaSerializer(serializers.ModelSerializer):
         fields = [
             "id", "estado", "vencida", "cliente_nombre", "salon_nombre", "montaje_nombre",
             "fecha_evento", "cantidad_personas", "validez_oferta", "bloqueo_hasta",
-            "creado_en", "confirmado_en", "total", "garantia",
+            "creado_en", "confirmado_en", "total", "garantia", *CAMPOS_CANCELACION,
         ]
         read_only_fields = fields
 
@@ -315,3 +354,39 @@ class AceptacionSerializer(serializers.Serializer):
         if value <= 0:
             raise serializers.ValidationError("El monto debe ser mayor que 0.")
         return value
+
+
+# --- Entrada: bloqueo (SGDE-40/60/15) ---------------------------------------
+
+class BloqueoSerializer(serializers.Serializer):
+    # Con hora: "2026-10-14T18:00:00-05:00". Sin zona, se toma la de Colombia (TIME_ZONE).
+    bloqueo_hasta = serializers.DateTimeField()
+
+
+# --- Entrada: cancelación (SGDE-61) -----------------------------------------
+
+class CancelacionSerializer(serializers.Serializer):
+    penalizacion_pct = serializers.DecimalField(
+        max_digits=5, decimal_places=2, min_value=Decimal("0"), max_value=Decimal("100"),
+        error_messages={
+            "min_value": "La penalización debe estar entre 0 y 100.",
+            "max_value": "La penalización debe estar entre 0 y 100.",
+        },
+    )
+    motivo = serializers.CharField(
+        error_messages={"blank": "Escribe el motivo de la cancelación.", "required": "Escribe el motivo de la cancelación."},
+    )
+
+
+# --- Salida: movimientos (SGDE-62) ------------------------------------------
+
+class MovimientoSerializer(serializers.ModelSerializer):
+    # El username de quien lo hizo, o "sistema" (usuario null).
+    usuario = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MovimientoCotizacion
+        fields = ["id", "tipo", "usuario", "fecha", "detalle"]
+
+    def get_usuario(self, obj):
+        return obj.usuario.username if obj.usuario else "sistema"
