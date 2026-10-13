@@ -29,7 +29,7 @@ class CotizacionCalendarioSerializer(serializers.ModelSerializer):
         fields = [
             "id", "salon", "salon_nombre", "cliente", "cliente_nombre",
             "montaje", "montaje_nombre", "estado", "vencida", "fecha_evento",
-            "cantidad_personas", "validez_oferta",
+            "cantidad_personas", "validez_oferta", "bloqueo_hasta",
         ]
 
 

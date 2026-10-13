@@ -8,7 +8,7 @@ from django.db.migrations.executor import MigrationExecutor
 from django.test import SimpleTestCase, TransactionTestCase
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.test import APITestCase
 
 from apps.catalogo.models import Concepto
@@ -515,6 +515,17 @@ class CalendarioCamposTests(CotizacionBaseTest):
         self.assertEqual(fila["validez_oferta"], str(hoy() + timedelta(days=7)))
         self.assertEqual(fila["montaje"], self.montaje.pk)
         self.assertEqual(fila["montaje_nombre"], "Auditorio Test")
+
+    def test_trae_bloqueo_hasta_para_el_rack(self):
+        # SGDE-40: el Rack muestra hasta cuándo está bloqueado un salón.
+        libre = self.crear_en_bd()
+        bloqueada = self.crear_en_bd(estado="bloqueado", fecha_evento=hoy() + timedelta(days=31))
+        hasta = timezone.now() + timedelta(days=1)
+        bloqueada.bloqueo_hasta = hasta
+        bloqueada.save()
+        filas = self.por_id(self.client.get(self.URL))
+        self.assertIsNone(filas[libre.pk]["bloqueo_hasta"])
+        self.assertEqual(filas[bloqueada.pk]["bloqueo_hasta"], serializers.DateTimeField().to_representation(hasta))
 
     def crear_con_relaciones_propias(self, n):
         """Cotización con cliente, salón y montaje propios: si vuelve el N+1, sube el conteo."""
