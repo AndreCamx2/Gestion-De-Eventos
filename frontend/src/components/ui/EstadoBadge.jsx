@@ -1,20 +1,13 @@
+import { ETIQUETAS } from "../../utils/estadosCotizacion";
 import "./EstadoBadge.css";
 
 // Etiqueta del estado de una cotización: siempre texto + punto, nunca solo color
-// (guía, sección 2).
+// (guía, sección 2). Las etiquetas viven en utils/estadosCotizacion.js.
 //
 // OJO: el backend NO guarda "vencida". Cotizacion.estado solo puede ser
 // cotizado, bloqueado, confirmado o cancelado. Quien use este componente debe
 // pasar estado="vencida" cuando la cotización esté vencida y su estado sea
-// "cotizado".
-const ETIQUETAS = {
-  cotizado: "Cotizado",
-  bloqueado: "Bloqueado",
-  confirmado: "Confirmado",
-  vencida: "Vencida",
-  cancelado: "Cancelado",
-};
-
+// "cotizado" (estadoVisible() de utils/estadosCotizacion.js lo hace).
 export default function EstadoBadge({ estado, className = "" }) {
   const clave = String(estado ?? "").toLowerCase();
   const conocido = Object.hasOwn(ETIQUETAS, clave);

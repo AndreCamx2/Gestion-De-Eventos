@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { getUsuarioActual } from "../api/auth";
-import { listarCotizaciones, listarCalendario } from "../api/inicio";
+import { listarCotizaciones } from "../api/inicio";
+import { obtenerCalendario } from "../api/calendario";
 import { listarSalones } from "../api/salones";
 import { rolesDeRuta } from "../routes/rutasPorRol";
 import { AvisoError, Boton, Esqueleto, EstadoBadge, EstadoVacio, Tarjeta } from "../components/ui";
@@ -105,7 +106,7 @@ export default function Home() {
   const cargarCotizaciones = () => ejecutar(listarCotizaciones, setCotizaciones);
   const cargarCalendario = () =>
     ejecutar(
-      () => listarCalendario({ desde: fechaISO(hoy), hasta: fechaISO(sumarDias(hoy, DIAS_VENTANA - 1)) }),
+      () => obtenerCalendario({ desde: fechaISO(hoy), hasta: fechaISO(sumarDias(hoy, DIAS_VENTANA - 1)) }),
       setCalendario,
     );
   const cargarSalones = () => ejecutar(listarSalones, setSalones);

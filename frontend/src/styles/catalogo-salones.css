@@ -1,8 +1,7 @@
 /* Salones y montajes — rediseño Piedra viva (SGDE-79).
    Maqueta: docs/diseno/piedra-viva/maquetas/Salones.dc.html.
    Solo variables de tokens.css. Todo vive dentro de .salones-pv o usa prefijos
-   propios (salones-, salon-tarjeta) para no tocar a Rack, que sigue usando
-   las clases viejas de salones.css. */
+   propios (salones-, salon-tarjeta). */
 
 .salones-pv {
     display: flex;

@@ -2,6 +2,7 @@
 // import { Boton, Tarjeta, CabeceraPagina } from "../components/ui";
 export { default as Boton } from "./Boton";
 export { default as EstadoBadge } from "./EstadoBadge";
+export { default as LeyendaEstados } from "./LeyendaEstados";
 export { default as Tarjeta } from "./Tarjeta";
 export { default as CabeceraPagina } from "./CabeceraPagina";
 export { default as TablaContenedor } from "./TablaContenedor";
