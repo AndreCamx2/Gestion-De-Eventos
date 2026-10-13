@@ -138,8 +138,11 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        cotizacion = serializer.save()
+        # Validar y guardar en una sola transacción: validate() bloquea el salón y el
+        # montaje habilitado hasta que la cotización queda guardada (SGDE-100).
+        with transaction.atomic():
+            serializer.is_valid(raise_exception=True)
+            cotizacion = serializer.save()
         detalle = cotizaciones_con_relaciones().get(pk=cotizacion.pk)
         return Response(CotizacionDetalleSerializer(detalle).data, status=status.HTTP_201_CREATED)
 

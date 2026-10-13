@@ -5,6 +5,8 @@ en ENDPOINTS_ADMIN_DETALLE (apps/usuarios/tests.py).
 """
 from datetime import timedelta
 
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -187,3 +189,27 @@ class QuitarMontajeHabilitadoTests(BaseSalonesTests):
         self.cotizar(estado="confirmado", montaje=self.coctel)
         self.assertEqual(self.quitar().status_code, status.HTTP_204_NO_CONTENT)
         self.assertSigueHabilitado(False)
+
+
+class BloqueoDelMontajeTests(BaseSalonesTests):
+    """SGDE-100: quitar o editar un montaje habilitado toma el mismo bloqueo que crear una cotización."""
+
+    def tablas_bloqueadas(self, peticion):
+        with CaptureQueriesContext(connection) as contexto:
+            respuesta = peticion()
+        sqls = [c["sql"] for c in contexto.captured_queries if "FOR UPDATE" in c["sql"]]
+        tablas = {t for t in ("salones_salonmontaje", "salones_salon") for s in sqls
+                  if s.split(" FROM ", 1)[1].startswith(f'"{t}"')}
+        return respuesta, tablas
+
+    def test_el_delete_bloquea_salon_y_montaje(self):
+        r, tablas = self.tablas_bloqueadas(lambda: self.client.delete(salon_montaje_url(self.habilitado.pk)))
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(tablas, {"salones_salon", "salones_salonmontaje"})
+
+    def test_el_patch_bloquea_salon_y_montaje(self):
+        r, tablas = self.tablas_bloqueadas(
+            lambda: self.client.patch(salon_montaje_url(self.habilitado.pk), {"aforo": 90}, format="json")
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(tablas, {"salones_salon", "salones_salonmontaje"})

@@ -1,4 +1,6 @@
-from rest_framework import generics, permissions
+from django.db import transaction
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
 from .serializers import SalonSerializer, MontajeSerializer, SalonMontajeSerializer
 from .models import Salon, Montaje, SalonMontaje
 from apps.core.exceptions import Conflicto
@@ -71,11 +73,30 @@ class SalonMontajeDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return salon_montajes_del_usuario(self.request.user)
 
-    def perform_destroy(self, instance):
-        activas = Cotizacion.objects.activas().filter(salon=instance.salon_id, montaje=instance.montaje_id).count()
-        if activas:
-            raise Conflicto(
-                f"No se puede quitar el montaje: tiene {texto_cotizaciones_activas(activas)} "
-                f"(cotizadas vigentes, bloqueadas o confirmadas, con evento de hoy en adelante)."
-            )
-        instance.delete()
+    def bloquear_filas(self):
+        """Bloquea el Salón y el montaje habilitado, en el mismo orden que la creación de
+        cotizaciones (SGDE-100): así contar las activas y quitar o editar no se cruza
+        con una cotización que se está creando. Va dentro de transaction.atomic()."""
+        habilitado = self.get_object()
+        Salon.objects.select_for_update().get(pk=habilitado.salon_id)
+        return SalonMontaje.objects.select_for_update().get(pk=habilitado.pk)
+
+    def update(self, request, *args, **kwargs):
+        # validate_aforo cuenta las cotizaciones activas con las filas ya bloqueadas.
+        with transaction.atomic():
+            self.bloquear_filas()
+            return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        with transaction.atomic():
+            habilitado = self.bloquear_filas()
+            activas = Cotizacion.objects.activas().filter(
+                salon=habilitado.salon_id, montaje=habilitado.montaje_id
+            ).count()
+            if activas:
+                raise Conflicto(
+                    f"No se puede quitar el montaje: tiene {texto_cotizaciones_activas(activas)} "
+                    f"(cotizadas vigentes, bloqueadas o confirmadas, con evento de hoy en adelante)."
+                )
+            habilitado.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

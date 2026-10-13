@@ -97,7 +97,14 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
         salon = attrs["salon"]
         errores = {}
 
-        salon_montaje = SalonMontaje.objects.filter(salon=salon, montaje=attrs["montaje"]).first()
+        # SGDE-100: se bloquean el salón y su montaje habilitado hasta guardar la cotización,
+        # para que nadie quite el montaje (ni baje el aforo) entre esta revisión y el guardado.
+        # Mismo orden que el resto del API: primero el Salón. Requiere transaction.atomic():
+        # la vista de creación corre is_valid() y save() dentro de una.
+        Salon.objects.select_for_update().get(pk=salon.pk)
+        salon_montaje = (
+            SalonMontaje.objects.select_for_update().filter(salon=salon, montaje=attrs["montaje"]).first()
+        )
         if salon_montaje is None:
             errores["montaje"] = ["El montaje no está habilitado para este salón."]
         elif attrs["cantidad_personas"] > salon_montaje.aforo:

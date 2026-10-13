@@ -1080,3 +1080,26 @@ class MigracionMovimientosExistentesTests(TransactionTestCase):
         for nombre in ("confirmada_a_mano", "cancelada", "bloqueada"):
             with self.subTest(caso=nombre):
                 self.assertEqual(de(nombre), [("creada", admin.pk, creado)])
+
+
+def consultas_for_update(contexto):
+    """Las tablas que una petición bloqueó con SELECT ... FOR UPDATE."""
+    tablas = ("salones_salonmontaje", "salones_salon", "cotizaciones_cotizacion")
+    bloqueadas = set()
+    for consulta in contexto.captured_queries:
+        sql = consulta["sql"]
+        if "FOR UPDATE" in sql:
+            desde = sql.split(" FROM ", 1)[1]
+            bloqueadas.update(t for t in tablas if desde.startswith(f'"{t}"'))
+    return bloqueadas
+
+
+class CrearConBloqueoDelMontajeTests(CotizacionBaseTest):
+    """SGDE-100: crear una cotización bloquea el salón y su montaje habilitado hasta guardar."""
+
+    def test_la_creacion_pide_el_bloqueo_y_sigue_funcionando(self):
+        self.client.force_authenticate(user=self.admin)
+        with CaptureQueriesContext(connection) as contexto:
+            r = self.client.post(LISTA, self.payload(), format="json")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED, r.data)
+        self.assertEqual(consultas_for_update(contexto), {"salones_salon", "salones_salonmontaje"})
