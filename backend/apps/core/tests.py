@@ -67,28 +67,22 @@ class SeedDemoTests(TestCase):
         self.assertEqual(Empresa.objects.filter(identificacion=NIT_EMPRESA_DEMO).count(), 1)
         self.assertEqual(Empresa.objects.count(), 1)
 
-    def test_corrige_el_juridico_viejo_con_nit_repetido(self):
-        # Así dejaba los datos el seed anterior: el NIT también en Cliente.identificacion.
+    def test_reutiliza_el_juridico_que_ya_tiene_la_empresa_demo(self):
+        # Se busca por tipo + empresa: un jurídico creado antes (con otro nombre) no se duplica.
+        # El jurídico viejo con NIT repetido ya no puede existir: lo limpia la migración
+        # 0007 de clientes y lo impide el constraint (SGDE-91).
         empresa = Empresa.objects.create(
             identificacion=NIT_EMPRESA_DEMO,
             razon_social="Eventos del Caribe S.A.S. (demo)",
             ciudad=Ciudad.objects.get(codigo="CTG"),
         )
-        viejo = Cliente.objects.create(
-            tipo=Cliente.JURIDICA,
-            nombre="Eventos del Caribe S.A.S. (demo)",
-            identificacion=NIT_EMPRESA_DEMO,
-            empresa=empresa,
-        )
+        previo = Cliente.objects.create(tipo=Cliente.JURIDICA, nombre="Creado a mano", empresa=empresa)
 
         sembrar()
 
         juridicos = Cliente.objects.filter(tipo=Cliente.JURIDICA)
         self.assertEqual(juridicos.count(), 1)
-        corregido = juridicos.get()
-        self.assertEqual(corregido.pk, viejo.pk)
-        self.assertIsNone(corregido.identificacion)
-        self.assertEqual(corregido.empresa_id, empresa.pk)
+        self.assertEqual(juridicos.get().pk, previo.pk)
 
     def test_usa_la_contrasena_de_la_variable_de_entorno(self):
         with mock.patch.dict("os.environ", {"SEED_ADMIN_PASSWORD": "clave-de-prueba-9"}):

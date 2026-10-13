@@ -207,6 +207,13 @@
     line-height: 0.95;
     letter-spacing: -0.04em;
     overflow-wrap: anywhere;
+    /* Un nombre largo no estira la tarjeta: máximo 2 líneas (SGDE-85).
+       El nombre completo queda en el atributo title. */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
 }
 
 .salon-tarjeta__cuerpo {

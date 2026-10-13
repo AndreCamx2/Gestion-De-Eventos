@@ -175,6 +175,63 @@ class DetallesDeOtroSitioTests(MultiSitioBaseTest):
         self.assertEqual(cotizacion.estado, "cotizado")
         self.assertEqual(cotizacion.validez_oferta, timezone.localdate() + timedelta(days=10))
 
+    def test_salones_y_montajes_habilitados_de_otro_sitio_dan_404(self):
+        # SGDE-88: detalle, edición y borrado.
+        salon, habilitado = self.b["salon"], self.b["salon_montaje"]
+        salon_url, habilitado_url = f"/api/salones/{salon.pk}/", f"/api/salon-montajes/{habilitado.pk}/"
+        for metodo, url, datos in (
+            ("get", salon_url, None),
+            ("patch", salon_url, {"nombre": "Intruso"}),
+            ("get", habilitado_url, None),
+            ("patch", habilitado_url, {"aforo": 1}),
+            ("delete", habilitado_url, None),
+        ):
+            with self.subTest(metodo=metodo, url=url):
+                r = getattr(self.client, metodo)(url, datos, format="json")
+                self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+        salon.refresh_from_db()
+        habilitado.refresh_from_db()
+        self.assertEqual(salon.nombre, "Salón Finca B")
+        self.assertEqual(habilitado.aforo, 100)
+
+    def test_bloquear_o_liberar_una_cotizacion_de_otro_sitio_da_404(self):
+        # SEG-010: la ruta vieja /api/rack/bloqueos/ sí lo permitía.
+        cotizacion = self.b["cotizacion"]
+        url = f"/api/cotizaciones/{cotizacion.pk}/bloqueo/"
+        hasta = (timezone.now() + timedelta(days=1)).isoformat()
+        self.assertEqual(self.client.post(url, {"bloqueo_hasta": hasta}, format="json").status_code,
+                         status.HTTP_404_NOT_FOUND)
+        cotizacion.refresh_from_db()
+        self.assertEqual(cotizacion.estado, "cotizado")
+
+        cotizacion.estado, cotizacion.bloqueo_hasta = "bloqueado", timezone.now() + timedelta(days=1)
+        cotizacion.save()
+        self.assertEqual(self.client.delete(url).status_code, status.HTTP_404_NOT_FOUND)
+        cotizacion.refresh_from_db()
+        self.assertEqual(cotizacion.estado, "bloqueado")
+
+    def test_cancelar_una_cotizacion_de_otro_sitio_da_404(self):
+        cotizacion = self.b["cotizacion"]
+        cotizacion.estado = "confirmado"
+        cotizacion.save()
+        r = self.client.post(
+            f"/api/cotizaciones/{cotizacion.pk}/cancelacion/", {"penalizacion_pct": "10", "motivo": "X"}, format="json"
+        )
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+        cotizacion.refresh_from_db()
+        self.assertEqual(cotizacion.estado, "confirmado")
+
+    def test_movimientos_de_otro_sitio_dan_404_y_su_salon_da_lista_vacia(self):
+        # SGDE-62
+        self.assertEqual(
+            self.client.get(f"/api/cotizaciones/{self.b['cotizacion'].pk}/movimientos/").status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+        r = self.client.get("/api/cotizaciones/", {"salon": self.b["salon"].pk})
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.json(), [])
+
     def test_historial_de_un_concepto_inexistente_da_404(self):
         self.assertEqual(self.client.get("/api/conceptos/999999/historial/").status_code, status.HTTP_404_NOT_FOUND)
 
@@ -381,6 +438,22 @@ class UsuariosPorSitioTests(MultiSitioBaseTest):
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertEqual(set(self.sin_sitios.sitios.all()), {self.a["sitio"]})
+
+
+class RutaDeBloqueosRetiradaTests(MultiSitioBaseTest):
+    """SEG-010: /api/rack/bloqueos/ veía y bloqueaba cotizaciones de otros sitios. Se retiró."""
+
+    def test_la_ruta_ya_no_existe_y_no_bloquea_nada(self):
+        self.client.force_authenticate(user=self.admin_a)
+        url = "/api/rack/bloqueos/"
+        self.assertEqual(self.client.get(url).status_code, status.HTTP_404_NOT_FOUND)
+        cotizacion = self.b["cotizacion"]
+        hasta = (timezone.now() + timedelta(days=1)).isoformat()
+        r = self.client.post(url, {"cotizacion": cotizacion.pk, "bloqueo_hasta": hasta}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+        cotizacion.refresh_from_db()
+        self.assertEqual(cotizacion.estado, "cotizado")
+        self.assertIsNone(cotizacion.bloqueo_hasta)
 
 
 class RevisarSitiosComandoTests(MultiSitioBaseTest):

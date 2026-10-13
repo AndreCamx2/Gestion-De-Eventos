@@ -68,7 +68,6 @@ INSTALLED_APPS = [
     "apps.sitios",
     "apps.clientes",
     "apps.salones",
-    "apps.disponibilidad",
     "apps.catalogo",
     "apps.proveedores",
     "apps.cotizaciones",
