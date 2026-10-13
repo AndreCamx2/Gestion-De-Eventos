@@ -16,7 +16,7 @@ export const ROLES_POR_RUTA = {
   // A /inicio redirige RoleRoute: debe aceptar a todos o se forma un ciclo.
   "/inicio": TODOS,
   "/cotizaciones": SOLO_ADMIN, // GET /cotizaciones/
-  "/calendario": SOLO_ADMIN, // su API será /calendario/ (solo administrador)
+  "/calendario": SOLO_ADMIN, // /calendario/, /salones/, /sitios/ y /cotizaciones/<id>/bloqueo/
   "/salones": SOLO_ADMIN, // GET /salones/
   "/sitios": SOLO_ADMIN, // /sitios/ (y /ciudades/)
   "/clientes": SOLO_ADMIN, // /clientes/, /empresas/
