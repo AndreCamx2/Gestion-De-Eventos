@@ -10,6 +10,7 @@ from apps.catalogo.views import (
     ConceptoListCreateView, ConceptoRetrieveUpdateView, ConceptoHistorialListView,
 )
 from apps.proveedores.views import ProveedorListCreateView, StockElementoListCreateView
+from apps.disponibilidad.views import BloqueoListCreateView
 from apps.clientes.views import (
     RegistroPublicoView, ClienteAdminListCreateView, ClienteAdminRetrieveUpdateDestroyView, EmpresaListCreateView,
 )
@@ -44,6 +45,7 @@ urlpatterns = [
     path('api/conceptos/<int:pk>/historial/', ConceptoHistorialListView.as_view(), name='concepto_historial'),
     path('api/proveedores/', ProveedorListCreateView.as_view(), name='proveedor_list_create'),
     path('api/stock/', StockElementoListCreateView.as_view(), name='stock_list_create'),
+    path('api/rack/bloqueos/', BloqueoListCreateView.as_view(), name='bloqueo_list_create'),
     path('api/cotizaciones/', CotizacionListCreateView.as_view(), name='cotizacion_list_create'),
     path('api/cotizaciones/<int:pk>/', CotizacionDetailView.as_view(), name='cotizacion_detail'),
     path('api/cotizaciones/<int:pk>/aceptacion/', CotizacionAceptacionView.as_view(), name='cotizacion_aceptacion'),
