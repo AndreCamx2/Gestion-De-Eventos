@@ -195,6 +195,22 @@ class DetallesDeOtroSitioTests(MultiSitioBaseTest):
         self.assertEqual(salon.nombre, "Salón Finca B")
         self.assertEqual(habilitado.aforo, 100)
 
+    def test_bloquear_o_liberar_una_cotizacion_de_otro_sitio_da_404(self):
+        # SEG-010: la ruta vieja /api/rack/bloqueos/ sí lo permitía.
+        cotizacion = self.b["cotizacion"]
+        url = f"/api/cotizaciones/{cotizacion.pk}/bloqueo/"
+        hasta = (timezone.now() + timedelta(days=1)).isoformat()
+        self.assertEqual(self.client.post(url, {"bloqueo_hasta": hasta}, format="json").status_code,
+                         status.HTTP_404_NOT_FOUND)
+        cotizacion.refresh_from_db()
+        self.assertEqual(cotizacion.estado, "cotizado")
+
+        cotizacion.estado, cotizacion.bloqueo_hasta = "bloqueado", timezone.now() + timedelta(days=1)
+        cotizacion.save()
+        self.assertEqual(self.client.delete(url).status_code, status.HTTP_404_NOT_FOUND)
+        cotizacion.refresh_from_db()
+        self.assertEqual(cotizacion.estado, "bloqueado")
+
     def test_historial_de_un_concepto_inexistente_da_404(self):
         self.assertEqual(self.client.get("/api/conceptos/999999/historial/").status_code, status.HTTP_404_NOT_FOUND)
 

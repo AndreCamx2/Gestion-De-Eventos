@@ -1,6 +1,8 @@
 from datetime import timedelta
 from decimal import Decimal
+from io import StringIO
 
+from django.core.management import call_command
 from django.db import connection
 from django.test import SimpleTestCase
 from django.test.utils import CaptureQueriesContext
@@ -291,8 +293,9 @@ class ListadoCotizacionesTests(CotizacionBaseTest):
         for dias in range(20, 25):
             self.crear_en_bd(fecha_evento=hoy() + timedelta(days=dias))
         self.client.force_authenticate(user=self.admin)
-        # cotizaciones (con joins) + items + conceptos, sin importar cuántas haya
-        with self.assertNumQueries(3):
+        # cotizaciones (con joins) + items + conceptos, sin importar cuántas haya, más 3
+        # fijas de liberar los bloqueos vencidos: savepoint, SELECT ... FOR UPDATE y release.
+        with self.assertNumQueries(6):
             self.client.get(LISTA)
 
 
@@ -625,3 +628,189 @@ class DetalleCamposSGDE89Tests(CotizacionBaseTest):
         data = self.client.get(detalle(cot.pk)).data
         self.assertIsNotNone(data["confirmado_en"])
         self.assertEqual(data["confirmado_en"], data["garantia"]["registrada_en"])
+
+
+def bloqueo(pk):
+    return f"{detalle(pk)}bloqueo/"
+
+
+def en(dias, hora=12):
+    """Fecha y hora local (Colombia) a `dias` de hoy, en ISO para el payload."""
+    momento = timezone.localtime().replace(hour=hora, minute=0, second=0, microsecond=0) + timedelta(days=dias)
+    return momento.isoformat()
+
+
+class BloqueoTests(CotizacionBaseTest):
+    """SGDE-40/60/15: bloquear y liberar el salón y la fecha de una cotización."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+        self.fecha = hoy() + timedelta(days=30)
+
+    def bloquear(self, pk, hasta=None):
+        return self.client.post(bloqueo(pk), {"bloqueo_hasta": hasta or en(2)}, format="json")
+
+    def bloqueada_en_bd(self, hasta, fecha_evento=None):
+        cot = self.crear_en_bd(fecha_evento=fecha_evento or self.fecha, estado="bloqueado")
+        cot.bloqueo_hasta = hasta
+        cot.save()
+        return cot
+
+    def test_bloquea_y_responde_con_el_detalle(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        r = self.bloquear(cot.pk, en(2))
+        self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+        self.assertEqual(r.data["estado"], "bloqueado")
+        self.assertIsNotNone(r.data["bloqueo_hasta"])
+        cot.refresh_from_db()
+        self.assertEqual(cot.estado, "bloqueado")
+
+    def test_se_puede_bloquear_hasta_el_mismo_dia_del_evento(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        self.assertEqual(self.bloquear(cot.pk, en(30, hora=23)).status_code, status.HTTP_200_OK)
+
+    def test_desde_un_estado_que_no_es_cotizado_da_409(self):
+        for i, estado in enumerate(("bloqueado", "confirmado", "cancelado")):
+            cot = self.crear_en_bd(fecha_evento=self.fecha + timedelta(days=i), estado=estado)
+            if estado == "bloqueado":
+                cot.bloqueo_hasta = timezone.now() + timedelta(days=1)
+                cot.save()
+            with self.subTest(estado=estado):
+                r = self.bloquear(cot.pk)
+                self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+                self.assertIn("Solo se puede bloquear una cotización cotizada", r.data["detail"])
+
+    def test_una_cotizada_vencida_da_409(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha, validez_oferta=hoy() - timedelta(days=1))
+        r = self.bloquear(cot.pk)
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("vencida", r.data["detail"])
+
+    def test_fecha_pasada_o_despues_del_evento_da_400(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        for hasta, mensaje in (
+            (en(-1), "Debe ser posterior al momento actual."),
+            (en(31), "No puede ser posterior al día del evento."),
+        ):
+            with self.subTest(hasta=hasta):
+                r = self.bloquear(cot.pk, hasta)
+                self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(r.data["bloqueo_hasta"], [mensaje])
+        r = self.client.post(bloqueo(cot.pk), {}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        cot.refresh_from_db()
+        self.assertEqual(cot.estado, "cotizado")
+
+    def test_otra_cotizacion_con_bloqueo_vigente_da_409_y_dice_hasta_cuando(self):
+        self.bloqueada_en_bd(timezone.now() + timedelta(days=3))
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        r = self.bloquear(cot.pk)
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("bloqueado para esa fecha por otra cotización hasta", r.data["detail"])
+
+    def test_salon_confirmado_esa_fecha_da_409(self):
+        self.crear_en_bd(fecha_evento=self.fecha, estado="confirmado")
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        r = self.bloquear(cot.pk)
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(r.data["detail"], "El salón ya está confirmado para esa fecha.")
+
+    def test_otro_dia_o_un_bloqueo_vencido_no_estorban(self):
+        self.bloqueada_en_bd(timezone.now() + timedelta(days=3), fecha_evento=self.fecha + timedelta(days=1))
+        vencido = self.bloqueada_en_bd(timezone.now() - timedelta(minutes=1))
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        self.assertEqual(self.bloquear(cot.pk).status_code, status.HTTP_200_OK)
+        vencido.refresh_from_db()
+        self.assertEqual((vencido.estado, vencido.bloqueo_hasta), ("cotizado", None))
+
+    def test_liberar_a_mano(self):
+        cot = self.bloqueada_en_bd(timezone.now() + timedelta(days=1))
+        r = self.client.delete(bloqueo(cot.pk))
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual((r.data["estado"], r.data["bloqueo_hasta"]), ("cotizado", None))
+
+    def test_liberar_una_que_no_esta_bloqueada_da_409(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        r = self.client.delete(bloqueo(cot.pk))
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(r.data["detail"], "La cotización no está bloqueada; está cotizada.")
+
+    def test_inexistente_404(self):
+        self.assertEqual(self.bloquear(999999).status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(self.client.delete(bloqueo(999999)).status_code, status.HTTP_404_NOT_FOUND)
+
+
+class LiberacionAutomaticaTests(CotizacionBaseTest):
+    """Los bloqueos vencidos se liberan al leer (no hay tareas programadas en Render Free)."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+        self.vencido = self.crear_en_bd(estado="bloqueado")
+        self.vencido.bloqueo_hasta = timezone.now() - timedelta(minutes=1)
+        self.vencido.save()
+        self.vigente = self.crear_en_bd(estado="bloqueado", fecha_evento=hoy() + timedelta(days=31))
+        self.vigente.bloqueo_hasta = timezone.now() + timedelta(days=1)
+        self.vigente.save()
+
+    def assertLiberado(self):
+        self.vencido.refresh_from_db()
+        self.vigente.refresh_from_db()
+        self.assertEqual((self.vencido.estado, self.vencido.bloqueo_hasta), ("cotizado", None))
+        self.assertEqual(self.vigente.estado, "bloqueado")
+
+    def test_al_listar(self):
+        filas = {c["id"]: c for c in self.client.get(LISTA).data}
+        self.assertEqual(filas[self.vencido.pk]["estado"], "cotizado")
+        self.assertIsNone(filas[self.vencido.pk]["bloqueo_hasta"])
+        self.assertLiberado()
+
+    def test_al_ver_el_detalle(self):
+        self.assertEqual(self.client.get(detalle(self.vencido.pk)).data["estado"], "cotizado")
+        self.assertLiberado()
+
+    def test_al_ver_el_calendario(self):
+        filas = {c["id"]: c for c in self.client.get("/api/calendario/").data}
+        self.assertEqual(filas[self.vencido.pk]["estado"], "cotizado")
+        self.assertEqual(filas[self.vigente.pk]["estado"], "bloqueado")
+        self.assertLiberado()
+
+    def test_con_el_comando(self):
+        salida = StringIO()
+        call_command("liberar_bloqueos", stdout=salida)
+        self.assertIn("Bloqueos vencidos liberados: 1", salida.getvalue())
+        self.assertLiberado()
+
+
+class AceptarConBloqueoTests(CotizacionBaseTest):
+    """La aceptación (SGDE-20) acepta una bloqueada y respeta el bloqueo de otra cotización."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+        self.datos = {"tipo": "transferencia", "monto": "500000"}
+
+    def bloqueada(self, fecha_evento=None, validez_oferta=None):
+        cot = self.crear_en_bd(estado="bloqueado", fecha_evento=fecha_evento, validez_oferta=validez_oferta)
+        cot.bloqueo_hasta = timezone.now() + timedelta(days=1)
+        cot.save()
+        return cot
+
+    def test_acepta_una_bloqueada_y_quita_el_bloqueo(self):
+        cot = self.bloqueada()
+        r = self.client.post(aceptacion(cot.pk), self.datos, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+        self.assertEqual((r.data["estado"], r.data["bloqueo_hasta"]), ("confirmado", None))
+
+    def test_acepta_una_bloqueada_aunque_su_vigencia_haya_pasado(self):
+        cot = self.bloqueada(validez_oferta=hoy() - timedelta(days=1))
+        self.assertEqual(self.client.post(aceptacion(cot.pk), self.datos, format="json").status_code,
+                         status.HTTP_200_OK)
+
+    def test_otra_cotizacion_con_bloqueo_vigente_da_409_y_dice_hasta_cuando(self):
+        fecha = hoy() + timedelta(days=30)
+        self.bloqueada(fecha_evento=fecha)
+        otra = self.crear_en_bd(fecha_evento=fecha)
+        r = self.client.post(aceptacion(otra.pk), self.datos, format="json")
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("bloqueado para esa fecha por otra cotización hasta", r.data["detail"])
+        otra.refresh_from_db()
+        self.assertEqual(otra.estado, "cotizado")

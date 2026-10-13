@@ -315,3 +315,10 @@ class AceptacionSerializer(serializers.Serializer):
         if value <= 0:
             raise serializers.ValidationError("El monto debe ser mayor que 0.")
         return value
+
+
+# --- Entrada: bloqueo (SGDE-40/60/15) ---------------------------------------
+
+class BloqueoSerializer(serializers.Serializer):
+    # Con hora: "2026-10-14T18:00:00-05:00". Sin zona, se toma la de Colombia (TIME_ZONE).
+    bloqueo_hasta = serializers.DateTimeField()

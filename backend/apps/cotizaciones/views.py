@@ -1,6 +1,4 @@
-from django.db import IntegrityError, transaction
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
+from django.db import transaction
 from django.utils.dateparse import parse_date
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import ValidationError
@@ -10,19 +8,17 @@ from apps.core.exceptions import Conflicto
 from apps.sitios.acceso import filtrar_por_sitio
 from apps.usuarios.permissions import EsAdministrador
 
+from . import estados
 from .models import Cotizacion
 from .serializers import (
-    AceptacionSerializer, CotizacionCalendarioSerializer, CotizacionCrearSerializer, CotizacionDetalleSerializer,
-    CotizacionListaSerializer, CotizacionVigenciaSerializer,
+    AceptacionSerializer, BloqueoSerializer, CotizacionCalendarioSerializer, CotizacionCrearSerializer,
+    CotizacionDetalleSerializer, CotizacionListaSerializer, CotizacionVigenciaSerializer,
 )
-
-
-ESTADO_EN_FEMENINO = {"bloqueado": "bloqueada", "confirmado": "confirmada", "cancelado": "cancelada"}
 
 
 def exigir_estado_cotizado(cotizacion):
     if cotizacion.estado != "cotizado":
-        raise Conflicto(f"La cotización está {ESTADO_EN_FEMENINO.get(cotizacion.estado, cotizacion.estado)}.")
+        raise Conflicto(f"La cotización está {estados.en_femenino(cotizacion.estado)}.")
 
 
 class CotizacionCalendarioView(generics.ListAPIView):
@@ -31,6 +27,7 @@ class CotizacionCalendarioView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def get_queryset(self):
+        estados.liberar_bloqueos_vencidos()
         # Un ?salon= de otro sitio devuelve una lista vacía: el filtro por sitio va primero.
         # select_related: sin él, cada fila hace una consulta por cliente, salón y montaje.
         queryset = filtrar_por_sitio(
@@ -56,7 +53,12 @@ def cotizaciones_con_relaciones():
 
 
 def cotizaciones_del_usuario(usuario):
-    """Las cotizaciones de los sitios del usuario: un id de otro sitio da 404."""
+    """Las cotizaciones de los sitios del usuario: un id de otro sitio da 404.
+
+    Antes libera los bloqueos vencidos, para que el listado y el detalle muestren
+    el estado real (no hay tareas programadas en Render Free).
+    """
+    estados.liberar_bloqueos_vencidos()
     return filtrar_por_sitio(cotizaciones_con_relaciones(), usuario)
 
 
@@ -151,40 +153,56 @@ class CotizacionDetailView(generics.RetrieveUpdateAPIView):
         return Response(CotizacionDetalleSerializer(self.get_queryset().get(pk=cotizacion.pk)).data)
 
 
-class CotizacionAceptacionView(generics.GenericAPIView):
-    """Registra la garantía y confirma la cotización (estado "confirmado")."""
+class AccionSobreCotizacionView(generics.GenericAPIView):
+    """Base de las acciones que cambian el estado (aceptar, bloquear, liberar).
+
+    `ejecutar` corre dentro de transaction.atomic() con el Salón y la Cotización
+    bloqueados (estados.tomar_para_cambio). Una cotización de otro sitio da 404.
+    Responde con el detalle actualizado.
+    """
 
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
-    def post(self, request, *args, **kwargs):
+    def ejecutar(self, cotizacion, datos):
+        raise NotImplementedError
+
+    def accion(self, datos=None):
+        # Fuera de la transacción de la acción: ver el orden de bloqueo en estados.py.
+        estados.liberar_bloqueos_vencidos()
         with transaction.atomic():
-            # select_for_update bloquea la fila: dos aceptaciones simultáneas no se pisan.
-            # Una cotización de otro sitio da 404, igual que una inexistente.
-            cotizacion = get_object_or_404(
-                filtrar_por_sitio(Cotizacion.objects.select_for_update(), request.user), pk=kwargs["pk"]
+            cotizacion = estados.tomar_para_cambio(
+                filtrar_por_sitio(Cotizacion.objects.all(), self.request.user), self.kwargs["pk"]
             )
-
-            serializer = AceptacionSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-
-            exigir_estado_cotizado(cotizacion)
-            if cotizacion.vencida:
-                raise Conflicto("La cotización está vencida.")
-
-            cotizacion.garantia_tipo = serializer.validated_data["tipo"]
-            cotizacion.garantia_monto = serializer.validated_data["monto"]
-            cotizacion.garantia_registrada_en = timezone.now()
-            cotizacion.garantia_registrada_por = request.user
-            cotizacion.estado = "confirmado"
-            try:
-                # Atomic interno (savepoint): si choca con uq_salon_fecha_confirmado,
-                # respondemos 409 aquí en vez del 400 genérico del manejador global.
-                with transaction.atomic():
-                    cotizacion.save(update_fields=[
-                        "garantia_tipo", "garantia_monto", "garantia_registrada_en",
-                        "garantia_registrada_por", "estado",
-                    ])
-            except IntegrityError:
-                raise Conflicto("El salón ya está confirmado para esa fecha.")
-
+            self.ejecutar(cotizacion, datos)
         return Response(CotizacionDetalleSerializer(cotizaciones_con_relaciones().get(pk=cotizacion.pk)).data)
+
+    def validar(self, serializer_class):
+        serializer = serializer_class(data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        return serializer.validated_data
+
+
+class CotizacionAceptacionView(AccionSobreCotizacionView):
+    """Registra la garantía y confirma la cotización, desde cotizada o bloqueada (SGDE-20)."""
+
+    def post(self, request, *args, **kwargs):
+        return self.accion(self.validar(AceptacionSerializer))
+
+    def ejecutar(self, cotizacion, datos):
+        estados.aceptar(cotizacion, datos["tipo"], datos["monto"], self.request.user)
+
+
+class CotizacionBloqueoView(AccionSobreCotizacionView):
+    """POST bloquea el salón y la fecha hasta `bloqueo_hasta`; DELETE lo libera a mano."""
+
+    def post(self, request, *args, **kwargs):
+        return self.accion(self.validar(BloqueoSerializer))
+
+    def delete(self, request, *args, **kwargs):
+        return self.accion()
+
+    def ejecutar(self, cotizacion, datos):
+        if self.request.method == "POST":
+            estados.bloquear(cotizacion, datos["bloqueo_hasta"])
+        else:
+            estados.liberar(cotizacion)
