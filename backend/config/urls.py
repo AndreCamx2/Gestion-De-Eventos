@@ -3,7 +3,9 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenBlacklistView, TokenObtainPairView, TokenRefreshView
 from apps.usuarios.views import RegistrarUsuarioView, MeView, UsuarioListCreateView, UsuarioDetailView
 from apps.sitios.views import SitioListCreateView, CiudadListView
-from apps.salones.views import SalonListCreateView, MontajeListCreateView, SalonMontajeListCreateView
+from apps.salones.views import (
+    SalonListCreateView, SalonDetailView, MontajeListCreateView, SalonMontajeListCreateView, SalonMontajeDetailView,
+)
 from apps.catalogo.views import (
     ConceptoListCreateView, ConceptoRetrieveUpdateView, ConceptoHistorialListView,
 )
@@ -33,8 +35,10 @@ urlpatterns = [
     path('api/clientes/<int:pk>/', ClienteAdminRetrieveUpdateDestroyView.as_view(), name='cliente_admin_detail'),
     path('api/empresas/', EmpresaListCreateView.as_view(), name='empresa_list_create'),
     path('api/salones/', SalonListCreateView.as_view(), name='salon_list_create'),
+    path('api/salones/<int:pk>/', SalonDetailView.as_view(), name='salon_detail'),
     path('api/montajes/', MontajeListCreateView.as_view(), name='montaje_list_create'),
     path('api/salon-montajes/', SalonMontajeListCreateView.as_view(), name='salon_montaje_list_create'),
+    path('api/salon-montajes/<int:pk>/', SalonMontajeDetailView.as_view(), name='salon_montaje_detail'),
     path('api/conceptos/', ConceptoListCreateView.as_view(), name='concepto_list_create'),
     path('api/conceptos/<int:pk>/', ConceptoRetrieveUpdateView.as_view(), name='concepto_detail'),
     path('api/conceptos/<int:pk>/historial/', ConceptoHistorialListView.as_view(), name='concepto_historial'),

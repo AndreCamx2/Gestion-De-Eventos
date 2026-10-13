@@ -3,9 +3,10 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from rest_framework import generics, permissions, status
-from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from apps.core.exceptions import Conflicto
 from apps.sitios.acceso import filtrar_por_sitio
 from apps.usuarios.permissions import EsAdministrador
 
@@ -14,14 +15,6 @@ from .serializers import (
     AceptacionSerializer, CotizacionCalendarioSerializer, CotizacionCrearSerializer, CotizacionDetalleSerializer,
     CotizacionListaSerializer, CotizacionVigenciaSerializer,
 )
-
-
-class Conflicto(APIException):
-    """409: la petición es válida pero choca con el estado actual de la cotización."""
-
-    status_code = status.HTTP_409_CONFLICT
-    default_detail = "La cotización no admite esta operación en su estado actual."
-    default_code = "conflicto"
 
 
 ESTADO_EN_FEMENINO = {"bloqueado": "bloqueada", "confirmado": "confirmada", "cancelado": "cancelada"}

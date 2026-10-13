@@ -7,6 +7,24 @@ from apps.salones.models import Salon, Montaje
 from apps.catalogo.models import Concepto
 
 
+class CotizacionQuerySet(models.QuerySet):
+    def activas(self):
+        """Las que todavía comprometen el salón: evento de hoy en adelante y, además,
+        bloqueada, confirmada o cotizada no vencida (misma regla que `vencida`).
+
+        Un evento pasado o una cotización vencida no cuentan. Bloquean quitar un
+        montaje habilitado y bajar su aforo (SGDE-88).
+        """
+        hoy = timezone.localdate()
+        cotizada_vigente = models.Q(estado="cotizado") & (
+            models.Q(validez_oferta__isnull=True) | models.Q(validez_oferta__gte=hoy)
+        )
+        return self.filter(
+            models.Q(fecha_evento__gte=hoy)
+            & (models.Q(estado__in=["bloqueado", "confirmado"]) | cotizada_vigente)
+        )
+
+
 class Cotizacion(models.Model):
     ESTADO_CHOICES = [
         ("cotizado", "Cotizado"),
@@ -35,6 +53,8 @@ class Cotizacion(models.Model):
     penalizacion_pct = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     motivo_cancelacion = models.TextField(blank=True)
     creado_en = models.DateTimeField(auto_now_add=True)
+
+    objects = CotizacionQuerySet.as_manager()
 
     class Meta:
         constraints = [

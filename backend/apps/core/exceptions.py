@@ -1,8 +1,21 @@
 from django.db import IntegrityError
 from django.db.models import ProtectedError
 from rest_framework import status
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
+
+
+class Conflicto(APIException):
+    """409: la petición es válida pero choca con el estado actual del registro.
+
+    Responde {"detail": "<mensaje>"}. La usan cotizaciones (estado de la cotización)
+    y salones (quitar un montaje con cotizaciones activas).
+    """
+
+    status_code = status.HTTP_409_CONFLICT
+    default_detail = "El registro no admite esta operación en su estado actual."
+    default_code = "conflicto"
 
 
 def custom_exception_handler(exc, context):
