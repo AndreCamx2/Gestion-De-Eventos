@@ -11,8 +11,8 @@ from apps.usuarios.permissions import EsAdministrador
 from . import estados
 from .models import Cotizacion
 from .serializers import (
-    AceptacionSerializer, BloqueoSerializer, CotizacionCalendarioSerializer, CotizacionCrearSerializer,
-    CotizacionDetalleSerializer, CotizacionListaSerializer, CotizacionVigenciaSerializer,
+    AceptacionSerializer, BloqueoSerializer, CancelacionSerializer, CotizacionCalendarioSerializer,
+    CotizacionCrearSerializer, CotizacionDetalleSerializer, CotizacionListaSerializer, CotizacionVigenciaSerializer,
 )
 
 
@@ -47,7 +47,9 @@ def cotizaciones_con_relaciones():
     """Trae en pocas consultas todo lo que muestran el detalle y el listado (evita N+1)."""
     return (
         Cotizacion.objects
-        .select_related("sitio", "cliente", "salon", "montaje", "usuario", "garantia_registrada_por")
+        .select_related(
+            "sitio", "cliente", "salon", "montaje", "usuario", "garantia_registrada_por", "cancelado_por",
+        )
         .prefetch_related("items__concepto")
     )
 
@@ -206,3 +208,13 @@ class CotizacionBloqueoView(AccionSobreCotizacionView):
             estados.bloquear(cotizacion, datos["bloqueo_hasta"])
         else:
             estados.liberar(cotizacion)
+
+
+class CotizacionCancelacionView(AccionSobreCotizacionView):
+    """Cancela un evento confirmado con su penalización y motivo (SGDE-61)."""
+
+    def post(self, request, *args, **kwargs):
+        return self.accion(self.validar(CancelacionSerializer))
+
+    def ejecutar(self, cotizacion, datos):
+        estados.cancelar(cotizacion, datos["penalizacion_pct"], datos["motivo"], self.request.user)

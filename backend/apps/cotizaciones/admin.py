@@ -9,8 +9,8 @@ class CotizacionItemInline(admin.TabularInline):
 
 class CotizacionAdmin(admin.ModelAdmin):
     inlines = [CotizacionItemInline]
-    # Los llena el endpoint de aceptación; no se editan a mano.
-    readonly_fields = ["garantia_registrada_en", "garantia_registrada_por"]
+    # Los llenan los endpoints de aceptación y cancelación; no se editan a mano.
+    readonly_fields = ["garantia_registrada_en", "garantia_registrada_por", "cancelado_en", "cancelado_por"]
 
 
 admin.site.register(Cotizacion, CotizacionAdmin)

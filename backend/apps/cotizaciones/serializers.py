@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.db import transaction
 from django.utils import timezone
@@ -209,7 +210,30 @@ def garantia_de(cotizacion):
     }
 
 
-class CotizacionDetalleSerializer(serializers.ModelSerializer):
+CAMPOS_CANCELACION = ["cancelado_en", "cancelado_por", "penalizacion_pct", "motivo_cancelacion", "monto_retenido"]
+
+
+class CancelacionSalidaMixin(serializers.Serializer):
+    """Campos de la cancelación (SGDE-61), iguales en el detalle y el listado.
+
+    monto_retenido = total × penalizacion_pct ÷ 100, redondeado como los totales;
+    null si la cotización no está cancelada.
+    """
+
+    cancelado_en = serializers.DateTimeField(read_only=True)
+    cancelado_por = serializers.SerializerMethodField()
+    monto_retenido = serializers.SerializerMethodField()
+
+    def get_cancelado_por(self, obj):
+        return obj.cancelado_por.username if obj.cancelado_por else None
+
+    def get_monto_retenido(self, obj):
+        if obj.estado != "cancelado" or obj.penalizacion_pct is None:
+            return None
+        return str(redondear(_totales(obj)["total"] * obj.penalizacion_pct / 100))
+
+
+class CotizacionDetalleSerializer(CancelacionSalidaMixin, serializers.ModelSerializer):
     vencida = serializers.BooleanField(read_only=True)
     sitio = SitioResumenSerializer(read_only=True)
     cliente = ClienteResumenSerializer(read_only=True)
@@ -232,6 +256,7 @@ class CotizacionDetalleSerializer(serializers.ModelSerializer):
             "id", "estado", "vencida", "sitio", "cliente", "salon", "montaje", "aforo",
             "fecha_evento", "cantidad_personas", "validez_oferta", "bloqueo_hasta", "creado_en",
             "creado_por", "confirmado_en", "items", "subtotal", "impuestos", "total", "garantia",
+            *CAMPOS_CANCELACION,
         ]
         read_only_fields = fields
 
@@ -255,7 +280,7 @@ class CotizacionDetalleSerializer(serializers.ModelSerializer):
         return garantia_de(obj)
 
 
-class CotizacionListaSerializer(serializers.ModelSerializer):
+class CotizacionListaSerializer(CancelacionSalidaMixin, serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source="cliente.nombre", read_only=True)
     salon_nombre = serializers.CharField(source="salon.nombre", read_only=True)
     montaje_nombre = serializers.CharField(source="montaje.nombre", read_only=True)
@@ -270,7 +295,7 @@ class CotizacionListaSerializer(serializers.ModelSerializer):
         fields = [
             "id", "estado", "vencida", "cliente_nombre", "salon_nombre", "montaje_nombre",
             "fecha_evento", "cantidad_personas", "validez_oferta", "bloqueo_hasta",
-            "creado_en", "confirmado_en", "total", "garantia",
+            "creado_en", "confirmado_en", "total", "garantia", *CAMPOS_CANCELACION,
         ]
         read_only_fields = fields
 
@@ -322,3 +347,18 @@ class AceptacionSerializer(serializers.Serializer):
 class BloqueoSerializer(serializers.Serializer):
     # Con hora: "2026-10-14T18:00:00-05:00". Sin zona, se toma la de Colombia (TIME_ZONE).
     bloqueo_hasta = serializers.DateTimeField()
+
+
+# --- Entrada: cancelación (SGDE-61) -----------------------------------------
+
+class CancelacionSerializer(serializers.Serializer):
+    penalizacion_pct = serializers.DecimalField(
+        max_digits=5, decimal_places=2, min_value=Decimal("0"), max_value=Decimal("100"),
+        error_messages={
+            "min_value": "La penalización debe estar entre 0 y 100.",
+            "max_value": "La penalización debe estar entre 0 y 100.",
+        },
+    )
+    motivo = serializers.CharField(
+        error_messages={"blank": "Escribe el motivo de la cancelación.", "required": "Escribe el motivo de la cancelación."},
+    )

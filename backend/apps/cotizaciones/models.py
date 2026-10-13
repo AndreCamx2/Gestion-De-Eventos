@@ -52,6 +52,12 @@ class Cotizacion(models.Model):
     )
     penalizacion_pct = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     motivo_cancelacion = models.TextField(blank=True)
+    # Los llena la cancelación (SGDE-61), junto con penalizacion_pct y motivo_cancelacion.
+    cancelado_en = models.DateTimeField(null=True, blank=True)
+    cancelado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="cancelaciones_registradas", null=True, blank=True
+    )
     creado_en = models.DateTimeField(auto_now_add=True)
 
     objects = CotizacionQuerySet.as_manager()

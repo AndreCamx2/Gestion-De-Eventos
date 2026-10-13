@@ -38,6 +38,7 @@ ENDPOINTS_ADMIN_DETALLE = [
     ("/api/cotizaciones/1/", ["get", "patch"]),
     ("/api/cotizaciones/1/aceptacion/", ["post"]),
     ("/api/cotizaciones/1/bloqueo/", ["post", "delete"]),
+    ("/api/cotizaciones/1/cancelacion/", ["post"]),
 ]
 
 

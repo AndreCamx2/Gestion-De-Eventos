@@ -211,6 +211,17 @@ class DetallesDeOtroSitioTests(MultiSitioBaseTest):
         cotizacion.refresh_from_db()
         self.assertEqual(cotizacion.estado, "bloqueado")
 
+    def test_cancelar_una_cotizacion_de_otro_sitio_da_404(self):
+        cotizacion = self.b["cotizacion"]
+        cotizacion.estado = "confirmado"
+        cotizacion.save()
+        r = self.client.post(
+            f"/api/cotizaciones/{cotizacion.pk}/cancelacion/", {"penalizacion_pct": "10", "motivo": "X"}, format="json"
+        )
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+        cotizacion.refresh_from_db()
+        self.assertEqual(cotizacion.estado, "confirmado")
+
     def test_historial_de_un_concepto_inexistente_da_404(self):
         self.assertEqual(self.client.get("/api/conceptos/999999/historial/").status_code, status.HTTP_404_NOT_FOUND)
 

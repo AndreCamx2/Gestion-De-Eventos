@@ -154,3 +154,23 @@ def aceptar(cotizacion, tipo, monto, usuario):
             ])
     except IntegrityError:
         raise Conflicto("El salón ya está confirmado para esa fecha.")
+
+
+def cancelar(cotizacion, penalizacion_pct, motivo, usuario):
+    """Cancela un evento confirmado con su penalización (SGDE-61).
+
+    Al dejar de estar confirmada, el salón queda libre esa fecha: el constraint
+    uq_salon_fecha_confirmado solo cuenta las confirmadas.
+    """
+    if cotizacion.estado != "confirmado":
+        raise Conflicto(
+            f"Solo se puede cancelar un evento confirmado; esta cotización está {en_femenino(cotizacion.estado)}."
+        )
+    cotizacion.estado = "cancelado"
+    cotizacion.penalizacion_pct = penalizacion_pct
+    cotizacion.motivo_cancelacion = motivo
+    cotizacion.cancelado_en = timezone.now()
+    cotizacion.cancelado_por = usuario
+    cotizacion.save(update_fields=[
+        "estado", "penalizacion_pct", "motivo_cancelacion", "cancelado_en", "cancelado_por",
+    ])

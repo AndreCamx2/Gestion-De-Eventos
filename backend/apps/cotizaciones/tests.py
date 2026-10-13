@@ -814,3 +814,114 @@ class AceptarConBloqueoTests(CotizacionBaseTest):
         self.assertIn("bloqueado para esa fecha por otra cotización hasta", r.data["detail"])
         otra.refresh_from_db()
         self.assertEqual(otra.estado, "cotizado")
+
+
+def cancelacion(pk):
+    return f"{detalle(pk)}cancelacion/"
+
+
+class CancelacionTests(CotizacionBaseTest):
+    """SGDE-61: cancelar un evento confirmado con penalización."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+        self.fecha = hoy() + timedelta(days=30)
+        self.datos = {"penalizacion_pct": "20", "motivo": "El cliente pospuso el congreso."}
+
+    def confirmada(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        r = self.client.post(aceptacion(cot.pk), {"tipo": "transferencia", "monto": "500000"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        return cot
+
+    def test_cancela_una_confirmada_y_registra_todo(self):
+        cot = self.confirmada()
+        r = self.client.post(cancelacion(cot.pk), self.datos, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+        self.assertEqual(r.data["estado"], "cancelado")
+        self.assertEqual(r.data["penalizacion_pct"], "20.00")
+        self.assertEqual(r.data["motivo_cancelacion"], "El cliente pospuso el congreso.")
+        self.assertEqual(r.data["cancelado_por"], "admin@test.com")
+        self.assertIsNotNone(r.data["cancelado_en"])
+        # Total: 50 × 45.000 + 8 % = 2.430.000; el 20 % retenido = 486.000.
+        self.assertEqual(r.data["monto_retenido"], "486000.00")
+        cot.refresh_from_db()
+        self.assertEqual((cot.estado, cot.cancelado_por), ("cancelado", self.admin))
+
+    def test_el_listado_trae_los_campos_de_la_cancelacion(self):
+        cot = self.confirmada()
+        self.client.post(cancelacion(cot.pk), self.datos, format="json")
+        fila = {c["id"]: c for c in self.client.get(LISTA).data}[cot.pk]
+        self.assertEqual(
+            (fila["estado"], fila["penalizacion_pct"], fila["monto_retenido"], fila["cancelado_por"]),
+            ("cancelado", "20.00", "486000.00", "admin@test.com"),
+        )
+
+    def test_una_no_cancelada_trae_los_campos_en_null(self):
+        data = self.client.get(detalle(self.crear_en_bd().pk)).data
+        self.assertEqual(
+            [data[campo] for campo in ("cancelado_en", "cancelado_por", "penalizacion_pct", "monto_retenido")],
+            [None, None, None, None],
+        )
+        self.assertEqual(data["motivo_cancelacion"], "")
+
+    def test_el_monto_retenido_se_redondea_como_los_totales(self):
+        cot = self.confirmada()
+        r = self.client.post(cancelacion(cot.pk), {"penalizacion_pct": "33.33", "motivo": "X"}, format="json")
+        # 2.430.000 × 33,33 % = 809.919,00
+        self.assertEqual(r.data["monto_retenido"], "809919.00")
+
+    def test_cotizada_bloqueada_o_cancelada_da_409(self):
+        bloqueada = self.crear_en_bd(fecha_evento=self.fecha + timedelta(days=1), estado="bloqueado")
+        bloqueada.bloqueo_hasta = timezone.now() + timedelta(days=1)
+        bloqueada.save()
+        casos = {
+            "cotizada": self.crear_en_bd(fecha_evento=self.fecha + timedelta(days=2)),
+            "bloqueada": bloqueada,
+            "cancelada": self.crear_en_bd(fecha_evento=self.fecha + timedelta(days=3), estado="cancelado"),
+        }
+        for nombre, cot in casos.items():
+            with self.subTest(estado=nombre):
+                r = self.client.post(cancelacion(cot.pk), self.datos, format="json")
+                self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+                self.assertEqual(
+                    r.data["detail"],
+                    f"Solo se puede cancelar un evento confirmado; esta cotización está {nombre}.",
+                )
+
+    def test_penalizacion_fuera_de_rango_o_motivo_vacio_da_400(self):
+        cot = self.confirmada()
+        for datos, campo in (
+            ({"penalizacion_pct": "-1", "motivo": "X"}, "penalizacion_pct"),
+            ({"penalizacion_pct": "100.01", "motivo": "X"}, "penalizacion_pct"),
+            ({"motivo": "X"}, "penalizacion_pct"),
+            ({"penalizacion_pct": "10", "motivo": "   "}, "motivo"),
+            ({"penalizacion_pct": "10"}, "motivo"),
+        ):
+            with self.subTest(datos=datos):
+                r = self.client.post(cancelacion(cot.pk), datos, format="json")
+                self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertIn(campo, r.data)
+        cot.refresh_from_db()
+        self.assertEqual(cot.estado, "confirmado")
+
+    def test_los_extremos_0_y_100_son_validos(self):
+        for pct in ("0", "100"):
+            with self.subTest(pct=pct):
+                cot = self.confirmada()
+                r = self.client.post(cancelacion(cot.pk), {"penalizacion_pct": pct, "motivo": "X"}, format="json")
+                self.assertEqual(r.status_code, status.HTTP_200_OK)
+
+    def test_despues_de_cancelar_otra_cotizacion_puede_confirmarse_ese_dia(self):
+        cot = self.confirmada()
+        otra = self.crear_en_bd(fecha_evento=self.fecha)
+        datos = {"tipo": "efectivo", "monto": "100"}
+        self.assertEqual(self.client.post(aceptacion(otra.pk), datos, format="json").status_code,
+                         status.HTTP_409_CONFLICT)
+        self.client.post(cancelacion(cot.pk), self.datos, format="json")
+        self.assertEqual(self.client.post(aceptacion(otra.pk), datos, format="json").status_code,
+                         status.HTTP_200_OK)
+
+    def test_inexistente_404(self):
+        self.assertEqual(self.client.post(cancelacion(999999), self.datos, format="json").status_code,
+                         status.HTTP_404_NOT_FOUND)
