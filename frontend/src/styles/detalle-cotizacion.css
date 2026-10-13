@@ -415,3 +415,299 @@
         gap: var(--espacio-4);
     }
 }
+
+/* Aceptación (SGDE-64) */
+
+.dc-panel--aceptacion {
+    border: 1.5px solid var(--estado-confirmado-punto);
+}
+
+.dc-aceptacion {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.dc-etiqueta {
+    padding: 0;
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-negrita);
+    color: var(--color-texto-suave);
+}
+
+.dc-garantias {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.dc-garantias__opciones {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--espacio-2);
+}
+
+.dc-garantia {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--alto-tocable);
+    padding: 0 var(--espacio-2);
+    border: 1.5px solid var(--color-linea-fuerte);
+    border-radius: var(--radio-control);
+    background: var(--color-campo);
+    color: var(--color-texto-suave);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-extra);
+    text-align: center;
+    cursor: pointer;
+    transition: transform var(--duracion-presion) var(--curva-salida);
+}
+
+.dc-garantia:active {
+    transform: scale(0.97);
+}
+
+.dc-garantia[data-elegido] {
+    background: var(--estado-confirmado-fondo);
+    border-color: var(--estado-confirmado-punto);
+    color: var(--estado-confirmado-texto);
+}
+
+.dc-garantia:has(input:focus-visible) {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+.dc-monto {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+}
+
+.dc-monto__campo {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-2);
+    min-height: 52px;
+    padding: 0 14px;
+    background: var(--color-campo);
+    border: 1.5px solid var(--color-linea-fuerte);
+    border-radius: var(--radio-control);
+}
+
+.dc-monto__campo:focus-within {
+    border-color: var(--color-tinta);
+    box-shadow: var(--anillo-campo);
+}
+
+.dc-monto__campo--error {
+    border-color: var(--color-peligro);
+}
+
+.dc-monto__signo {
+    font-weight: var(--peso-extra);
+    color: var(--color-texto-suave);
+}
+
+.dc-monto__input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--color-texto);
+    font-size: 18px;
+    font-weight: var(--peso-extra);
+    font-variant-numeric: tabular-nums;
+}
+
+.dc-monto__input:focus-visible {
+    outline: none;
+}
+
+.dc-monto__input::placeholder {
+    color: var(--color-texto-tenue);
+}
+
+.dc-error {
+    margin: 0;
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-negrita);
+    color: var(--color-peligro);
+}
+
+.dc-ayuda {
+    margin: 0;
+    font-size: var(--texto-pequeno);
+    color: var(--color-texto-tenue);
+}
+
+.dc-aceptacion__boton {
+    width: 100%;
+    min-height: 54px;
+    border-radius: 14px;
+    font-size: var(--texto-subtitulo);
+}
+
+.dc-panel--recien {
+    background: var(--color-exito);
+    border-color: var(--color-exito);
+    animation: dc-aparecer 240ms var(--curva-salida);
+}
+
+.dc-panel--recien .dc-panel__titulo {
+    font-size: 28px;
+    letter-spacing: var(--tracking-seccion);
+    color: var(--color-exito-texto);
+}
+
+.dc-panel--recien .dc-panel__texto {
+    font-size: 15px;
+    font-weight: var(--peso-negrita);
+    color: var(--color-exito-texto);
+}
+
+.dc-panel__check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radio-pildora);
+    background: var(--color-exito-texto);
+    color: var(--color-exito);
+}
+
+@keyframes dc-aparecer {
+    from {
+        opacity: 0;
+        transform: scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .dc-garantia:not([data-elegido]):hover {
+        background: var(--color-superficie-2);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dc-garantia {
+        transition: none;
+    }
+
+    .dc-garantia:active {
+        transform: none;
+    }
+
+    .dc-panel--recien {
+        animation: none;
+    }
+}
+
+/* Movimientos (SGDE-65) */
+
+.dc-movimientos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    padding: var(--espacio-6);
+    background: var(--color-superficie);
+    border: var(--borde);
+    border-radius: var(--radio-tarjeta);
+}
+
+.dc-movimientos__titulo {
+    margin: 0;
+    font-size: 20px;
+    font-weight: var(--peso-extra);
+}
+
+.dc-movimientos__error {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-3);
+}
+
+.dc-linea {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dc-linea__item {
+    --punto: var(--color-texto-tenue);
+    position: relative;
+    display: flex;
+    gap: 14px;
+    padding-bottom: var(--espacio-5);
+}
+
+.dc-linea__item:last-child {
+    padding-bottom: 0;
+}
+
+.dc-linea__item::before {
+    content: "";
+    position: absolute;
+    top: 14px;
+    bottom: 0;
+    left: 5px;
+    width: 2px;
+    background: var(--color-linea);
+}
+
+.dc-linea__item:last-child::before {
+    display: none;
+}
+
+.dc-linea__punto {
+    flex: 0 0 12px;
+    height: 12px;
+    margin-top: 4px;
+    border-radius: var(--radio-pildora);
+    background: var(--punto);
+    box-shadow: 0 0 0 3px var(--color-superficie);
+}
+
+.dc-linea__item--creada { --punto: var(--color-tinta); }
+.dc-linea__item--vigencia { --punto: var(--estado-cotizado-punto); }
+.dc-linea__item--bloqueada,
+.dc-linea__item--liberada { --punto: var(--estado-bloqueado-punto); }
+.dc-linea__item--confirmada { --punto: var(--estado-confirmado-punto); }
+.dc-linea__item--cancelada { --punto: var(--estado-cancelado-punto); }
+
+.dc-linea__cuerpo {
+    min-width: 0;
+}
+
+.dc-linea__cuerpo p {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.dc-linea__tipo {
+    font-weight: var(--peso-extra);
+}
+
+.dc-linea__detalle {
+    margin-top: 2px !important;
+    font-size: var(--texto-navegacion);
+    color: var(--color-texto);
+}
+
+.dc-linea__meta {
+    margin-top: var(--espacio-1) !important;
+    font-size: var(--texto-pequeno);
+    color: var(--color-texto-tenue);
+}

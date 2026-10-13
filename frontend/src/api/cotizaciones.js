@@ -1,9 +1,12 @@
 import { apiFetch } from "./client";
 
-export async function getCotizaciones({ desde, hasta } = {}) {
+export async function getCotizaciones({ desde, hasta, estado, cliente, salon } = {}) {
     const params = new URLSearchParams();
     if (desde) params.append("desde", desde);
     if (hasta) params.append("hasta", hasta);
+    if (estado) params.append("estado", estado);
+    if (cliente) params.append("cliente", cliente);
+    if (salon) params.append("salon", salon);
     const query = params.toString();
     return apiFetch(`/cotizaciones/${query ? `?${query}` : ""}`, { method: "GET" });
 }
@@ -41,4 +44,15 @@ export function extenderVigencia(id, validezOferta) {
         method: "PATCH",
         body: JSON.stringify({ validez_oferta: validezOferta }),
     });
+}
+
+export function registrarAceptacion(id, { tipo, monto }) {
+    return apiFetch(`/cotizaciones/${id}/aceptacion/`, {
+        method: "POST",
+        body: JSON.stringify({ tipo, monto }),
+    });
+}
+
+export function getMovimientos(id) {
+    return apiFetch(`/cotizaciones/${id}/movimientos/`, { method: "GET" });
 }
