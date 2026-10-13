@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { getUsuarioActual } from "../api/auth";
 import { listarCotizaciones, listarCalendario } from "../api/inicio";
 import { listarSalones } from "../api/salones";
-import { rolesDeRuta } from "../rutasPorRol";
+import { rolesDeRuta } from "../routes/rutasPorRol";
 import { AvisoError, Boton, Esqueleto, EstadoBadge, EstadoVacio, Tarjeta } from "../components/ui";
 import SesionVencida from "../components/SesionVencida";
 import {
@@ -22,7 +22,7 @@ import {
   saludoPorHora,
   sumarDias,
   tasaDeCierre,
-} from "./inicioCifras";
+} from "../utils/inicioCifras";
 import { nombreVisible } from "../utils/nombreUsuario";
 import "../styles/home.css";
 
@@ -78,7 +78,7 @@ export default function Home() {
   // La fecha de hoy queda fija mientras la pantalla está abierta.
   const [hoy] = useState(hoyLocal);
   // El usuario se pide aquí: el contexto del Outlet de DashboardLayout no llega
-  // a esta pantalla porque RoleRoute (App.jsx) tiene su propio <Outlet />.
+  // a esta pantalla porque RoleRoute (routes/guards.jsx) tiene su propio <Outlet />.
   const [usuario, setUsuario] = useState(BLOQUE_INICIAL);
   const [cotizaciones, setCotizaciones] = useState(BLOQUE_INICIAL);
   const [calendario, setCalendario] = useState(BLOQUE_INICIAL);

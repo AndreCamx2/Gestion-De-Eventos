@@ -1,7 +1,7 @@
 // Funciones de la pantalla de Cotizaciones que no usan estado: formatos, la
 // vigencia de cada fila y las cifras de arriba. Las fechas y la tasa de cierre
 // vienen de inicioCifras.js, para que el Inicio y esta pantalla digan lo mismo.
-import { desdeISO, diasEntre, mesCorto, tasaDeCierre } from "../inicioCifras";
+import { desdeISO, diasEntre, mesCorto, tasaDeCierre } from "../../utils/inicioCifras";
 
 const formatoPesos = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
 const formatoMillones = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 });

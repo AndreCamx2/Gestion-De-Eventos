@@ -11,8 +11,8 @@ import {
   Tarjeta,
 } from "../components/ui";
 import SesionVencida from "../components/SesionVencida";
-import NuevoSalonModal from "./NuevoSalonModal";
-import HabilitarMontajeModal from "./HabilitarMontajeModal";
+import NuevoSalonModal from "./salones/NuevoSalonModal";
+import HabilitarMontajeModal from "./salones/HabilitarMontajeModal";
 import "../styles/catalogo-salones.css";
 
 // Minúsculas y sin tildes: así "bolivar" encuentra a "Bolívar".
