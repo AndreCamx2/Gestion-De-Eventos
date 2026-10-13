@@ -175,6 +175,26 @@ class DetallesDeOtroSitioTests(MultiSitioBaseTest):
         self.assertEqual(cotizacion.estado, "cotizado")
         self.assertEqual(cotizacion.validez_oferta, timezone.localdate() + timedelta(days=10))
 
+    def test_salones_y_montajes_habilitados_de_otro_sitio_dan_404(self):
+        # SGDE-88: detalle, edición y borrado.
+        salon, habilitado = self.b["salon"], self.b["salon_montaje"]
+        salon_url, habilitado_url = f"/api/salones/{salon.pk}/", f"/api/salon-montajes/{habilitado.pk}/"
+        for metodo, url, datos in (
+            ("get", salon_url, None),
+            ("patch", salon_url, {"nombre": "Intruso"}),
+            ("get", habilitado_url, None),
+            ("patch", habilitado_url, {"aforo": 1}),
+            ("delete", habilitado_url, None),
+        ):
+            with self.subTest(metodo=metodo, url=url):
+                r = getattr(self.client, metodo)(url, datos, format="json")
+                self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+        salon.refresh_from_db()
+        habilitado.refresh_from_db()
+        self.assertEqual(salon.nombre, "Salón Finca B")
+        self.assertEqual(habilitado.aforo, 100)
+
     def test_historial_de_un_concepto_inexistente_da_404(self):
         self.assertEqual(self.client.get("/api/conceptos/999999/historial/").status_code, status.HTTP_404_NOT_FOUND)
 

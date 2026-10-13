@@ -25,6 +25,20 @@ ENDPOINTS_ADMIN = [
     "/api/cotizaciones/",
 ]
 
+# Rutas de detalle (con id) y sus métodos: también solo del administrador. Van
+# aparte porque con el admin un GET o un POST a un id no da 200/400 como arriba.
+# El id no necesita existir: el permiso se revisa antes de buscar el objeto.
+ENDPOINTS_ADMIN_DETALLE = [
+    ("/api/usuarios/1/", ["get", "patch", "delete"]),
+    ("/api/clientes/1/", ["get", "put", "patch", "delete"]),
+    ("/api/salones/1/", ["get", "patch"]),
+    ("/api/salon-montajes/1/", ["get", "patch", "delete"]),
+    ("/api/conceptos/1/", ["get", "put", "patch"]),
+    ("/api/conceptos/1/historial/", ["get"]),
+    ("/api/cotizaciones/1/", ["get", "patch"]),
+    ("/api/cotizaciones/1/aceptacion/", ["post"]),
+]
+
 
 def crear_usuario(username, codigo_rol):
     rol = Rol.objects.get(codigo=codigo_rol)
@@ -67,6 +81,23 @@ class MatrizAccesoPorRolTests(APITestCase):
             with self.subTest(url=url, metodo="POST"):
                 self.assertEqual(self.client.post(url, {}, format="json").status_code,
                                  status.HTTP_400_BAD_REQUEST)
+
+    def peticion(self, metodo, url):
+        return getattr(self.client, metodo)(url, {}, format="json")
+
+    def test_detalles_sin_token_reciben_401(self):
+        for url, metodos in ENDPOINTS_ADMIN_DETALLE:
+            for metodo in metodos:
+                with self.subTest(url=url, metodo=metodo):
+                    self.assertEqual(self.peticion(metodo, url).status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_detalles_con_cliente_y_proveedor_reciben_403(self):
+        for usuario in (self.cliente, self.proveedor):
+            self.client.force_authenticate(user=usuario)
+            for url, metodos in ENDPOINTS_ADMIN_DETALLE:
+                for metodo in metodos:
+                    with self.subTest(rol=usuario.rol.codigo, url=url, metodo=metodo):
+                        self.assertEqual(self.peticion(metodo, url).status_code, status.HTTP_403_FORBIDDEN)
 
     def test_usuarios_me_sigue_abierto_a_cualquier_autenticado(self):
         for usuario in (self.admin, self.cliente, self.proveedor):
