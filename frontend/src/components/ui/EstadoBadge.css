@@ -56,3 +56,9 @@
     --badge-texto: var(--estado-cancelado-texto);
     --badge-punto: var(--estado-cancelado-punto);
 }
+
+.estado-badge--disponible {
+    --badge-fondo: var(--estado-disponible-fondo);
+    --badge-texto: var(--estado-disponible-texto);
+    --badge-punto: var(--estado-disponible-punto);
+}

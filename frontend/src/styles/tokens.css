@@ -51,6 +51,11 @@
     --estado-cancelado-texto: #525A66;
     --estado-cancelado-punto: #6E7581;
 
+    /* Día sin cotizaciones que ocupen la fecha (Rack y Calendario, SGDE-69) */
+    --estado-disponible-fondo: rgba(93, 102, 115, 0.07);
+    --estado-disponible-texto: #4A525E;
+    --estado-disponible-punto: #AEB4BC;
+
     /* 3. Tipografía */
     --fuente-base: "Plus Jakarta Sans", system-ui, sans-serif;
 
