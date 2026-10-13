@@ -1,5 +1,5 @@
 // Qué roles pueden ver cada ruta del panel (SGDE-54). Única fuente de verdad:
-// la usan RoleRoute (App.jsx) para dejar entrar o redirigir, y NAV_ITEMS
+// la usan RoleRoute (routes/guards.jsx) para dejar entrar o redirigir, y NAV_ITEMS
 // (DashboardLayout.jsx) para no mostrar enlaces prohibidos.
 //
 // Es solo experiencia de usuario: la seguridad real es el 403 del backend.

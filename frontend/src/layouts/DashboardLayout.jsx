@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { ROLES_POR_RUTA } from "../rutasPorRol";
+import { ROLES_POR_RUTA } from "../routes/rutasPorRol";
 import "../styles/dashboard-layout.css";
 
 // Única fuente de las pestañas de la barra superior (y del título accesible).

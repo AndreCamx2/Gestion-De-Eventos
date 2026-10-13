@@ -2,7 +2,7 @@
 // cada proveedor, totales, fechas, validación, lo que se envía al API y cómo se
 // leen sus errores. Las usan Proveedores.jsx y las piezas de esta carpeta.
 import { erroresDesdeApi as erroresDesdeApiComun } from "../../utils/erroresApi";
-import { mesCorto } from "../inicioCifras";
+import { mesCorto } from "../../utils/inicioCifras";
 
 const formatoEntero = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
 const formatoCentavos = new Intl.NumberFormat("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

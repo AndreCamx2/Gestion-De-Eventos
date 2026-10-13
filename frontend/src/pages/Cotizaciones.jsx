@@ -9,7 +9,7 @@ import {
   Tarjeta,
 } from "../components/ui";
 import SesionVencida from "../components/SesionVencida";
-import { hoyLocal, nombreMes } from "./inicioCifras";
+import { hoyLocal, nombreMes } from "../utils/inicioCifras";
 import {
   FILTROS,
   conteosPorEstado,

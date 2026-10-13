@@ -48,8 +48,8 @@
     min-height: 50px;
 }
 
-/* El spinner reutiliza .btn__spinner (main.css), que solo se muestra dentro de
-   .btn.is-loading; aquí se muestra siempre que está en el DOM. */
+/* El spinner reutiliza .btn__spinner (main.css), oculto por defecto;
+   aquí se muestra siempre que está en el DOM. */
 .boton .acceso-spinner {
     display: inline-block;
 }
