@@ -3,12 +3,12 @@ import { Link } from "react-router-dom";
 import { obtenerCalendario } from "../api/calendario";
 import { listarSalones } from "../api/salones";
 import { listarSitios } from "../api/sitios";
+import DialogoDiaSalon from "../components/bloqueo/DialogoDiaSalon";
 import SesionVencida from "../components/SesionVencida";
 import {
   AvisoError, Boton, CabeceraPagina, Esqueleto, EstadoVacio, LeyendaEstados, Tarjeta,
 } from "../components/ui";
 import { fechaISO, hoyLocal, mesCorto, sumarDias } from "../utils/inicioCifras";
-import DialogoDiaSalon from "./rack/DialogoDiaSalon";
 import RackRejilla from "./rack/RackRejilla";
 import { DIAS_POR_PAGINA, armarRejilla, rangoDeDias } from "./rack/rack";
 import "../styles/rack.css";

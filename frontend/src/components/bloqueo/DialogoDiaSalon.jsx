@@ -1,23 +1,25 @@
 import { useRef, useState } from "react";
 import { bloquearCotizacion, liberarBloqueo } from "../../api/cotizaciones";
-import { AvisoSesionEnVentana } from "../../components/SesionVencida";
-import { AvisoError, Boton, Dialogo, EstadoBadge } from "../../components/ui";
+import { AvisoSesionEnVentana } from "../SesionVencida";
+import { AvisoError, Boton, Dialogo, EstadoBadge } from "../ui";
 import { estadoVisible } from "../../utils/estadosCotizacion";
+import { fechaHoraColombia } from "../../utils/fechasBloqueo";
 import { fechaLarga, numero } from "../../utils/inicioCifras";
 import FormBloqueo from "./FormBloqueo";
-import { fechaHoraColombia } from "./rack";
+import "./bloqueo.css";
 
 // Panel del día de un salón: sus cotizaciones (también las vencidas) y las acciones
 // Bloquear y Liberar. Aceptar y cancelar van en el Detalle de cotización, no aquí.
-// - cotizaciones: las de la celda; Rack.jsx las vuelve a pasar tras cada recarga.
+// Lo abren el Rack (SGDE-69) y el Calendario (SGDE-45).
+// - cotizaciones: las de ese salón y día; la pantalla las vuelve a pasar tras cada recarga.
 // - esPasado: un día anterior a hoy no ofrece "Bloquear" (el backend daría 400);
 //   "Liberar" sí, si la cotización sigue bloqueada.
-// - onCambio(): recarga el rango visible después de una acción que salió bien.
+// - onCambio(): la pantalla recarga sus datos después de una acción que salió bien.
 // - Sesión vencida (SGDE-94): onSesionVencida(), sesionVencida y onEntrarDeNuevo(boton);
 //   la ventana no se cierra ni redirige a /login.
 const MENSAJES = {
   403: "No tienes permisos para cambiar esta cotización.",
-  404: "Esta cotización ya no existe. Cierra y actualiza el rack.",
+  404: "Esta cotización ya no existe. Cierra esta ventana y vuelve a cargar la página.",
 };
 
 export default function DialogoDiaSalon({
@@ -65,31 +67,31 @@ export default function DialogoDiaSalon({
 
   return (
     <Dialogo
-      idTitulo="rack-dia-titulo"
+      idTitulo="dialogo-dia-titulo"
       titulo={`${salon.nombre} · ${fechaLarga(dia)}`}
       bloqueado={procesando}
       onCerrar={onCerrar}
-      className="rack-dialogo"
+      className="dialogo-dia"
     >
       {cotizaciones.length === 0 ? (
-        <p className="rack-dialogo__vacio">Sin cotizaciones para este día: el salón está disponible.</p>
+        <p className="dialogo-dia__vacio">Sin cotizaciones para este día: el salón está disponible.</p>
       ) : (
-        <ul className="rack-dialogo__lista">
+        <ul className="dialogo-dia__lista">
           {cotizaciones.map((c) => {
             const estado = estadoVisible(c);
             const puedeBloquear = estado === "cotizado" && !esPasado;
             const activa = accion?.id === c.id;
             return (
-              <li key={c.id} className="rack-dialogo__item">
-                <div className="rack-dialogo__cabecera">
-                  <p className="rack-dialogo__cliente">{c.cliente_nombre}</p>
+              <li key={c.id} className="dialogo-dia__item">
+                <div className="dialogo-dia__cabecera">
+                  <p className="dialogo-dia__cliente">{c.cliente_nombre}</p>
                   <EstadoBadge estado={estado} />
                 </div>
-                <p className="rack-dialogo__detalle">
+                <p className="dialogo-dia__detalle">
                   {c.montaje_nombre} · {numero(c.cantidad_personas)} personas
                 </p>
                 {c.estado === "bloqueado" && c.bloqueo_hasta && (
-                  <p className="rack-dialogo__bloqueo">Bloqueada hasta {fechaHoraColombia(c.bloqueo_hasta)}</p>
+                  <p className="dialogo-dia__bloqueo">Bloqueada hasta {fechaHoraColombia(c.bloqueo_hasta)}</p>
                 )}
 
                 {activa && accion.tipo === "bloquear" && (
@@ -103,9 +105,9 @@ export default function DialogoDiaSalon({
                   />
                 )}
                 {activa && accion.tipo === "liberar" && (
-                  <div className="rack-dialogo__confirmar">
-                    <p className="rack-dialogo__pregunta">¿Liberar el bloqueo? La fecha queda libre para otras cotizaciones.</p>
-                    <div className="rack-dialogo__acciones">
+                  <div className="dialogo-dia__confirmar">
+                    <p className="dialogo-dia__pregunta">¿Liberar el bloqueo? La fecha queda libre para otras cotizaciones.</p>
+                    <div className="dialogo-dia__acciones">
                       <Boton variante="secundario" disabled={procesando} onClick={() => elegir(null)}>
                         Cancelar
                       </Boton>
@@ -123,7 +125,7 @@ export default function DialogoDiaSalon({
                 )}
 
                 {!activa && (puedeBloquear || c.estado === "bloqueado") && (
-                  <div className="rack-dialogo__acciones">
+                  <div className="dialogo-dia__acciones">
                     {puedeBloquear && (
                       <Boton variante="secundario" onClick={() => elegir({ tipo: "bloquear", id: c.id })}>
                         Bloquear
@@ -144,7 +146,7 @@ export default function DialogoDiaSalon({
 
       {sesionVencida && <AvisoSesionEnVentana onEntrar={() => onEntrarDeNuevo(botonRef.current)} />}
       {error && (
-        <AvisoError tipo={error.tipo} titulo={error.titulo} texto={error.texto} nivel="h3" className="rack-dialogo__error" />
+        <AvisoError tipo={error.tipo} titulo={error.titulo} texto={error.texto} nivel="h3" className="dialogo-dia__error" />
       )}
     </Dialogo>
   );

@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
-import { Boton, Campo } from "../../components/ui";
-import { bloqueoPorDefecto, datetimeLocalAISO } from "./rack";
+import { bloqueoPorDefecto, datetimeLocalAISO } from "../../utils/fechasBloqueo";
+import { Boton, Campo } from "../ui";
 
 // Formulario para bloquear una cotización hasta una fecha y hora (SGDE-40).
 // - El valor por defecto es dentro de 48 h, sin pasar del final del día del evento,
@@ -25,7 +25,7 @@ export default function FormBloqueo({ cotizacion, error, procesando, onGuardar, 
   }
 
   return (
-    <form className="rack-bloqueo" onSubmit={enviar} noValidate>
+    <form className="form-bloqueo" onSubmit={enviar} noValidate>
       <Campo
         id={idCampo}
         etiqueta="Bloquear hasta"
@@ -36,7 +36,7 @@ export default function FormBloqueo({ cotizacion, error, procesando, onGuardar, 
         error={errorLocal ?? error}
         data-foco-inicial
       />
-      <div className="rack-bloqueo__acciones">
+      <div className="form-bloqueo__acciones">
         <Boton variante="secundario" onClick={onCancelar} disabled={procesando}>
           Cancelar
         </Boton>
