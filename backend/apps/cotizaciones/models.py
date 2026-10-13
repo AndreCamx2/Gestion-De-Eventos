@@ -52,6 +52,12 @@ class Cotizacion(models.Model):
     )
     penalizacion_pct = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     motivo_cancelacion = models.TextField(blank=True)
+    # Los llena la cancelación (SGDE-61), junto con penalizacion_pct y motivo_cancelacion.
+    cancelado_en = models.DateTimeField(null=True, blank=True)
+    cancelado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="cancelaciones_registradas", null=True, blank=True
+    )
     creado_en = models.DateTimeField(auto_now_add=True)
 
     objects = CotizacionQuerySet.as_manager()
@@ -91,3 +97,36 @@ class CotizacionItem(models.Model):
 
     def __str__(self):
         return f"{self.concepto.nombre} x{self.cantidad}"
+
+class MovimientoCotizacion(models.Model):
+    """Quién hizo cada cambio de una cotización y cuándo (SGDE-62).
+
+    Lo registra cada acción del API dentro de su misma transacción. usuario null
+    significa que lo hizo el sistema (por ejemplo, la liberación de un bloqueo vencido).
+    Lo que se cambie a mano en /admin/ no deja movimiento: queda en el LogEntry (RNF-03).
+    """
+
+    TIPO_CHOICES = [
+        ("creada", "Creada"),
+        ("vigencia", "Vigencia cambiada"),
+        ("bloqueada", "Bloqueada"),
+        ("liberada", "Liberada"),
+        ("confirmada", "Confirmada"),
+        ("cancelada", "Cancelada"),
+    ]
+
+    # CASCADE: el historial es parte de la cotización (el API no las borra).
+    cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name="movimientos")
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="movimientos_cotizacion", null=True, blank=True
+    )
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
+    detalle = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["fecha", "id"]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - cotización {self.cotizacion_id}"

@@ -9,13 +9,13 @@ from apps.salones.views import (
 from apps.catalogo.views import (
     ConceptoListCreateView, ConceptoRetrieveUpdateView, ConceptoHistorialListView,
 )
-from apps.proveedores.views import ProveedorListCreateView, StockElementoListCreateView
-from apps.disponibilidad.views import BloqueoListCreateView
+from apps.proveedores.views import ProveedorListCreateView, StockElementoListCreateView, StockElementoDetailView
 from apps.clientes.views import (
     RegistroPublicoView, ClienteAdminListCreateView, ClienteAdminRetrieveUpdateDestroyView, EmpresaListCreateView,
 )
 from apps.cotizaciones.views import (
     CotizacionCalendarioView, CotizacionListCreateView, CotizacionDetailView, CotizacionAceptacionView,
+    CotizacionBloqueoView, CotizacionCancelacionView, CotizacionMovimientosView,
 )
 
 urlpatterns = [
@@ -45,9 +45,12 @@ urlpatterns = [
     path('api/conceptos/<int:pk>/historial/', ConceptoHistorialListView.as_view(), name='concepto_historial'),
     path('api/proveedores/', ProveedorListCreateView.as_view(), name='proveedor_list_create'),
     path('api/stock/', StockElementoListCreateView.as_view(), name='stock_list_create'),
-    path('api/rack/bloqueos/', BloqueoListCreateView.as_view(), name='bloqueo_list_create'),
+    path('api/stock/<int:pk>/', StockElementoDetailView.as_view(), name='stock_detail'),
     path('api/cotizaciones/', CotizacionListCreateView.as_view(), name='cotizacion_list_create'),
     path('api/cotizaciones/<int:pk>/', CotizacionDetailView.as_view(), name='cotizacion_detail'),
     path('api/cotizaciones/<int:pk>/aceptacion/', CotizacionAceptacionView.as_view(), name='cotizacion_aceptacion'),
+    path('api/cotizaciones/<int:pk>/bloqueo/', CotizacionBloqueoView.as_view(), name='cotizacion_bloqueo'),
+    path('api/cotizaciones/<int:pk>/cancelacion/', CotizacionCancelacionView.as_view(), name='cotizacion_cancelacion'),
+    path('api/cotizaciones/<int:pk>/movimientos/', CotizacionMovimientosView.as_view(), name='cotizacion_movimientos'),
     path('api/calendario/', CotizacionCalendarioView.as_view(), name='calendario_cotizaciones'),
 ]
