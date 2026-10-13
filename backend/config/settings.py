@@ -1,19 +1,48 @@
-
+from datetime import timedelta
 from pathlib import Path
 import os
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 import dj_database_url
 
 load_dotenv()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+
+def entero_positivo_entorno(nombre, defecto):
+    """Lee un entero mayor que cero de una variable de entorno.
+
+    Si la variable no existe (o está vacía) devuelve `defecto`. Si tiene un valor
+    que no es un entero positivo, el servidor no arranca: es mejor un error claro
+    que una sesión con una duración inesperada.
+    """
+    valor = os.getenv(nombre, "").strip()
+    if not valor:
+        return defecto
+    try:
+        numero = int(valor)
+    except ValueError:
+        numero = 0
+    if numero <= 0:
+        raise ImproperlyConfigured(
+            f"La variable de entorno {nombre} debe ser un número entero mayor que cero "
+            f"(recibido: {valor!r})."
+        )
+    return numero
+
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-local-dev-key')
+# Sin valor por defecto a propósito (SEG-003): si falta, el servidor no arranca.
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise ImproperlyConfigured(
+        "Falta la variable de entorno SECRET_KEY. Defínela en backend/.env (local) "
+        "o en las variables de entorno de Render (producción)."
+    )
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+# Por defecto False: si falta la variable DEBUG en el entorno, el backend
+# arranca en modo seguro (sin tracebacks expuestos) en vez de modo debug.
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 # Hosts permitidos: lee la variable de Render o permite localhost por defecto
 allowed_hosts_env = os.getenv('ALLOWED_HOSTS')
@@ -22,8 +51,6 @@ if allowed_hosts_env:
 else:
     ALLOWED_HOSTS = ['*'] if DEBUG else ['.onrender.com', 'localhost', '127.0.0.1']
 
-
-# Application definition
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -34,12 +61,13 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
+    # Lista negra de refresh tokens (SGDE-92): logout y rotación los invalidan.
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "apps.usuarios",
     "apps.sitios",
     "apps.clientes",
     "apps.salones",
-    "apps.disponibilidad",
     "apps.catalogo",
     "apps.proveedores",
     "apps.cotizaciones",
@@ -50,7 +78,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware", 
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -64,6 +92,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost",
     "http://127.0.0.1:5173",
+    "http://localhost:8080",   # frontend en Docker (docker-compose)
+    "http://127.0.0.1:8080",
 ]
 
 # Si defines FRONTEND_URL en Render (la URL de Vercel), la añade automáticamente
@@ -71,9 +101,10 @@ frontend_url = os.getenv('FRONTEND_URL')
 if frontend_url:
     CORS_ALLOWED_ORIGINS.append(frontend_url)
 
-# Permite cualquier subdominio de Vercel si estás testeando previews
+# Producción y previews de Vercel de ESTE proyecto (gestion-de-eventos-*.vercel.app).
+# Un solo nivel de subdominio ([a-z0-9-]) para no aceptar hosts con puntos.
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://.*\.vercel\.app$",
+    r"^https://gestion-de-eventos[a-z0-9-]*\.vercel\.app$",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -103,7 +134,6 @@ WSGI_APPLICATION = 'config.wsgi.application'
 AUTH_USER_MODEL = "usuarios.Usuario"
 
 
-# Database
 # En Render lee DATABASE_URL; en local usa las variables de tu docker-compose
 DATABASE_URL = os.getenv('DATABASE_URL')
 
@@ -124,7 +154,6 @@ else:
     }
 
 
-# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -133,23 +162,71 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
 LANGUAGE_CODE = 'es-co'
 TIME_ZONE = 'America/Bogota'
 USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# Django REST Framework //// git commit -m "chore: probar autodeploy en render" PRUEBAAAA
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "EXCEPTION_HANDLER": "apps.core.exceptions.custom_exception_handler",
+}
+
+# Duración de los tokens JWT (SGDE-86). Sin esto, simplejwt usa 5 minutos para
+# el acceso y la sesión vencía a mitad del trabajo. El frontend renueva el
+# acceso solo con /api/token/refresh/ mientras el refresco siga vigente.
+# Para probar en local con 1 minuto: JWT_ACCESS_MINUTES=1 en backend/.env.
+#
+# Lista negra y rotación (SGDE-92):
+# - POST /api/token/logout/ con {"refresh": ...} pone ese refresh en la lista
+#   negra: ya no sirve para pedir accesos nuevos.
+# - Cada /api/token/refresh/ entrega un refresh nuevo y pone el anterior en la
+#   lista negra. El nuevo conserva el vencimiento del original
+#   (RenovarTokenConTopeSerializer), así que la sesión sigue terminando
+#   JWT_REFRESH_HOURS después del login, como en SGDE-86.
+# - Límite aceptado: el ACCESS no se invalida al cerrar sesión. Es un JWT sin
+#   estado y sigue sirviendo hasta que vence (JWT_ACCESS_MINUTES).
+# - Los refresh vencidos se borran con `python manage.py flushexpiredtokens`
+#   (lo corre el Dockerfile al arrancar).
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=entero_positivo_entorno("JWT_ACCESS_MINUTES", 30)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(hours=entero_positivo_entorno("JWT_REFRESH_HOURS", 12)),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "TOKEN_REFRESH_SERIALIZER": "apps.usuarios.tokens.RenovarTokenConTopeSerializer",
+}
+
+# Sin esto, Django no imprime los errores 500 en los logs de Render
+# (DEBUG=False los manda a un handler de email que no está configurado).
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "WARNING",
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
 }

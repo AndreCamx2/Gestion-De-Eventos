@@ -1,0 +1,158 @@
+    .proveedores-container {
+        padding: 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+        font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .toolbar h2 {
+        font-size: 1.5rem;
+        color: #1a202c;
+        margin: 0;
+    }
+
+    /* Estilos de Botones */
+    .btn {
+        padding: 10px 18px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: background-color 0.2s ease;
+    }
+
+    .btn--primary {
+        background-color: #2563eb;
+        color: #ffffff;
+    }
+
+    .btn--primary:hover {
+        background-color: #1d4ed8;
+    }
+
+    .btn-danger {
+        background-color: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fca5a5;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.875rem;
+    }
+
+    .btn-danger:hover {
+        background-color: #fecaca;
+    }
+
+    .proveedores-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #ffffff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .proveedores-table th,
+    .proveedores-table td {
+        padding: 14px 16px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .proveedores-table th {
+        background-color: #f8fafc;
+        color: #64748b;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .cell-strong {
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    .table-empty {
+        text-align: center;
+        color: #64748b;
+        padding: 30px;
+    }
+
+    .state-info {
+        color: #3b82f6;
+        font-weight: 500;
+    }
+
+    .state-error {
+        color: #ef4444;
+        font-weight: 500;
+    }
+
+    /* Modal Emergente */
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(15, 23, 42, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background-color: #ffffff;
+        padding: 28px;
+        border-radius: 10px;
+        width: 100%;
+        max-width: 480px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-content h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        color: #0f172a;
+    }
+
+    .modal-content label {
+        display: block;
+        margin-bottom: 14px;
+        font-size: 0.9rem;
+        color: #334155;
+    }
+
+    .modal-content input {
+        width: 100%;
+        padding: 8px 12px;
+        margin-top: 6px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        box-sizing: border-box;
+    }
+
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .form-error {
+        color: #dc2626;
+        background-color: #fef2f2;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        margin-bottom: 16px;
+    }

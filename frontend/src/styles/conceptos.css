@@ -1,0 +1,88 @@
+/* Conceptos reutiliza la base de clientes.css (toolbar, filtros, modales,
+   formulario, badge de inactivo). Aquí solo va lo propio de esta pantalla. */
+
+.toolbar.conceptos-filtros {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.conceptos-buscar {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-width: 14rem;
+  font: inherit;
+}
+
+/* Tabla principal */
+.conceptos-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.conceptos-table th,
+.conceptos-table td {
+  text-align: left;
+  padding: 0.75rem 0.6rem;
+  border-bottom: 1px solid #ddd;
+  vertical-align: middle;
+}
+
+.conceptos-table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #666;
+}
+
+.conceptos-table td:first-child {
+  overflow-wrap: anywhere;
+}
+
+/* Columnas de dinero y porcentaje alineadas a la derecha para comparar cifras. */
+.conceptos .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.conceptos-table th:last-child {
+  width: 17rem;
+}
+
+/* Historial en el modal de Ver: la fecha en una sola línea. */
+.conceptos .clientes-table--compacta td:first-child {
+  white-space: nowrap;
+}
+
+/* Formulario */
+.form-field select:disabled {
+  background: #f3f3f3;
+  color: #555;
+  cursor: not-allowed;
+}
+
+.conceptos-ayuda {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted, #6b7280);
+}
+
+.conceptos-total {
+  margin: 0.25rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 4px;
+  background: var(--gray-bg, #f4f5f7);
+  font-size: 0.9rem;
+}
+
+.conceptos-aviso {
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #f3d9a4;
+  background: #fdf6e7;
+  color: #8a5a00;
+  font-size: 0.85rem;
+}

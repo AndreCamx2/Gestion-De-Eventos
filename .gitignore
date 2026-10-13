@@ -10,10 +10,17 @@ node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/.env
-
+frontend/.env.local
+frontend/.env.*.local
+    
 # General
 .DS_Store
 *.log
 
 # Raíz (Docker)
 .env
+# Guia personal de Claude Code (solo local)
+CLAUDE.md
+
+# Configuración local de Claude Code (no se comparte)
+.claude/settings.local.json

@@ -1,9 +1,28 @@
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 from apps.sitios.models import Sitio
 from apps.clientes.models import Cliente
 from apps.salones.models import Salon, Montaje
 from apps.catalogo.models import Concepto
+
+
+class CotizacionQuerySet(models.QuerySet):
+    def activas(self):
+        """Las que todavía comprometen el salón: evento de hoy en adelante y, además,
+        bloqueada, confirmada o cotizada no vencida (misma regla que `vencida`).
+
+        Un evento pasado o una cotización vencida no cuentan. Bloquean quitar un
+        montaje habilitado y bajar su aforo (SGDE-88).
+        """
+        hoy = timezone.localdate()
+        cotizada_vigente = models.Q(estado="cotizado") & (
+            models.Q(validez_oferta__isnull=True) | models.Q(validez_oferta__gte=hoy)
+        )
+        return self.filter(
+            models.Q(fecha_evento__gte=hoy)
+            & (models.Q(estado__in=["bloqueado", "confirmado"]) | cotizada_vigente)
+        )
 
 
 class Cotizacion(models.Model):
@@ -14,21 +33,34 @@ class Cotizacion(models.Model):
         ("cancelado", "Cancelado"),
     ]
 
-    sitio = models.ForeignKey(Sitio, on_delete=models.CASCADE, related_name="cotizaciones")
+    sitio = models.ForeignKey(Sitio, on_delete=models.PROTECT, related_name="cotizaciones")
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT, related_name="cotizaciones")
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="cotizaciones")
     salon = models.ForeignKey(Salon, on_delete=models.PROTECT, related_name="cotizaciones")
     montaje = models.ForeignKey(Montaje, on_delete=models.PROTECT, related_name="cotizaciones")
-    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="cotizado")
-    fecha_evento = models.DateField()
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default="cotizado", db_index=True)
+    fecha_evento = models.DateField(db_index=True)
     validez_oferta = models.DateField(null=True, blank=True)
     cantidad_personas = models.PositiveIntegerField()
     bloqueo_hasta = models.DateTimeField(null=True, blank=True)
     garantia_tipo = models.CharField(max_length=30, blank=True)
     garantia_monto = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    garantia_registrada_en = models.DateTimeField(null=True, blank=True)
+    garantia_registrada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="garantias_registradas", null=True, blank=True
+    )
     penalizacion_pct = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     motivo_cancelacion = models.TextField(blank=True)
+    # Los llena la cancelación (SGDE-61), junto con penalizacion_pct y motivo_cancelacion.
+    cancelado_en = models.DateTimeField(null=True, blank=True)
+    cancelado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="cancelaciones_registradas", null=True, blank=True
+    )
     creado_en = models.DateTimeField(auto_now_add=True)
+
+    objects = CotizacionQuerySet.as_manager()
 
     class Meta:
         constraints = [
@@ -44,12 +76,57 @@ class Cotizacion(models.Model):
     def __str__(self):
         return f"Cotización {self.id} - {self.cliente.nombre}"
 
+    @property
+    def vencida(self):
+        """Se calcula al leer (no se guarda): sigue cotizada y ya pasó su vigencia."""
+        return (
+            self.estado == "cotizado"
+            and self.validez_oferta is not None
+            and self.validez_oferta < timezone.localdate()
+        )
+
 
 class CotizacionItem(models.Model):
     cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name="items")
     concepto = models.ForeignKey(Concepto, on_delete=models.PROTECT, related_name="items")
     cantidad = models.PositiveIntegerField(default=1)
+    # Copias del concepto al momento de cotizar: si luego cambia el concepto,
+    # la cotización no cambia.
     precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
+    impuesto_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
 
     def __str__(self):
         return f"{self.concepto.nombre} x{self.cantidad}"
+
+class MovimientoCotizacion(models.Model):
+    """Quién hizo cada cambio de una cotización y cuándo (SGDE-62).
+
+    Lo registra cada acción del API dentro de su misma transacción. usuario null
+    significa que lo hizo el sistema (por ejemplo, la liberación de un bloqueo vencido).
+    Lo que se cambie a mano en /admin/ no deja movimiento: queda en el LogEntry (RNF-03).
+    """
+
+    TIPO_CHOICES = [
+        ("creada", "Creada"),
+        ("vigencia", "Vigencia cambiada"),
+        ("bloqueada", "Bloqueada"),
+        ("liberada", "Liberada"),
+        ("confirmada", "Confirmada"),
+        ("cancelada", "Cancelada"),
+    ]
+
+    # CASCADE: el historial es parte de la cotización (el API no las borra).
+    cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name="movimientos")
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name="movimientos_cotizacion", null=True, blank=True
+    )
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
+    detalle = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["fecha", "id"]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - cotización {self.cotizacion_id}"
