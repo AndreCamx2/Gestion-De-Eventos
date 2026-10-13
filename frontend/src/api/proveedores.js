@@ -4,7 +4,8 @@ import { apiFetch } from "./client";
 // Usa apiFetch directo: los errores conservan error.status y error.body, así la
 // pantalla distingue un 401 de un 400. DRF puede devolver una lista simple o un
 // objeto paginado { count, results }: las listas aceptan ambas formas.
-// El API no tiene editar ni borrar, ni de proveedores ni de stock.
+// Del stock se editan la cantidad y el valor (SGDE-98). No hay borrar, ni de
+// proveedores ni de stock: un elemento agotado queda con cantidad 0.
 function comoLista(data) {
   return Array.isArray(data) ? data : data?.results ?? [];
 }
@@ -33,5 +34,14 @@ export function crearElementoStock({ proveedor, nombre_elemento, cantidad, valor
   return apiFetch("/stock/", {
     method: "POST",
     body: JSON.stringify({ proveedor, nombre_elemento, cantidad, valor }),
+  });
+}
+
+// PATCH /api/stock/<id>/ con solo lo que cambió: { cantidad?, valor? }.
+// Devuelve el elemento completo, con actualizado_en nuevo.
+export function editarStock(id, cambios) {
+  return apiFetch(`/stock/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(cambios),
   });
 }

@@ -14,7 +14,8 @@ function decimalOpcional(valor) {
   return limpio === "" ? null : limpio;
 }
 
-// GET /api/salones/ → [{ id, sitio, nombre, altura, ancho, foto_url }]
+// GET /api/salones/ → [{ id, sitio, nombre, altura, ancho, foto_url, activo }]
+// Solo los activos, salvo incluirInactivos (SGDE-99).
 export async function listarSalones({ incluirInactivos = false } = {}) {
   const query = incluirInactivos ? "?incluir_inactivos=true" : "";
   return comoLista(await apiFetch(`/salones/${query}`, { method: "GET" }));
@@ -51,4 +52,33 @@ export function habilitarMontaje({ salon, montaje, aforo }) {
     method: "POST",
     body: JSON.stringify({ salon, montaje, aforo }),
   });
+}
+
+// PATCH /api/salones/<id>/ con solo lo que cambió: nombre, ancho, altura o
+// foto_url (SGDE-88). El sitio no se puede cambiar (el API da 400).
+export function editarSalon(id, cambios) {
+  const body = { ...cambios };
+  if ("nombre" in body) body.nombre = body.nombre.trim();
+  if ("ancho" in body) body.ancho = decimalOpcional(body.ancho);
+  if ("altura" in body) body.altura = decimalOpcional(body.altura);
+  if ("foto_url" in body) body.foto_url = body.foto_url.trim();
+  return apiFetch(`/salones/${id}/`, { method: "PATCH", body: JSON.stringify(body) });
+}
+
+// PATCH /api/salon-montajes/<id>/ con el aforo nuevo. Menor que una cotización
+// activa de ese salón y montaje → 400 en "aforo".
+export function editarAforo(id, aforo) {
+  return apiFetch(`/salon-montajes/${id}/`, { method: "PATCH", body: JSON.stringify({ aforo }) });
+}
+
+// DELETE /api/salon-montajes/<id>/ → 204. Con cotizaciones activas → 409, con
+// un detail que dice cuántas son.
+export function quitarMontaje(id) {
+  return apiFetch(`/salon-montajes/${id}/`, { method: "DELETE" });
+}
+
+// PATCH /api/salones/<id>/ con { activo } (SGDE-99): la baja es lógica. Darlo de
+// baja con cotizaciones activas → 409, con un detail que dice cuántas son.
+export function cambiarActivoSalon(id, activo) {
+  return apiFetch(`/salones/${id}/`, { method: "PATCH", body: JSON.stringify({ activo }) });
 }

@@ -18,13 +18,15 @@ import {
   Boton,
   CabeceraPagina,
   Esqueleto,
-  EstadoBadge,
   EstadoVacio,
   TablaContenedor,
   Tarjeta,
 } from "../components/ui";
 import SesionVencida, { AvisoSesionEnVentana } from "../components/SesionVencida";
 import DialogoNuevaEmpresa from "./clientes/DialogoNuevaEmpresa";
+import DialogoReactivarCliente from "./clientes/DialogoReactivarCliente";
+import HistorialCliente from "./clientes/HistorialCliente";
+import EstadoCliente, { BotonEstadoCliente } from "./clientes/EstadoCliente";
 import "../styles/directorio-clientes.css";
 
 const FILTROS_TIPO = [
@@ -101,6 +103,9 @@ export default function Clientes() {
   const [aviso, setAviso] = useState(null);
   const [procesando, setProcesando] = useState(false);
   const [creandoEmpresa, setCreandoEmpresa] = useState(false);
+  const [reactivando, setReactivando] = useState(false);
+  // Cliente inactivo que se abre cuando la lista con inactivos termine de cargar (SGDE-95).
+  const abrirAlCargarRef = useRef(null);
 
   const tablaRef = useRef(null);
   const buscarRef = useRef(null);
@@ -167,6 +172,9 @@ export default function Clientes() {
       ]);
       setClientes(clientesData);
       setEmpresas(empresasData);
+      const pendiente = clientesData.find((c) => c.id === abrirAlCargarRef.current);
+      abrirAlCargarRef.current = null;
+      if (pendiente) abrirEditar(pendiente);
       return clientesData;
     } catch (err) {
       if (err.status === 401) {
@@ -264,6 +272,25 @@ export default function Clientes() {
   function seleccionar(cliente) {
     if (clienteSeleccionado?.id === cliente.id) return;
     siNoHayCambios(() => abrirEditar(cliente));
+  }
+
+  // "Ver el cliente inactivo": si no está en la lista, se muestran los inactivos y se abre al cargar.
+  function verClienteInactivo(id) {
+    const cliente = clientes.find((c) => c.id === id);
+    if (cliente) siNoHayCambios(() => abrirEditar(cliente));
+    else siNoHayCambios(() => { abrirAlCargarRef.current = id; setMostrarInactivos(true); });
+  }
+
+  // Reactivado: la lista se recarga y el panel sigue abierto, con el foco en "Guardar cambios".
+  async function alReactivarCliente() {
+    const id = clienteSeleccionado.id;
+    disparadorRef.current = null;
+    setReactivando(false);
+    const guardado = (await cargarDatos())?.find((c) => c.id === id);
+    if (!guardado) return cerrarPanel();
+    abrirEditar(guardado, { enfocar: false });
+    focoPendienteRef.current = "guardar";
+    setAviso("Cliente reactivado.");
   }
 
   function abrirBaja() {
@@ -648,6 +675,7 @@ export default function Clientes() {
                   empresas={empresas}
                   onChange={handleChange}
                   onNuevaEmpresa={abrirNuevaEmpresa}
+                  onVerInactivo={verClienteInactivo}
                 />
 
                 {errorAccion && (
@@ -669,11 +697,12 @@ export default function Clientes() {
                     {procesando ? "Guardando..." : clienteSeleccionado ? "Guardar cambios" : "Guardar"}
                   </Boton>
                   {clienteSeleccionado ? (
-                    clienteSeleccionado.activo && (
-                      <Boton variante="peligro" onClick={abrirBaja} disabled={procesando}>
-                        Dar de baja
-                      </Boton>
-                    )
+                    <BotonEstadoCliente
+                      activo={clienteSeleccionado.activo}
+                      disabled={procesando}
+                      onBaja={abrirBaja}
+                      onReactivar={(e) => { disparadorRef.current = e.currentTarget; setReactivando(true); }}
+                    />
                   ) : (
                     <Boton variante="secundario" onClick={() => siNoHayCambios(cerrarPanel)} disabled={procesando}>
                       Cancelar
@@ -690,37 +719,7 @@ export default function Clientes() {
                 )}
               </form>
 
-              {clienteSeleccionado && (
-                <section className="directorio-historial" aria-labelledby="directorio-historial-titulo">
-                  <h3 id="directorio-historial-titulo" className="directorio-historial__titulo">Cotizaciones</h3>
-                  {clienteSeleccionado.cotizaciones?.length ? (
-                    <div className="directorio-historial__caja">
-                      <table className="directorio-historial__tabla">
-                        <thead>
-                          <tr>
-                            <th scope="col">N.º</th>
-                            <th scope="col">Estado</th>
-                            <th scope="col">Fecha del evento</th>
-                            <th scope="col" className="directorio-tabla__num">Personas</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {clienteSeleccionado.cotizaciones.map((q) => (
-                            <tr key={q.id}>
-                              <td className="directorio-historial__id">#{q.id}</td>
-                              <td><EstadoBadge estado={q.estado} /></td>
-                              <td>{q.fecha_evento || "—"}</td>
-                              <td className="directorio-tabla__num">{q.cantidad_personas ?? "—"}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="directorio-historial__vacio">Este cliente aún no tiene cotizaciones.</p>
-                  )}
-                </section>
-              )}
+              {clienteSeleccionado && <HistorialCliente cotizaciones={clienteSeleccionado.cotizaciones} />}
             </>
           )}
         </aside>
@@ -778,6 +777,17 @@ export default function Clientes() {
         <p className="directorio-dialogo__texto">Tienes cambios sin guardar. ¿Descartarlos?</p>
       </DialogoConfirmacion>
 
+      {reactivando && clienteSeleccionado && (
+        <DialogoReactivarCliente
+          cliente={clienteSeleccionado}
+          onReactivado={alReactivarCliente}
+          onCerrar={() => { setReactivando(false); alCerrarDialogo(); }}
+          onSesionVencida={() => setSesionVencida(true)}
+          sesionVencida={sesionVencida}
+          onEntrarDeNuevo={(boton) => sesionRef.current?.abrir({ focoAlVolver: boton })}
+        />
+      )}
+
       {creandoEmpresa && (
         <DialogoNuevaEmpresa
           onCreada={alCrearEmpresa}
@@ -790,15 +800,5 @@ export default function Clientes() {
 
       <SesionVencida ref={sesionRef} visible={sesionVencida} onReingreso={alVolverAEntrar} />
     </div>
-  );
-}
-
-// Activo / Inactivo con texto y punto, como EstadoBadge (que es solo para cotizaciones).
-function EstadoCliente({ activo }) {
-  return (
-    <span className={`directorio-estado ${activo ? "directorio-estado--activo" : "directorio-estado--inactivo"}`}>
-      <span className="directorio-estado__punto" aria-hidden="true" />
-      {activo ? "Activo" : "Inactivo"}
-    </span>
   );
 }

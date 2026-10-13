@@ -7,11 +7,12 @@ import TarjetasProveedores from "./proveedores/TarjetasProveedores";
 import StockTabla from "./proveedores/StockTabla";
 import DialogoNuevoProveedor from "./proveedores/DialogoNuevoProveedor";
 import DialogoNuevoElemento from "./proveedores/DialogoNuevoElemento";
+import DialogoEditarStock from "./proveedores/DialogoEditarStock";
 import "../styles/proveedores.css";
 
 // Pantalla de Proveedores y stock (SGDE-81 y SGDE-42, maqueta Proveedores.dc.html):
-// tarjetas de proveedor seleccionables y la tabla de stock del elegido. El API no
-// tiene editar ni borrar (editar stock es SGDE-98). Cada pieza vive en pages/proveedores/.
+// tarjetas de proveedor seleccionables y la tabla de stock del elegido, con su
+// cantidad y valor editables (SGDE-98). Cada pieza vive en pages/proveedores/.
 
 // Tipo de error al cargar: "sesion" (401), "permiso" (403) o "servidor" (500 o sin red).
 function tipoDeError(err) {
@@ -30,8 +31,10 @@ export default function Proveedores() {
   // 401: se avisa abajo sin salir de la pantalla (components/SesionVencida.jsx).
   const [sesionVencida, setSesionVencida] = useState(false);
   const [seleccionId, setSeleccionId] = useState(null);
-  // Ventana abierta: null | "proveedor" | "elemento".
+  // Ventana abierta: null | "proveedor" | "elemento" | "editar".
   const [dialogo, setDialogo] = useState(null);
+  // Elemento del stock que se edita (con dialogo === "editar").
+  const [editando, setEditando] = useState(null);
 
   // Si la sesión venció mientras se cargaba, al volver a entrar se carga otra vez.
   const recargarAlEntrarRef = useRef(false);
@@ -108,6 +111,17 @@ export default function Proveedores() {
 
   function cerrarDialogo() {
     setDialogo(null);
+  }
+
+  function abrirEditar(elemento, boton) {
+    setEditando(elemento);
+    abrir("editar", boton);
+  }
+
+  // La fila se reemplaza en el sitio: no se recarga la pantalla.
+  function alEditarStock(actualizado) {
+    setStock((prev) => prev.map((e) => (e.id === actualizado.id ? actualizado : e)));
+    cerrarDialogo();
   }
 
   function alCrearProveedor(proveedor) {
@@ -213,6 +227,7 @@ export default function Proveedores() {
               elementos={elementos}
               onReintentar={cargarStock}
               onAgregar={(boton) => abrir("elemento", boton)}
+              onEditar={abrirEditar}
             />
           </div>
         </>
@@ -224,6 +239,16 @@ export default function Proveedores() {
 
       {dialogo === "elemento" && seleccionado && (
         <DialogoNuevoElemento proveedor={seleccionado} onCreado={alCrearElemento} onCerrar={cerrarDialogo} {...propsSesion} />
+      )}
+
+      {dialogo === "editar" && seleccionado && editando && (
+        <DialogoEditarStock
+          proveedor={seleccionado}
+          elemento={editando}
+          onGuardado={alEditarStock}
+          onCerrar={cerrarDialogo}
+          {...propsSesion}
+        />
       )}
 
       <SesionVencida ref={sesionRef} visible={sesionVencida} onReingreso={alVolverAEntrar} />

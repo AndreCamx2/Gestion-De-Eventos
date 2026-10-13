@@ -604,6 +604,21 @@
     font-weight: var(--peso-extra);
 }
 
+/* "Venció el dd/mm" debajo de la etiqueta Vencida (SGDE-95) */
+.directorio-historial__vencio {
+    display: block;
+    margin-top: var(--espacio-1);
+    font-size: var(--texto-pequeno);
+    color: var(--estado-vencida-texto);
+    white-space: nowrap;
+}
+
+/* "Ver el cliente inactivo", debajo del error de identificación repetida */
+.directorio-form__ver-inactivo {
+    align-self: flex-start;
+    min-height: var(--alto-tocable);
+}
+
 .directorio-historial__vacio {
     font-size: var(--texto-navegacion);
     color: var(--color-texto-suave);

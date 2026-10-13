@@ -2,6 +2,7 @@
 // misma regla de NIT y misma lectura de errores del API.
 import { erroresDesdeApi as erroresDesdeApiComun } from "../utils/erroresApi";
 import { Campo } from "../components/ui";
+import VerClienteInactivo from "./clientes/VerClienteInactivo";
 
 export const FORM_VACIO = {
   tipo: "natural",
@@ -70,7 +71,8 @@ export function payloadEdicion(form) {
 // Los <input> usan el componente Campo. Campo solo pinta <input>, así que el
 // <select> y el <textarea> se arman a mano con sus mismas clases (campo,
 // campo__etiqueta, campo__input) para que se vean iguales sin modificar Campo.
-export default function ClienteForm({ idPrefix, form, errores, empresas, onChange, onNuevaEmpresa }) {
+// onVerInactivo(id): si la identificación es de un cliente inactivo, abre ese cliente.
+export default function ClienteForm({ idPrefix, form, errores, empresas, onChange, onNuevaEmpresa, onVerInactivo }) {
   const esJuridica = form.tipo === "juridica";
   const id = (campo) => `${idPrefix}-${campo}`;
   const idError = (campo) => `${id(campo)}-error`;
@@ -165,6 +167,7 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
           error={errores.identificacion}
         />
       )}
+      {!esJuridica && <VerClienteInactivo error={errores.identificacion} onVer={onVerInactivo} />}
 
       <div className="directorio-form__par">
         <Campo
