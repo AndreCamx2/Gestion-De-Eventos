@@ -1,8 +1,8 @@
 from django.db import transaction
 from django.db.models import Q
 from rest_framework import filters, generics, permissions
-from .serializers import UsuarioRegistroSerializer, UsuarioMeSerializer, UsuarioAdminSerializer
-from .models import Usuario
+from .serializers import UsuarioRegistroSerializer, UsuarioMeSerializer, UsuarioAdminSerializer, RolSerializer
+from .models import Usuario, Rol
 from .permissions import EsAdministrador
 from .services import validar_cambio_usuario
 
@@ -73,6 +73,12 @@ class UsuarioDetailView(generics.RetrieveUpdateDestroyAPIView):
             )
             if instance.is_active:
                 instance.set_activo(False)
+
+
+class RolListView(generics.ListAPIView):
+    serializer_class = RolSerializer
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+    queryset = Rol.objects.order_by("id")
 
 
 class RegistrarUsuarioView(generics.CreateAPIView):

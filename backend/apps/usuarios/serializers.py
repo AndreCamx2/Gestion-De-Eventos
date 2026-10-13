@@ -76,9 +76,19 @@ class UsuarioAdminSerializer(serializers.ModelSerializer):
                   "sitios", "is_active", "last_login", "date_joined"]
         read_only_fields = ["last_login", "date_joined"]
 
+    def get_fields(self):
+        fields = super().get_fields()
+        request = self.context.get("request")
+        if request and getattr(request.user, "is_superuser", False):
+            fields["es_superusuario"] = serializers.BooleanField(
+                source="is_superuser", read_only=True
+            )
+        return fields
+
     def update(self, instance, validated_data):
         actor = self.context["request"].user
         activo = validated_data.pop("is_active", None)
+        estaba_activo = instance.is_active
         if "sitios" in validated_data and not actor.is_superuser:
             # Los sitios que el actor no administra no se pueden ni ver ni quitar:
             # se conservan tal como estaban.
@@ -89,8 +99,8 @@ class UsuarioAdminSerializer(serializers.ModelSerializer):
                 instance, actor, nuevo_rol=validated_data.get("rol"), nuevo_activo=activo
             )
             instance = super().update(instance, validated_data)
-            # Solo si "is_active" venía en el payload; propaga al Cliente vinculado.
-            if activo is not None and activo != instance.is_active:
+            # Propaga el cambio solo cuando is_active se envió explícitamente.
+            if activo is not None and activo != estaba_activo:
                 instance.set_activo(activo)
         return instance
 

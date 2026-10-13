@@ -1,4 +1,4 @@
-import { IconInicio, IconCotizaciones, IconCalendario, IconClientes, IconSalones, IconConceptos, IconSitios } from "./icons";
+import { IconInicio, IconCotizaciones, IconCalendario, IconClientes, IconSalones, IconConceptos, IconSitios, IconUsuarios } from "./icons";
 import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { ROLES_POR_RUTA } from "../rutasPorRol";
@@ -14,6 +14,7 @@ export const NAV_ITEMS = [
   { to: "/sitios", label: "Sitios", icon: <IconSitios />, roles: ROLES_POR_RUTA["/sitios"] },
   { to: "/salones", label: "Salones y Servicios", icon: <IconSalones />, roles: ROLES_POR_RUTA["/salones"] },
   { to: "/conceptos", label: "Conceptos y precios", icon: <IconConceptos />, roles: ROLES_POR_RUTA["/conceptos"] },
+  { to: "/usuarios", label: "Usuarios", icon: <IconUsuarios />, roles: ROLES_POR_RUTA["/usuarios"] },
 ];
 
 function getInitials(name) {

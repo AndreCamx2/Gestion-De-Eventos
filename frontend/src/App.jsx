@@ -17,6 +17,7 @@ import Sitios from "./pages/hoteles/Sitios";
 import Clientes from "./pages/Clientes";
 import Conceptos from "./pages/Conceptos";
 import Proveedores from "./pages/Proveedores";
+import Usuarios from "./pages/Usuarios";
 import Rack from "./pages/Rack";
 import { getUsuarioActual, logout } from "./api/auth";
 import { rolesDeRuta } from "./rutasPorRol";
@@ -153,6 +154,7 @@ export default function App() {
               <Route path="/sitios" element={<Sitios />} />
               <Route path="/clientes" element={<Clientes />} />
               <Route path="/conceptos" element={<Conceptos />} />
+              <Route path="/usuarios" element={<Usuarios />} />
               <Route path="/rack" element={<Rack />} />
 
               {/* Aún pendiente de construir */}

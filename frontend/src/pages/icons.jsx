@@ -65,3 +65,13 @@ export function IconSitios() {
     </svg>
   );
 }
+
+export function IconUsuarios() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3.5 19c.7-3 2.7-4.5 5.5-4.5s4.8 1.5 5.5 4.5" strokeLinecap="round" />
+      <path d="M16 5.5a3 3 0 0 1 0 5.8M17 14.8c1.8.8 2.9 2.2 3.5 4.2" strokeLinecap="round" />
+    </svg>
+  );
+}

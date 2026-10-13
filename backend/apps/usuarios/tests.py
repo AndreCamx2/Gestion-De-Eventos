@@ -86,6 +86,23 @@ class MatrizAccesoPorRolTests(APITestCase):
                 self.assertEqual(self.client.post(url, {}, format="json").status_code,
                                  status.HTTP_400_BAD_REQUEST)
 
+    def test_lista_de_roles_solo_es_visible_para_administradores(self):
+        url = "/api/roles/"
+        self.assertEqual(self.client.get(url).status_code, status.HTTP_401_UNAUTHORIZED)
+
+        for usuario in (self.cliente, self.proveedor):
+            self.client.force_authenticate(user=usuario)
+            with self.subTest(rol=usuario.rol.codigo):
+                self.assertEqual(self.client.get(url).status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=self.admin)
+        respuesta = self.client.get(url)
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            {rol["codigo"] for rol in respuesta.json()},
+            {"administrador", "cliente", "proveedor"},
+        )
+
     def peticion(self, metodo, url):
         return getattr(self.client, metodo)(url, {}, format="json")
 
@@ -356,6 +373,7 @@ class ListaUsuariosTests(BaseUsuariosAdminTests):
         usuario = self.client.get("/api/usuarios/").json()[0]
         for campo in ("password", "is_superuser", "is_staff", "groups", "user_permissions"):
             self.assertNotIn(campo, usuario)
+        self.assertNotIn("es_superusuario", usuario)
         self.assertIn(usuario["rol_codigo"], ("administrador", "cliente", "proveedor"))
 
     def test_post_en_la_lista_crea_usuario_interno(self):
@@ -510,6 +528,11 @@ class ReglasDeSeguridadUsuarioTests(BaseUsuariosAdminTests):
             username="root2", email="root2@test.com", password=PASSWORD, rol=self.rol_admin)
         for actor, esperado in ((self.admin, status.HTTP_404_NOT_FOUND), (otro_super, status.HTTP_400_BAD_REQUEST)):
             self.client.force_authenticate(user=actor)
+            if actor.is_superuser:
+                respuesta_lista = self.client.get("/api/usuarios/")
+                datos = {u["username"]: u for u in respuesta_lista.json()}
+                self.assertTrue(datos["root"]["es_superusuario"])
+                self.assertFalse(datos["proveedor@test.com"]["es_superusuario"])
             for metodo, cuerpo, campo in casos:
                 with self.subTest(actor=actor.username, metodo=metodo, cuerpo=cuerpo):
                     if cuerpo is None:
