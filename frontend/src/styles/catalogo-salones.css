@@ -281,9 +281,17 @@
     color: var(--color-texto-tenue);
 }
 
-.salon-tarjeta__accion {
-    width: 100%;
+/* "Ver disponibilidad" y "Habilitar montaje": abajo, lado a lado; en una
+   tarjeta angosta cada uno baja a su línea */
+.salon-tarjeta__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
     margin-top: auto;
+}
+
+.salon-tarjeta__accion {
+    flex: 1 1 150px;
     min-height: var(--alto-tocable);
 }
 
