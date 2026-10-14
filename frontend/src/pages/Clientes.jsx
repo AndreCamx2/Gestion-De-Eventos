@@ -6,13 +6,8 @@ import {
   actualizarCliente,
   darDeBajaCliente,
 } from "../api/clientes";
-import ClienteForm, {
-  FORM_VACIO,
-  formDesdeCliente,
-  nitDeEmpresa,
-  erroresDesdeApi,
-  payloadEdicion,
-} from "./ClienteForm";
+import ClienteForm from "./ClienteForm";
+import { FORM_VACIO, formDesdeCliente, nitDeEmpresa, erroresDesdeApi, payloadEdicion } from "./clientes/clienteForm";
 import {
   AvisoError,
   Boton,

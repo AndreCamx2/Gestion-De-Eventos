@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import { cambiarEstadoConcepto } from "../../api/conceptos";
 import { AvisoSesionEnVentana } from "../../components/SesionVencida";
-import { Boton } from "../../components/ui";
-import ConceptosDialogo, { cerrarDialogoDe } from "./ConceptosDialogo";
+import { Boton, cerrarDialogoDe } from "../../components/ui";
+import ConceptosDialogo from "./ConceptosDialogo";
 import { formatCOP } from "./conceptos";
 
 // Ventana para desactivar o reactivar un concepto.

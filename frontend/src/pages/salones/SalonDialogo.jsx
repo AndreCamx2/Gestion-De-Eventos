@@ -50,8 +50,3 @@ export default function SalonDialogo({ idTitulo, titulo, bloqueado, onCerrar, ch
     </dialog>
   );
 }
-
-// Cierra el <dialog> que contiene al elemento (para los botones "Cancelar").
-export function cerrarDialogoDe(elemento) {
-  elemento?.closest("dialog")?.close();
-}
