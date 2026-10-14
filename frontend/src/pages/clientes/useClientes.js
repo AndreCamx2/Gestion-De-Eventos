@@ -6,7 +6,7 @@ import {
   actualizarCliente,
   darDeBajaCliente,
 } from "../../api/clientes";
-import { FORM_VACIO, formDesdeCliente, nitDeEmpresa, erroresDesdeApi, payloadEdicion } from "./clienteForm.js";
+import { FORM_VACIO, formDesdeCliente, nitDeEmpresa, erroresDesdeApi, payloadEdicion } from "./formularioCliente";
 import { hayDiferencias, normalizar } from "./clientes";
 import { useFocoPanel } from "./useFocoPanel";
 

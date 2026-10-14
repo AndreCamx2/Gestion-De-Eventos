@@ -2,10 +2,8 @@
 // cómo se llena desde un cliente, el NIT de su empresa, la lectura de errores
 // del API y el cuerpo del PATCH. Viven fuera de ClienteForm.jsx porque un .jsx
 // solo exporta componentes (react-refresh, SGDE-55). Los usan ClienteForm.jsx y useClientes.js.
-//
-// Ojo: este archivo y ClienteForm.jsx solo se distinguen por la mayúscula y la
-// extensión. Windows no distingue mayúsculas, así que se importan siempre con la
-// extensión escrita: "./clienteForm.js" y "./ClienteForm.jsx".
+// Antes se llamaba clienteForm.js: en Windows chocaba con ClienteForm.jsx por la
+// mayúscula (SGDE-97).
 import { erroresDesdeApi as erroresDesdeApiComun } from "../../utils/erroresApi";
 
 export const FORM_VACIO = {

@@ -1,5 +1,5 @@
 import { Boton } from "../../components/ui";
-import ClienteForm from "./ClienteForm.jsx";
+import ClienteForm from "./ClienteForm";
 import EstadoCliente, { BotonEstadoCliente } from "./EstadoCliente";
 import HistorialCliente from "./HistorialCliente";
 import { iniciales } from "./clientes";
