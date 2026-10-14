@@ -511,68 +511,7 @@
     color: var(--color-texto-suave);
 }
 
-.conceptos-dialogo {
-    width: min(520px, calc(100% - 2 * var(--espacio-4)));
-    max-width: none;
-    max-height: calc(100dvh - 2 * var(--espacio-4));
-    overflow-y: auto;
-    padding: var(--espacio-6);
-    border: 0;
-    border-radius: var(--radio-tarjeta-grande);
-    background: var(--color-superficie);
-    color: var(--color-texto);
-    box-shadow: var(--sombra-flotante);
-}
-
-.conceptos-dialogo::backdrop {
-    background: color-mix(in srgb, var(--color-texto) 45%, transparent);
-}
-
-.conceptos-dialogo__cabecera {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--espacio-3);
-    margin-bottom: var(--espacio-5);
-}
-
-.conceptos-dialogo__titulo {
-    margin: 0;
-    font-size: var(--texto-seccion);
-    font-weight: var(--peso-extra);
-    letter-spacing: var(--tracking-seccion);
-}
-
-.conceptos-dialogo__cerrar {
-    display: inline-flex;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    width: var(--alto-tocable);
-    height: var(--alto-tocable);
-    border: 0;
-    border-radius: var(--radio-control);
-    background: transparent;
-    color: var(--color-texto-suave);
-    cursor: pointer;
-}
-
-.conceptos-dialogo__cerrar:focus-visible {
-    outline: var(--foco);
-    outline-offset: var(--foco-separacion);
-}
-
-.conceptos-dialogo__cerrar:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.conceptos-dialogo__form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--espacio-4);
-}
-
+/* Contenido de las ventanas de Conceptos (la ventana es components/ui/Dialogo) */
 .conceptos-dialogo__par {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -587,14 +526,6 @@
 
 .conceptos-dialogo__texto strong {
     color: var(--color-texto);
-}
-
-.conceptos-dialogo__acciones {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: var(--espacio-3);
-    margin-top: var(--espacio-1);
 }
 
 .conceptos-total {
@@ -622,11 +553,6 @@
     .conceptos-pv .conceptos-tabla tbody tr.conceptos-fila--seleccionada:hover {
         background: transparent;
     }
-
-    .conceptos-dialogo__cerrar:hover:not(:disabled) {
-        background: var(--color-campo);
-        color: var(--color-texto);
-    }
 }
 
 @media (max-width: 960px) {
@@ -650,16 +576,11 @@
         max-width: none;
     }
 
-    .conceptos-panel,
-    .conceptos-dialogo {
+    .conceptos-panel {
         padding: var(--espacio-5);
     }
 
     .conceptos-dialogo__par {
         grid-template-columns: minmax(0, 1fr);
-    }
-
-    .conceptos-dialogo__acciones > * {
-        flex: 1 1 auto;
     }
 }

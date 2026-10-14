@@ -16,13 +16,14 @@ export const ROLES_POR_RUTA = {
   // A /inicio redirige RoleRoute: debe aceptar a todos o se forma un ciclo.
   "/inicio": TODOS,
   "/cotizaciones": SOLO_ADMIN, // GET /cotizaciones/
-  "/calendario": SOLO_ADMIN, // /calendario/, /salones/, /sitios/ y /cotizaciones/<id>/bloqueo/
+  "/calendario": SOLO_ADMIN, // /calendario/, /salones/ y /cotizaciones/<id>/bloqueo/
   "/salones": SOLO_ADMIN, // GET /salones/
   "/sitios": SOLO_ADMIN, // /sitios/ (y /ciudades/)
   "/clientes": SOLO_ADMIN, // /clientes/, /empresas/
   "/conceptos": SOLO_ADMIN, // /conceptos/, /sitios/
   "/proveedores": SOLO_ADMIN, // /proveedores/, /stock/
-  "/rack": SOLO_ADMIN, // /calendario/, /salones/, /sitios/ y /cotizaciones/<id>/bloqueo/
+  "/rack": SOLO_ADMIN, // /calendario/, /salones/ y /cotizaciones/<id>/bloqueo/
+  "/usuarios": SOLO_ADMIN, // /usuarios/, /roles/, /sitios/
 };
 
 // Roles de la ruta que se está viendo. Acepta subrutas por tramos completos:

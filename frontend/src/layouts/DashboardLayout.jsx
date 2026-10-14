@@ -5,7 +5,7 @@ import "../styles/dashboard-layout.css";
 
 // Única fuente de las pestañas de la barra superior.
 // El orden sigue la maqueta de Piedra viva.
-export const NAV_ITEMS = [
+const NAV_ITEMS = [
   // Los roles de cada pestaña salen de rutasPorRol.js (SGDE-54), la misma lista que usa
   // RoleRoute. Es solo experiencia de usuario; la seguridad real es el 403 del API.
   { to: "/inicio", label: "Inicio", roles: ROLES_POR_RUTA["/inicio"] },
@@ -17,6 +17,7 @@ export const NAV_ITEMS = [
   { to: "/proveedores", label: "Proveedores", roles: ROLES_POR_RUTA["/proveedores"] },
   { to: "/clientes", label: "Clientes", roles: ROLES_POR_RUTA["/clientes"] },
   { to: "/sitios", label: "Sitios", roles: ROLES_POR_RUTA["/sitios"] },
+  { to: "/usuarios", label: "Usuarios", roles: ROLES_POR_RUTA["/usuarios"] },
 ];
 
 function getInitials(name) {

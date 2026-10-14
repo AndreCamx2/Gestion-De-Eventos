@@ -36,7 +36,7 @@ function LoginForm({ onLoginSuccess }) {
       await login(email, password);
       await onLoginSuccess?.({ email });
       navigate("/inicio");
-    } catch (err) {
+    } catch {
       setErrors({ password: "Usuario o contraseña incorrectos." });
     } finally {
       setSubmitting(false);

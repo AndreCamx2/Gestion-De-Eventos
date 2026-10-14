@@ -4,7 +4,8 @@ import { apiFetch } from "./client";
 // Usa apiFetch directo: los errores conservan error.status y error.body, así la
 // pantalla distingue un 401 de un 400. DRF puede devolver una lista simple o un
 // objeto paginado { count, results }: las listas aceptan ambas formas.
-// El API no tiene editar ni borrar, ni de proveedores ni de stock.
+// Del stock se editan la cantidad y el valor (SGDE-98). No hay borrar, ni de
+// proveedores ni de stock: un elemento agotado queda con cantidad 0.
 function comoLista(data) {
   return Array.isArray(data) ? data : data?.results ?? [];
 }
@@ -34,4 +35,25 @@ export function crearElementoStock({ proveedor, nombre_elemento, cantidad, valor
     method: "POST",
     body: JSON.stringify({ proveedor, nombre_elemento, cantidad, valor }),
   });
+}
+
+// PATCH /api/stock/<id>/ con solo lo que cambió: { cantidad?, valor? }.
+// Devuelve el elemento completo, con actualizado_en nuevo.
+export function editarStock(id, cambios) {
+  return apiFetch(`/stock/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(cambios),
+  });
+}
+
+// GET /api/stock/comparar/?elemento=<texto> (SGDE-31): el stock agrupado por
+// elemento, sin distinguir mayúsculas, tildes ni espacios de más. Sin texto, todos.
+// → [{ elemento, mejor_precio, ofertas: [{ stock_id, proveedor_id, proveedor,
+//      contacto, cantidad, valor, actualizado_en, es_mejor_precio }] }]
+// Las ofertas llegan ordenadas: disponibles de la más barata a la más cara y las
+// agotadas al final. mejor_precio es null si todas están agotadas.
+export async function compararStock(elemento = "") {
+  const texto = elemento.trim();
+  const query = texto ? `?elemento=${encodeURIComponent(texto)}` : "";
+  return comoLista(await apiFetch(`/stock/comparar/${query}`, { method: "GET" }));
 }
