@@ -10,6 +10,7 @@ import DetalleCotizacion from "./pages/DetalleCotizacion";
 import Historico from "./pages/Historico";
 import Salones from "./pages/Salones";
 import Sitios from "./pages/Sitios";
+import Usuarios from "./pages/Usuarios";
 import Clientes from "./pages/Clientes";
 import Conceptos from "./pages/Conceptos";
 import Proveedores from "./pages/Proveedores";
@@ -105,6 +106,7 @@ export default function App() {
               <Route path="/cotizaciones/:id" element={<DetalleCotizacion />} />
               <Route path="/salones" element={<Salones />} />
               <Route path="/sitios" element={<Sitios />} />
+              <Route path="/usuarios" element={<Usuarios />} />
               <Route path="/clientes" element={<Clientes />} />
               <Route path="/conceptos" element={<Conceptos />} />
               <Route path="/proveedores" element={<Proveedores />} />
