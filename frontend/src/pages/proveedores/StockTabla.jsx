@@ -7,9 +7,10 @@ import { fechaActualizado, pesos, valorTotal, valorTotalElemento } from "./prove
 // - elementos: su stock, ya ordenado; null si /stock/ no cargó.
 // - onReintentar(): vuelve a pedir el stock (si no cargó).
 // - onAgregar(boton): abre "Agregar elemento" (estado vacío).
+// - onEditar(elemento, boton): abre "Editar elemento" de esa fila (SGDE-98).
 const formatoCantidad = new Intl.NumberFormat("es-CO");
 
-export default function StockTabla({ proveedor, elementos, onReintentar, onAgregar }) {
+export default function StockTabla({ proveedor, elementos, onReintentar, onAgregar, onEditar }) {
   const titulo = `Stock de ${proveedor.nombre}`;
 
   if (elementos === null) {
@@ -57,6 +58,7 @@ export default function StockTabla({ proveedor, elementos, onReintentar, onAgreg
               <th scope="col" className="proveedores-tabla__num">Valor unitario</th>
               <th scope="col" className="proveedores-tabla__num">Valor total</th>
               <th scope="col">Actualizado</th>
+              <th scope="col"><span className="visually-hidden">Acciones</span></th>
             </tr>
           </thead>
           <tbody>
@@ -67,6 +69,16 @@ export default function StockTabla({ proveedor, elementos, onReintentar, onAgreg
                 <td className="proveedores-tabla__num proveedores-tabla__suave">{pesos(Number(e.valor))}</td>
                 <td className="proveedores-tabla__num proveedores-tabla__fuerte">{pesos(valorTotalElemento(e))}</td>
                 <td className="proveedores-tabla__suave">{fechaActualizado(e.actualizado_en)}</td>
+                <td className="proveedores-tabla__acciones">
+                  <Boton
+                    variante="secundario"
+                    className="proveedores-tabla__editar"
+                    aria-label={`Editar ${e.nombre_elemento}`}
+                    onClick={(evento) => onEditar(e, evento.currentTarget)}
+                  >
+                    Editar
+                  </Boton>
+                </td>
               </tr>
             ))}
           </tbody>

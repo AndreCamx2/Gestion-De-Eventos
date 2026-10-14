@@ -19,6 +19,11 @@ export async function darDeBajaCliente(id) {
   return apiFetch(`/clientes/${id}/`, { method: "DELETE" });
 }
 
+// Reactivar (SGDE-95): activo=True en el Cliente y en su Usuario, si tiene.
+export async function reactivarCliente(id) {
+  return actualizarCliente(id, { activo: true });
+}
+
 export async function listarEmpresas() {
   return apiFetch("/empresas/", { method: "GET" });
 }

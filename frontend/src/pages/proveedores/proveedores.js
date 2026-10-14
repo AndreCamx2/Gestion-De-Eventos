@@ -89,9 +89,14 @@ export const ELEMENTO_VACIO = { nombre_elemento: "", cantidad: "", valor: "" };
 const CAMPOS_ELEMENTO = ["nombre_elemento", "cantidad", "valor"];
 
 export function validarElemento(form) {
-  const errores = {};
+  const errores = validarCantidadYValor(form);
   if (!form.nombre_elemento.trim()) errores.nombre_elemento = "Escribe el nombre del elemento.";
+  return errores;
+}
 
+// Cantidad entera y valor, los dos 0 o más. La comparten agregar y editar.
+function validarCantidadYValor(form) {
+  const errores = {};
   if (form.cantidad === "") errores.cantidad = "Escribe la cantidad.";
   else if (!Number.isInteger(Number(form.cantidad)) || Number(form.cantidad) < 0)
     errores.cantidad = "La cantidad es un número entero, 0 o más.";
@@ -125,4 +130,30 @@ export function erroresElemento(body) {
   );
   if (generales.some(esDuplicado)) campos.nombre_elemento = "Este proveedor ya tiene un elemento con ese nombre.";
   return { campos, general };
+}
+
+// ===== Editar elemento (SGDE-98) =====
+// Solo cantidad y valor: el proveedor y el nombre no cambian (el API da 400).
+
+const CAMPOS_EDICION_STOCK = ["cantidad", "valor"];
+
+// El API manda valor como "12000.00": en el campo se ve "12000".
+export function formDesdeElemento(e) {
+  return { cantidad: String(e.cantidad), valor: String(Number(e.valor)) };
+}
+
+export function validarEdicionStock(form) {
+  return validarCantidadYValor(form);
+}
+
+// Lo que cambió, para el PATCH: {} si nada cambió.
+export function cambiosStock(form, elemento) {
+  const cambios = {};
+  if (Number(form.cantidad) !== elemento.cantidad) cambios.cantidad = Number(form.cantidad);
+  if (Number(form.valor) !== Number(elemento.valor)) cambios.valor = form.valor;
+  return cambios;
+}
+
+export function erroresEdicionStock(body) {
+  return erroresDesdeApiComun(body, CAMPOS_EDICION_STOCK);
 }

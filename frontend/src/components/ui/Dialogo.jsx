@@ -57,8 +57,3 @@ export default function Dialogo({ idTitulo, titulo, bloqueado = false, onCerrar,
     </dialog>
   );
 }
-
-// Cierra el <dialog> que contiene al elemento (para los botones "Cancelar").
-export function cerrarDialogoDe(elemento) {
-  elemento?.closest("dialog")?.close();
-}

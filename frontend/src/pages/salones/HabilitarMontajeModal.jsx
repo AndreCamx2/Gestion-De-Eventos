@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { habilitarMontaje } from "../../api/salones";
 import { erroresDesdeApi } from "../../utils/erroresApi";
-import { Boton, Campo } from "../../components/ui";
-import SalonDialogo, { cerrarDialogoDe } from "./SalonDialogo";
+import { Boton, Campo, cerrarDialogoDe } from "../../components/ui";
+import SalonDialogo from "./SalonDialogo";
 import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 
 const CAMPOS = ["salon", "montaje", "aforo"];
