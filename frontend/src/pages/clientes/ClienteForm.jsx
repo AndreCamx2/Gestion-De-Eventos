@@ -1,8 +1,8 @@
 // Formulario compartido por "Nuevo cliente" y "Editar cliente": mismos campos,
-// misma regla de NIT y misma lectura de errores del API (en clientes/clienteForm.js).
-import { Campo } from "../components/ui";
-import VerClienteInactivo from "./clientes/VerClienteInactivo";
-import { nitDeEmpresa } from "./clientes/clienteForm";
+// misma regla de NIT y misma lectura de errores del API (en clienteForm.js).
+import { Campo } from "../../components/ui";
+import VerClienteInactivo from "./VerClienteInactivo";
+import { nitDeEmpresa } from "./clienteForm.js";
 
 // Los <input> usan el componente Campo. Campo solo pinta <input>, así que el
 // <select> y el <textarea> se arman a mano con sus mismas clases (campo,
