@@ -1,5 +1,6 @@
 from django.db import transaction
 from rest_framework import serializers
+from rest_framework.utils.serializer_helpers import ReturnDict
 from apps.usuarios.models import Usuario, Rol
 from apps.usuarios.validators import errores_password
 from apps.sitios.acceso import sitios_del_usuario
@@ -84,11 +85,34 @@ class ClienteAdminSerializer(serializers.ModelSerializer):
         if existente is None:
             return value
         if not existente.activo:
+            # El id también va en un campo aparte del 400 (ver errors), para que la
+            # pantalla no tenga que sacarlo del texto (SGDE-107).
+            self._cliente_inactivo = existente.id
             raise serializers.ValidationError(
                 f"Ya existe un cliente con esa identificación, pero está inactivo "
                 f"(id {existente.id}). Puedes reactivarlo en lugar de crear uno nuevo."
             )
         raise serializers.ValidationError("Ya existe un cliente con esa identificación.")
+
+    @property
+    def errors(self):
+        """Los errores de siempre y, si la identificación es de un cliente inactivo,
+        "cliente_inactivo": <id> (SGDE-107). El mensaje de "identificacion" no cambia."""
+        errores = super().errors
+        inactivo = getattr(self, "_cliente_inactivo", None)
+        if inactivo is not None and "identificacion" in errores:
+            return ReturnDict({**errores, "cliente_inactivo": inactivo}, serializer=self)
+        return errores
+
+    def is_valid(self, *, raise_exception=False):
+        # ValidationError convierte todo en texto: el id se vuelve a poner como número.
+        valido = super().is_valid(raise_exception=False)
+        if not valido and raise_exception:
+            error = serializers.ValidationError(self.errors)
+            if "cliente_inactivo" in error.detail:
+                error.detail["cliente_inactivo"] = self._cliente_inactivo
+            raise error
+        return valido
 
     def update(self, instance, validated_data):
         activo = validated_data.pop("activo", None)
