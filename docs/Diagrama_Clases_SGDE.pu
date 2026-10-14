@@ -1,104 +1,208 @@
 @startuml Diagrama_Clases_SGDE
-title Diagrama de Clases - SGDE
+' Diagrama de clases de SGDE, regenerado desde los models.py de backend/apps/ (SGDE-105).
+' Si no coincide con models.py, el código manda. PNG: docs/Diagrama_Clases_SGDE.png, con
+'   docker run --rm -v "<ruta>/docs:/data" plantuml/plantuml:1.2026.8 -tpng /data/Diagrama_Clases_SGDE.pu
+' No hay entidades Hotel, Bloqueo ni Evento: el sitio es Sitio, el bloqueo es un
+' estado de la cotización y el evento ES la Cotizacion confirmada.
+title Diagrama de Clases - SGDE (modelo actual)
 skinparam backgroundColor white
 skinparam classAttributeIconSize 0
+hide empty methods
 
-class Empresa {
-  +nit: String
-  +nombre: String
-  +direccion: String
+package "sitios" {
+  class Ciudad <<catálogo>> {
+    +codigo: String {único}
+    +nombre: String
+  }
+  class Sitio {
+    +nombre: String
+    +creado_en: DateTime
+  }
 }
 
-class Hotel {
-  +id: int
-  +nombre: String
-  +direccion: String
+package "usuarios" {
+  class Rol <<catálogo>> {
+    +codigo: String {único}
+    +nombre: String
+    +descripcion: Text
+  }
+  class Usuario <<AbstractUser>> {
+    +username: String {único}
+    +email: String
+    +first_name: String
+    +last_name: String
+    +is_active: bool
+  }
 }
 
-class Usuario {
-  +id: int
-  +nombre: String
-  +correo: String
-  +rol: String
-  +contrasena: String
+package "clientes" {
+  class Empresa {
+    +razon_social: String
+    +identificacion: String {único}
+    +contacto: String
+    +correo: String
+  }
+  class Cliente {
+    +tipo: TipoCliente
+    +nombre: String
+    +identificacion: String [0..1] {único}
+    +telefono: String
+    +correo: String
+    +forma_pago: String
+    +observaciones_internas: Text
+    +activo: bool
+    +creado_en: DateTime
+  }
+  enum TipoCliente {
+    natural
+    juridica
+  }
 }
 
-class Cliente {
-  +documento: String
-  +nombre: String
-  +correo: String
-  +telefono: String
+package "salones" {
+  class Montaje <<catálogo>> {
+    +codigo: String {único}
+    +nombre: String
+    +descripcion: Text
+  }
+  class Salon {
+    +nombre: String
+    +altura: Decimal [0..1]
+    +ancho: Decimal [0..1]
+    +foto_url: URL
+    +activo: bool
+  }
+  class SalonMontaje {
+    +aforo: int
+    +foto_url: URL
+  }
 }
 
-class Salon {
-  +id: int
-  +nombre: String
-  +dimensiones: String
-  +capacidadMaxima: int
-  +estado: String
+package "catalogo" {
+  class Concepto {
+    +nombre: String
+    +precio: Decimal
+    +impuesto_pct: Decimal
+    +activo: bool
+  }
+  class HistorialPrecioConcepto {
+    +precio_anterior: Decimal
+    +precio_nuevo: Decimal
+    +fecha_modificacion: DateTime
+  }
 }
 
-class Montaje {
-  +id: int
-  +nombre: String
+package "proveedores" {
+  class Proveedor {
+    +nombre: String
+    +identificacion: String
+    +contacto: String
+  }
+  class StockElemento {
+    +nombre_elemento: String
+    +cantidad: int
+    +valor: Decimal
+    +actualizado_en: DateTime
+  }
 }
 
-class SalonMontaje {
-  +capacidad: int
+package "cotizaciones" {
+  class Cotizacion {
+    +estado: EstadoCotizacion
+    +fecha_evento: Date
+    +validez_oferta: Date [0..1]
+    +cantidad_personas: int
+    +bloqueo_hasta: DateTime [0..1]
+    .. garantía (aceptación) ..
+    +garantia_tipo: String
+    +garantia_monto: Decimal [0..1]
+    +garantia_registrada_en: DateTime [0..1]
+    .. cancelación ..
+    +penalizacion_pct: Decimal [0..1]
+    +motivo_cancelacion: Text
+    +cancelado_en: DateTime [0..1]
+    +cancelado_por, garantia_registrada_por: Usuario [0..1]
+    ..
+    +creado_en: DateTime
+    +/vencida: bool {calculado}
+  }
+  enum EstadoCotizacion {
+    cotizado
+    bloqueado
+    confirmado
+    cancelado
+  }
+  class CotizacionItem {
+    +cantidad: int
+    +precio_unitario: Decimal {copiado del concepto}
+    +impuesto_pct: Decimal {copiado del concepto}
+  }
+  class MovimientoCotizacion {
+    +tipo: TipoMovimiento
+    +fecha: DateTime
+    +detalle: String
+  }
+  enum TipoMovimiento {
+    creada
+    vigencia
+    bloqueada
+    liberada
+    confirmada
+    cancelada
+  }
 }
 
-class Concepto {
-  +id: int
-  +nombre: String
-  +tipo: String
-  +precioBase: double
-  +impuestos: double
-}
+' ---- Relaciones (muchos "1" del lado de la llave foránea) ----
+Ciudad "1" -- "0..*" Sitio
+Ciudad "0..1" -- "0..*" Empresa
+Rol "1" -- "0..*" Usuario
+Usuario "0..*" -- "0..*" Sitio : administra >
+Empresa "0..1" -- "0..*" Cliente
+Usuario "0..1" -- "0..1" Cliente : cuenta propia >
+Sitio "1" -- "0..*" Salon
+Salon "1" -- "0..*" SalonMontaje
+Montaje "1" -- "0..*" SalonMontaje
+Sitio "1" -- "0..*" Concepto
+Concepto "1" *-- "0..*" HistorialPrecioConcepto
+Usuario "1" -- "0..*" HistorialPrecioConcepto : modificó >
+Proveedor "1" -- "0..*" StockElemento
+Sitio "1" -- "0..*" Cotizacion
+Cliente "1" -- "0..*" Cotizacion
+Usuario "1" -- "0..*" Cotizacion : creó · registró garantía · canceló >
+Salon "1" -- "0..*" Cotizacion
+Montaje "1" -- "0..*" Cotizacion
+Cotizacion "1" *-- "0..*" CotizacionItem
+Concepto "1" -- "0..*" CotizacionItem
+Cotizacion "1" *-- "0..*" MovimientoCotizacion
+Usuario "0..1" -- "0..*" MovimientoCotizacion : null = sistema >
+Cliente ..> TipoCliente
+Cotizacion ..> EstadoCotizacion
+MovimientoCotizacion ..> TipoMovimiento
 
-class Cotizacion {
-  +id: int
-  +fecha: Date
-  +cantidadPersonas: int
-  +duracion: int
-  +fechaLimiteVigencia: Date
-  +estado: String
-  +costoTotal: double
-}
-
-class Bloqueo {
-  +id: int
-  +fechaInicio: DateTime
-  +fechaFin: DateTime
-}
-
-class Evento {
-  +id: int
-  +estado: String
-  +garantiaAprobada: boolean
-  +comprobanteAdjunto: String
-}
-
-class Proveedor {
-  +nit: String
-  +nombre: String
-}
-
-class Elemento {
-  +id: int
-  +nombre: String
-  +stock: int
-}
-
-Empresa "1" -- "0..*" Hotel : administra >
-Hotel "1" -- "0..*" Usuario : emplea >
-Hotel "1" -- "0..*" Salon : contiene >
-Salon "1" -- "1..*" SalonMontaje : configura <
-Montaje "1" -- "1..*" SalonMontaje : define <
-Cotizacion "1" -- "1" Cliente : pertenece a >
-Cotizacion "1" -- "1" SalonMontaje : requiere >
-Cotizacion "1" -- "0..*" Concepto : incluye >
-Cotizacion "1" -- "0..1" Bloqueo : genera >
-Cotizacion "1" -- "0..1" Evento : se convierte en >
-Proveedor "1" -- "0..*" Elemento : provee >
-Proveedor "1" -- "0..*" Montaje : ofrece >
+' ---- Restricciones ----
+note right of Cotizacion
+  **uq_salon_fecha_confirmado**: un solo
+  confirmado por (salón, fecha_evento).
+  Un bloqueo vigente también protege la
+  fecha (lo valida el API: 409).
+  vencida = cotizado y validez_oferta < hoy
+  (estado de pantalla, no se guarda).
+end note
+note right of Cliente
+  **cliente_juridico_sin_identificacion**:
+  un jurídico lleva identificación null
+  (su NIT es el de su Empresa, obligatoria
+  si tipo = juridica).
+end note
+note bottom of SalonMontaje
+  Únicos: (salón, montaje).
+  El aforo depende de la combinación.
+end note
+note bottom of StockElemento
+  Único: (proveedor, nombre_elemento).
+  Proveedor no tiene sitio ni empresa.
+end note
+note "Únicos por sitio: (sitio, nombre)\nen Salon y en Concepto" as N1
+N1 .. Salon
+N1 .. Concepto
 @enduml

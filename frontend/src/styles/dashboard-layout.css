@@ -245,3 +245,29 @@
         padding: var(--espacio-6) var(--espacio-4) var(--espacio-8);
     }
 }
+
+/* ---- Teléfono con barra inferior (SGDE-102) ----
+   La navegación pasa a la barra de abajo (barra-inferior.css): arriba quedan solo
+   el logo y el avatar, y el contenido deja espacio para que la barra no lo tape. */
+@media (max-width: 640px) {
+    .panel--barra-inferior .barra-superior__interior {
+        grid-template-areas: "logo perfil";
+        grid-template-rows: 60px;
+    }
+
+    .panel--barra-inferior .barra-superior__pestanas {
+        display: none;
+    }
+
+    /* Alto de la barra + su margen inferior + un respiro, más la zona segura del teléfono */
+    .panel--barra-inferior .panel__contenido {
+        padding-bottom: calc(
+            var(--alto-barra-inferior) + var(--espacio-4) + var(--espacio-8) + env(safe-area-inset-bottom)
+        );
+    }
+
+    /* El aviso de sesión vencida (fijo abajo) sube para quedar encima de la barra */
+    .panel--barra-inferior .aviso-sesion {
+        bottom: calc(var(--alto-barra-inferior) + var(--espacio-4) + var(--espacio-3) + env(safe-area-inset-bottom));
+    }
+}

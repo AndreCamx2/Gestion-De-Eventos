@@ -104,6 +104,12 @@
     --alto-barra: 68px;
     --ancho-contenido: 1320px;
 
+    /* Barra inferior del teléfono (SGDE-102, maqueta Movil.dc.html) */
+    --alto-pieza-barra: 52px;
+    --alto-barra-inferior: 70px; /* pieza de 52 px + relleno de 8 px arriba y abajo + borde */
+    --radio-barra-inferior: 24px;
+    --sombra-boton-nuevo: 0 10px 24px -8px rgba(238, 138, 99, 0.6);
+
     /* Movimiento (sección 7) */
     --curva-salida: cubic-bezier(0.23, 1, 0.32, 1);
     --duracion-presion: 160ms;

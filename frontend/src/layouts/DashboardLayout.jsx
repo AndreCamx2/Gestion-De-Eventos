@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { ROLES_POR_RUTA } from "../routes/rutasPorRol";
+import BarraInferior from "./BarraInferior";
+import { piezasBarraInferior } from "./piezasBarraInferior";
 import "../styles/dashboard-layout.css";
 
 // Única fuente de las pestañas de la barra superior.
@@ -78,9 +80,12 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
   }, [location.pathname]);
 
   const visibleItems = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(user.role));
+  // En el teléfono, si el rol tiene más de un destino, la navegación pasa a la barra
+  // inferior (SGDE-102) y las pestañas de arriba se ocultan (dashboard-layout.css).
+  const piezasBarra = piezasBarraInferior(visibleItems, user.role);
 
   return (
-    <div className="panel">
+    <div className={`panel${piezasBarra.hayBarra ? " panel--barra-inferior" : ""}`}>
       <header className="barra-superior">
         <div className="barra-superior__interior">
           <Link to="/inicio" className="barra-superior__logo" aria-label="SGDE, ir al inicio">
@@ -139,6 +144,8 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
             Cada pantalla trae su único <h1> (CabeceraPagina o el saludo del Inicio). */}
         <Outlet />
       </main>
+
+      {piezasBarra.hayBarra && <BarraInferior piezas={piezasBarra} />}
     </div>
   );
 }
