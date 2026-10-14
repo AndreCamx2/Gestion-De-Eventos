@@ -1,6 +1,14 @@
-// Funciones de la pantalla de Salones que no usan estado: formato de números y
-// medidas, aforo máximo y lo que se envía al editar. Las usan Salones.jsx y las
-// piezas de esta carpeta.
+// Funciones de la pantalla de Salones que no usan estado: búsqueda, formato de
+// números y medidas, aforo máximo y lo que se envía al editar. Las usan
+// useSalones.js y las piezas de esta carpeta.
+
+// Minúsculas y sin tildes: así "bolivar" encuentra a "Bolívar".
+export function normalizar(texto) {
+  return String(texto ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+}
 
 export const formatoNumero = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 });
 
