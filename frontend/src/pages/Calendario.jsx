@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { obtenerCalendario } from "../api/calendario";
 import { listarSalones } from "../api/salones";
-import { listarSitios } from "../api/sitios";
 import DialogoDiaSalon from "../components/bloqueo/DialogoDiaSalon";
 import SesionVencida from "../components/SesionVencida";
 import { AvisoError, Boton, CabeceraPagina, EstadoVacio, LeyendaEstados, Tarjeta } from "../components/ui";
 import { desdeISO, fechaISO, hoyLocal } from "../utils/inicioCifras";
+import { sitiosDeSalones } from "../utils/sitiosDeSalones";
 import CalendarioMes, { EsqueletoMes } from "./calendario/CalendarioMes";
 import FiltrosCalendario from "./calendario/FiltrosCalendario";
 import PanelDia from "./calendario/PanelDia";
@@ -52,7 +52,7 @@ export default function Calendario() {
   const [filtroSitio, setFiltroSitio] = useState("todos");
   const [filtroSalon, setFiltroSalon] = useState(inicial.salon);
   // Lo último que llegó del API, con el mes al que corresponde.
-  const [datos, setDatos] = useState(null); // { mes, salones, sitios, cotizaciones }
+  const [datos, setDatos] = useState(null); // { mes, salones, cotizaciones }
   const [cargando, setCargando] = useState(true);
   // Error al cargar: null | "sesion" (401) | "permiso" (403) | "servidor".
   const [errorCarga, setErrorCarga] = useState(null);
@@ -71,13 +71,12 @@ export default function Calendario() {
     setCargando(true);
     setErrorCarga(null);
     try {
-      const [salones, sitios, cotizaciones] = await Promise.all([
+      const [salones, cotizaciones] = await Promise.all([
         listarSalones(),
-        listarSitios(),
         obtenerCalendario({ desde: fechaISO(dias[0]), hasta: fechaISO(dias.at(-1)) }),
       ]);
       if (pedido !== pedidoRef.current) return;
-      setDatos({ mes: mesPedido, salones, sitios, cotizaciones });
+      setDatos({ mes: mesPedido, salones, cotizaciones });
     } catch (err) {
       if (pedido !== pedidoRef.current) return;
       if (err.status === 401) {
@@ -135,10 +134,8 @@ export default function Calendario() {
     }
   }, [gestionar]);
 
-  const sitiosConSalones = useMemo(
-    () => (datos ? datos.sitios.filter((s) => datos.salones.some((salon) => salon.sitio === s.id)) : []),
-    [datos],
-  );
+  // Los chips de sitio salen de los salones (sitio_nombre, SGDE-104).
+  const sitiosConSalones = useMemo(() => sitiosDeSalones(datos?.salones ?? []), [datos]);
   // Por nombre, en el mismo orden que las píldoras.
   const salonesDelSitio = useMemo(
     () => (datos?.salones ?? [])
