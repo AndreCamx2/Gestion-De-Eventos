@@ -23,6 +23,7 @@ export const ROLES_POR_RUTA = {
   "/conceptos": SOLO_ADMIN, // /conceptos/, /sitios/
   "/proveedores": SOLO_ADMIN, // /proveedores/, /stock/
   "/rack": SOLO_ADMIN, // /calendario/, /salones/, /sitios/ y /cotizaciones/<id>/bloqueo/
+  "/usuarios": SOLO_ADMIN, // /usuarios/, /roles/, /sitios/
 };
 
 // Roles de la ruta que se está viendo. Acepta subrutas por tramos completos:
