@@ -43,8 +43,14 @@ const CAMPOS = [
 
 // Separa los errores 400 del API usando el clasificador compartido de utils/,
 // con la lista de campos de este formulario.
+// "cliente_inactivo" (SGDE-107) no es un campo: es el id del cliente inactivo que
+// ya tiene esa identificación. Se aparta para que no salga como error general y
+// va en campos.cliente_inactivo, para el botón "Ver el cliente inactivo".
 export function erroresDesdeApi(body) {
-  return erroresDesdeApiComun(body, CAMPOS);
+  const { cliente_inactivo, ...resto } = body ?? {};
+  const { campos, general } = erroresDesdeApiComun(resto, CAMPOS);
+  if (cliente_inactivo != null) campos.cliente_inactivo = cliente_inactivo;
+  return { campos, general };
 }
 
 // Cuerpo del PATCH. En jurídica NO se envía identificacion: el NIT es el de su

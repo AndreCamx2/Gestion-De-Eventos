@@ -103,7 +103,9 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
           error={errores.identificacion}
         />
       )}
-      {!esJuridica && <VerClienteInactivo error={errores.identificacion} onVer={onVerInactivo} />}
+      {!esJuridica && (
+        <VerClienteInactivo error={errores.identificacion} id={errores.cliente_inactivo} onVer={onVerInactivo} />
+      )}
 
       <div className="directorio-form__par">
         <Campo
