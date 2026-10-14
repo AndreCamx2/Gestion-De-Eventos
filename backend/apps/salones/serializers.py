@@ -16,10 +16,13 @@ def no_cambia(serializer, campo, valor, mensaje):
 class SalonSerializer(serializers.ModelSerializer):
     # Solo se puede crear en un sitio propio: uno ajeno da 400 (SGDE-90).
     sitio = CampoDeSitio(queryset=Sitio.objects.all(), campo_sitio="id")
+    # Para los chips de Rack y Calendario sin pedir /api/sitios/ (SGDE-104).
+    # El listado ya trae el sitio con select_related: no suma consultas.
+    sitio_nombre = serializers.CharField(source="sitio.nombre", read_only=True)
 
     class Meta:
         model = Salon
-        fields = ["id", "sitio", "nombre", "altura", "ancho", "foto_url", "activo"]
+        fields = ["id", "sitio", "sitio_nombre", "nombre", "altura", "ancho", "foto_url", "activo"]
 
     def validate_sitio(self, value):
         # Sus cotizaciones, conceptos y montajes son de ese sitio: moverlo los dejaría cruzados.

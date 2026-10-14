@@ -74,6 +74,49 @@ class CompararStockTests(APITestCase):
         self.assertEqual(datos[0]["mejor_precio"], "7000.00")
         self.assertEqual(datos[0]["ofertas"][0]["proveedor"], "Proveedor D")
 
+    def test_nombres_con_y_sin_tilde_se_agrupan(self):
+        prov_d = Proveedor.objects.create(nombre="Proveedor D")
+        stock(prov_d, "Sílla Tiffany", 2, "7000.00")
+        self.client.force_authenticate(user=self.admin)
+        datos = self.client.get(URL).json()
+        self.assertEqual([g["elemento"] for g in datos], ["Mesa redonda", "Silla Tiffany"])
+        self.assertEqual(len(datos[1]["ofertas"]), 4)
+        self.assertEqual(datos[1]["mejor_precio"], "7000.00")
+
+    def test_busqueda_sin_tilde_encuentra_el_nombre_con_tilde(self):
+        prov_d = Proveedor.objects.create(nombre="Proveedor D")
+        stock(prov_d, "Cámara de humo", 1, "90000.00")
+        self.client.force_authenticate(user=self.admin)
+        for busqueda in ("camara", "CÁMARA", "  cámara   de  "):
+            with self.subTest(busqueda=busqueda):
+                datos = self.client.get(URL, {"elemento": busqueda}).json()
+                self.assertEqual([g["elemento"] for g in datos], ["Cámara de humo"])
+        # Y al revés: buscar con tilde encuentra los nombres sin tilde.
+        datos = self.client.get(URL, {"elemento": "sílla"}).json()
+        self.assertEqual([g["elemento"] for g in datos], ["Silla Tiffany"])
+
+    def test_espacios_de_mas_se_agrupan(self):
+        prov_d = Proveedor.objects.create(nombre="Proveedor D")
+        stock(prov_d, "Silla  Tiffany ", 2, "7000.00")
+        self.client.force_authenticate(user=self.admin)
+        datos = self.client.get(URL, {"elemento": "silla tiffany"}).json()
+        self.assertEqual(len(datos), 1)
+        self.assertEqual(len(datos[0]["ofertas"]), 4)
+
+    def test_la_ene_no_se_confunde_con_la_n(self):
+        stock(self.prov_a, "Paño", 5, "4000.00")
+        stock(self.prov_b, "Pano", 5, "3000.00")
+        stock(self.prov_c, "Pingüino inflable", 1, "15000.00")
+        self.client.force_authenticate(user=self.admin)
+        datos = self.client.get(URL, {"elemento": "pa"}).json()
+        self.assertEqual([g["elemento"] for g in datos], ["Pano", "Paño"])
+        self.assertEqual([g["elemento"] for g in self.client.get(URL, {"elemento": "paño"}).json()], ["Paño"])
+        # La diéresis sí se quita.
+        self.assertEqual(
+            [g["elemento"] for g in self.client.get(URL, {"elemento": "pinguino"}).json()],
+            ["Pingüino inflable"],
+        )
+
     def test_sin_parametro_lista_todos_los_elementos_ordenados(self):
         self.client.force_authenticate(user=self.admin)
         datos = self.client.get(URL).json()

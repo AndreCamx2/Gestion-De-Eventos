@@ -1,3 +1,5 @@
+import unicodedata
+
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -9,6 +11,21 @@ from .serializers import ProveedorSerializer, StockElementoSerializer
 def _dinero(valor):
     """Mismo formato que el resto de la API: texto con 2 decimales (o None)."""
     return None if valor is None else f"{valor:.2f}"
+
+
+# La virgulilla de la ñ: NFKD separa "ñ" en "n" + U+0303 y se conserva.
+_VIRGULILLA = "\u0303"
+
+
+def _normalizar(texto):
+    """Clave para agrupar y buscar elementos: sin tildes ni diéresis, sin espacios
+    de más y en minúsculas. "Sílla  Tiffany" → "silla tiffany". La ñ se conserva:
+    "Paño" y "Pano" son elementos distintos."""
+    separado = unicodedata.normalize("NFKD", texto)
+    sin_tildes = "".join(
+        c for c in separado if not unicodedata.combining(c) or c == _VIRGULILLA
+    )
+    return " ".join(unicodedata.normalize("NFC", sin_tildes).split()).lower()
 
 
 class ProveedorListCreateView(generics.ListCreateAPIView):
@@ -39,21 +56,25 @@ class StockCompararView(APIView):
     """Compara precios entre proveedores para un mismo elemento (SGDE-31).
 
     GET /api/stock/comparar/?elemento=silla
-    Agrupa el stock por nombre de elemento (sin distinguir mayúsculas) y marca el
-    mejor precio entre los proveedores que tienen unidades disponibles.
+    Agrupa el stock por nombre de elemento sin distinguir mayúsculas, tildes ni
+    espacios de más (_normalizar), y marca el mejor precio entre los proveedores
+    que tienen unidades disponibles. La búsqueda usa la misma normalización.
     """
 
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def get(self, request):
-        texto = request.query_params.get("elemento", "").strip()
-        stock = StockElemento.objects.select_related("proveedor")
-        if texto:
-            stock = stock.filter(nombre_elemento__icontains=texto)
+        texto = _normalizar(request.query_params.get("elemento", ""))
+        # Por id: el nombre que se muestra es el del primer registro creado del grupo.
+        stock = StockElemento.objects.select_related("proveedor").order_by("id")
 
         grupos = {}
         for item in stock:
-            clave = item.nombre_elemento.strip().lower()
+            clave = _normalizar(item.nombre_elemento)
+            # Se filtra en Python: icontains de Postgres sí distingue tildes
+            # ("silla" no encuentra "Sílla"). El stock es pequeño.
+            if texto not in clave:
+                continue
             grupo = grupos.setdefault(
                 clave, {"elemento": item.nombre_elemento.strip(), "items": []}
             )
