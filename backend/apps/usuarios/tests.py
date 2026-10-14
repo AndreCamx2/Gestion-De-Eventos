@@ -25,10 +25,14 @@ ENDPOINTS_ADMIN = [
     "/api/cotizaciones/",
 ]
 
-# Rutas de detalle (con id) y sus métodos: también solo del administrador. Van
-# aparte porque con el admin un GET o un POST a un id no da 200/400 como arriba.
+# Rutas de detalle (con id) o de solo lectura, con sus métodos: también solo del
+# administrador. Van aparte porque con el admin no dan 200/400 como arriba: un GET
+# a un id que no existe da 404 y un POST a una ruta de solo lectura da 405.
 # El id no necesita existir: el permiso se revisa antes de buscar el objeto.
 ENDPOINTS_ADMIN_DETALLE = [
+    ("/api/roles/", ["get"]),
+    ("/api/calendario/", ["get"]),
+    ("/api/stock/comparar/", ["get"]),
     ("/api/usuarios/1/", ["get", "patch", "delete"]),
     ("/api/clientes/1/", ["get", "put", "patch", "delete"]),
     ("/api/salones/1/", ["get", "patch"]),
@@ -325,6 +329,27 @@ class MatrizDetalleUsuarioTests(BaseUsuariosAdminTests):
                     self.assertEqual(respuesta.status_code, status.HTTP_403_FORBIDDEN)
         self.otro_admin.refresh_from_db()
         self.assertTrue(self.otro_admin.is_active)
+
+
+class ListaRolesTests(BaseUsuariosAdminTests):
+    """SGDE-37: la pantalla de Usuarios elige el rol (por id) de este catálogo.
+    El 401 y el 403 los cubre MatrizAccesoPorRolTests (ENDPOINTS_ADMIN_DETALLE)."""
+
+    def test_administrador_recibe_la_lista_simple_de_roles(self):
+        respuesta = self.client.get("/api/roles/")
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        # Lista simple, sin paginar, ordenada por nombre, con id, código y nombre.
+        esperados = [
+            {"id": rol.id, "codigo": rol.codigo, "nombre": rol.nombre}
+            for rol in Rol.objects.order_by("nombre")
+        ]
+        self.assertEqual(respuesta.json(), esperados)
+        self.assertIn(self.rol_proveedor.id, [r["id"] for r in respuesta.json()])
+
+    def test_es_solo_de_lectura(self):
+        respuesta = self.client.post("/api/roles/", {"codigo": "nuevo", "nombre": "Nuevo"}, format="json")
+        self.assertEqual(respuesta.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertFalse(Rol.objects.filter(codigo="nuevo").exists())
 
 
 class ListaUsuariosTests(BaseUsuariosAdminTests):

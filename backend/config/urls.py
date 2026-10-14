@@ -2,6 +2,9 @@ from django.contrib import admin
 from django.urls import path
 from rest_framework_simplejwt.views import TokenBlacklistView, TokenObtainPairView, TokenRefreshView
 from apps.usuarios.views import RegistrarUsuarioView, MeView, UsuarioListCreateView, UsuarioDetailView, RolListView
+from apps.usuarios.views import (
+    RegistrarUsuarioView, MeView, RolListView, UsuarioListCreateView, UsuarioDetailView,
+)
 from apps.sitios.views import SitioListCreateView, CiudadListView
 from apps.salones.views import (
     SalonListCreateView, SalonDetailView, MontajeListCreateView, SalonMontajeListCreateView, SalonMontajeDetailView,
@@ -9,7 +12,9 @@ from apps.salones.views import (
 from apps.catalogo.views import (
     ConceptoListCreateView, ConceptoRetrieveUpdateView, ConceptoHistorialListView,
 )
-from apps.proveedores.views import ProveedorListCreateView, StockElementoListCreateView, StockElementoDetailView
+from apps.proveedores.views import (
+    ProveedorListCreateView, StockElementoListCreateView, StockElementoDetailView, StockCompararView,
+)
 from apps.clientes.views import (
     RegistroPublicoView, ClienteAdminListCreateView, ClienteAdminRetrieveUpdateDestroyView, EmpresaListCreateView,
 )
@@ -46,6 +51,7 @@ urlpatterns = [
     path('api/conceptos/<int:pk>/historial/', ConceptoHistorialListView.as_view(), name='concepto_historial'),
     path('api/proveedores/', ProveedorListCreateView.as_view(), name='proveedor_list_create'),
     path('api/stock/', StockElementoListCreateView.as_view(), name='stock_list_create'),
+    path('api/stock/comparar/', StockCompararView.as_view(), name='stock_comparar'),
     path('api/stock/<int:pk>/', StockElementoDetailView.as_view(), name='stock_detail'),
     path('api/cotizaciones/', CotizacionListCreateView.as_view(), name='cotizacion_list_create'),
     path('api/cotizaciones/<int:pk>/', CotizacionDetailView.as_view(), name='cotizacion_detail'),

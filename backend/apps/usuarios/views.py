@@ -1,8 +1,8 @@
 from django.db import transaction
 from django.db.models import Q
 from rest_framework import filters, generics, permissions
-from .serializers import UsuarioRegistroSerializer, UsuarioMeSerializer, UsuarioAdminSerializer, RolSerializer
-from .models import Usuario, Rol
+from .serializers import RolSerializer, UsuarioRegistroSerializer, UsuarioMeSerializer, UsuarioAdminSerializer
+from .models import Rol, Usuario
 from .permissions import EsAdministrador
 from .services import validar_cambio_usuario
 
@@ -73,16 +73,20 @@ class UsuarioDetailView(generics.RetrieveUpdateDestroyAPIView):
             )
             if instance.is_active:
                 instance.set_activo(False)
+class RegistrarUsuarioView(generics.CreateAPIView):
+    serializer_class = UsuarioRegistroSerializer
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
 
 class RolListView(generics.ListAPIView):
+    """Catálogo de roles para elegir el rol al crear o editar un usuario (SGDE-37).
+
+    POST /api/usuarios/ y PATCH /api/usuarios/<id>/ reciben el rol como id.
+    Solo lectura: los roles se administran en /admin/.
+    """
+    queryset = Rol.objects.order_by("nombre")
     serializer_class = RolSerializer
-    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
-    queryset = Rol.objects.order_by("id")
-
-
-class RegistrarUsuarioView(generics.CreateAPIView):
-    serializer_class = UsuarioRegistroSerializer
+    pagination_class = None  # catálogo corto: lista simple
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
 
