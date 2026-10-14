@@ -1,8 +1,8 @@
 // Formulario compartido por "Nuevo cliente" y "Editar cliente": mismos campos,
-// misma regla de NIT y misma lectura de errores del API (en clientes/clienteForm.js).
-import { Campo } from "../components/ui";
-import VerClienteInactivo from "./clientes/VerClienteInactivo";
-import { nitDeEmpresa } from "./clientes/clienteForm";
+// misma regla de NIT y misma lectura de errores del API (en formularioCliente.js).
+import { Campo } from "../../components/ui";
+import VerClienteInactivo from "./VerClienteInactivo";
+import { nitDeEmpresa } from "./formularioCliente";
 
 // Los <input> usan el componente Campo. Campo solo pinta <input>, así que el
 // <select> y el <textarea> se arman a mano con sus mismas clases (campo,
@@ -103,7 +103,9 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
           error={errores.identificacion}
         />
       )}
-      {!esJuridica && <VerClienteInactivo error={errores.identificacion} onVer={onVerInactivo} />}
+      {!esJuridica && (
+        <VerClienteInactivo error={errores.identificacion} id={errores.cliente_inactivo} onVer={onVerInactivo} />
+      )}
 
       <div className="directorio-form__par">
         <Campo

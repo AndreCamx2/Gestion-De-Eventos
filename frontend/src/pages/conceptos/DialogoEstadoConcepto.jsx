@@ -1,8 +1,7 @@
 import { useRef, useState } from "react";
 import { cambiarEstadoConcepto } from "../../api/conceptos";
 import { AvisoSesionEnVentana } from "../../components/SesionVencida";
-import { Boton, cerrarDialogoDe } from "../../components/ui";
-import ConceptosDialogo from "./ConceptosDialogo";
+import { Boton, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import { formatCOP } from "./conceptos";
 
 // Ventana para desactivar o reactivar un concepto.
@@ -47,13 +46,13 @@ export default function DialogoEstadoConcepto({
   }
 
   return (
-    <ConceptosDialogo
+    <Dialogo
       idTitulo="conceptos-estado-titulo"
       titulo={activar ? "Reactivar concepto" : "Desactivar concepto"}
       bloqueado={procesando}
       onCerrar={onCerrar}
     >
-      <div className="conceptos-dialogo__form">
+      <div className="dialogo__form">
         {activar ? (
           <p className="conceptos-dialogo__texto">
             ¿Reactivar <strong>{concepto.nombre}</strong>? Volverá a estar disponible
@@ -68,7 +67,7 @@ export default function DialogoEstadoConcepto({
         )}
         {sesionVencida && <AvisoSesionEnVentana onEntrar={() => onEntrarDeNuevo(confirmarRef.current)} />}
         {error && <p className="conceptos-error" role="alert">{error}</p>}
-        <div className="conceptos-dialogo__acciones">
+        <div className="dialogo__acciones">
           <Boton variante="secundario" disabled={procesando} onClick={(e) => cerrarDialogoDe(e.currentTarget)}>
             Cancelar
           </Boton>
@@ -83,6 +82,6 @@ export default function DialogoEstadoConcepto({
           </Boton>
         </div>
       </div>
-    </ConceptosDialogo>
+    </Dialogo>
   );
 }

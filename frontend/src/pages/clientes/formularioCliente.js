@@ -1,7 +1,9 @@
 // Datos del formulario de cliente que no son componentes: el formulario vacío,
 // cómo se llena desde un cliente, el NIT de su empresa, la lectura de errores
 // del API y el cuerpo del PATCH. Viven fuera de ClienteForm.jsx porque un .jsx
-// solo exporta componentes (react-refresh, SGDE-55). Los usan ClienteForm.jsx y Clientes.jsx.
+// solo exporta componentes (react-refresh, SGDE-55). Los usan ClienteForm.jsx y useClientes.js.
+// Antes se llamaba clienteForm.js: en Windows chocaba con ClienteForm.jsx por la
+// mayúscula (SGDE-97).
 import { erroresDesdeApi as erroresDesdeApiComun } from "../../utils/erroresApi";
 
 export const FORM_VACIO = {
@@ -43,8 +45,14 @@ const CAMPOS = [
 
 // Separa los errores 400 del API usando el clasificador compartido de utils/,
 // con la lista de campos de este formulario.
+// "cliente_inactivo" (SGDE-107) no es un campo: es el id del cliente inactivo que
+// ya tiene esa identificación. Se aparta para que no salga como error general y
+// va en campos.cliente_inactivo, para el botón "Ver el cliente inactivo".
 export function erroresDesdeApi(body) {
-  return erroresDesdeApiComun(body, CAMPOS);
+  const { cliente_inactivo, ...resto } = body ?? {};
+  const { campos, general } = erroresDesdeApiComun(resto, CAMPOS);
+  if (cliente_inactivo != null) campos.cliente_inactivo = cliente_inactivo;
+  return { campos, general };
 }
 
 // Cuerpo del PATCH. En jurídica NO se envía identificacion: el NIT es el de su

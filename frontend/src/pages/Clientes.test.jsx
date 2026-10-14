@@ -79,4 +79,34 @@ describe("Clientes", () => {
     expect(screen.getByLabelText(/empresa \(obligatoria\)/i)).toHaveDisplayValue("Eventos del Mar S.A.S.");
     expect(llamadas.filter((l) => l.metodo === "POST" && l.ruta === "/empresas/")).toHaveLength(2);
   });
+
+  it("con la identificación de un cliente inactivo, lleva a ese cliente usando cliente_inactivo (SGDE-107)", async () => {
+    const inactivo = { ...CLIENTES[0], id: 7, nombre: "Hernán Gómez", identificacion: "1047000999", activo: false };
+    simularApi({
+      "GET /clientes/": ({ search }) => [200, search.includes("incluir_inactivos=true") ? [...CLIENTES, inactivo] : CLIENTES],
+      "GET /empresas/": [200, EMPRESAS],
+      // El texto no trae "(id N)": el botón tiene que salir del campo cliente_inactivo.
+      "POST /clientes/": [400, {
+        identificacion: ["Ya existe un cliente con esa identificación, pero está inactivo."],
+        cliente_inactivo: 7,
+      }],
+    });
+    const usuario = abrirClientes();
+
+    await screen.findByText("Hotel Caribe");
+    await usuario.click(screen.getAllByRole("button", { name: /nuevo cliente/i })[0]);
+    await usuario.type(screen.getByLabelText("Nombre"), "Hernán Gómez");
+    await usuario.type(screen.getByLabelText("Identificación"), "1047000999");
+    await usuario.click(screen.getByRole("button", { name: "Guardar" }));
+
+    expect(await screen.findByText(/pero está inactivo/i)).toBeInTheDocument();
+    // El id no se muestra como un error general ("cliente_inactivo: 7").
+    expect(screen.queryByText(/cliente_inactivo/)).not.toBeInTheDocument();
+
+    await usuario.click(screen.getByRole("button", { name: "Ver el cliente inactivo" }));
+    await usuario.click(await screen.findByRole("button", { name: "Descartar" }));
+
+    expect(await screen.findByRole("heading", { name: "Hernán Gómez" })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Mostrar inactivos" })).toHaveAttribute("aria-checked", "true");
+  });
 });

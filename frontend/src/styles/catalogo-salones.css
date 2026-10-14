@@ -385,9 +385,12 @@
     overflow-wrap: anywhere;
 }
 
+/* El aforo no se encoge ni se parte ("8" / "0"): si no cabe, baja el nombre del montaje (SGDE-110) */
 .salon-tarjeta__fila-montaje strong {
+    flex-shrink: 0;
     color: var(--color-mantequilla-texto);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .salon-tarjeta__fila-accion {
@@ -503,64 +506,7 @@
     color: var(--color-texto-tenue);
 }
 
-/* ---- Diálogos "Nuevo salón" y "Habilitar montaje" ---- */
-.salones-dialogo {
-    width: min(480px, calc(100% - 2 * var(--espacio-4)));
-    max-width: none;
-    max-height: calc(100dvh - 2 * var(--espacio-4));
-    overflow-y: auto;
-    padding: var(--espacio-6);
-    border: 0;
-    border-radius: var(--radio-tarjeta-grande);
-    background: var(--color-superficie);
-    color: var(--color-texto);
-    box-shadow: var(--sombra-flotante);
-}
-
-.salones-dialogo::backdrop {
-    background: color-mix(in srgb, var(--color-texto) 45%, transparent);
-}
-
-.salones-dialogo__cabecera {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--espacio-3);
-    margin-bottom: var(--espacio-5);
-}
-
-.salones-dialogo__titulo {
-    margin: 0;
-    font-size: var(--texto-seccion);
-    font-weight: var(--peso-extra);
-    letter-spacing: var(--tracking-seccion);
-}
-
-.salones-dialogo__cerrar {
-    display: inline-flex;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    width: var(--alto-tocable);
-    height: var(--alto-tocable);
-    border: 0;
-    border-radius: var(--radio-control);
-    background: transparent;
-    color: var(--color-texto-suave);
-    cursor: pointer;
-}
-
-.salones-dialogo__cerrar:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.salones-dialogo__form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--espacio-4);
-}
-
+/* ---- Contenido de las ventanas de Salones (la ventana es components/ui/Dialogo) ---- */
 .salones-dialogo__par {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -589,25 +535,6 @@
     font-weight: var(--peso-negrita);
 }
 
-.salones-dialogo__error {
-    margin: 0;
-    padding: var(--espacio-3) var(--espacio-4);
-    border-radius: var(--radio-control);
-    background: var(--estado-vencida-fondo);
-    color: var(--color-peligro);
-    font-size: var(--texto-navegacion);
-    font-weight: var(--peso-semi);
-    overflow-wrap: anywhere;
-}
-
-.salones-dialogo__acciones {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: var(--espacio-3);
-    margin-top: var(--espacio-1);
-}
-
 /* Fila de un salón dado de baja en "Aforo por montaje" */
 .salones-aforo__fila--baja :is(th, td) {
     opacity: 0.6;
@@ -626,11 +553,6 @@
         color: var(--color-texto);
     }
 
-    .salones-dialogo__cerrar:hover:not(:disabled) {
-        background: var(--color-campo);
-        color: var(--color-texto);
-    }
-
     /* TablaContenedor sombrea la fila al pasar el mouse; aquí cada celda ya tiene su fondo */
     .salones-pv .salones-aforo__tabla tbody tr:hover {
         background: transparent;
@@ -646,14 +568,6 @@
 
     .salones-filtro--buscar {
         flex: 1 1 100%;
-    }
-
-    .salones-dialogo {
-        padding: var(--espacio-5);
-    }
-
-    .salones-dialogo__acciones > * {
-        flex: 1 1 auto;
     }
 }
 

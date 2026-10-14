@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { crearSalon } from "../../api/salones";
 import { erroresDesdeApi } from "../../utils/erroresApi";
-import { Boton, Campo, cerrarDialogoDe } from "../../components/ui";
-import SalonDialogo from "./SalonDialogo";
+import { Boton, Campo, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 
 const CAMPOS = ["sitio", "nombre", "ancho", "altura", "foto_url"];
@@ -81,8 +80,8 @@ export default function NuevoSalonModal({
   const sinSitios = sitios.length === 0;
 
   return (
-    <SalonDialogo idTitulo="nuevo-salon-titulo" titulo="Nuevo salón" bloqueado={guardando} onCerrar={onCerrar}>
-      <form className="salones-dialogo__form" onSubmit={handleSubmit} noValidate>
+    <Dialogo idTitulo="nuevo-salon-titulo" titulo="Nuevo salón" bloqueado={guardando} onCerrar={onCerrar}>
+      <form className="dialogo__form" onSubmit={handleSubmit} noValidate>
         {/* Campo solo pinta <input>: el select usa sus mismas clases, como en ClienteForm. */}
         <div className={["campo", errores.sitio && "campo--error"].filter(Boolean).join(" ")}>
           <label className="campo__etiqueta" htmlFor={idSitio}>Sitio</label>
@@ -161,10 +160,10 @@ export default function NuevoSalonModal({
 
         {sesionVencida && <AvisoSesionEnVentana onEntrar={onEntrarDeNuevo} />}
         {errorGeneral && (
-          <p className="salones-dialogo__error" role="alert">Error: {errorGeneral}</p>
+          <p className="dialogo__error" role="alert">Error: {errorGeneral}</p>
         )}
 
-        <div className="salones-dialogo__acciones">
+        <div className="dialogo__acciones">
           <Boton variante="secundario" disabled={guardando} onClick={(e) => cerrarDialogoDe(e.currentTarget)}>
             Cancelar
           </Boton>
@@ -173,6 +172,6 @@ export default function NuevoSalonModal({
           </Boton>
         </div>
       </form>
-    </SalonDialogo>
+    </Dialogo>
   );
 }

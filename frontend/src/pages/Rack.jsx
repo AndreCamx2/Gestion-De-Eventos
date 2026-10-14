@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { obtenerCalendario } from "../api/calendario";
 import { listarSalones } from "../api/salones";
-import { listarSitios } from "../api/sitios";
 import DialogoDiaSalon from "../components/bloqueo/DialogoDiaSalon";
 import SesionVencida from "../components/SesionVencida";
 import {
   AvisoError, Boton, CabeceraPagina, Esqueleto, EstadoVacio, LeyendaEstados, Tarjeta,
 } from "../components/ui";
 import { fechaISO, hoyLocal, mesCorto, sumarDias } from "../utils/inicioCifras";
+import { sitiosDeSalones } from "../utils/sitiosDeSalones";
 import RackRejilla from "./rack/RackRejilla";
 import { DIAS_POR_PAGINA, armarRejilla, rangoDeDias } from "./rack/rack";
 import "../styles/rack.css";
@@ -26,7 +26,7 @@ export default function Rack() {
   const hoy = useMemo(() => hoyLocal(), []);
   const [inicio, setInicio] = useState(hoy);
   // Lo último que llegó del API, junto con el rango al que corresponde.
-  const [datos, setDatos] = useState(null); // { dias, salones, sitios, cotizaciones }
+  const [datos, setDatos] = useState(null); // { dias, salones, cotizaciones }
   const [cargando, setCargando] = useState(true);
   // Error al cargar: null | "sesion" (401) | "permiso" (403) | "servidor".
   const [errorCarga, setErrorCarga] = useState(null);
@@ -44,13 +44,12 @@ export default function Rack() {
     setCargando(true);
     setErrorCarga(null);
     try {
-      const [salones, sitios, cotizaciones] = await Promise.all([
+      const [salones, cotizaciones] = await Promise.all([
         listarSalones(),
-        listarSitios(),
         obtenerCalendario({ desde: fechaISO(dias[0]), hasta: fechaISO(dias.at(-1)) }),
       ]);
       if (pedido !== pedidoRef.current) return;
-      setDatos({ dias, salones, sitios, cotizaciones });
+      setDatos({ dias, salones, cotizaciones });
     } catch (err) {
       if (pedido !== pedidoRef.current) return;
       if (err.status === 401) {
@@ -76,10 +75,8 @@ export default function Rack() {
     }
   }, [panel]);
 
-  const sitiosConSalones = useMemo(
-    () => (datos ? datos.sitios.filter((s) => datos.salones.some((salon) => salon.sitio === s.id)) : []),
-    [datos],
-  );
+  // Los chips de sitio salen de los salones (sitio_nombre, SGDE-104).
+  const sitiosConSalones = useMemo(() => sitiosDeSalones(datos?.salones ?? []), [datos]);
   const salonesVisibles = useMemo(
     () => (datos?.salones ?? []).filter((s) => filtroSitio === "todos" || s.sitio === filtroSitio),
     [datos, filtroSitio],

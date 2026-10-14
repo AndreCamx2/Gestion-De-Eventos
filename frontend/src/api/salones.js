@@ -14,7 +14,7 @@ function decimalOpcional(valor) {
   return limpio === "" ? null : limpio;
 }
 
-// GET /api/salones/ → [{ id, sitio, nombre, altura, ancho, foto_url, activo }]
+// GET /api/salones/ → [{ id, sitio, sitio_nombre, nombre, altura, ancho, foto_url, activo }]
 // Solo los activos, salvo incluirInactivos (SGDE-99).
 export async function listarSalones({ incluirInactivos = false } = {}) {
   const query = incluirInactivos ? "?incluir_inactivos=true" : "";
