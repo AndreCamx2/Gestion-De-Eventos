@@ -53,6 +53,15 @@ export function registrarAceptacion(id, { tipo, monto }) {
     });
 }
 
+// Cancela un evento confirmado (SGDE-68). El API recibe el porcentaje (0 a 100) y
+// calcula el monto retenido; responde el detalle ya cancelado o 409 si no estaba confirmado.
+export function cancelarCotizacion(id, { penalizacionPct, motivo }) {
+    return apiFetch(`/cotizaciones/${id}/cancelacion/`, {
+        method: "POST",
+        body: JSON.stringify({ penalizacion_pct: penalizacionPct, motivo }),
+    });
+}
+
 export function getMovimientos(id) {
     return apiFetch(`/cotizaciones/${id}/movimientos/`, { method: "GET" });
 }
