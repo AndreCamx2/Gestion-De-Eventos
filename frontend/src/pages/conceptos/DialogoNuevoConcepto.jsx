@@ -1,9 +1,8 @@
 import { useRef, useState } from "react";
 import { crearConcepto } from "../../api/conceptos";
 import { AvisoSesionEnVentana } from "../../components/SesionVencida";
-import { Boton, cerrarDialogoDe } from "../../components/ui";
+import { Boton, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import ConceptoForm from "./ConceptoForm";
-import ConceptosDialogo from "./ConceptosDialogo";
 import { FORM_VACIO, erroresDesdeApi, payloadCreacion, validarForm } from "./conceptos";
 
 // Ventana "Nuevo concepto". Guarda su propio formulario y crea el concepto.
@@ -65,8 +64,8 @@ export default function DialogoNuevoConcepto({
   }
 
   return (
-    <ConceptosDialogo idTitulo="conceptos-nuevo-titulo" titulo="Nuevo concepto" bloqueado={creando} onCerrar={onCerrar}>
-      <form className="conceptos-dialogo__form" onSubmit={crear} noValidate>
+    <Dialogo idTitulo="conceptos-nuevo-titulo" titulo="Nuevo concepto" bloqueado={creando} onCerrar={onCerrar}>
+      <form className="dialogo__form" onSubmit={crear} noValidate>
         <ConceptoForm
           idPrefix="crear"
           form={form}
@@ -77,7 +76,7 @@ export default function DialogoNuevoConcepto({
         />
         {sesionVencida && <AvisoSesionEnVentana onEntrar={() => onEntrarDeNuevo(guardarRef.current)} />}
         {error && <p className="conceptos-error" role="alert">{error}</p>}
-        <div className="conceptos-dialogo__acciones">
+        <div className="dialogo__acciones">
           <Boton variante="secundario" disabled={creando} onClick={(e) => cerrarDialogoDe(e.currentTarget)}>
             Cancelar
           </Boton>
@@ -86,6 +85,6 @@ export default function DialogoNuevoConcepto({
           </Boton>
         </div>
       </form>
-    </ConceptosDialogo>
+    </Dialogo>
   );
 }

@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { habilitarMontaje } from "../../api/salones";
 import { erroresDesdeApi } from "../../utils/erroresApi";
-import { Boton, Campo, cerrarDialogoDe } from "../../components/ui";
-import SalonDialogo from "./SalonDialogo";
+import { Boton, Campo, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 
 const CAMPOS = ["salon", "montaje", "aforo"];
@@ -105,8 +104,8 @@ export default function HabilitarMontajeModal({
     );
 
   return (
-    <SalonDialogo idTitulo="habilitar-titulo" titulo="Habilitar montaje" bloqueado={guardando} onCerrar={onCerrar}>
-      <form className="salones-dialogo__form" onSubmit={handleSubmit} noValidate>
+    <Dialogo idTitulo="habilitar-titulo" titulo="Habilitar montaje" bloqueado={guardando} onCerrar={onCerrar}>
+      <form className="dialogo__form" onSubmit={handleSubmit} noValidate>
         <div className={claseCampo("salon")}>
           <label className="campo__etiqueta" htmlFor="habilitar-salon">Salón</label>
           <select
@@ -165,10 +164,10 @@ export default function HabilitarMontajeModal({
 
         {sesionVencida && <AvisoSesionEnVentana onEntrar={onEntrarDeNuevo} />}
         {errorGeneral && (
-          <p className="salones-dialogo__error" role="alert">Error: {errorGeneral}</p>
+          <p className="dialogo__error" role="alert">Error: {errorGeneral}</p>
         )}
 
-        <div className="salones-dialogo__acciones">
+        <div className="dialogo__acciones">
           <Boton variante="secundario" disabled={guardando} onClick={(e) => cerrarDialogoDe(e.currentTarget)}>
             Cancelar
           </Boton>
@@ -177,6 +176,6 @@ export default function HabilitarMontajeModal({
           </Boton>
         </div>
       </form>
-    </SalonDialogo>
+    </Dialogo>
   );
 }
