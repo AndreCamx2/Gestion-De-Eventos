@@ -277,6 +277,22 @@ class IdentificacionDuplicadaTests(BaseClientesTests):
         self.assertIn("reactivar", mensaje)
         self.assertIn(str(inactivo.pk), mensaje)
 
+    def test_duplicada_con_cliente_inactivo_trae_su_id_en_un_campo(self):
+        """SGDE-107: cliente_inactivo con el id, además del mensaje de siempre."""
+        inactivo = self.crear_natural(identificacion="999")
+        self.client.delete(detalle(inactivo.pk))
+        for metodo, url in (("post", LISTA), ("patch", detalle(self.crear_natural(nombre="B", identificacion="555").pk))):
+            with self.subTest(metodo=metodo):
+                respuesta = getattr(self.client, metodo)(url, self.cuerpo("999"), format="json")
+                self.assertEqual(respuesta.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(respuesta.json()["cliente_inactivo"], inactivo.pk)
+                self.assertIn(f"(id {inactivo.pk})", respuesta.json()["identificacion"][0])
+
+    def test_duplicada_con_cliente_activo_no_trae_cliente_inactivo(self):
+        self.crear_natural(identificacion="999")
+        respuesta = self.client.post(LISTA, self.cuerpo("999"), format="json")
+        self.assertNotIn("cliente_inactivo", respuesta.json())
+
     def test_editar_un_cliente_conservando_su_propia_identificacion_funciona(self):
         cliente = self.crear_natural(identificacion="999")
         respuesta = self.client.patch(
