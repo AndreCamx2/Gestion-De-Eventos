@@ -385,9 +385,12 @@
     overflow-wrap: anywhere;
 }
 
+/* El aforo no se encoge ni se parte ("8" / "0"): si no cabe, baja el nombre del montaje (SGDE-110) */
 .salon-tarjeta__fila-montaje strong {
+    flex-shrink: 0;
     color: var(--color-mantequilla-texto);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .salon-tarjeta__fila-accion {
