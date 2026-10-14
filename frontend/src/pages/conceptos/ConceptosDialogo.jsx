@@ -49,8 +49,3 @@ export default function ConceptosDialogo({ idTitulo, titulo, bloqueado, onCerrar
     </dialog>
   );
 }
-
-// Cierra el <dialog> que contiene al elemento (para los botones "Cancelar").
-export function cerrarDialogoDe(elemento) {
-  elemento?.closest("dialog")?.close();
-}

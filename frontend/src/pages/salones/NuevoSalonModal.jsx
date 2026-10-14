@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { crearSalon } from "../../api/salones";
 import { erroresDesdeApi } from "../../utils/erroresApi";
-import { Boton, Campo } from "../../components/ui";
-import SalonDialogo, { cerrarDialogoDe } from "./SalonDialogo";
+import { Boton, Campo, cerrarDialogoDe } from "../../components/ui";
+import SalonDialogo from "./SalonDialogo";
 import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 
 const CAMPOS = ["sitio", "nombre", "ancho", "altura", "foto_url"];

@@ -1,9 +1,9 @@
 import { useRef, useState } from "react";
 import { crearConcepto } from "../../api/conceptos";
 import { AvisoSesionEnVentana } from "../../components/SesionVencida";
-import { Boton } from "../../components/ui";
+import { Boton, cerrarDialogoDe } from "../../components/ui";
 import ConceptoForm from "./ConceptoForm";
-import ConceptosDialogo, { cerrarDialogoDe } from "./ConceptosDialogo";
+import ConceptosDialogo from "./ConceptosDialogo";
 import { FORM_VACIO, erroresDesdeApi, payloadCreacion, validarForm } from "./conceptos";
 
 // Ventana "Nuevo concepto". Guarda su propio formulario y crea el concepto.

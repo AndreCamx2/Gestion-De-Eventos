@@ -3,7 +3,7 @@ import { Boton } from "../../components/ui";
 // El 400 de identificación repetida con un cliente inactivo dice "…está inactivo
 // (id 12). Puedes reactivarlo…". El API no manda el id en un campo aparte, así
 // que se saca del texto. null si el mensaje no es ese.
-export function idClienteInactivo(error) {
+function idClienteInactivo(error) {
   const encontrado = /inactivo \(id (\d+)\)/.exec(String(error ?? ""));
   return encontrado ? Number(encontrado[1]) : null;
 }
