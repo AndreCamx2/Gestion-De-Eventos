@@ -98,6 +98,17 @@
     color: var(--color-peligro);
 }
 
+.acceso-enlace--pequeno {
+    font-size: 13px;
+}
+
+.acceso-clave__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+}
+
 /* Contraseña con botón "Ver / Ocultar" dentro del campo */
 .acceso-clave {
     position: relative;

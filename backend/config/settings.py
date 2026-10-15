@@ -182,6 +182,10 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "EXCEPTION_HANDLER": "apps.core.exceptions.custom_exception_handler",
+    "DEFAULT_THROTTLE_RATES": {
+        "recuperar_clave": "5/hour",
+        "restablecer_clave": "20/hour",
+    },
 }
 
 # Duración de los tokens JWT (SGDE-86). Sin esto, simplejwt usa 5 minutos para
@@ -207,6 +211,19 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "TOKEN_REFRESH_SERIALIZER": "apps.usuarios.tokens.RenovarTokenConTopeSerializer",
 }
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
+
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = entero_positivo_entorno("EMAIL_PORT", 587)
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("true", "1")
+EMAIL_TIMEOUT = 10
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "SGDE <no-responder@sgde.local>")
+
+PASSWORD_RESET_TIMEOUT = 60 * entero_positivo_entorno("RECUPERAR_CLAVE_MINUTOS", 60)
 
 # Sin esto, Django no imprime los errores 500 en los logs de Render
 # (DEBUG=False los manda a un handler de email que no está configurado).
