@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -5,6 +6,15 @@ class Proveedor(models.Model):
     nombre = models.CharField(max_length=150, db_index=True)
     identificacion = models.CharField(max_length=30, blank=True, db_index=True)
     contacto = models.CharField(max_length=120, blank=True)
+    # Usuario con rol "proveedor" que administra este stock desde "Mi stock" (SGDE-30).
+    # Opcional: el administrador también puede llevar el stock por él.
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="proveedor",
+    )
 
     def __str__(self):
         return self.nombre

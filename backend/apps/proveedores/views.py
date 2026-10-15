@@ -3,9 +3,9 @@ import unicodedata
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from apps.usuarios.permissions import EsAdministrador
+from apps.usuarios.permissions import EsAdministrador, EsProveedor
 from .models import Proveedor, StockElemento
-from .serializers import ProveedorSerializer, StockElementoSerializer
+from .serializers import MiStockSerializer, ProveedorSerializer, StockElementoSerializer
 
 
 def _dinero(valor):
@@ -29,9 +29,19 @@ def _normalizar(texto):
 
 
 class ProveedorListCreateView(generics.ListCreateAPIView):
-    queryset = Proveedor.objects.all()
+    queryset = Proveedor.objects.select_related("usuario")
     serializer_class = ProveedorSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+
+class ProveedorDetailView(generics.RetrieveUpdateAPIView):
+    """Ver y editar un proveedor; sirve para vincular o desvincular (usuario: null)
+    su usuario de acceso (SGDE-30). Sin DELETE ni PUT."""
+
+    queryset = Proveedor.objects.select_related("usuario")
+    serializer_class = ProveedorSerializer
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+    http_method_names = ["get", "patch", "head", "options"]
 
 
 class StockElementoListCreateView(generics.ListCreateAPIView):
@@ -49,6 +59,41 @@ class StockElementoDetailView(generics.RetrieveUpdateAPIView):
     queryset = StockElemento.objects.all()
     serializer_class = StockElementoSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+    http_method_names = ["get", "patch", "head", "options"]
+
+
+class MiStockMixin:
+    """Mi stock (SGDE-30): el proveedor ve y edita solo el stock de su Proveedor.
+
+    Excepción a la regla de EsAdministrador: estas vistas son del rol proveedor
+    (EsProveedor). El administrador y el cliente reciben 403. El stock de otro
+    proveedor no está en el queryset, así que su id da 404 (no 403).
+    """
+
+    serializer_class = MiStockSerializer
+    permission_classes = [permissions.IsAuthenticated, EsProveedor]
+
+    def get_queryset(self):
+        return self.request.user.proveedor.stock.order_by("nombre_elemento")
+
+    def get_serializer_context(self):
+        contexto = super().get_serializer_context()
+        if self.request.user.is_authenticated:
+            contexto["proveedor"] = getattr(self.request.user, "proveedor", None)
+        return contexto
+
+
+class MiStockListCreateView(MiStockMixin, generics.ListCreateAPIView):
+    """GET/POST /api/mi-stock/: lista y crea en el proveedor de quien llama."""
+
+    def perform_create(self, serializer):
+        serializer.save(proveedor=self.request.user.proveedor)
+
+
+class MiStockDetailView(MiStockMixin, generics.RetrieveUpdateAPIView):
+    """GET/PATCH /api/mi-stock/<id>/: solo cantidad y valor, como SGDE-98.
+    Sin DELETE: para darlo por agotado se deja la cantidad en 0. Sin PUT."""
+
     http_method_names = ["get", "patch", "head", "options"]
 
 
