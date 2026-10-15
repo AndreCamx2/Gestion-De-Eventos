@@ -17,6 +17,7 @@ function abrir(ruta, user) {
             <Route path="/inicio" element={<p>Pantalla de inicio</p>} />
             <Route path="/clientes" element={<p>Pantalla de clientes</p>} />
             <Route path="/cotizaciones/:id" element={<p>Detalle de cotización</p>} />
+            <Route path="/cotizaciones/:id/imprimir" element={<p>Cotización imprimible</p>} />
             <Route path="/sin-roles" element={<p>Pantalla sin roles</p>} />
           </Route>
         </Route>
@@ -47,6 +48,11 @@ describe("Redirección por rol", () => {
     expect(screen.getByText("Pantalla de inicio")).toBeInTheDocument();
   });
 
+  it("la ruta imprimible hereda los roles de Cotizaciones", () => {
+    abrir("/cotizaciones/12/imprimir", ADMIN);
+    expect(screen.getByText("Cotización imprimible")).toBeInTheDocument();
+  });
+
   it("una ruta sin roles declarados no la ve nadie, ni el administrador", () => {
     abrir("/sin-roles", ADMIN);
     expect(screen.getByText("Pantalla de inicio")).toBeInTheDocument();
@@ -56,6 +62,7 @@ describe("Redirección por rol", () => {
 describe("rolesDeRuta", () => {
   it("coincide por tramos completos de la ruta", () => {
     expect(rolesDeRuta("/cotizaciones/nueva")).toEqual(["administrador"]);
+    expect(rolesDeRuta("/cotizaciones/12/imprimir")).toEqual(["administrador"]);
     expect(rolesDeRuta("/cotizaciones-viejas")).toEqual([]);
     expect(rolesDeRuta("/inicio/")).toContain("cliente");
   });

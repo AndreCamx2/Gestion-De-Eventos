@@ -110,3 +110,14 @@ describe("Cancelar un evento (SGDE-68)", () => {
     expect(within(ventana).getByText("Cerrar", { selector: "button" })).toHaveFocus();
   });
 });
+
+describe("Vista imprimible (SGDE-70)", () => {
+  it("ofrece la cotización imprimible en una pestaña aparte", async () => {
+    abrirDetalle({ "GET /cotizaciones/7/": [200, BASE] });
+    const enlace = await screen.findByRole("link", { name: "Imprimir o PDF" });
+
+    expect(enlace).toHaveAttribute("href", "/cotizaciones/7/imprimir");
+    expect(enlace).toHaveAttribute("target", "_blank");
+    expect(enlace).toHaveAttribute("rel", "opener");
+  });
+});

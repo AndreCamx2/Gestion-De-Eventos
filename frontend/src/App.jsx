@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import Cotizaciones from "./pages/Cotizaciones";
 import NuevaCotizacion from "./pages/NuevaCotizacion";
 import DetalleCotizacion from "./pages/DetalleCotizacion";
+import ImprimirCotizacion from "./pages/ImprimirCotizacion";
 import Historico from "./pages/Historico";
 import Salones from "./pages/Salones";
 import Sitios from "./pages/Sitios";
@@ -100,6 +101,10 @@ export default function App() {
 
         {/* Todo lo de aquí adentro exige sesión iniciada */}
         <Route element={<ProtectedRoute user={user} cargando={cargando} />}>
+          <Route element={<RoleRoute user={user} />}>
+            <Route path="/cotizaciones/:id/imprimir" element={<ImprimirCotizacion />} />
+          </Route>
+
           {/* Y todo lo de aquí adentro comparte la misma barra superior */}
           <Route
             element={
