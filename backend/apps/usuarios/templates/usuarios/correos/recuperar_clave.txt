@@ -1,0 +1,14 @@
+{% autoescape off %}Hola, {{ usuario.first_name|default:usuario.username }}:
+
+Recibimos una solicitud para cambiar la contraseña de tu cuenta en SGDE.
+
+Para crear una contraseña nueva, abre este enlace:
+
+{{ enlace }}
+
+El enlace sirve una sola vez y vence en {{ minutos }} minutos.
+
+Si no pediste este cambio, ignora este correo: tu contraseña sigue siendo la misma.
+
+Equipo SGDE
+{% endautoescape %}

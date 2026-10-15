@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Registrar from "./pages/Registrar";
+import RecuperarClave from "./pages/RecuperarClave";
+import RestablecerClave from "./pages/RestablecerClave";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Home from "./pages/Home";
 import Cotizaciones from "./pages/Cotizaciones";
@@ -87,6 +89,15 @@ export default function App() {
             </SoloSinSesion>
           }
         />
+        <Route
+          path="/recuperar-clave"
+          element={
+            <SoloSinSesion user={user} cargando={cargando}>
+              <RecuperarClave />
+            </SoloSinSesion>
+          }
+        />
+        <Route path="/restablecer-clave" element={<RestablecerClave />} />
 
         {/* Todo lo de aquí adentro exige sesión iniciada */}
         <Route element={<ProtectedRoute user={user} cargando={cargando} />}>

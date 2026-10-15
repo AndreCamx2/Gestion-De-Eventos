@@ -3,6 +3,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenBlacklistView, TokenObtainPairView, TokenRefreshView
 from apps.usuarios.views import (
     RegistrarUsuarioView, MeView, RolListView, UsuarioListCreateView, UsuarioDetailView,
+    SolicitarRecuperacionView, RestablecerClaveView,
 )
 from apps.sitios.views import SitioListCreateView, CiudadListView
 from apps.salones.views import (
@@ -31,6 +32,8 @@ urlpatterns = [
     # aunque el access ya haya vencido.
     path('api/token/logout/', TokenBlacklistView.as_view(), name='token_logout'),
     path('api/registro/', RegistroPublicoView.as_view(), name='registro_publico'),
+    path('api/clave/recuperar/', SolicitarRecuperacionView.as_view(), name='clave_recuperar'),
+    path('api/clave/restablecer/', RestablecerClaveView.as_view(), name='clave_restablecer'),
     path('api/usuarios/registro/', RegistrarUsuarioView.as_view(), name='usuario_registro'),
     path('api/usuarios/me/', MeView.as_view(), name='usuario_me'),
     path('api/usuarios/', UsuarioListCreateView.as_view(), name='usuario_list_create'),

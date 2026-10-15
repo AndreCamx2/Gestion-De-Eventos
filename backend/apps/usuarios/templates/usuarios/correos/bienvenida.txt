@@ -1,0 +1,12 @@
+{% autoescape off %}Hola, {{ nombre }}:
+
+¡Bienvenido a SGDE! Tu cuenta quedó creada con el correo {{ correo }}.
+
+Desde ahora puedes pedir cotizaciones para tus eventos, ver su estado y confirmarlas en línea.
+
+Entra aquí cuando quieras:
+
+{{ enlace }}
+
+Equipo SGDE
+{% endautoescape %}
