@@ -167,6 +167,18 @@ class CrearCotizacionTests(CotizacionBaseTest):
         self.assertEqual(r.data["cantidad_personas"], ["Supera el aforo del montaje (120 personas)."])
         self.assertFalse(Cotizacion.objects.exists())
 
+    def test_cliente_inactivo_400_en_cliente(self):
+        inactivo = Cliente.objects.create(
+            tipo="natural", nombre="Luis Baja", identificacion="1047000222",
+            correo="baja@test.com", activo=False,
+        )
+        self.client.force_authenticate(user=self.admin)
+        r = self.client.post(LISTA, self.payload(cliente=inactivo.pk), format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, r.data)
+        self.assertIn("cliente", r.data)
+        self.assertEqual(Cotizacion.objects.count(), 0)
+    
+
     def test_montaje_no_habilitado_en_el_salon(self):
         self.client.force_authenticate(user=self.admin)
         r = self.client.post(LISTA, self.payload(montaje=self.montaje_no_habilitado.pk), format="json")
