@@ -7,6 +7,7 @@ from django.test import TestCase, override_settings
 
 from apps.catalogo.models import Concepto
 from apps.clientes.models import Cliente, Empresa
+from apps.proveedores.models import Proveedor, StockElemento
 from apps.salones.models import Salon, SalonMontaje
 from apps.sitios.models import Ciudad, Sitio
 from apps.usuarios.models import Usuario
@@ -27,6 +28,8 @@ def conteos():
         "conceptos": Concepto.objects.count(),
         "clientes": Cliente.objects.count(),
         "empresas": Empresa.objects.count(),
+        "proveedores": Proveedor.objects.count(),
+        "stock": StockElemento.objects.count(),
     }
 
 
@@ -44,6 +47,10 @@ class SeedDemoTests(TestCase):
         self.assertEqual(Cliente.objects.filter(tipo="natural").count(), 1)
         juridico = Cliente.objects.get(tipo="juridica")
         self.assertIsNotNone(juridico.empresa)
+        # SGDE-30: proveedor_demo entra a Mi stock con el Proveedor Demo y su stock.
+        proveedor = Proveedor.objects.get(usuario__username="proveedor_demo")
+        self.assertEqual(proveedor.nombre, "Proveedor Demo")
+        self.assertEqual(proveedor.stock.count(), 3)
 
     def test_es_idempotente(self):
         sembrar()
