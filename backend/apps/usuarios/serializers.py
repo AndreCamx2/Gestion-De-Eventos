@@ -104,7 +104,13 @@ class RolSerializer(serializers.ModelSerializer):
 class UsuarioMeSerializer(serializers.ModelSerializer):
     rol = RolSerializer(read_only=True)
     sitios = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    # Proveedor vinculado (SGDE-30): {id, nombre} o null. "Mi stock" lo muestra de subtítulo.
+    proveedor = serializers.SerializerMethodField()
 
     class Meta:
         model = Usuario
-        fields = ["id", "username", "first_name", "email", "rol", "sitios"]
+        fields = ["id", "username", "first_name", "email", "rol", "sitios", "proveedor"]
+
+    def get_proveedor(self, usuario):
+        proveedor = getattr(usuario, "proveedor", None)
+        return {"id": proveedor.id, "nombre": proveedor.nombre} if proveedor else None

@@ -97,4 +97,4 @@ class MeView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        return Usuario.objects.select_related("rol").prefetch_related("sitios").get(pk=self.request.user.pk)
+        return Usuario.objects.select_related("rol", "proveedor").prefetch_related("sitios").get(pk=self.request.user.pk)
