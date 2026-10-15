@@ -78,3 +78,18 @@ export async function registrarCliente({
     skipAuth: true,
   });
 }
+export function solicitarRecuperacion(email) {
+  return apiFetch("/clave/recuperar/", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+    skipAuth: true,
+  });
+}
+
+export function restablecerClave({ uid, token, password }) {
+  return apiFetch("/clave/restablecer/", {
+    method: "POST",
+    body: JSON.stringify({ uid, token, password }),
+    skipAuth: true,
+  });
+}

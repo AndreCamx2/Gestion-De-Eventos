@@ -11,6 +11,7 @@ function abrirLogin(onLoginSuccess = vi.fn()) {
       <Routes>
         <Route path="/login" element={<Login onLoginSuccess={onLoginSuccess} />} />
         <Route path="/inicio" element={<p>Pantalla de inicio</p>} />
+        <Route path="/recuperar-clave" element={<p>Pantalla de recuperar clave</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -56,5 +57,14 @@ describe("Login", () => {
     expect(screen.getByText("Ingresa tu usuario o correo.")).toBeInTheDocument();
     expect(screen.getByText("Ingresa tu contraseña.")).toBeInTheDocument();
     expect(llamadas).toHaveLength(0);
+  });
+
+  it("el enlace ¿La olvidaste? lleva a recuperar la contraseña", async () => {
+    simularApi({});
+    const { usuario } = abrirLogin();
+
+    await usuario.click(screen.getByRole("link", { name: /la olvidaste/i }));
+
+    expect(screen.getByText("Pantalla de recuperar clave")).toBeInTheDocument();
   });
 });
