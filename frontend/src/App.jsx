@@ -16,6 +16,7 @@ import Conceptos from "./pages/Conceptos";
 import Proveedores from "./pages/Proveedores";
 import Rack from "./pages/Rack";
 import Calendario from "./pages/Calendario";
+import MiStock from "./pages/MiStock";
 import { getUsuarioActual, logout } from "./api/auth";
 import {
   ProtectedRoute,
@@ -112,6 +113,7 @@ export default function App() {
               <Route path="/proveedores" element={<Proveedores />} />
               <Route path="/rack" element={<Rack />} />
               <Route path="/calendario" element={<Calendario />} />
+              <Route path="/mi-stock" element={<MiStock />} />
             </Route>
           </Route>
         </Route>

@@ -10,7 +10,11 @@ import { cambiosStock, erroresEdicionStock, formDesdeElemento, validarEdicionSto
 // - onGuardado(elemento): el API respondió; Proveedores.jsx reemplaza la fila y la cierra.
 // - onSesionVencida(), sesionVencida, onEntrarDeNuevo(boton): igual que en
 //   DialogoNuevoElemento (aviso dentro de la ventana, SGDE-94).
-export default function DialogoEditarStock({ proveedor, elemento, onGuardado, onCerrar, onSesionVencida, sesionVencida, onEntrarDeNuevo }) {
+// - editar(id, cambios): la llamada al API. Por defecto PATCH /stock/<id>/;
+//   "Mi stock" (SGDE-72) pasa editarMiStock.
+export default function DialogoEditarStock({
+  proveedor, elemento, onGuardado, onCerrar, onSesionVencida, sesionVencida, onEntrarDeNuevo, editar = editarStock,
+}) {
   const [form, setForm] = useState(() => formDesdeElemento(elemento));
   const [errores, setErrores] = useState({});
   const [error, setError] = useState(null);
@@ -39,7 +43,7 @@ export default function DialogoEditarStock({ proveedor, elemento, onGuardado, on
 
     setGuardando(true);
     try {
-      const actualizado = await editarStock(elemento.id, cambios);
+      const actualizado = await editar(elemento.id, cambios);
       setGuardando(false);
       onGuardado(actualizado);
     } catch (err) {

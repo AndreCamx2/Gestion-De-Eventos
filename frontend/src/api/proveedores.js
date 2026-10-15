@@ -1,6 +1,7 @@
 import { apiFetch } from "./client";
 
-// Todo este módulo es solo para administrador (EsAdministrador en el backend).
+// Este módulo es para administrador (EsAdministrador en el backend), salvo
+// "Mi stock", que es del proveedor (EsProveedor).
 // Usa apiFetch directo: los errores conservan error.status y error.body, así la
 // pantalla distingue un 401 de un 400. DRF puede devolver una lista simple o un
 // objeto paginado { count, results }: las listas aceptan ambas formas.
@@ -23,6 +24,16 @@ export function crearProveedor({ nombre, identificacion, contacto }) {
   });
 }
 
+// PATCH /api/proveedores/<id>/ { usuario } (SGDE-30): vincula el usuario de acceso
+// del proveedor (un usuario con rol proveedor, uno por proveedor) o lo desvincula con null.
+// → { id, nombre, identificacion, contacto, usuario, usuario_nombre }
+export function vincularUsuarioProveedor(id, usuario) {
+  return apiFetch(`/proveedores/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify({ usuario }),
+  });
+}
+
 // GET /api/stock/ → [{ id, proveedor, nombre_elemento, cantidad, valor, actualizado_en }]
 // Trae el stock de TODOS los proveedores: la pantalla lo filtra por proveedor.
 export async function listarStock() {
@@ -41,6 +52,31 @@ export function crearElementoStock({ proveedor, nombre_elemento, cantidad, valor
 // Devuelve el elemento completo, con actualizado_en nuevo.
 export function editarStock(id, cambios) {
   return apiFetch(`/stock/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(cambios),
+  });
+}
+
+// ===== Mi stock (SGDE-30 y 72): solo el rol proveedor, con su Proveedor vinculado =====
+// El backend pone el proveedor; el stock de otro da 404. El 403 trae
+// { detail, codigo }: "proveedor_sin_vincular" o "no_es_proveedor".
+
+// GET /api/mi-stock/ → mismos campos que /stock/, solo los del proveedor.
+export async function listarMiStock() {
+  return comoLista(await apiFetch("/mi-stock/", { method: "GET" }));
+}
+
+// POST /api/mi-stock/ { nombre_elemento, cantidad, valor }.
+export function crearMiStock({ nombre_elemento, cantidad, valor }) {
+  return apiFetch("/mi-stock/", {
+    method: "POST",
+    body: JSON.stringify({ nombre_elemento, cantidad, valor }),
+  });
+}
+
+// PATCH /api/mi-stock/<id>/ con solo lo que cambió: { cantidad?, valor? }.
+export function editarMiStock(id, cambios) {
+  return apiFetch(`/mi-stock/${id}/`, {
     method: "PATCH",
     body: JSON.stringify(cambios),
   });

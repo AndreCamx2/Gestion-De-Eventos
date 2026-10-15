@@ -8,9 +8,10 @@ import { fechaActualizado, pesos, valorTotal, valorTotalElemento } from "./prove
 // - onReintentar(): vuelve a pedir el stock (si no cargó).
 // - onAgregar(boton): abre "Agregar elemento" (estado vacío).
 // - onEditar(elemento, boton): abre "Editar elemento" de esa fila (SGDE-98).
+// - vacio: { titulo, texto } del estado vacío; "Mi stock" (SGDE-72) le habla al proveedor.
 const formatoCantidad = new Intl.NumberFormat("es-CO");
 
-export default function StockTabla({ proveedor, elementos, onReintentar, onAgregar, onEditar }) {
+export default function StockTabla({ proveedor, elementos, onReintentar, onAgregar, onEditar, vacio }) {
   const titulo = `Stock de ${proveedor.nombre}`;
 
   if (elementos === null) {
@@ -29,8 +30,8 @@ export default function StockTabla({ proveedor, elementos, onReintentar, onAgreg
     return (
       <Tarjeta as="section" aria-label={titulo}>
         <EstadoVacio
-          titulo={`${proveedor.nombre} aún no tiene elementos`}
-          texto="Agrega lo que provee, cuántos hay y cuánto vale cada uno."
+          titulo={vacio?.titulo ?? `${proveedor.nombre} aún no tiene elementos`}
+          texto={vacio?.texto ?? "Agrega lo que provee, cuántos hay y cuánto vale cada uno."}
           accion={
             <Boton variante="secundario" onClick={(e) => onAgregar(e.currentTarget)}>
               Agregar elemento

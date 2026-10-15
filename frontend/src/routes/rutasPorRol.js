@@ -4,7 +4,7 @@
 //
 // Es solo experiencia de usuario: la seguridad real es el 403 del backend.
 // Por eso cada ruta tiene los mismos roles que exige el API que llama su pantalla
-// (hoy todos los endpoints de datos piden EsAdministrador).
+// (los endpoints de datos piden EsAdministrador, salvo /mi-stock/: EsProveedor).
 //
 // REGLA: toda ruta nueva del panel se agrega aquí, con sus roles, en el mismo PR.
 // Una ruta que no esté en esta lista se niega a todos (redirige a /inicio).
@@ -24,6 +24,7 @@ export const ROLES_POR_RUTA = {
   "/proveedores": SOLO_ADMIN, // /proveedores/, /stock/
   "/rack": SOLO_ADMIN, // /calendario/, /salones/ y /cotizaciones/<id>/bloqueo/
   "/usuarios": SOLO_ADMIN, // /usuarios/, /roles/, /sitios/
+  "/mi-stock": ["proveedor"], // /mi-stock/ (SGDE-72)
 };
 
 // Roles de la ruta que se está viendo. Acepta subrutas por tramos completos:

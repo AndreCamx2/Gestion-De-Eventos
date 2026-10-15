@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { listarProveedores, listarStock } from "../api/proveedores";
 import SesionVencida from "../components/SesionVencida";
@@ -9,9 +9,11 @@ import StockTabla from "./proveedores/StockTabla";
 import DialogoNuevoProveedor from "./proveedores/DialogoNuevoProveedor";
 import DialogoNuevoElemento from "./proveedores/DialogoNuevoElemento";
 import DialogoEditarStock from "./proveedores/DialogoEditarStock";
+import DialogoUsuarioAcceso from "./proveedores/DialogoUsuarioAcceso";
 import SelectorVista from "./proveedores/SelectorVista";
 import ComparadorPrecios from "./proveedores/ComparadorPrecios";
 import "../styles/proveedores.css";
+import "../styles/proveedores-acceso.css";
 
 // Pantalla de Proveedores y stock (SGDE-81 y SGDE-42, maqueta Proveedores.dc.html):
 // tarjetas de proveedor seleccionables y la tabla de stock del elegido, con su
@@ -35,7 +37,7 @@ export default function Proveedores() {
   // 401: se avisa abajo sin salir de la pantalla (components/SesionVencida.jsx).
   const [sesionVencida, setSesionVencida] = useState(false);
   const [seleccionId, setSeleccionId] = useState(null);
-  // Ventana abierta: null | "proveedor" | "elemento" | "editar".
+  // Ventana abierta: null | "proveedor" | "elemento" | "editar" | "acceso".
   const [dialogo, setDialogo] = useState(null);
   // Elemento del stock que se edita (con dialogo === "editar").
   const [editando, setEditando] = useState(null);
@@ -137,6 +139,12 @@ export default function Proveedores() {
     cerrarDialogo();
   }
 
+  // Vincular o desvincular el usuario de acceso (SGDE-72): la tarjeta se actualiza en el sitio.
+  function alVincularUsuario(actualizado) {
+    setProveedores((prev) => prev.map((p) => (p.id === actualizado.id ? actualizado : p)));
+    cerrarDialogo();
+  }
+
   function alCrearElemento(elemento) {
     // Si /stock/ no había cargado, se pide completo; si no, se suma a la lista.
     if (stock) setStock((prev) => [...prev, elemento]);
@@ -164,8 +172,10 @@ export default function Proveedores() {
   else if (proveedores.length === 0 && cargando) vista = "carga";
   else if (proveedores.length === 0) vista = "vacio";
 
+  // Estable: DialogoUsuarioAcceso la usa en un efecto.
+  const marcarSesionVencida = useCallback(() => setSesionVencida(true), []);
   const propsSesion = {
-    onSesionVencida: () => setSesionVencida(true),
+    onSesionVencida: marcarSesionVencida,
     sesionVencida,
     onEntrarDeNuevo: entrarDeNuevoDesdeVentana,
   };
@@ -237,7 +247,13 @@ export default function Proveedores() {
 
       {!enComparar && vista === "lista" && seleccionado && (
         <>
-          <TarjetasProveedores proveedores={ordenados} seleccionadoId={seleccionado.id} conteos={conteos} onElegir={elegir} />
+          <TarjetasProveedores
+            proveedores={ordenados}
+            seleccionadoId={seleccionado.id}
+            conteos={conteos}
+            onElegir={elegir}
+            onUsuarioAcceso={(boton) => abrir("acceso", boton)}
+          />
           <div ref={stockRef} className="proveedores-stock-ancla">
             <StockTabla
               proveedor={seleccionado}
@@ -263,6 +279,16 @@ export default function Proveedores() {
           proveedor={seleccionado}
           elemento={editando}
           onGuardado={alEditarStock}
+          onCerrar={cerrarDialogo}
+          {...propsSesion}
+        />
+      )}
+
+      {dialogo === "acceso" && seleccionado && (
+        <DialogoUsuarioAcceso
+          proveedor={seleccionado}
+          proveedores={proveedores}
+          onGuardado={alVincularUsuario}
           onCerrar={cerrarDialogo}
           {...propsSesion}
         />

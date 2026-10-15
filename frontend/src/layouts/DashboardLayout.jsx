@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { to: "/clientes", label: "Clientes", roles: ROLES_POR_RUTA["/clientes"] },
   { to: "/sitios", label: "Sitios", roles: ROLES_POR_RUTA["/sitios"] },
   { to: "/usuarios", label: "Usuarios", roles: ROLES_POR_RUTA["/usuarios"] },
+  { to: "/mi-stock", label: "Mi stock", roles: ROLES_POR_RUTA["/mi-stock"] },
 ];
 
 function getInitials(name) {
