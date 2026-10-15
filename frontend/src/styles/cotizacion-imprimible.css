@@ -1,0 +1,374 @@
+.pagina-cotizacion-imprimible {
+  min-height: 100vh;
+  padding: var(--espacio-6);
+  background: var(--color-fondo);
+}
+
+.cotizacion-imprimible-acciones {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--espacio-4);
+  max-width: 8.5in;
+  margin: 0 auto var(--espacio-5);
+}
+
+.cotizacion-imprimible-volver,
+.cotizacion-imprimible-imprimir {
+  display: inline-flex;
+  min-height: var(--alto-tocable);
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--espacio-4);
+  border: var(--borde);
+  border-radius: var(--radio-control);
+  background: var(--color-superficie);
+  color: var(--color-tinta);
+  font: inherit;
+  font-weight: var(--peso-semi);
+  text-decoration: none;
+}
+
+.cotizacion-imprimible-imprimir {
+  border-color: var(--color-tinta);
+  background: var(--color-tinta);
+  color: var(--color-sobre-oscuro);
+}
+
+.cotizacion-imprimible-imprimir:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.cotizacion-imprimible-estado {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espacio-4);
+  max-width: 8.5in;
+  margin: 0 auto var(--espacio-5);
+  padding: var(--espacio-5);
+  border: var(--borde);
+  border-radius: var(--radio-control);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+}
+
+.cotizacion-imprimible-estado button {
+  min-height: var(--alto-tocable);
+  padding: 0 var(--espacio-4);
+  border: var(--borde);
+  border-radius: var(--radio-control);
+  background: var(--color-superficie-2);
+  color: var(--color-tinta);
+  font: inherit;
+  font-weight: var(--peso-semi);
+}
+
+.cotizacion-hoja {
+  --hoja-papel: var(--color-superficie);
+  --hoja-tinta: var(--color-texto);
+  --hoja-suave: var(--color-texto-suave);
+  --hoja-linea: var(--color-linea);
+  --hoja-azul: var(--color-tinta);
+  --hoja-acento: var(--color-mandarina-texto);
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 8.5in;
+  min-height: 11in;
+  margin: 0 auto;
+  background: var(--hoja-papel);
+  color: var(--hoja-tinta);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  box-shadow: var(--sombra-flotante);
+}
+
+.cotizacion-hoja p,
+.cotizacion-hoja h1,
+.cotizacion-hoja h2 {
+  margin: 0;
+}
+
+.cotizacion-hoja__cabecera {
+  padding: 2.25rem 3.5rem 1.75rem;
+  background: linear-gradient(100deg, var(--color-tinta-suave), var(--color-durazno));
+  border-bottom: 8px solid var(--hoja-azul);
+}
+
+.cotizacion-hoja__marca {
+  min-height: 2.1rem;
+  margin-bottom: 1.1rem;
+}
+
+.cotizacion-hoja__sitio {
+  font-size: 1.05rem;
+  font-weight: var(--peso-negrita);
+}
+
+.cotizacion-hoja__titulo-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1.5rem;
+}
+
+.cotizacion-hoja__titulo {
+  font-size: 2.2rem;
+  font-weight: var(--peso-extra);
+  letter-spacing: var(--tracking-seccion);
+}
+
+.cotizacion-hoja__fechas {
+  text-align: right;
+  color: var(--hoja-suave);
+  font-size: 0.85rem;
+}
+
+.cotizacion-hoja__vigencia {
+  color: var(--hoja-acento);
+  font-weight: var(--peso-negrita);
+}
+
+.cotizacion-hoja__cuerpo {
+  flex: 1;
+  padding: 1.75rem 3.5rem 0;
+}
+
+.cotizacion-hoja__etiqueta {
+  margin-bottom: 0.3rem !important;
+  color: var(--hoja-suave);
+  font-size: 0.68rem;
+  font-weight: var(--peso-negrita);
+  letter-spacing: var(--tracking-antetitulo);
+  text-transform: uppercase;
+}
+
+.cotizacion-hoja__partes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 1.75rem;
+  color: var(--hoja-suave);
+}
+
+.cotizacion-hoja__destacado {
+  color: var(--hoja-tinta);
+  font-weight: var(--peso-negrita);
+}
+
+.cotizacion-hoja__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.cotizacion-hoja__tabla th {
+  padding: 0.5rem 0.4rem;
+  border-bottom: 2px solid var(--hoja-tinta);
+  color: var(--hoja-suave);
+  font-size: 0.68rem;
+  font-weight: var(--peso-negrita);
+  letter-spacing: var(--tracking-tabla);
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.cotizacion-hoja__tabla td {
+  padding: 0.65rem 0.4rem;
+  border-bottom: 1px solid var(--hoja-linea);
+  vertical-align: top;
+}
+
+.cotizacion-hoja__tabla .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cotizacion-hoja__concepto {
+  font-weight: var(--peso-negrita);
+}
+
+.cotizacion-hoja__totales {
+  width: 17.5rem;
+  max-width: 100%;
+  margin: 1.25rem 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.cotizacion-hoja__totales dl {
+  margin: 0 0 0.6rem;
+}
+
+.cotizacion-hoja__totales dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.15rem 0;
+}
+
+.cotizacion-hoja__totales dt {
+  color: var(--hoja-suave);
+}
+
+.cotizacion-hoja__totales dd {
+  margin: 0;
+  font-weight: var(--peso-negrita);
+}
+
+.cotizacion-hoja__total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radio-control);
+  background: var(--hoja-azul);
+  color: var(--color-sobre-oscuro);
+}
+
+.cotizacion-hoja__total span {
+  font-weight: var(--peso-negrita);
+}
+
+.cotizacion-hoja__total strong {
+  font-size: 1.45rem;
+}
+
+.cotizacion-hoja__condiciones {
+  margin-top: 2rem;
+  color: var(--hoja-suave);
+}
+
+.cotizacion-hoja__pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 2rem;
+  padding: 2.5rem 3.5rem 2rem;
+  color: var(--hoja-suave);
+  font-size: 0.8rem;
+}
+
+.cotizacion-hoja__firma {
+  min-width: 12.5rem;
+  padding-top: 0.35rem !important;
+  border-top: 1px solid var(--hoja-tinta);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .pagina-cotizacion-imprimible {
+    padding: var(--espacio-3);
+  }
+
+  .cotizacion-imprimible-acciones {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .cotizacion-hoja {
+    min-height: 0;
+  }
+
+  .cotizacion-hoja__cabecera,
+  .cotizacion-hoja__cuerpo,
+  .cotizacion-hoja__pie {
+    padding-left: var(--espacio-5);
+    padding-right: var(--espacio-5);
+  }
+
+  .cotizacion-hoja__titulo-fila {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--espacio-3);
+  }
+
+  .cotizacion-hoja__titulo {
+    font-size: 1.75rem;
+  }
+
+  .cotizacion-hoja__fechas {
+    text-align: left;
+  }
+
+  .cotizacion-hoja__partes {
+    grid-template-columns: 1fr;
+    gap: var(--espacio-4);
+  }
+
+  .cotizacion-hoja__tabla {
+    font-size: 0.75rem;
+  }
+
+  .cotizacion-hoja__tabla th,
+  .cotizacion-hoja__tabla td {
+    padding: 0.45rem 0.2rem;
+  }
+
+  .cotizacion-hoja__pie {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@page {
+  size: letter;
+  margin: 12mm;
+}
+
+@media print {
+  html,
+  body {
+    background: var(--color-superficie) !important;
+  }
+
+  .no-imprimir {
+    display: none !important;
+  }
+
+  .pagina-cotizacion-imprimible {
+    min-height: 0;
+    padding: 0;
+    background: var(--color-superficie);
+  }
+
+  .cotizacion-hoja,
+  .cotizacion-hoja * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .cotizacion-hoja {
+    max-width: none;
+    min-height: calc(11in - 24mm);
+    box-shadow: none;
+  }
+
+  .cotizacion-hoja__cuerpo {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  .cotizacion-hoja__cabecera,
+  .cotizacion-hoja__pie {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  .cotizacion-hoja__tabla thead {
+    display: table-header-group;
+  }
+
+  .cotizacion-hoja__tabla tr,
+  .cotizacion-hoja__partes,
+  .cotizacion-hoja__totales,
+  .cotizacion-hoja__condiciones,
+  .cotizacion-hoja__pie {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
