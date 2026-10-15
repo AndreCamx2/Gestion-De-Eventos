@@ -10,7 +10,11 @@ import { ELEMENTO_VACIO, erroresElemento, payloadElemento, validarElemento } fro
 // - onCreado(elemento): se creó; Proveedores.jsx la cierra y lo suma a la tabla.
 // - onSesionVencida(), sesionVencida, onEntrarDeNuevo(boton): igual que en
 //   DialogoNuevoProveedor (aviso dentro de la ventana, SGDE-94).
-export default function DialogoNuevoElemento({ proveedor, onCreado, onCerrar, onSesionVencida, sesionVencida, onEntrarDeNuevo }) {
+// - crear(datos): la llamada al API. Por defecto POST /stock/; "Mi stock" (SGDE-72)
+//   pasa crearMiStock, que ignora el proveedor.
+export default function DialogoNuevoElemento({
+  proveedor, onCreado, onCerrar, onSesionVencida, sesionVencida, onEntrarDeNuevo, crear = crearElementoStock,
+}) {
   const [form, setForm] = useState(ELEMENTO_VACIO);
   const [errores, setErrores] = useState({});
   const [error, setError] = useState(null);
@@ -32,7 +36,7 @@ export default function DialogoNuevoElemento({ proveedor, onCreado, onCerrar, on
 
     setGuardando(true);
     try {
-      const creado = await crearElementoStock(payloadElemento(form, proveedor.id));
+      const creado = await crear(payloadElemento(form, proveedor.id));
       setGuardando(false);
       onCreado(creado);
     } catch (err) {
