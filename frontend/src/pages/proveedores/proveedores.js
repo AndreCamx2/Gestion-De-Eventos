@@ -132,6 +132,19 @@ export function erroresElemento(body) {
   return { campos, general };
 }
 
+// ===== Usuario de acceso (SGDE-30 y 72) =====
+
+// Usuarios con rol proveedor que se pueden vincular a `proveedor`: los que no
+// tienen otro proveedor, más el suyo actual. Por username.
+export function usuariosLibres(usuarios, proveedores, proveedor) {
+  const tomados = new Set(
+    proveedores.filter((p) => p.id !== proveedor.id && p.usuario != null).map((p) => p.usuario),
+  );
+  return usuarios
+    .filter((u) => !tomados.has(u.id))
+    .sort((a, b) => a.username.localeCompare(b.username, "es"));
+}
+
 // ===== Editar elemento (SGDE-98) =====
 // Solo cantidad y valor: el proveedor y el nombre no cambian (el API da 400).
 

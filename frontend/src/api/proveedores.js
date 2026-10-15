@@ -24,6 +24,16 @@ export function crearProveedor({ nombre, identificacion, contacto }) {
   });
 }
 
+// PATCH /api/proveedores/<id>/ { usuario } (SGDE-30): vincula el usuario de acceso
+// del proveedor (un usuario con rol proveedor, uno por proveedor) o lo desvincula con null.
+// → { id, nombre, identificacion, contacto, usuario, usuario_nombre }
+export function vincularUsuarioProveedor(id, usuario) {
+  return apiFetch(`/proveedores/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify({ usuario }),
+  });
+}
+
 // GET /api/stock/ → [{ id, proveedor, nombre_elemento, cantidad, valor, actualizado_en }]
 // Trae el stock de TODOS los proveedores: la pantalla lo filtra por proveedor.
 export async function listarStock() {

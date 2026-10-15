@@ -8,8 +8,12 @@ function comoLista(data) {
 
 // GET /api/usuarios/ → [{ id, username, rol, rol_codigo, sitios: [ids], is_active, ... }]
 // Por defecto solo trae usuarios activos, y nunca superusuarios (SGDE-90).
-export async function listarUsuarios({ incluirInactivos = false } = {}) {
-  const query = incluirInactivos ? "?incluir_inactivos=true" : "";
+// Con `rol` ("proveedor", "cliente"…) filtra por el código del rol.
+export async function listarUsuarios({ incluirInactivos = false, rol } = {}) {
+  const parametros = new URLSearchParams();
+  if (incluirInactivos) parametros.set("incluir_inactivos", "true");
+  if (rol) parametros.set("rol", rol);
+  const query = parametros.size ? `?${parametros}` : "";
   return comoLista(await apiFetch(`/usuarios/${query}`, { method: "GET" }));
 }
 
