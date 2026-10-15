@@ -632,3 +632,15 @@ class UsuarioMeTests(APITestCase):
     def test_me_trae_first_name_vacio_si_no_tiene(self):
         self.client.force_authenticate(user=crear_usuario("sin-nombre@test.com", "proveedor"))
         self.assertEqual(self.client.get("/api/usuarios/me/").data["first_name"], "")
+
+    def test_me_trae_el_proveedor_vinculado_o_null(self):
+        # SGDE-30: "Mi stock" muestra el nombre de su proveedor, aunque no tenga stock.
+        from apps.proveedores.models import Proveedor
+
+        usuario = crear_usuario("sonido@test.com", "proveedor")
+        self.client.force_authenticate(user=usuario)
+        self.assertIsNone(self.client.get("/api/usuarios/me/").data["proveedor"])
+        proveedor = Proveedor.objects.create(nombre="Sonido Caribe", usuario=usuario)
+        self.assertEqual(
+            self.client.get("/api/usuarios/me/").data["proveedor"], {"id": proveedor.id, "nombre": "Sonido Caribe"}
+        )
