@@ -9,6 +9,7 @@ import {
   validarAceptacion,
   validarVigencia,
 } from "./detalleCotizacion";
+import { useCancelacion } from "./useCancelacion";
 
 export function useDetalleCotizacion(id) {
   const [cotizacion, setCotizacion] = useState(null);
@@ -32,6 +33,8 @@ export function useDetalleCotizacion(id) {
 
   const peticionRef = useRef(0);
   const movimientosRef = useRef(0);
+  // Para abrir "Entrar de nuevo" desde la ventana de cancelar (SGDE-94).
+  const sesionRef = useRef(null);
 
   const cargarMovimientos = useCallback(async () => {
     const peticion = ++movimientosRef.current;
@@ -77,6 +80,17 @@ export function useDetalleCotizacion(id) {
     cargar();
     cargarMovimientos();
   }, [cargar, cargarMovimientos]);
+
+  const cancelacion = useCancelacion({
+    cotizacion,
+    onCancelada: (cancelada) => {
+      setCotizacion(cancelada);
+      cargarMovimientos();
+    },
+    onRecargar: () => Promise.all([cargar(), cargarMovimientos()]),
+    // En la ventana: al volver a entrar, la persona repite "Cancelar evento".
+    onSesionVencida: () => setSesionVencida("cancelacion"),
+  });
 
   function cambiarVigencia(valor) {
     setNuevaVigencia(valor);
@@ -168,6 +182,7 @@ export function useDetalleCotizacion(id) {
     errorCarga,
     cargar,
     sesionVencida: Boolean(sesionVencida),
+    sesionRef,
     alVolverAEntrar,
     nuevaVigencia,
     cambiarVigencia,
@@ -185,5 +200,6 @@ export function useDetalleCotizacion(id) {
     cargandoMovimientos,
     errorMovimientos,
     cargarMovimientos,
+    cancelacion,
   };
 }

@@ -4,6 +4,7 @@ import { AvisoError, Boton, CabeceraPagina, Esqueleto, EstadoBadge, EstadoVacio,
 import SesionVencida from "../components/SesionVencida";
 import { hoyLocal } from "../utils/inicioCifras";
 import DetalleConceptos from "./cotizaciones/DetalleConceptos";
+import DialogoCancelarEvento from "./cotizaciones/DialogoCancelarEvento";
 import MovimientosCotizacion from "./cotizaciones/MovimientosCotizacion";
 import PanelAceptacion from "./cotizaciones/PanelAceptacion";
 import PanelVigencia, { AvisoAceptacionVencida } from "./cotizaciones/PanelVigencia";
@@ -22,8 +23,10 @@ import {
   textoCreacion,
 } from "./cotizaciones/detalleCotizacion";
 import { pesos } from "./cotizaciones/nuevaCotizacion";
+import { puedeCancelar } from "./cotizaciones/cancelacion";
 import { useDetalleCotizacion } from "./cotizaciones/useDetalleCotizacion";
 import "../styles/detalle-cotizacion.css";
+import "../styles/cancelar-evento.css";
 
 function ChipVigencia({ cotizacion, hoy }) {
   const v = vigencia(cotizacion, hoy);
@@ -89,12 +92,17 @@ function PanelConfirmada({ cotizacion, recien }) {
   );
 }
 
-function PanelCancelada({ cotizacion }) {
+// recien: se acaba de cancelar desde esta pantalla (SGDE-68); el foco llega al título.
+function PanelCancelada({ cotizacion, recien }) {
   const c = resumenCancelacion(cotizacion);
   if (!c) return null;
   return (
-    <section className="dc-panel dc-panel--cancelada" aria-labelledby="dc-cancelada-titulo">
-      <h2 id="dc-cancelada-titulo" className="dc-panel__titulo">Cotización cancelada</h2>
+    <section
+      className="dc-panel dc-panel--cancelada"
+      aria-labelledby="dc-cancelada-titulo"
+      role={recien ? "status" : undefined}
+    >
+      <h2 id="dc-cancelada-titulo" className="dc-panel__titulo" tabIndex={-1}>Cotización cancelada</h2>
       <p className="dc-panel__texto">
         {[c.dia && `El ${c.dia}`, c.por && `por ${c.por}`].filter(Boolean).join(" ")}
         {c.penalizacion != null && ` · penalización del ${c.penalizacion}%`}
@@ -133,7 +141,12 @@ function Contenido({ d, hoy }) {
           {c.vencida && <AvisoAceptacionVencida />}
           {puedeAceptar(c) && <PanelAceptacion d={d} />}
           <PanelConfirmada cotizacion={c} recien={d.recienConfirmada} />
-          <PanelCancelada cotizacion={c} />
+          {puedeCancelar(c) && (
+            <Boton ref={d.cancelacion.botonRef} variante="peligro" className="dc-cancelar__abrir" onClick={d.cancelacion.abrir}>
+              Cancelar evento
+            </Boton>
+          )}
+          <PanelCancelada cotizacion={c} recien={d.cancelacion.recienCancelada} />
         </div>
       </div>
     </>
@@ -212,7 +225,9 @@ export default function DetalleCotizacion() {
 
       {cuerpo}
 
-      <SesionVencida visible={d.sesionVencida} onReingreso={d.alVolverAEntrar} />
+      {c && d.cancelacion.abierta && <DialogoCancelarEvento d={d} />}
+
+      <SesionVencida ref={d.sesionRef} visible={d.sesionVencida} onReingreso={d.alVolverAEntrar} />
     </div>
   );
 }
