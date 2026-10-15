@@ -1,7 +1,15 @@
 from django.db import transaction
 from django.db.models import Q
-from rest_framework import filters, generics, permissions
-from .serializers import RolSerializer, UsuarioRegistroSerializer, UsuarioMeSerializer, UsuarioAdminSerializer
+from rest_framework import filters, generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
+from .serializers import (
+    RestablecerClaveSerializer, RolSerializer, SolicitarRecuperacionSerializer, UsuarioRegistroSerializer,
+    UsuarioMeSerializer, UsuarioAdminSerializer,
+)
+from .recuperacion import cambiar_clave, solicitar_recuperacion, usuario_del_enlace
+from .validators import validar_password_candidata
 from .models import Rol, Usuario
 from .permissions import EsAdministrador
 from .services import validar_cambio_usuario
@@ -98,3 +106,44 @@ class MeView(generics.RetrieveAPIView):
 
     def get_object(self):
         return Usuario.objects.select_related("rol", "proveedor").prefetch_related("sitios").get(pk=self.request.user.pk)
+
+
+MSG_SOLICITUD_RECIBIDA = "Si ese correo está registrado, te llegará un enlace para crear una contraseña nueva."
+MSG_ENLACE_INVALIDO = "El enlace no es válido o ya venció. Pide uno nuevo."
+MSG_CLAVE_ACTUALIZADA = "Tu contraseña quedó actualizada. Ya puedes iniciar sesión."
+
+
+class SolicitarRecuperacionView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "recuperar_clave"
+
+    def post(self, request):
+        serializer = SolicitarRecuperacionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        solicitar_recuperacion(serializer.validated_data["email"])
+        return Response({"detail": MSG_SOLICITUD_RECIBIDA})
+
+
+class RestablecerClaveView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "restablecer_clave"
+
+    def post(self, request):
+        serializer = RestablecerClaveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        datos = serializer.validated_data
+
+        usuario = usuario_del_enlace(datos["uid"], datos["token"])
+        if usuario is None:
+            return Response({"detail": MSG_ENLACE_INVALIDO}, status=status.HTTP_400_BAD_REQUEST)
+
+        validar_password_candidata(
+            datos["password"], username=usuario.username, email=usuario.email,
+            first_name=usuario.first_name, last_name=usuario.last_name,
+        )
+        cambiar_clave(usuario, datos["password"])
+        return Response({"detail": MSG_CLAVE_ACTUALIZADA})

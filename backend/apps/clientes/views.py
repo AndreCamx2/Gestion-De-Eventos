@@ -1,4 +1,6 @@
+from django.db import transaction
 from rest_framework import generics, permissions, filters
+from apps.usuarios.correos import enviar_bienvenida
 from .serializers import RegistroPublicoSerializer, ClienteAdminSerializer, EmpresaSerializer
 from .models import Cliente, Empresa
 from apps.usuarios.permissions import EsAdministrador
@@ -7,6 +9,10 @@ from apps.usuarios.permissions import EsAdministrador
 class RegistroPublicoView(generics.CreateAPIView):
     serializer_class = RegistroPublicoSerializer
     permission_classes = [permissions.AllowAny]
+
+    def perform_create(self, serializer):
+        cliente = serializer.save()
+        transaction.on_commit(lambda: enviar_bienvenida(cliente))
 
 
 # Clientes y empresas son COMPARTIDOS entre sitios (decisión de diseño, SGDE-90):
