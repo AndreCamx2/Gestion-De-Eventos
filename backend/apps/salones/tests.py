@@ -61,6 +61,32 @@ class BaseSalonesTests(APITestCase):
         )
 
 
+class ListadoSalonesTests(BaseSalonesTests):
+    """SGDE-104: el listado trae sitio_nombre sin sumar consultas."""
+
+    def test_cada_salon_trae_el_nombre_de_su_sitio(self):
+        Salon.objects.create(sitio=self.otro_sitio_propio, nombre="Salón Luna")
+        respuesta = self.client.get("/api/salones/")
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        nombres = {s["nombre"]: s["sitio_nombre"] for s in respuesta.json()}
+        self.assertEqual(nombres, {"Salón Mar": "Hotel A", "Salón Sol": "Hotel A", "Salón Luna": "Hotel A2"})
+
+    def test_sitio_nombre_es_de_solo_lectura(self):
+        respuesta = self.client.patch(salon_url(self.salon.pk), {"sitio_nombre": "Otro"}, format="json")
+        self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
+        self.assertEqual(respuesta.json()["sitio_nombre"], "Hotel A")
+
+    def test_mismas_consultas_con_2_que_con_6_salones(self):
+        with CaptureQueriesContext(connection) as con_dos:
+            self.client.get("/api/salones/")
+        for i in range(4):
+            Salon.objects.create(sitio=self.otro_sitio_propio, nombre=f"Salón extra {i}")
+        with CaptureQueriesContext(connection) as con_seis:
+            respuesta = self.client.get("/api/salones/")
+        self.assertEqual(len(respuesta.json()), 6)
+        self.assertEqual(len(con_seis), len(con_dos))
+
+
 class EditarSalonTests(BaseSalonesTests):
     def test_edita_nombre_medidas_y_foto(self):
         cambios = {"nombre": "Salón Mar Azul", "ancho": "12.50", "altura": "5.00", "foto_url": "https://x.co/mar.jpg"}

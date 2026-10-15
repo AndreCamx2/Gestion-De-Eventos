@@ -17,6 +17,7 @@ from django.db import transaction
 
 from apps.catalogo.models import Concepto
 from apps.clientes.models import Cliente, Empresa
+from apps.proveedores.models import Proveedor, StockElemento
 from apps.salones.models import Montaje, Salon, SalonMontaje
 from apps.sitios.models import Ciudad, Sitio
 from apps.usuarios.models import Rol, Usuario
@@ -46,9 +47,18 @@ CONCEPTOS = [
     ("Decoración floral", Decimal("450000.00"), Decimal("19.00")),
 ]
 
+NOMBRE_PROVEEDOR = "Proveedor Demo"
+
+# (nombre_elemento, cantidad, valor)
+STOCK_PROVEEDOR = [
+    ("Silla Tiffany", 200, Decimal("8000.00")),
+    ("Mantel blanco", 80, Decimal("12000.00")),
+    ("Parlante activo", 6, Decimal("150000.00")),
+]
+
 
 class Command(BaseCommand):
-    help = "Crea datos de demostración (usuarios, sitio, salones, conceptos, clientes). Idempotente."
+    help = "Crea datos de demostración (usuarios, sitio, salones, conceptos, clientes, proveedor). Idempotente."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -86,7 +96,7 @@ class Command(BaseCommand):
                 "cliente_demo", "cliente@sgde.com", roles["cliente"],
                 "SEED_CLIENTE_PASSWORD", "cliente-dev-123",
             )
-            self._usuario(
+            proveedor_user = self._usuario(
                 "proveedor_demo", "proveedor@sgde.com", roles["proveedor"],
                 "SEED_PROVEEDOR_PASSWORD", "proveedor-dev-123",
             )
@@ -94,6 +104,7 @@ class Command(BaseCommand):
             self._salones(sitio)
             self._conceptos(sitio)
             self._clientes(ciudad, cliente_user)
+            self._proveedor(proveedor_user)
 
         self.stdout.write(self.style.SUCCESS("Datos de demostración listos."))
         self.stdout.write(
@@ -134,6 +145,20 @@ class Command(BaseCommand):
             Concepto.objects.get_or_create(
                 sitio=sitio, nombre=nombre,
                 defaults={"precio": precio, "impuesto_pct": impuesto},
+            )
+
+    def _proveedor(self, proveedor_user):
+        """Proveedor Demo vinculado a proveedor_demo, para la pantalla Mi stock (SGDE-30)."""
+        proveedor, _ = Proveedor.objects.get_or_create(nombre=NOMBRE_PROVEEDOR)
+        # Se reafirma el vínculo por si alguien lo cambió a mano. Si proveedor_demo
+        # quedó vinculado a otro proveedor, se suelta primero (OneToOne).
+        Proveedor.objects.filter(usuario=proveedor_user).exclude(pk=proveedor.pk).update(usuario=None)
+        proveedor.usuario = proveedor_user
+        proveedor.save(update_fields=["usuario"])
+        for nombre, cantidad, valor in STOCK_PROVEEDOR:
+            StockElemento.objects.get_or_create(
+                proveedor=proveedor, nombre_elemento=nombre,
+                defaults={"cantidad": cantidad, "valor": valor},
             )
 
     def _clientes(self, ciudad, cliente_user):
