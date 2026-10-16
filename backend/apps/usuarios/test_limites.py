@@ -1,16 +1,19 @@
 """SGDE-112: límite de intentos por IP en login, renovación del token y registro público.
 
-Al correr la suite las tasas son altas (settings.PRUEBAS); aquí cada clase fija
-una tasa baja con override_settings y limpia la caché, que es donde DRF cuenta.
+Cada clase fija una tasa baja con override_settings y limpia la caché, que es
+donde DRF cuenta los intentos.
 """
+import os
+
 from django.conf import settings
 from django.core.cache import cache
-from django.test import override_settings
+from django.test import SimpleTestCase, override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.clientes.models import Cliente
+from apps.core.pruebas import sin_limite_de_intentos
 
 from .limites import MSG_MUCHOS_INTENTOS
 from .models import Rol, Usuario
@@ -77,6 +80,30 @@ class LimiteLoginTests(LimpiarConteo):
 
         self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
 
+    def test_cambiar_x_forwarded_for_no_salta_el_limite(self):
+        # Sin proxy delante (NUM_PROXIES=0) la IP es REMOTE_ADDR: un encabezado
+        # inventado distinto en cada intento no cuenta como otro cliente.
+        with self.settings(REST_FRAMEWORK={**settings.REST_FRAMEWORK, "NUM_PROXIES": 0}):
+            for n in range(5):
+                self.entrar("clave-mala", HTTP_X_FORWARDED_FOR=f"1.2.3.{n}")
+
+            respuesta = self.entrar("clave-mala", HTTP_X_FORWARDED_FOR="9.9.9.9")
+
+        self.assertEqual(respuesta.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    def test_detras_de_un_proxy_cuenta_la_ip_que_agrega_el_proxy(self):
+        # Con un proxy (Render), el cliente puede inventar lo que va antes de la
+        # última IP, pero la última la pone el proxy y es la que se cuenta.
+        with self.settings(REST_FRAMEWORK={**settings.REST_FRAMEWORK, "NUM_PROXIES": 1}):
+            for n in range(5):
+                self.entrar("clave-mala", HTTP_X_FORWARDED_FOR=f"1.2.3.{n}, 200.1.1.1")
+
+            respuesta = self.entrar("clave-mala", HTTP_X_FORWARDED_FOR="9.9.9.9, 200.1.1.1")
+            otra_persona = self.entrar(PASSWORD, HTTP_X_FORWARDED_FOR="200.2.2.2")
+
+        self.assertEqual(respuesta.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertEqual(otra_persona.status_code, status.HTTP_200_OK)
+
 
 @con_tasas(renovar_token="3/min")
 class LimiteRenovacionTests(LimpiarConteo):
@@ -117,8 +144,19 @@ class LimiteRegistroTests(LimpiarConteo):
         self.assertFalse(Cliente.objects.filter(nombre="Cliente 2").exists())
 
 
-class TasasEnPruebasTests(APITestCase):
-    def test_la_suite_corre_con_tasas_altas(self):
-        # Sin esto, las pruebas que entran al login muchas veces seguidas darían 429.
-        self.assertTrue(settings.PRUEBAS)
-        self.assertEqual(settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["login"], "10000/min")
+class TasasRealesTests(SimpleTestCase):
+    def test_settings_no_sube_las_tasas_al_correr_las_pruebas(self):
+        # La configuración no sabe nada de las pruebas: con el valor por defecto
+        # de THROTTLE_LOGIN el login queda en 5 por minuto (revisión del 16/10, punto 11).
+        if "THROTTLE_LOGIN" not in os.environ:
+            self.assertEqual(settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["login"], "5/min")
+
+
+@sin_limite_de_intentos
+class DecoradorSinLimiteTests(APITestCase):
+    def test_sube_solo_login_renovacion_y_registro(self):
+        tasas = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]
+
+        self.assertEqual(tasas["login"], "10000/min")
+        self.assertEqual(tasas["registro"], "10000/min")
+        self.assertEqual(tasas["recuperar_clave"], "5/hour")

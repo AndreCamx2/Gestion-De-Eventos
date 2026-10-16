@@ -1,7 +1,6 @@
 from datetime import timedelta
 from pathlib import Path
 import os
-import sys
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 import dj_database_url
@@ -178,13 +177,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Límite de intentos por IP en las vistas públicas de acceso (SGDE-112).
 # Formato de DRF: "<número>/<second|minute|hour|day>". Se cambian por variable de
 # entorno, por ejemplo THROTTLE_LOGIN=10/min en backend/.env.
-# Al correr las pruebas ("manage.py test") las tasas son altas, porque la suite
-# entra al login muchas veces seguidas; las pruebas del límite fijan la suya con
-# override_settings (apps/usuarios/test_limites.py).
-PRUEBAS = len(sys.argv) > 1 and sys.argv[1] == "test"
-TASA_LOGIN = "10000/min" if PRUEBAS else os.getenv("THROTTLE_LOGIN", "5/min")
-TASA_RENOVAR_TOKEN = "10000/min" if PRUEBAS else os.getenv("THROTTLE_RENOVAR_TOKEN", "30/min")
-TASA_REGISTRO = "10000/min" if PRUEBAS else os.getenv("THROTTLE_REGISTRO", "10/hour")
+# Las pruebas que entran al login muchas veces suben la tasa solo para ellas con
+# @sin_limite_de_intentos (apps/core/pruebas.py).
+TASA_LOGIN = os.getenv("THROTTLE_LOGIN", "5/min")
+TASA_RENOVAR_TOKEN = os.getenv("THROTTLE_RENOVAR_TOKEN", "30/min")
+TASA_REGISTRO = os.getenv("THROTTLE_REGISTRO", "10/hour")
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -194,6 +191,12 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "EXCEPTION_HANDLER": "apps.core.exceptions.custom_exception_handler",
+    # Cuántos proxies hay delante de Django; con esto DRF sabe qué IP de
+    # X-Forwarded-For es la del cliente. Sin fijarlo, DRF usa el encabezado
+    # COMPLETO como "IP", y quien lo cambie en cada petición se salta todos
+    # los límites de intentos (SGDE-112). En local (runserver) no hay proxy: 0.
+    # En Render hay uno delante: 1.
+    "NUM_PROXIES": int(os.getenv("NUM_PROXIES", "0" if DEBUG else "1")),
     "DEFAULT_THROTTLE_RATES": {
         "recuperar_clave": "5/hour",
         "restablecer_clave": "20/hour",

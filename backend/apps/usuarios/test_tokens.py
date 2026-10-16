@@ -15,6 +15,7 @@ from rest_framework.test import APITestCase
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
+from apps.core.pruebas import sin_limite_de_intentos
 from config.settings import entero_positivo_entorno
 
 from .models import Rol, Usuario
@@ -31,6 +32,7 @@ def crear_admin():
     return Usuario.objects.create_user(username="admin-tokens@test.com", password=PASSWORD, rol=rol)
 
 
+@sin_limite_de_intentos
 class RenovacionDeTokenTests(APITestCase):
     """El frontend renueva el acceso con el refresh: así la sesión no vence a mitad del trabajo."""
 
@@ -75,6 +77,7 @@ class RenovacionDeTokenTests(APITestCase):
         self.assertEqual(self.client.get(URL_ME).status_code, status.HTTP_200_OK)
 
 
+@sin_limite_de_intentos
 class DuracionDeTokensTests(APITestCase):
     """Los tokens que entrega el login duran lo que dice SIMPLE_JWT en settings."""
 
@@ -131,6 +134,7 @@ class EnteroPositivoEntornoTests(SimpleTestCase):
                     entero_positivo_entorno("JWT_PRUEBA", 30)
 
 
+@sin_limite_de_intentos
 class LoginBaseTest(APITestCase):
     """Entra con /api/token/ como el frontend: el refresh queda registrado en la lista de emitidos."""
 

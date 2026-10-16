@@ -2,6 +2,7 @@
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from apps.core.pruebas import sin_limite_de_intentos
 from apps.sitios.models import Ciudad
 from apps.usuarios.models import Usuario
 
@@ -39,6 +40,7 @@ def datos_juridico(**cambios):
     }
 
 
+@sin_limite_de_intentos
 class CiudadDelRegistroTests(APITestCase):
     def test_ciudad_inexistente_da_400_en_ciudad(self):
         respuesta = self.client.post(URL_REGISTRO, datos_natural(ciudad="XXX"), format="json")
@@ -55,6 +57,7 @@ class CiudadDelRegistroTests(APITestCase):
         self.assertEqual(empresa.ciudad, Ciudad.objects.get(codigo="CTG"))
 
 
+@sin_limite_de_intentos
 class IdentificacionRepetidaTests(APITestCase):
     def test_natural_con_identificacion_existente_da_400_en_identificacion(self):
         Cliente.objects.create(tipo=Cliente.NATURAL, nombre="Otra persona", identificacion="1234567890")
