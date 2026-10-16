@@ -182,6 +182,12 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "EXCEPTION_HANDLER": "apps.core.exceptions.custom_exception_handler",
+    # Proxies delante del backend (Render pone 1). Los límites de intentos identifican
+    # al cliente por su IP: sin esto, DRF usa TODA la cabecera X-Forwarded-For, que la
+    # escribe el propio cliente, y cambiándola en cada petición el límite no frena a
+    # nadie. Con 1, toma la última dirección, la que agrega Render. En local, sin
+    # proxy: NUM_PROXIES=0 en backend/.env.
+    "NUM_PROXIES": int(os.getenv("NUM_PROXIES", "1")),
 }
 
 # Duración de los tokens JWT (SGDE-86). Sin esto, simplejwt usa 5 minutos para
