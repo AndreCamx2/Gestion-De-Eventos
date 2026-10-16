@@ -1202,6 +1202,29 @@ class GetNoEscribeSGDE118Tests(CotizacionBaseTest):
         )
         self.assertEqual(vencida_ajena.estado, "bloqueado")  # de un sitio que el usuario no administra
 
+    def test_activas_usa_el_estado_efectivo(self):
+        # El bloqueo vencido cuenta como cotizado: activo solo si su oferta sigue vigente.
+        self.assertIn(self.vencida, Cotizacion.objects.activas())
+        Cotizacion.objects.filter(pk=self.vencida.pk).update(validez_oferta=hoy() - timedelta(days=1))
+        self.assertNotIn(self.vencida, Cotizacion.objects.activas())
+        vigente = self.crear_en_bd(estado="bloqueado", fecha_evento=hoy() + timedelta(days=31))
+        Cotizacion.objects.filter(pk=vigente.pk).update(
+            bloqueo_hasta=timezone.now() + timedelta(hours=2), validez_oferta=hoy() - timedelta(days=1)
+        )
+        self.assertIn(vigente, Cotizacion.objects.activas())
+
+    def test_bloqueo_vencido_con_oferta_vencida_no_impide_dar_de_baja_el_salon(self):
+        # Antes daba un 409 falso: activas() leía "bloqueado" de la base sin mirar bloqueo_hasta.
+        Cotizacion.objects.filter(pk=self.vencida.pk).update(validez_oferta=hoy() - timedelta(days=1))
+        r = self.client.patch(f"/api/salones/{self.salon.pk}/", {"activo": False}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+
+    def test_historial_del_cliente_muestra_el_estado_efectivo(self):
+        r = self.client.get(f"/api/clientes/{self.cliente.pk}/")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        fila = next(c for c in r.data["cotizaciones"] if c["id"] == self.vencida.pk)
+        self.assertEqual(fila["estado"], "cotizado")
+
     def test_el_comando_libera_los_vencidos_de_todos_los_sitios(self):
         call_command("liberar_bloqueos")
         self.vencida.refresh_from_db()

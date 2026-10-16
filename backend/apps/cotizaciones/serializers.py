@@ -29,7 +29,7 @@ class EstadoEfectivoMixin:
         return data
 
 
-class CotizacionCalendarioSerializer(EstadoEfectivoMixin,serializers.ModelSerializer):
+class CotizacionCalendarioSerializer(EstadoEfectivoMixin, serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source="cliente.nombre", read_only=True)
     salon_nombre = serializers.CharField(source="salon.nombre", read_only=True)
     montaje_nombre = serializers.CharField(source="montaje.nombre", read_only=True)
@@ -263,7 +263,7 @@ class CancelacionSalidaMixin(serializers.Serializer):
         return str(redondear(_totales(obj)["total"] * obj.penalizacion_pct / 100))
 
 
-class CotizacionDetalleSerializer(EstadoEfectivoMixin,CancelacionSalidaMixin, serializers.ModelSerializer):
+class CotizacionDetalleSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, serializers.ModelSerializer):
     vencida = serializers.BooleanField(read_only=True)
     sitio = SitioResumenSerializer(read_only=True)
     cliente = ClienteResumenSerializer(read_only=True)
@@ -310,7 +310,7 @@ class CotizacionDetalleSerializer(EstadoEfectivoMixin,CancelacionSalidaMixin, se
         return garantia_de(obj)
 
 
-class CotizacionListaSerializer(EstadoEfectivoMixin,CancelacionSalidaMixin, serializers.ModelSerializer):
+class CotizacionListaSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source="cliente.nombre", read_only=True)
     salon_nombre = serializers.CharField(source="salon.nombre", read_only=True)
     montaje_nombre = serializers.CharField(source="montaje.nombre", read_only=True)

@@ -29,7 +29,6 @@ class CotizacionCalendarioView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def get_queryset(self):
-       
         # Un ?salon= de otro sitio devuelve una lista vacía: el filtro por sitio va primero.
         # select_related: sin él, cada fila hace una consulta por cliente, salón y montaje.
         queryset = filtrar_por_sitio(
@@ -248,6 +247,5 @@ class CotizacionMovimientosView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def get_queryset(self):
-       
         cotizacion = get_object_or_404(filtrar_por_sitio(Cotizacion.objects.all(), self.request.user), pk=self.kwargs["pk"])
         return cotizacion.movimientos.select_related("usuario")
