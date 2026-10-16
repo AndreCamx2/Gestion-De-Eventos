@@ -6,6 +6,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from apps.core.exceptions import Conflicto
+from apps.core.pagination import PaginaEstandar
 from apps.sitios.acceso import filtrar_por_sitio
 from apps.usuarios.permissions import EsAdministrador
 
@@ -110,6 +111,8 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
     """
 
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+    pagination_class = PaginaEstandar
 
     def get_serializer_class(self):
         if self.request.method == "POST":
