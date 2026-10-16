@@ -94,7 +94,11 @@ export default function SesionVencida({ visible, onReingreso, ref }) {
       await login(usuario, clave);
     } catch (err) {
       setErrorIngreso(
-        err.status ? "Usuario o contraseña incorrectos." : "No pudimos hablar con el servidor. Intenta de nuevo.",
+        err.status === 429
+          ? "Hiciste muchos intentos seguidos. Espera un minuto y vuelve a intentarlo."
+          : err.status
+            ? "Usuario o contraseña incorrectos."
+            : "No pudimos hablar con el servidor. Intenta de nuevo.",
       );
       setEnviando(false);
       return;

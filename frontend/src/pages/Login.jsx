@@ -11,6 +11,8 @@ const PASOS = [
   { numero: 3, texto: "Confirma con la garantía del cliente", tono: "mantequilla" },
 ];
 
+const MSG_MUCHOS_INTENTOS = "Hiciste muchos intentos seguidos. Espera un minuto y vuelve a intentarlo.";
+
 function LoginForm({ onLoginSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -36,8 +38,11 @@ function LoginForm({ onLoginSuccess }) {
       await login(email, password);
       await onLoginSuccess?.({ email });
       navigate("/inicio");
-    } catch {
-      setErrors({ password: "Usuario o contraseña incorrectos." });
+    } catch (err) {
+      // SGDE-112: el backend limita los intentos por IP y responde 429.
+      setErrors({
+        password: err.status === 429 ? MSG_MUCHOS_INTENTOS : "Usuario o contraseña incorrectos.",
+      });
     } finally {
       setSubmitting(false);
     }

@@ -1,6 +1,7 @@
 from datetime import timedelta
 from pathlib import Path
 import os
+import sys
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 import dj_database_url
@@ -174,6 +175,17 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# Límite de intentos por IP en las vistas públicas de acceso (SGDE-112).
+# Formato de DRF: "<número>/<second|minute|hour|day>". Se cambian por variable de
+# entorno, por ejemplo THROTTLE_LOGIN=10/min en backend/.env.
+# Al correr las pruebas ("manage.py test") las tasas son altas, porque la suite
+# entra al login muchas veces seguidas; las pruebas del límite fijan la suya con
+# override_settings (apps/usuarios/test_limites.py).
+PRUEBAS = len(sys.argv) > 1 and sys.argv[1] == "test"
+TASA_LOGIN = "10000/min" if PRUEBAS else os.getenv("THROTTLE_LOGIN", "5/min")
+TASA_RENOVAR_TOKEN = "10000/min" if PRUEBAS else os.getenv("THROTTLE_RENOVAR_TOKEN", "30/min")
+TASA_REGISTRO = "10000/min" if PRUEBAS else os.getenv("THROTTLE_REGISTRO", "10/hour")
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -185,6 +197,10 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "recuperar_clave": "5/hour",
         "restablecer_clave": "20/hour",
+        # SGDE-112: login, renovación del token y registro público, por IP.
+        "login": TASA_LOGIN,
+        "renovar_token": TASA_RENOVAR_TOKEN,
+        "registro": TASA_REGISTRO,
     },
 }
 

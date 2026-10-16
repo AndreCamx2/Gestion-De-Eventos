@@ -1,14 +1,17 @@
 from django.db import transaction
 from rest_framework import generics, permissions, filters
 from apps.usuarios.correos import enviar_bienvenida
+from apps.usuarios.limites import ConLimiteDeIntentos
 from .serializers import RegistroPublicoSerializer, ClienteAdminSerializer, EmpresaSerializer
 from .models import Cliente, Empresa
 from apps.usuarios.permissions import EsAdministrador
 
 
-class RegistroPublicoView(generics.CreateAPIView):
+class RegistroPublicoView(ConLimiteDeIntentos, generics.CreateAPIView):
     serializer_class = RegistroPublicoSerializer
     permission_classes = [permissions.AllowAny]
+    # SGDE-112: tope de cuentas nuevas por IP (DEFAULT_THROTTLE_RATES["registro"]).
+    throttle_scope = "registro"
 
     def perform_create(self, serializer):
         cliente = serializer.save()

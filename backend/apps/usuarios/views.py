@@ -4,10 +4,12 @@ from rest_framework import filters, generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .serializers import (
     RestablecerClaveSerializer, RolSerializer, SolicitarRecuperacionSerializer, UsuarioRegistroSerializer,
     UsuarioMeSerializer, UsuarioAdminSerializer,
 )
+from .limites import ConLimiteDeIntentos
 from .recuperacion import cambiar_clave, solicitar_recuperacion, usuario_del_enlace
 from .validators import validar_password_candidata
 from .models import Rol, Usuario
@@ -147,3 +149,19 @@ class RestablecerClaveView(APIView):
         )
         cambiar_clave(usuario, datos["password"])
         return Response({"detail": MSG_CLAVE_ACTUALIZADA})
+
+
+# --- Login y renovación con límite de intentos por IP (SGDE-112) ---------------
+# Mismas vistas de simplejwt (y los serializers de SIMPLE_JWT), con un tope por IP
+# para frenar la fuerza bruta. Las tasas están en DEFAULT_THROTTLE_RATES (settings.py).
+
+class LoginView(ConLimiteDeIntentos, TokenObtainPairView):
+    """POST /api/token/ → {access, refresh}. Pasado el límite responde 429."""
+
+    throttle_scope = "login"
+
+
+class RenovarTokenView(ConLimiteDeIntentos, TokenRefreshView):
+    """POST /api/token/refresh/ → {access, refresh}. Pasado el límite responde 429."""
+
+    throttle_scope = "renovar_token"
