@@ -88,6 +88,11 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("La fecha del evento no puede ser pasada.")
         return value
 
+    def validate_cliente(self, value):
+        if not value.activo:
+            raise serializers.ValidationError("El cliente está dado de baja.")
+        return value
+
     def validate_items(self, value):
         if not value:
             raise serializers.ValidationError("La cotización debe tener al menos un concepto.")
