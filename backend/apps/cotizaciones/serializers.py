@@ -17,8 +17,19 @@ from .services import redondear, totales_cotizacion, totales_linea
 
 DIAS_VIGENCIA_POR_DEFECTO = 15
 
+class EstadoEfectivoMixin:
+    # SGDE-118: un bloqueo vencido que aún no se liberó en la base se muestra ya como cotizado.
 
-class CotizacionCalendarioSerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.bloqueo_vencido:
+            data["estado"] = "cotizado"
+            if "bloqueo_hasta" in data:
+                data["bloqueo_hasta"] = None
+        return data
+
+
+class CotizacionCalendarioSerializer(EstadoEfectivoMixin,serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source="cliente.nombre", read_only=True)
     salon_nombre = serializers.CharField(source="salon.nombre", read_only=True)
     montaje_nombre = serializers.CharField(source="montaje.nombre", read_only=True)
@@ -252,7 +263,7 @@ class CancelacionSalidaMixin(serializers.Serializer):
         return str(redondear(_totales(obj)["total"] * obj.penalizacion_pct / 100))
 
 
-class CotizacionDetalleSerializer(CancelacionSalidaMixin, serializers.ModelSerializer):
+class CotizacionDetalleSerializer(EstadoEfectivoMixin,CancelacionSalidaMixin, serializers.ModelSerializer):
     vencida = serializers.BooleanField(read_only=True)
     sitio = SitioResumenSerializer(read_only=True)
     cliente = ClienteResumenSerializer(read_only=True)
@@ -299,7 +310,7 @@ class CotizacionDetalleSerializer(CancelacionSalidaMixin, serializers.ModelSeria
         return garantia_de(obj)
 
 
-class CotizacionListaSerializer(CancelacionSalidaMixin, serializers.ModelSerializer):
+class CotizacionListaSerializer(EstadoEfectivoMixin,CancelacionSalidaMixin, serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source="cliente.nombre", read_only=True)
     salon_nombre = serializers.CharField(source="salon.nombre", read_only=True)
     montaje_nombre = serializers.CharField(source="montaje.nombre", read_only=True)
