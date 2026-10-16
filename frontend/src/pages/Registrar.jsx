@@ -49,6 +49,8 @@ function mapBackendErrorField(backendField, accountType) {
     razon_social: "companyName",
     nombre: accountType === "natural" ? "fullName" : "contactName",
     password: "password",
+    // La ciudad no está en el formulario (se envía fija): su error va al aviso general (SGDE-115).
+    ciudad: "general",
   };
   return map[backendField] || null;
 }
