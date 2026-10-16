@@ -28,7 +28,7 @@ Desde la raíz del repo, en PowerShell:
 Copy-Item .env.example .env
 ```
 
-Abre `.env` y rellena **al menos** estas dos (sin ellas, `docker compose` se niega a arrancar):
+Abre `.env` y rellena **al menos** estas tres (sin ellas, `docker compose` se niega a arrancar):
 
 - `DB_PASSWORD`: cualquier texto, para tu base local.
 - `SECRET_KEY`: genera una con
@@ -36,8 +36,11 @@ Abre `.env` y rellena **al menos** estas dos (sin ellas, `docker compose` se nie
   python -c "import secrets; print(secrets.token_urlsafe(50))"
   ```
   (si no tienes Python, escribe cualquier texto largo y aleatorio; es solo para local).
+- `SEED_ADMIN_PASSWORD`: la contraseña del usuario `admin` (superusuario). Elige una tuya. Antes era opcional y, si la dejabas vacía, `admin` quedaba con una contraseña que está escrita en el repositorio (SGDE-114).
 
-Opcional: `SEED_ADMIN_PASSWORD`, `SEED_CLIENTE_PASSWORD` y `SEED_PROVEEDOR_PASSWORD` fijan las contraseñas de los usuarios demo. Si las dejas vacías se usan valores por defecto de desarrollo (están en `backend/apps/core/management/commands/seed_demo.py`).
+Opcional: `SEED_CLIENTE_PASSWORD` y `SEED_PROVEEDOR_PASSWORD` fijan las contraseñas de `cliente_demo` y `proveedor_demo`. Si las dejas vacías se usan valores por defecto de desarrollo (están en `backend/apps/core/management/commands/seed_demo.py`).
+
+> **¿Ya tenías la base creada?** `seed_demo` solo pone la contraseña al **crear** el usuario, así que tu `admin` sigue con la anterior. Cámbiala con `docker compose exec backend python manage.py changepassword admin`, o borra la base con `docker compose down -v` (pierdes los datos locales).
 
 Cada variable está explicada con comentarios dentro de `.env.example`.
 
@@ -59,6 +62,8 @@ La primera vez tarda varios minutos (descarga imágenes y compila el frontend). 
 | Base de datos (pgAdmin, DBeaver) | host `localhost`, puerto **5433**, usuario y contraseña de tu `.env` |
 
 > La base se publica en el **5433** (y no en el 5432) para no chocar con un PostgreSQL instalado en Windows. Dentro de Docker el backend sigue usando el 5432 por la red interna, así que no tienes que cambiar nada en el `.env`.
+
+> **Solo desde tu computador (SGDE-114).** Los tres puertos se publican en `127.0.0.1`, así que otra persona en tu misma red Wi-Fi (la universidad, un café) **no** puede abrir tu admin de Django ni tu base de datos. La contrapartida: tampoco puedes abrir `http://<tu-ip>:8080` desde el celular. Para ver la vista móvil usa el modo responsive del navegador (F12 → icono de celular). Si de verdad necesitas el celular, quita el `127.0.0.1:` del puerto en `docker-compose.yml` solo mientras pruebas y **no lo subas**.
 
 **Usuarios demo** (los crea `seed_demo`):
 
@@ -186,9 +191,10 @@ Con Auto-Deploy activo, Render desplegaría cada push a `main` sin esperar los t
 | Síntoma | Causa | Solución |
 |---|---|---|
 | `failed to connect to the docker API ... dockerDesktopLinuxEngine` | Docker Desktop está apagado | Ábrelo y espera a "Engine running" |
-| `required variable DB_PASSWORD is missing` o `SECRET_KEY` | Falta el `.env` de la raíz o esas variables | Sección 2 |
-| `port is already allocated` / `address already in use` en **8080** (o el frontend no abre) | Es raro, pero otro programa usa el 8080. Ojo: el **80** ya no se usa; si lo ocupa **XAMPP (Apache)** no afecta a este proyecto | Cierra el programa que use el 8080 o cambia `"8080:80"` en `docker-compose.yml` (el número de la izquierda) |
-| `port is already allocated` / `address already in use` en **5433** | Otro programa usa el 5433. La causa típica del problema original (5432) era el **PostgreSQL nativo de Windows**, y por eso la base se publica en el 5433 | Cambia `"5433:5432"` en `docker-compose.yml` (solo el número de la izquierda) |
+| `required variable DB_PASSWORD is missing`, `SECRET_KEY` o `SEED_ADMIN_PASSWORD` | Falta el `.env` de la raíz o esas variables | Sección 2 |
+| No abre desde el celular u otro computador con `http://<ip>:8080` | Los puertos solo escuchan en `127.0.0.1` (SGDE-114) | Es a propósito. Usa el modo responsive del navegador (sección 3) |
+| `port is already allocated` / `address already in use` en **8080** (o el frontend no abre) | Es raro, pero otro programa usa el 8080. Ojo: el **80** ya no se usa; si lo ocupa **XAMPP (Apache)** no afecta a este proyecto | Cierra el programa que use el 8080 o cambia `"127.0.0.1:8080:80"` en `docker-compose.yml` (el 8080) |
+| `port is already allocated` / `address already in use` en **5433** | Otro programa usa el 5433. La causa típica del problema original (5432) era el **PostgreSQL nativo de Windows**, y por eso la base se publica en el 5433 | Cambia `"127.0.0.1:5433:5432"` en `docker-compose.yml` (solo el 5433) |
 | pgAdmin no conecta a la base de Docker | Estás apuntando al 5432, que es el Postgres nativo de Windows (si existe), no el de Docker | Conéctate a `localhost` puerto **5433** |
 | Puerto **8000** ocupado | Otro programa lo usa | Ciérralo o cambia el puerto publicado en `docker-compose.yml` |
 | `UnicodeDecodeError` al conectar a la base | La base se creó sin codificación UTF8 (suele pasar con un Postgres instalado en Windows, no con el de Docker) | Usa el Postgres de Docker, o crea la base con `template0` + UTF8 |
