@@ -60,6 +60,5 @@ B_PROVEEDORES ..> B_USUARIOS : importa
 note bottom of B_CORE
   Cada app de Django tiene models.py, serializers.py,
   views.py, tests.py y migrations/.
-  La app "eventos" existe pero no tiene uso.
 end note
 @enduml

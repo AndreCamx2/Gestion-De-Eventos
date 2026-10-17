@@ -14,6 +14,8 @@ Es un proyecto académico de **Unicolombo** desarrollado con un cliente real del
 
 > El rediseño del frontend ("Piedra viva") vive en la rama `rediseno` y llega a producción cuando se fusione con `main` (SGDE-85).
 
+> Las cabeceras de seguridad del frontend (CSP, SGDE-113) están en `frontend/vercel.json`. Si cambia la URL del backend, hay que cambiarla también en `connect-src`, o el navegador bloqueará las llamadas al API.
+
 ## Qué hace la beta
 
 Requerimientos oficiales: RF-01 a RF-13 y RNF-01 a RNF-08 ([`docs/Requerimientos Proyecto Gestion De Eventos.docx`](docs/)).

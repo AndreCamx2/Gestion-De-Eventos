@@ -51,7 +51,8 @@ GHA --> RENDER : si pasan las pruebas,\nllama al deploy hook
 REPO --> VERCEL : push a main\n(despliegue de Vercel)
 
 note bottom of RENDER
-  Al arrancar: migrate, flushexpiredtokens y gunicorn.
+  Al arrancar: migrate, createcachetable, flushexpiredtokens y gunicorn
+  (2 workers, usuario sin privilegios).
   Se duerme por inactividad (~50 s la primera petición).
 end note
 note bottom of PG
