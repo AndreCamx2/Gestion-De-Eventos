@@ -1,0 +1,69 @@
+@startuml Diagrama_Despliegue_SGDE
+!pragma layout smetana
+title Despliegue de SGDE (producción y local)
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam DefaultFontSize 12
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+
+skinparam node {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+
+node "Navegador del usuario" as NAV {
+  artifact "SPA React\n(tokens en sessionStorage)" as SPA
+}
+
+cloud "Vercel" {
+  node "Sitio estático\ngestion-de-eventos-wine.vercel.app" as VERCEL {
+    artifact "frontend/dist\n(Vite build)" as DIST
+  }
+}
+
+cloud "Render (plan Free, Ohio)" {
+  node "Servicio web Docker\nsgde-backend.onrender.com" as RENDER {
+    artifact "gunicorn + Django 5.2\n+ Django REST Framework" as API
+  }
+  database "PostgreSQL\nsgde-db-staging" as PG
+}
+
+cloud "GitHub" {
+  node "Repositorio\nAndreCamx2/Gestion-De-Eventos" as REPO
+  node "GitHub Actions" as GHA
+}
+
+cloud "Servidor SMTP" as SMTP
+
+NAV --> VERCEL : HTTPS (carga la app)
+SPA --> API : HTTPS /api/ + JWT\n(CORS: solo gestion-de-eventos*.vercel.app)
+API --> PG : TCP 5432 (DATABASE_URL)
+API ..> SMTP : correos de recuperar contraseña\n(SGDE-96, solo en rediseno)
+REPO --> GHA : push a main
+GHA --> RENDER : si pasan las pruebas,\nllama al deploy hook
+REPO --> VERCEL : push a main\n(despliegue de Vercel)
+
+note bottom of RENDER
+  Al arrancar: migrate, flushexpiredtokens y gunicorn.
+  Se duerme por inactividad (~50 s la primera petición).
+end note
+note bottom of PG
+  La base Free vence a los 30 días
+  y no tiene copias de seguridad.
+end note
+
+node "Equipo del desarrollador (docker-compose)" as LOCAL {
+  node "frontend\nnginx :8080" as L_FRONT
+  node "backend\nrunserver :8000" as L_BACK
+  database "db\nPostgreSQL 18 :5433" as L_DB
+}
+L_FRONT ..> L_BACK : la app, ya en el navegador,\nllama a localhost:8000/api
+L_BACK --> L_DB : db:5432
+@enduml

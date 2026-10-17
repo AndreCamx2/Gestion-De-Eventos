@@ -1,21 +1,39 @@
 @startuml CU01_IniciarSesion
-title CU-01: Diagrama de Actividades - Iniciar Sesión
+title CU-01 · Iniciar sesión (SGDE-27)
 skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 
+|Usuario|
 start
-:Usuario ingresa al portal del SGDE;
-:Ingresa correo y contraseña;
-:Sistema valida formato de credenciales;
-if (¿Formato correcto?) then (Sí)
-  :Sistema consulta base de datos;
-  if (¿Credenciales coinciden?) then (Sí)
-    :Generar token de sesión (JWT);
-    :Redirigir al panel principal (Dashboard);
-  else (No)
-    :Mostrar error "Credenciales incorrectas";
-  endif
-else (No)
-  :Mostrar error "Formato inválido";
+:Escribe su usuario y contraseña;
+note right
+  Los clientes usan su correo
+  como nombre de usuario.
+end note
+|Sistema|
+if (¿Usuario activo y contraseña correcta?) then (no)
+  :Responde 401;
+  |Usuario|
+  :Ve "Usuario o contraseña incorrectos";
+  stop
+else (sí)
+  :Entrega un token de acceso (30 min)
+  y uno de renovación (12 h);
 endif
+|Usuario|
+:La pantalla guarda los tokens en la pestaña
+y pide los datos del usuario (/usuarios/me/);
+:Entra al panel según su rol
+(administrador, proveedor o cliente);
 stop
 @enduml

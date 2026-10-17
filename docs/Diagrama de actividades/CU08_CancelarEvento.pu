@@ -1,22 +1,38 @@
 @startuml CU08_CancelarEvento
-title CU-08: Diagrama de Actividades - Cancelar Evento/Reserva
+title CU-08 · Cancelar evento (SGDE-22, SGDE-61, SGDE-68)
 skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 
+|Administrador|
 start
-:Sistema o Usuario inicia "Cancelación";
-if (¿Cancelación manual o vencimiento automático?) then (Manual por Cliente)
-  :Verificar políticas de cancelación;
-  if (¿Aplica penalidad?) then (Sí)
-    :Generar cobro de penalidad al Cliente;
-  else (No)
-    :Proceder sin cobros;
-  endif
-else (Vencimiento Automático)
-  :Registrar motivo "Vencimiento de vigencia";
+:Abre un evento confirmado
+y elige "Cancelar evento";
+:Escribe la penalización (%) y el motivo;
+:La pantalla muestra en vivo
+cuánto se retiene;
+|Sistema|
+if (¿Está confirmado?) then (no)
+  :Responde 409
+  "Solo se puede cancelar un evento confirmado";
+  stop
+else (sí)
+  :Estado **cancelado**, con penalización,
+  motivo, quién y cuándo;
+  :Registra el movimiento "cancelada";
+  :La fecha del salón queda libre;
 endif
-:Cambiar estado de Cotización/Evento a "Cancelado";
-:Eliminar Bloqueo de agenda (Liberar Salón);
-:Actualizar estado del Salón a "Disponible";
-:Notificar al Cliente;
+|Administrador|
+:Ve el panel "Cotización cancelada"
+con el monto retenido;
 stop
 @enduml

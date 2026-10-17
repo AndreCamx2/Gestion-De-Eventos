@@ -1,0 +1,36 @@
+@startuml CU12_GestionarSitios
+title CU-12 · Gestionar sitios (SGDE-29, SGDE-34)
+skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+
+|Administrador|
+start
+:Abre Sitios y elige "Nuevo sitio";
+:Escribe el nombre y elige la ciudad;
+|Sistema|
+if (¿Datos válidos?) then (no)
+  :Responde 400;
+  stop
+else (sí)
+  :Guarda el sitio;
+  :Se lo asigna a quien lo creó;
+endif
+|Administrador|
+:Ya puede crear salones y conceptos
+en ese sitio;
+note right
+  Un sitio es un hotel, centro de convenciones,
+  finca o casa de eventos.
+end note
+stop
+@enduml

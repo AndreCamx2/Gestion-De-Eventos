@@ -1,0 +1,38 @@
+@startuml CU21_LiberarBloqueo
+title CU-21 · Liberar un bloqueo (SGDE-40, SGDE-60)
+skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+
+|Administrador|
+start
+if (¿Quién lo libera?) then (a mano)
+  :Elige "Liberar" en una cotización bloqueada;
+  |Sistema|
+  if (¿Está bloqueada?) then (no)
+    :Responde 409;
+    stop
+  else (sí)
+    :Vuelve a **cotizado** y quita el bloqueo;
+    :Registra el movimiento "liberada a mano";
+  endif
+else (por vencimiento)
+  |Sistema|
+  :Antes de cada acción sobre una cotización
+  (o con manage.py liberar_bloqueos);
+  :Busca los bloqueos con la hora límite vencida;
+  :Los pasa a **cotizado**;
+  :Registra el movimiento sin usuario
+  ("lo hizo el sistema");
+endif
+stop
+@enduml

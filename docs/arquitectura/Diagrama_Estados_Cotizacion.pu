@@ -1,0 +1,44 @@
+@startuml Diagrama_Estados_Cotizacion
+!pragma layout smetana
+title Estados de una cotización (SGDE)
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam DefaultFontSize 12
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+
+skinparam state {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+
+[*] --> cotizado : crear cotización\n(POST /cotizaciones/)
+cotizado --> bloqueado : bloquear hasta una fecha y hora\n[oferta no vencida, fecha libre]
+bloqueado --> cotizado : liberar a mano
+bloqueado --> cotizado : vence bloqueo_hasta\n(sistema)
+cotizado --> confirmado : registrar garantía\n[oferta no vencida, fecha libre]
+bloqueado --> confirmado : registrar garantía\n[fecha libre; el bloqueo sostiene la oferta]
+confirmado --> cancelado : cancelar\n(penalización % y motivo)
+cancelado --> [*]
+
+cotizado : la vigencia (validez_oferta)\nse puede extender
+confirmado : garantía (tipo y monto)
+cancelado : monto retenido =\ntotal × penalización
+
+note right of cotizado
+  "Vencida" no es un estado: se calcula
+  cuando validez_oferta ya pasó. Una vencida
+  no se bloquea ni se confirma hasta extenderla.
+end note
+note right of confirmado
+  La base de datos impide dos cotizaciones
+  confirmadas en el mismo salón y fecha
+  (restricción uq_salon_fecha_confirmado).
+end note
+note left of bloqueado
+  Un bloqueo vigente también protege
+  la fecha: otra cotización recibe 409.
+end note
+@enduml

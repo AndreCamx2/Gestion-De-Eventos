@@ -1,19 +1,40 @@
 @startuml CU07_ConfirmarEvento
-title CU-07: Diagrama de Actividades - Confirmar Evento
+title CU-07 · Registrar garantía y confirmar evento (SGDE-20, SGDE-21)
 skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 
+|Administrador|
 start
-:Cliente envía pago o documento de garantía;
-:Ejecutivo registra garantía en el sistema;
-:Sistema envía a revisión (Políticas del Hotel);
-if (¿Garantía es válida?) then (Sí)
-  :Sistema aprueba garantía;
-  :Convertir Bloqueo Temporal en Definitivo;
-  :Crear Evento Oficial (Estado "Confirmado");
-  :Notificar éxito al cliente y áreas operativas;
-else (No)
-  :Rechazar garantía;
-  :Solicitar al cliente corrección;
+:Abre una cotización cotizada o bloqueada;
+:Registra el tipo de garantía
+(transferencia, tarjeta, consignación
+o efectivo) y el monto;
+|Sistema|
+:Bloquea el salón y la cotización;
+if (¿Está cotizada (no vencida) o bloqueada,
+con el salón activo?) then (no)
+  :Responde 409 con el motivo;
+  stop
+elseif (¿Otra cotización ya está confirmada
+o bloqueada ese día?) then (sí)
+  :Responde 409 (fecha ocupada);
+  stop
+else (libre)
+  :Guarda la garantía, quién y cuándo;
+  :Estado **confirmado** y sin bloqueo;
+  :Registra el movimiento "confirmada";
 endif
+|Administrador|
+:Ve "¡Evento confirmado!";
 stop
 @enduml

@@ -1,5 +1,5 @@
 @startuml SGDE-17_Editar_precios_secuencia
-title SGDE-17 - Editar precios (RF-05)
+title SGDE-17 · Editar precios (RF-05)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,30 +13,32 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
 actor "Administrador" as AD
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-AD -> UI : Seleccionar "Editar precios"
-UI -> SI : Solicitar catálogo de conceptos
-SI -> BD : Consultar conceptos
-BD --> SI : Conceptos con su precio actual
-SI --> UI : Enviar catálogo
-UI --> AD : Mostrar conceptos con su precio actual
-AD -> UI : Seleccionar concepto e ingresar nuevo precio
-UI -> SI : Enviar nuevo precio
+AD -> UI : Editar un concepto y escribir el precio nuevo
+UI -> SI : PATCH /api/conceptos/{id}/ {precio}
 SI -> SI : Validar precio
-
-alt Precio inválido (vacío, negativo o no numérico)
-  SI --> UI : Informar error de formato
-  UI --> AD : Mostrar mensaje de error de formato
+alt Precio vacío, negativo o no numérico
+  SI --> UI : 400 en "precio"
+  UI --> AD : Mostrar el error bajo el campo
+else Concepto de otro sitio
+  SI --> UI : 404
 else Precio válido
-  SI -> BD : Actualizar precio
-  BD --> SI : Confirmar actualización
-  SI --> UI : Informar actualización exitosa
-  UI --> AD : Mostrar mensaje "Precio actualizado correctamente"
+  SI -> BD : Guardar precio anterior, nuevo, quién y cuándo\nen el historial
+  SI -> BD : Actualizar el precio del concepto
+  SI --> UI : 200 con el concepto
+  UI --> AD : Mostrar el precio nuevo
 end
+AD -> UI : Ver historial de precios
+UI -> SI : GET /api/conceptos/{id}/historial/
+SI --> UI : 200 con los cambios
 @enduml

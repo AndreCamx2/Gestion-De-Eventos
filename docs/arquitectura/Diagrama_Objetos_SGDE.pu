@@ -1,0 +1,83 @@
+@startuml Diagrama_Objetos_SGDE
+!pragma layout smetana
+title Objetos: un evento confirmado (ejemplo)
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam DefaultFontSize 12
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+
+skinparam object {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+
+object "ctg : Ciudad" as CTG {
+  codigo = "CTG"
+  nombre = "Cartagena"
+}
+object "sitio1 : Sitio" as SITIO {
+  nombre = "Sitio demo Cartagena"
+}
+object "salon1 : Salon" as SALON {
+  nombre = "Salón Bolívar"
+  activo = true
+}
+object "auditorio : Montaje" as MONTAJE {
+  codigo = "auditorio"
+}
+object "sm1 : SalonMontaje" as SM {
+  aforo = 300
+}
+object "cliente1 : Cliente" as CLIENTE {
+  tipo = "natural"
+  nombre = "María Fernanda Ríos"
+}
+object "cot7 : Cotizacion" as COT {
+  estado = "confirmado"
+  fecha_evento = 2026-12-10
+  cantidad_personas = 80
+  validez_oferta = 2026-11-30
+  garantia_tipo = "transferencia"
+  garantia_monto = 1000000
+}
+object "item1 : CotizacionItem" as ITEM {
+  cantidad = 80
+  precio_unitario = 45000
+}
+object "refrigerio : Concepto" as CONCEPTO {
+  nombre = "Refrigerio"
+  precio = 45000
+  impuesto_pct = 8
+}
+object "mov1 : MovimientoCotizacion" as MOV {
+  tipo = "confirmada"
+  detalle = "Garantía: transferencia, 1000000."
+}
+object "admin : Usuario" as USUARIO {
+  username = "admin"
+}
+
+SITIO --> CTG
+SALON --> SITIO
+SM --> SALON
+SM --> MONTAJE
+COT --> SITIO
+COT --> CLIENTE
+COT --> SALON
+COT --> MONTAJE
+COT --> USUARIO : creó
+ITEM --> COT
+ITEM --> CONCEPTO
+CONCEPTO --> SITIO
+MOV --> COT
+MOV --> USUARIO : lo hizo
+
+note bottom of COT
+  No hay entidad Evento: el evento es la propia
+  Cotizacion en estado confirmado.
+  Datos de ejemplo, no reales.
+end note
+@enduml

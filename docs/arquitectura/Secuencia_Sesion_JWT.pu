@@ -1,0 +1,54 @@
+@startuml Secuencia_Sesion_JWT
+title Sesión: login, renovación y cierre (SGDE-27, SGDE-86, SGDE-92)
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam DefaultFontSize 12
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+
+skinparam sequence {
+  ParticipantBackgroundColor #F2F2F2
+  ParticipantBorderColor black
+  LifeLineBorderColor black
+}
+autonumber
+actor "Usuario" as US
+participant "api/client.js" as CLI
+participant "simplejwt\n(/api/token/...)" as JWT
+participant "Vista protegida\n(/api/...)" as VISTA
+database "Lista negra\n(token_blacklist)" as BL
+
+US -> CLI : login(usuario, contraseña)
+CLI -> JWT : POST /api/token/
+JWT -> BL : Registrar el refresh emitido
+JWT --> CLI : access (30 min) + refresh (12 h)
+CLI -> CLI : Guardar en sessionStorage
+...
+CLI -> VISTA : GET /api/... con Authorization: Bearer access
+alt access vigente
+  VISTA --> CLI : 200
+else access vencido
+  VISTA --> CLI : 401
+  CLI -> JWT : POST /api/token/refresh/ {refresh}
+  alt refresh vigente y fuera de la lista negra
+    JWT -> BL : Poner el refresh usado en la lista negra
+    JWT --> CLI : access nuevo + refresh nuevo\n(vence a la misma hora que el del login)
+    CLI -> VISTA : Repetir la petición original
+    VISTA --> CLI : 200
+  else refresh vencido o en la lista negra
+    JWT --> CLI : 401
+    CLI --> US : "Tu sesión expiró": volver a entrar
+  end
+end
+...
+US -> CLI : Cerrar sesión
+CLI -> CLI : Borrar los tokens de la pestaña
+CLI -> JWT : POST /api/token/logout/ {refresh}\n(espera como máximo 5 s)
+JWT -> BL : Poner el refresh en la lista negra
+note over VISTA
+  El access no se invalida al cerrar sesión:
+  sirve hasta que vence (máximo 30 min).
+end note
+@enduml

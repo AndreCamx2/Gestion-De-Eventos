@@ -1,0 +1,89 @@
+@startuml SGDE-00_Casos_de_uso_general
+!pragma layout smetana
+left to right direction
+skinparam backgroundColor white
+skinparam usecase {
+  BackgroundColor #F2F2F2
+  BorderColor black
+  FontSize 12
+}
+skinparam rectangle {
+  BorderColor black
+  FontSize 13
+  FontStyle bold
+}
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+  FontSize 11
+}
+skinparam ArrowColor black
+skinparam actorStyle awesome
+title SGDE · Casos de uso generales de la beta
+
+actor "Administrador" as AD
+
+rectangle "SGDE" {
+  package "Parametrización" {
+    usecase "Gestionar sitios" as UC_SITIOS
+    usecase "Gestionar usuarios internos" as UC_USUARIOS
+    usecase "Gestionar salones y montajes" as UC_SALONES
+    usecase "Gestionar conceptos y precios" as UC_CONCEPTOS
+    usecase "Gestionar clientes y empresas" as UC_CLIENTES
+    usecase "Gestionar proveedores y stock" as UC_PROVEEDORES
+    usecase "Comparar precios por elemento" as UC_COMPARAR
+  }
+  package "Ciclo de la cotización" {
+    usecase "Consultar disponibilidad\n(calendario y rack)" as UC_DISPO
+    usecase "Generar cotización" as UC_COTIZAR
+    usecase "Extender vigencia" as UC_VIGENCIA
+    usecase "Bloquear o liberar salón" as UC_BLOQUEO
+    usecase "Registrar garantía\ny confirmar evento" as UC_CONFIRMAR
+    usecase "Cancelar evento" as UC_CANCELAR
+    usecase "Imprimir cotización (PDF)" as UC_PDF
+    usecase "Consultar histórico\ny movimientos" as UC_HISTORICO
+    usecase "Liberar bloqueos vencidos" as UC_LIBERAR_AUTO
+  }
+  package "Acceso" {
+    usecase "Iniciar sesión" as UC_LOGIN
+    usecase "Cerrar sesión" as UC_LOGOUT
+    usecase "Recuperar contraseña" as UC_CLAVE
+    usecase "Registrarse como cliente" as UC_REG
+  }
+  usecase "Actualizar mi stock" as UC_MISTOCK
+}
+
+actor "Usuario" as US
+actor "Proveedor" as PR
+actor "Cliente" as CL
+actor "Visitante\n(sin sesión)" as VI
+actor "Sistema\n(tiempo)" as SIS
+
+AD --> UC_SITIOS
+AD --> UC_USUARIOS
+AD --> UC_SALONES
+AD --> UC_CONCEPTOS
+AD --> UC_CLIENTES
+AD --> UC_PROVEEDORES
+AD --> UC_COMPARAR
+AD --> UC_DISPO
+AD --> UC_COTIZAR
+AD --> UC_VIGENCIA
+AD --> UC_BLOQUEO
+AD --> UC_CONFIRMAR
+AD --> UC_CANCELAR
+AD --> UC_PDF
+AD --> UC_HISTORICO
+
+UC_LOGIN <-- US
+UC_LOGOUT <-- US
+UC_MISTOCK <-- PR
+UC_CLAVE <-- VI
+UC_REG <-- VI
+UC_LIBERAR_AUTO <-- SIS
+US <|-- PR
+US <|-- CL
+
+note "El Administrador también es un Usuario:\ninicia y cierra sesión como los demás.\nEn la beta, el Cliente solo se registra,\nentra y ve su inicio." as N1
+N1 .. CL
+@enduml

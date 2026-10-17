@@ -1,0 +1,54 @@
+@startuml Secuencia_Diseno_Bloquear_Aceptar
+title Diseño: bloquear y confirmar sin sobreventa (estados.py)
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam DefaultFontSize 12
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+
+skinparam sequence {
+  ParticipantBackgroundColor #F2F2F2
+  ParticipantBorderColor black
+  LifeLineBorderColor black
+}
+autonumber
+actor "Administrador" as AD
+participant "AccionSobreCotizacionView\n(views.py)" as VISTA
+participant "estados.py" as EST
+database "PostgreSQL" as DB
+
+AD -> VISTA : POST /cotizaciones/{id}/bloqueo/ o /aceptacion/
+VISTA -> EST : liberar_bloqueos_vencidos(usuario)
+EST -> DB : SELECT ... FOR UPDATE SKIP LOCKED\n(bloqueos vencidos de sus sitios)
+EST -> DB : Pasarlos a cotizado + movimiento del sistema
+VISTA -> DB : BEGIN (transaction.atomic)
+VISTA -> EST : tomar_para_cambio(queryset de sus sitios, id)
+EST -> DB : SELECT Salon FOR UPDATE
+EST -> DB : SELECT Cotizacion FOR UPDATE
+note right
+  Siempre primero el Salón y después la
+  Cotización: dos acciones sobre el mismo
+  salón esperan en fila (sin deadlock).
+end note
+alt bloquear
+  VISTA -> EST : bloquear(cotizacion, hasta, usuario)
+  EST -> EST : ¿cotizado, no vencida, salón activo?\nsi no: Conflicto (409)
+  EST -> DB : ¿Otra confirmada o bloqueada vigente\nese día en ese salón?
+  EST -> DB : UPDATE estado = bloqueado, bloqueo_hasta
+  EST -> DB : INSERT MovimientoCotizacion "bloqueada"
+else aceptar
+  VISTA -> EST : aceptar(cotizacion, tipo, monto, usuario)
+  EST -> DB : ¿Otra confirmada o bloqueada vigente?
+  EST -> DB : SAVEPOINT; UPDATE estado = confirmado
+  alt Choca con uq_salon_fecha_confirmado
+    DB --> EST : IntegrityError
+    EST --> VISTA : Conflicto "El salón ya está confirmado para esa fecha"
+  else Guardado
+    EST -> DB : INSERT MovimientoCotizacion "confirmada"
+  end
+end
+VISTA -> DB : COMMIT (o ROLLBACK si hubo Conflicto)
+VISTA --> AD : 200 con la cotización, o 409 {detail}
+@enduml
