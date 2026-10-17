@@ -1,5 +1,5 @@
 @startuml SGDE-19_Definir_vigencia_secuencia
-title SGDE-19 - Definir vigencia (RF-07)
+title SGDE-19 · Definir vigencia (RF-07)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,26 +13,34 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
-actor "Ejecutivo comercial" as EC
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+actor "Administrador" as AD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-EC -> UI : Seleccionar cotización y "Definir vigencia"
-UI --> EC : Solicitar fecha límite
-EC -> UI : Ingresar fecha límite de vigencia
-UI -> SI : Enviar fecha límite
-SI -> SI : Validar fecha límite
-
-alt Fecha límite inválida (anterior a hoy)
-  SI --> UI : Informar fecha inválida
-  UI --> EC : Mostrar mensaje "La fecha límite no es válida"
-else Fecha límite válida (CP-12)
-  SI -> BD : Guardar vigencia y actualizar vencimiento del bloqueo
-  BD --> SI : Confirmar actualización
-  SI --> UI : Informar vigencia definida
-  UI --> EC : Mostrar mensaje "Salón bloqueado temporalmente hasta la fecha límite"
+AD -> UI : En el detalle, "Extender vigencia" con una fecha nueva
+UI -> SI : PATCH /api/cotizaciones/{id}/ {validez_oferta}
+SI -> BD : Bloquear las filas del salón y de la cotización
+alt No está en estado cotizado, o el salón está de baja
+  SI --> UI : 409 con el motivo
+  UI --> AD : Mostrar el aviso de conflicto
+else Fecha antes de hoy o después del evento
+  SI --> UI : 400 en "validez_oferta"
+  UI --> AD : Mostrar el error bajo el campo
+else Fecha válida
+  SI -> BD : Guardar la nueva vigencia
+  SI -> BD : Guardar movimiento "vigencia" (fecha anterior → nueva)
+  SI --> UI : 200 con la cotización
+  UI --> AD : Mostrar la nueva fecha de validez
 end
+note over UI, SI
+  La vigencia es de la OFERTA (precio), no del bloqueo:
+  el bloqueo tiene su propia hora límite (SGDE-15).
+end note
 @enduml

@@ -1,5 +1,5 @@
 @startuml SGDE-21_Confirmar_evento_secuencia
-title SGDE-21 - Confirmar evento (RF-09)
+title SGDE-21 · Confirmar evento (RF-09)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,26 +13,39 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
-actor "Ejecutivo comercial" as EC
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+actor "Administrador" as AD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-EC -> UI : Seleccionar evento y "Confirmar evento"
-UI -> SI : Enviar solicitud de confirmación
-SI -> BD : Consultar aceptación y garantía del evento
-BD --> SI : Aceptación y garantía
-SI -> SI : Verificar condiciones de garantía
-
-alt Garantía no verificada o no aprobada
-  SI --> UI : Informar condiciones incumplidas
-  UI --> EC : Mostrar mensaje "No se cumplen las condiciones de garantía"
-else Condiciones de garantía aprobadas (CP-16)
-  SI -> BD : Cambiar estado a "Confirmado" y bloquear horario definitivamente
-  BD --> SI : Confirmar actualización
-  SI --> UI : Informar evento confirmado
-  UI --> EC : Mostrar mensaje "Evento confirmado"
+AD -> UI : Registrar la garantía de la cotización
+UI -> SI : POST /api/cotizaciones/{id}/aceptacion/ {tipo, monto}
+SI -> BD : Bloquear las filas del salón y de la cotización
+SI -> BD : ¿Otra cotización confirmada o bloqueada\nen ese salón y fecha?
+BD --> SI : Resultado
+alt Fecha ocupada
+  SI --> UI : 409 (fecha ocupada)
+  UI --> AD : Mostrar el aviso de conflicto
+else Fecha libre (CP-16)
+  SI -> BD : Estado = confirmado, sin bloqueo
+  alt Otra petición confirmó la misma fecha un instante antes
+    BD --> SI : Error de unicidad (salón, fecha, confirmado)
+    SI --> UI : 409 "El salón ya está confirmado para esa fecha"
+    UI --> AD : Mostrar el aviso de conflicto
+  else Guardado
+    SI -> BD : Guardar movimiento "confirmada"
+    SI --> UI : 200 con la cotización confirmada
+    UI --> AD : Mostrar "¡Evento confirmado!"
+  end
 end
+note over SI, BD
+  Confirmar no es un paso aparte: registrar la garantía confirma.
+  La base de datos impide dos confirmadas en el mismo salón y fecha.
+end note
 @enduml

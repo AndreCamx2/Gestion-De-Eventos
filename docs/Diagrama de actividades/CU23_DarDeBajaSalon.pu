@@ -1,0 +1,36 @@
+@startuml CU23_DarDeBajaSalon
+title CU-23 · Dar de baja un salón (SGDE-99)
+skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+
+|Administrador|
+start
+:Abre Salones y elige "Dar de baja";
+|Sistema|
+if (¿Tiene cotizaciones activas?
+(evento de hoy en adelante: bloqueada,
+confirmada o cotizada no vencida)) then (sí)
+  :Responde 409 y no lo da de baja;
+  stop
+else (no)
+  :Lo marca inactivo;
+endif
+|Administrador|
+:Deja de verlo en la lista
+y no se puede cotizar;
+note right
+  No se borra: sus cotizaciones
+  pasadas lo conservan.
+end note
+stop
+@enduml

@@ -1,5 +1,5 @@
 @startuml SGDE-12_Registrar_salon_secuencia
-title SGDE-12 - Registrar salón (RF-02)
+title SGDE-12 · Registrar salón (RF-02)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,26 +13,28 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
 actor "Administrador" as AD
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-AD -> UI : Seleccionar "Registrar salón"
-UI --> AD : Mostrar formulario de salón
-AD -> UI : Ingresar nombre, dimensiones, capacidad, características y fotos
-UI -> SI : Enviar datos del salón
-SI -> SI : Validar formato de dimensiones y capacidad
-
-alt Capacidad negativa o dimensiones no numéricas (CP-05)
-  SI --> UI : Informar error de formato
-  UI --> AD : Mostrar mensaje de error de formato
+AD -> UI : Abrir Salones y "Nuevo salón"
+AD -> UI : Sitio, nombre, alto, ancho y foto (URL)
+UI -> SI : POST /api/salones/
+SI -> SI : Validar campos y que el sitio sea del administrador
+alt Medidas negativas o no numéricas, o sitio ajeno (CP-05)
+  SI --> UI : 400 con el error de cada campo
+  UI --> AD : Mostrar el error bajo cada campo
 else Datos válidos (CP-04)
-  SI -> BD : Guardar salón con estado "Disponible"
-  BD --> SI : Confirmar registro
-  SI --> UI : Informar registro exitoso
-  UI --> AD : Mostrar mensaje "Salón registrado y disponible"
+  SI -> BD : Guardar salón activo
+  BD --> SI : Salón guardado
+  SI --> UI : 201 con el salón
+  UI --> AD : Mostrar el salón; falta habilitar sus montajes
 end
 @enduml
