@@ -306,9 +306,9 @@ class ListadoCotizacionesTests(CotizacionBaseTest):
         for dias in range(20, 25):
             self.crear_en_bd(fecha_evento=hoy() + timedelta(days=dias))
         self.client.force_authenticate(user=self.admin)
-        # cotizaciones (con joins) + items + conceptos, sin importar cuántas haya, más 3
-        # fijas de liberar los bloqueos vencidos: savepoint, SELECT ... FOR UPDATE y release.
-        with self.assertNumQueries(6):
+        # cotizaciones (con joins) + items + conceptos, sin importar cuántas haya.
+        # SGDE-118: el GET ya no libera bloqueos, así que no hay consultas fijas de más.
+        with self.assertNumQueries(3):
             self.client.get(LISTA)
 
 
@@ -765,8 +765,9 @@ class BloqueoTests(CotizacionBaseTest):
 
 
 class LiberacionAutomaticaTests(CotizacionBaseTest):
-    """Los bloqueos vencidos se liberan al leer (no hay tareas programadas en Render Free)."""
+    """SGDE-118: un GET no escribe. El bloqueo vencido se ve como cotizado y se libera con una acción o con el comando."""
 
+   
     def setUp(self):
         self.client.force_authenticate(user=self.admin)
         self.vencido = self.crear_en_bd(estado="bloqueado")
@@ -782,21 +783,28 @@ class LiberacionAutomaticaTests(CotizacionBaseTest):
         self.assertEqual((self.vencido.estado, self.vencido.bloqueo_hasta), ("cotizado", None))
         self.assertEqual(self.vigente.estado, "bloqueado")
 
+    def assertSinEscribir(self):
+        # Un GET no cambia la base: el vencido sigue bloqueado y sin movimiento hasta que lo libere una acción o el comando.
+        self.vencido.refresh_from_db()
+        self.assertEqual(self.vencido.estado, "bloqueado")
+        self.assertIsNotNone(self.vencido.bloqueo_hasta)
+        self.assertFalse(MovimientoCotizacion.objects.filter(cotizacion=self.vencido).exists())    
+
     def test_al_listar(self):
         filas = {c["id"]: c for c in self.client.get(LISTA).data}
         self.assertEqual(filas[self.vencido.pk]["estado"], "cotizado")
         self.assertIsNone(filas[self.vencido.pk]["bloqueo_hasta"])
-        self.assertLiberado()
+        self.assertSinEscribir()
 
     def test_al_ver_el_detalle(self):
         self.assertEqual(self.client.get(detalle(self.vencido.pk)).data["estado"], "cotizado")
-        self.assertLiberado()
+        self.assertSinEscribir()
 
     def test_al_ver_el_calendario(self):
         filas = {c["id"]: c for c in self.client.get("/api/calendario/").data}
         self.assertEqual(filas[self.vencido.pk]["estado"], "cotizado")
         self.assertEqual(filas[self.vigente.pk]["estado"], "bloqueado")
-        self.assertLiberado()
+        self.assertSinEscribir()
 
     def test_con_el_comando(self):
         salida = StringIO()
@@ -1001,6 +1009,9 @@ class MovimientosTests(CotizacionBaseTest):
         cot.bloqueo_hasta = timezone.now() - timedelta(minutes=1)
         cot.save()
         self.client.get(LISTA)
+        # SGDE-118: leer no libera ni deja movimiento; lo deja el comando (o la siguiente acción).
+        self.assertFalse(MovimientoCotizacion.objects.filter(cotizacion=cot).exists())
+        call_command("liberar_bloqueos", stdout=StringIO())
         movimiento = MovimientoCotizacion.objects.get(cotizacion=cot)
         self.assertEqual((movimiento.tipo, movimiento.usuario), ("liberada", None))
         self.assertEqual(self.tipos_y_usuarios(cot), [("liberada", "sistema")])
@@ -1126,3 +1137,96 @@ class CrearConBloqueoDelMontajeTests(CotizacionBaseTest):
             r = self.client.post(LISTA, self.payload(), format="json")
         self.assertEqual(r.status_code, status.HTTP_201_CREATED, r.data)
         self.assertEqual(consultas_for_update(contexto), {"salones_salon", "salones_salonmontaje"})
+
+
+class GetNoEscribeSGDE118Tests(CotizacionBaseTest):
+    # SGDE-118: los GET no escriben; el estado se calcula al leer y liberan las acciones y el comando.
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+        self.vencida = self.crear_en_bd(estado="bloqueado")
+        Cotizacion.objects.filter(pk=self.vencida.pk).update(bloqueo_hasta=timezone.now() - timedelta(hours=1))
+
+    def escrituras(self, url):
+        # Las sentencias que modifican datos durante un GET.
+        with CaptureQueriesContext(connection) as consultas:
+            r = self.client.get(url)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        return [
+            q["sql"] for q in consultas
+            if q["sql"].lstrip().upper().startswith(("UPDATE", "INSERT", "DELETE"))
+            or "FOR UPDATE" in q["sql"].upper()
+        ]
+
+    def test_listado_y_detalle_no_escriben(self):
+        for url in (LISTA, detalle(self.vencida.pk)):
+            with self.subTest(url=url):
+                self.assertEqual(self.escrituras(url), [])
+        self.vencida.refresh_from_db()
+        self.assertEqual(self.vencida.estado, "bloqueado")
+        self.assertFalse(MovimientoCotizacion.objects.filter(cotizacion=self.vencida, tipo="liberada").exists())
+
+    def test_bloqueo_vencido_se_muestra_como_cotizado(self):
+        r = self.client.get(detalle(self.vencida.pk))
+        self.assertEqual(r.data["estado"], "cotizado")
+        self.assertIsNone(r.data["bloqueo_hasta"])
+        fila = next(c for c in self.client.get(LISTA).data if c["id"] == self.vencida.pk)
+        self.assertEqual(fila["estado"], "cotizado")
+        self.assertIsNone(fila["bloqueo_hasta"])
+
+    def test_filtro_por_estado_usa_el_estado_efectivo(self):
+        vigente = self.crear_en_bd(estado="bloqueado", fecha_evento=hoy() + timedelta(days=31))
+        Cotizacion.objects.filter(pk=vigente.pk).update(bloqueo_hasta=timezone.now() + timedelta(hours=2))
+        bloqueadas = [c["id"] for c in self.client.get(LISTA, {"estado": "bloqueado"}).data]
+        cotizadas = [c["id"] for c in self.client.get(LISTA, {"estado": "cotizado"}).data]
+        self.assertEqual(bloqueadas, [vigente.pk])
+        self.assertEqual(cotizadas, [self.vencida.pk])
+
+    def test_una_accion_libera_solo_los_vencidos_de_sus_sitios(self):
+        ajeno = Sitio.objects.create(nombre="Hotel Ajeno", ciudad=Ciudad.objects.get(codigo="CTG"))
+        salon_ajeno = Salon.objects.create(sitio=ajeno, nombre="Salón Ajeno")
+        vencida_ajena = Cotizacion.objects.create(
+            sitio=ajeno, cliente=self.cliente, usuario=self.admin, salon=salon_ajeno,
+            montaje=self.montaje, estado="bloqueado", cantidad_personas=10,
+            fecha_evento=hoy() + timedelta(days=30), bloqueo_hasta=timezone.now() - timedelta(hours=1),
+        )
+        otra = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=40))
+        r = self.client.patch(detalle(otra.pk), {"validez_oferta": str(hoy() + timedelta(days=3))}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+
+        self.vencida.refresh_from_db()
+        vencida_ajena.refresh_from_db()
+        self.assertEqual(self.vencida.estado, "cotizado")
+        self.assertTrue(
+            MovimientoCotizacion.objects.filter(cotizacion=self.vencida, tipo="liberada", usuario__isnull=True).exists()
+        )
+        self.assertEqual(vencida_ajena.estado, "bloqueado")  # de un sitio que el usuario no administra
+
+    def test_activas_usa_el_estado_efectivo(self):
+        # El bloqueo vencido cuenta como cotizado: activo solo si su oferta sigue vigente.
+        self.assertIn(self.vencida, Cotizacion.objects.activas())
+        Cotizacion.objects.filter(pk=self.vencida.pk).update(validez_oferta=hoy() - timedelta(days=1))
+        self.assertNotIn(self.vencida, Cotizacion.objects.activas())
+        vigente = self.crear_en_bd(estado="bloqueado", fecha_evento=hoy() + timedelta(days=31))
+        Cotizacion.objects.filter(pk=vigente.pk).update(
+            bloqueo_hasta=timezone.now() + timedelta(hours=2), validez_oferta=hoy() - timedelta(days=1)
+        )
+        self.assertIn(vigente, Cotizacion.objects.activas())
+
+    def test_bloqueo_vencido_con_oferta_vencida_no_impide_dar_de_baja_el_salon(self):
+        # Antes daba un 409 falso: activas() leía "bloqueado" de la base sin mirar bloqueo_hasta.
+        Cotizacion.objects.filter(pk=self.vencida.pk).update(validez_oferta=hoy() - timedelta(days=1))
+        r = self.client.patch(f"/api/salones/{self.salon.pk}/", {"activo": False}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+
+    def test_historial_del_cliente_muestra_el_estado_efectivo(self):
+        r = self.client.get(f"/api/clientes/{self.cliente.pk}/")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        fila = next(c for c in r.data["cotizaciones"] if c["id"] == self.vencida.pk)
+        self.assertEqual(fila["estado"], "cotizado")
+
+    def test_el_comando_libera_los_vencidos_de_todos_los_sitios(self):
+        call_command("liberar_bloqueos")
+        self.vencida.refresh_from_db()
+        self.assertEqual(self.vencida.estado, "cotizado")
+        self.assertIsNone(self.vencida.bloqueo_hasta)

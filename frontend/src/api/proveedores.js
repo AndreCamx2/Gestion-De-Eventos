@@ -1,19 +1,16 @@
 import { apiFetch } from "./client";
+import { comoLista, todasLasPaginas } from "./listas";
 
 // Este módulo es para administrador (EsAdministrador en el backend), salvo
 // "Mi stock", que es del proveedor (EsProveedor).
 // Usa apiFetch directo: los errores conservan error.status y error.body, así la
-// pantalla distingue un 401 de un 400. DRF puede devolver una lista simple o un
-// objeto paginado { count, results }: las listas aceptan ambas formas.
+// pantalla distingue un 401 de un 400. Las listas aceptan una lista simple o un
+// objeto paginado (api/listas.js).
 // Del stock se editan la cantidad y el valor (SGDE-98). No hay borrar, ni de
 // proveedores ni de stock: un elemento agotado queda con cantidad 0.
-function comoLista(data) {
-  return Array.isArray(data) ? data : data?.results ?? [];
-}
-
 // GET /api/proveedores/ → [{ id, nombre, identificacion, contacto }]
 export async function listarProveedores() {
-  return comoLista(await apiFetch("/proveedores/", { method: "GET" }));
+  return todasLasPaginas("/proveedores/");
 }
 
 // POST /api/proveedores/. Solo el nombre es obligatorio.
@@ -37,7 +34,7 @@ export function vincularUsuarioProveedor(id, usuario) {
 // GET /api/stock/ → [{ id, proveedor, nombre_elemento, cantidad, valor, actualizado_en }]
 // Trae el stock de TODOS los proveedores: la pantalla lo filtra por proveedor.
 export async function listarStock() {
-  return comoLista(await apiFetch("/stock/", { method: "GET" }));
+  return todasLasPaginas("/stock/");
 }
 
 // POST /api/stock/. Un elemento no se repite en el mismo proveedor.
@@ -63,7 +60,7 @@ export function editarStock(id, cambios) {
 
 // GET /api/mi-stock/ → mismos campos que /stock/, solo los del proveedor.
 export async function listarMiStock() {
-  return comoLista(await apiFetch("/mi-stock/", { method: "GET" }));
+  return todasLasPaginas("/mi-stock/");
 }
 
 // POST /api/mi-stock/ { nombre_elemento, cantidad, valor }.

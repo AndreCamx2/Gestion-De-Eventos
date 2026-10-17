@@ -6,12 +6,15 @@ from apps.usuarios.validators import errores_password
 from apps.sitios.acceso import sitios_del_usuario
 from apps.sitios.models import Ciudad
 from apps.cotizaciones.models import Cotizacion
+from apps.cotizaciones.serializers import EstadoEfectivoMixin
 from .models import Cliente, Empresa
 
 
-class CotizacionResumenSerializer(serializers.ModelSerializer):
+class CotizacionResumenSerializer(EstadoEfectivoMixin, serializers.ModelSerializer):
     # Historial del detalle del cliente. vencida usa la property del modelo y
     # validez_oferta le dice a la pantalla cuándo venció (SGDE-95).
+    # EstadoEfectivoMixin: un bloqueo vencido sin liberar sale como cotizado, igual
+    # que en el listado de cotizaciones (SGDE-118).
     vencida = serializers.BooleanField(read_only=True)
 
     class Meta:

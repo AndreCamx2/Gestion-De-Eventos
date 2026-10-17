@@ -112,12 +112,13 @@ describe("Cancelar un evento (SGDE-68)", () => {
 });
 
 describe("Vista imprimible (SGDE-70)", () => {
-  it("ofrece la cotización imprimible en una pestaña aparte", async () => {
+  it("ofrece la cotización imprimible en la misma pestaña", async () => {
+    // Otra pestaña copiaría la sesión, y la rotación del token (SGDE-92) dejaría
+    // sin sesión a una de las dos al renovar.
     abrirDetalle({ "GET /cotizaciones/7/": [200, BASE] });
     const enlace = await screen.findByRole("link", { name: "Imprimir o PDF" });
 
     expect(enlace).toHaveAttribute("href", "/cotizaciones/7/imprimir");
-    expect(enlace).toHaveAttribute("target", "_blank");
-    expect(enlace).toHaveAttribute("rel", "opener");
+    expect(enlace).not.toHaveAttribute("target");
   });
 });
