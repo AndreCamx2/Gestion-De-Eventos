@@ -1,10 +1,7 @@
 import { apiFetch } from "./client";
+import { todasLasPaginas } from "./listas";
 
-// Solo administrador (EsAdministrador en el backend). DRF puede devolver una
-// lista simple o un objeto paginado { count, results }: se aceptan ambas formas.
-function comoLista(data) {
-  return Array.isArray(data) ? data : data?.results ?? [];
-}
+// Solo administrador (EsAdministrador en el backend).
 
 // GET /api/usuarios/ → [{ id, username, rol, rol_codigo, sitios: [ids], is_active, ... }]
 // Por defecto solo trae usuarios activos, y nunca superusuarios (SGDE-90).
@@ -14,11 +11,11 @@ export async function listarUsuarios({ incluirInactivos = false, rol } = {}) {
   if (incluirInactivos) parametros.set("incluir_inactivos", "true");
   if (rol) parametros.set("rol", rol);
   const query = parametros.size ? `?${parametros}` : "";
-  return comoLista(await apiFetch(`/usuarios/${query}`, { method: "GET" }));
+  return todasLasPaginas(`/usuarios/${query}`);
 }
 
 export async function listarRoles() {
-  return comoLista(await apiFetch("/roles/", { method: "GET" }));
+  return todasLasPaginas("/roles/");
 }
 
 export function crearUsuario(datos) {

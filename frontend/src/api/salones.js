@@ -1,11 +1,7 @@
 import { apiFetch } from "./client";
+import { todasLasPaginas } from "./listas";
 
 // Todo este módulo es solo para administrador (EsAdministrador en el backend).
-// DRF puede devolver una lista simple o un objeto paginado { count, results },
-// así que las listas aceptan ambas formas.
-function comoLista(data) {
-  return Array.isArray(data) ? data : data?.results ?? [];
-}
 
 // "4,5" → "4.5": en Colombia se escribe con coma; el API espera punto.
 // Vacío → null: ancho y altura son opcionales y un "" no es un número válido.
@@ -18,7 +14,7 @@ function decimalOpcional(valor) {
 // Solo los activos, salvo incluirInactivos (SGDE-99).
 export async function listarSalones({ incluirInactivos = false } = {}) {
   const query = incluirInactivos ? "?incluir_inactivos=true" : "";
-  return comoLista(await apiFetch(`/salones/${query}`, { method: "GET" }));
+  return todasLasPaginas(`/salones/${query}`);
 }
 
 // POST /api/salones/. El nombre es único dentro de cada sitio.
@@ -37,13 +33,13 @@ export function crearSalon({ sitio, nombre, ancho, altura, foto_url }) {
 
 // GET /api/montajes/ → catálogo: [{ id, codigo, nombre, descripcion }]
 export async function listarMontajes() {
-  return comoLista(await apiFetch("/montajes/", { method: "GET" }));
+  return todasLasPaginas("/montajes/");
 }
 
 // GET /api/salon-montajes/ → [{ id, salon, montaje, aforo, foto_url }]
 // No tiene filtros: trae todos y la pantalla los agrupa por salón.
 export async function listarSalonMontajes() {
-  return comoLista(await apiFetch("/salon-montajes/", { method: "GET" }));
+  return todasLasPaginas("/salon-montajes/");
 }
 
 // POST /api/salon-montajes/. Un montaje no se repite en el mismo salón.
