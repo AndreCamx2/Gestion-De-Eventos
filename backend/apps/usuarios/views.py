@@ -4,10 +4,13 @@ from rest_framework import filters, generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .serializers import (
     RestablecerClaveSerializer, RolSerializer, SolicitarRecuperacionSerializer, UsuarioRegistroSerializer,
     UsuarioMeSerializer, UsuarioAdminSerializer,
 )
+from .correos import en_segundo_plano
+from .limites import ConLimiteDeIntentos
 from .recuperacion import cambiar_clave, solicitar_recuperacion, usuario_del_enlace
 from .validators import validar_password_candidata
 from .models import Rol, Usuario
@@ -122,7 +125,9 @@ class SolicitarRecuperacionView(APIView):
     def post(self, request):
         serializer = SolicitarRecuperacionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        solicitar_recuperacion(serializer.validated_data["email"])
+        # Fuera de la petición (SGDE-96): buscar el correo y enviarlo tarda distinto si
+        # existe, y ese tiempo revelaría qué correos están registrados.
+        en_segundo_plano(solicitar_recuperacion, serializer.validated_data["email"])
         return Response({"detail": MSG_SOLICITUD_RECIBIDA})
 
 
@@ -147,3 +152,19 @@ class RestablecerClaveView(APIView):
         )
         cambiar_clave(usuario, datos["password"])
         return Response({"detail": MSG_CLAVE_ACTUALIZADA})
+
+
+# --- Login y renovación con límite de intentos por IP (SGDE-112) ---------------
+# Mismas vistas de simplejwt (y los serializers de SIMPLE_JWT), con un tope por IP
+# para frenar la fuerza bruta. Las tasas están en DEFAULT_THROTTLE_RATES (settings.py).
+
+class LoginView(ConLimiteDeIntentos, TokenObtainPairView):
+    """POST /api/token/ → {access, refresh}. Pasado el límite responde 429."""
+
+    throttle_scope = "login"
+
+
+class RenovarTokenView(ConLimiteDeIntentos, TokenRefreshView):
+    """POST /api/token/refresh/ → {access, refresh}. Pasado el límite responde 429."""
+
+    throttle_scope = "renovar_token"

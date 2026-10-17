@@ -48,6 +48,18 @@ describe("Login", () => {
     expect(onLoginSuccess).not.toHaveBeenCalled();
   });
 
+  it("con demasiados intentos avisa que espere (SGDE-112)", async () => {
+    simularApi({ "POST /token/": [429, { detail: "Hiciste muchos intentos seguidos." }] });
+    const { usuario } = abrirLogin();
+
+    await usuario.type(screen.getByLabelText(/usuario o correo/i), "admin");
+    await usuario.type(screen.getByLabelText(/contraseña/i), "clave-mala");
+    await usuario.click(screen.getByRole("button", { name: /iniciar sesión/i }));
+
+    expect(await screen.findByText(/muchos intentos seguidos/i)).toBeInTheDocument();
+    expect(screen.queryByText("Usuario o contraseña incorrectos.")).not.toBeInTheDocument();
+  });
+
   it("sin datos no llama al servidor y pide los dos campos", async () => {
     const llamadas = simularApi({});
     const { usuario } = abrirLogin();

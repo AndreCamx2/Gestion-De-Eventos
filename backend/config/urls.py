@@ -1,9 +1,10 @@
 from django.contrib import admin
 from django.urls import path
-from rest_framework_simplejwt.views import TokenBlacklistView, TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenBlacklistView
 from apps.usuarios.views import (
     RegistrarUsuarioView, MeView, RolListView, UsuarioListCreateView, UsuarioDetailView,
     SolicitarRecuperacionView, RestablecerClaveView,
+    LoginView, RenovarTokenView,
 )
 from apps.sitios.views import SitioListCreateView, CiudadListView
 from apps.salones.views import (
@@ -26,8 +27,8 @@ from apps.cotizaciones.views import (
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/', LoginView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', RenovarTokenView.as_view(), name='token_refresh'),
     # Logout (SGDE-92): {"refresh": ...} → lista negra. Público como /token/: sirve
     # aunque el access ya haya vencido.
     path('api/token/logout/', TokenBlacklistView.as_view(), name='token_logout'),

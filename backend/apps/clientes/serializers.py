@@ -149,13 +149,22 @@ class ClienteAdminSerializer(serializers.ModelSerializer):
         return data
 
 
+MSG_IDENTIFICACION_REPETIDA = "Ya existe una cuenta con esta identificación."
+MSG_NIT_REPETIDO = "Ya existe una empresa registrada con este NIT."
+
+
 class RegistroPublicoSerializer(serializers.Serializer):
     tipo = serializers.ChoiceField(choices=Cliente.TIPO_CHOICES)
     nombre = serializers.CharField(max_length=150)
     identificacion = serializers.CharField(max_length=30)
     telefono = serializers.CharField(max_length=20, required=False, allow_blank=True)
     email = serializers.EmailField()
-    ciudad = serializers.CharField(max_length=10)  # código, ej. "CTG"
+    # Código de la ciudad, ej. "CTG". SGDE-115: un código que no existe da 400 en
+    # "ciudad" (antes Ciudad.objects.get() lanzaba DoesNotExist y el API daba 500).
+    ciudad = serializers.SlugRelatedField(
+        slug_field="codigo", queryset=Ciudad.objects.all(),
+        error_messages={"does_not_exist": "La ciudad no es válida.", "invalid": "La ciudad no es válida."},
+    )
     password = serializers.CharField(write_only=True, min_length=8)
 
     # Solo si tipo = "juridica"
@@ -169,6 +178,14 @@ class RegistroPublicoSerializer(serializers.Serializer):
             errores["razon_social"] = "La razón social es obligatoria para clientes jurídicos."
         if Usuario.objects.filter(username=data["email"]).exists():
             errores["email"] = "Ya existe una cuenta con este correo."
+        # SGDE-115: la identificación repetida se informa en su campo. Antes llegaba
+        # al unique de la base y salía el 400 genérico de IntegrityError, sin campo.
+        # Natural: Cliente.identificacion. Jurídico: es el NIT, que vive en Empresa.
+        if data["tipo"] == Cliente.JURIDICA:
+            if Empresa.objects.filter(identificacion=data["identificacion"]).exists():
+                errores["identificacion"] = MSG_NIT_REPETIDO
+        elif Cliente.objects.filter(identificacion=data["identificacion"]).exists():
+            errores["identificacion"] = MSG_IDENTIFICACION_REPETIDA
         mensajes = errores_password(
             data["password"], username=data["email"], email=data["email"], first_name=data["nombre"],
         )
@@ -180,7 +197,7 @@ class RegistroPublicoSerializer(serializers.Serializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        ciudad = Ciudad.objects.get(codigo=validated_data["ciudad"])
+        ciudad = validated_data["ciudad"]  # ya es la Ciudad (SlugRelatedField)
         rol_cliente = Rol.objects.get(codigo="cliente")
 
         usuario = Usuario(username=validated_data["email"], email=validated_data["email"], rol=rol_cliente)
