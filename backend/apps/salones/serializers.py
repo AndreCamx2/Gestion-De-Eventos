@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db.models import Max
 from rest_framework import serializers
 from apps.cotizaciones.models import Cotizacion
@@ -23,6 +25,11 @@ class SalonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Salon
         fields = ["id", "sitio", "sitio_nombre", "nombre", "altura", "ancho", "foto_url", "activo"]
+        # Una medida negativa no tiene sentido (CP-05). Siguen siendo opcionales.
+        extra_kwargs = {
+            campo: {"min_value": Decimal("0"), "error_messages": {"min_value": "No puede ser negativo."}}
+            for campo in ("altura", "ancho")
+        }
 
     def validate_sitio(self, value):
         # Sus cotizaciones, conceptos y montajes son de ese sitio: moverlo los dejaría cruzados.
