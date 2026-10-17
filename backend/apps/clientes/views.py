@@ -1,6 +1,6 @@
 from django.db import transaction
 from rest_framework import generics, permissions, filters
-from apps.usuarios.correos import enviar_bienvenida
+from apps.usuarios.correos import en_segundo_plano, enviar_bienvenida
 from apps.usuarios.limites import ConLimiteDeIntentos
 from .serializers import RegistroPublicoSerializer, ClienteAdminSerializer, EmpresaSerializer
 from .models import Cliente, Empresa
@@ -15,7 +15,8 @@ class RegistroPublicoView(ConLimiteDeIntentos, generics.CreateAPIView):
 
     def perform_create(self, serializer):
         cliente = serializer.save()
-        transaction.on_commit(lambda: enviar_bienvenida(cliente))
+        # Después del commit y fuera de la petición: un SMTP lento no demora el registro (SGDE-96).
+        transaction.on_commit(lambda: en_segundo_plano(enviar_bienvenida, cliente))
 
 
 # Clientes y empresas son COMPARTIDOS entre sitios (decisión de diseño, SGDE-90):

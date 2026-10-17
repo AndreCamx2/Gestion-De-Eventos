@@ -9,6 +9,7 @@ from .serializers import (
     RestablecerClaveSerializer, RolSerializer, SolicitarRecuperacionSerializer, UsuarioRegistroSerializer,
     UsuarioMeSerializer, UsuarioAdminSerializer,
 )
+from .correos import en_segundo_plano
 from .limites import ConLimiteDeIntentos
 from .recuperacion import cambiar_clave, solicitar_recuperacion, usuario_del_enlace
 from .validators import validar_password_candidata
@@ -124,7 +125,9 @@ class SolicitarRecuperacionView(APIView):
     def post(self, request):
         serializer = SolicitarRecuperacionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        solicitar_recuperacion(serializer.validated_data["email"])
+        # Fuera de la petición (SGDE-96): buscar el correo y enviarlo tarda distinto si
+        # existe, y ese tiempo revelaría qué correos están registrados.
+        en_segundo_plano(solicitar_recuperacion, serializer.validated_data["email"])
         return Response({"detail": MSG_SOLICITUD_RECIBIDA})
 
 

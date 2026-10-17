@@ -237,9 +237,20 @@ SIMPLE_JWT = {
     "TOKEN_REFRESH_SERIALIZER": "apps.usuarios.tokens.RenovarTokenConTopeSerializer",
 }
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
+# A dónde apuntan los enlaces de los correos. En producción sin la variable queda
+# vacío (nunca localhost) y el chequeo sgde.W002 lo avisa al arrancar.
+FRONTEND_URL = (os.getenv("FRONTEND_URL") or ("http://localhost:5173" if DEBUG else "")).rstrip("/")
 
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+# Correo (SGDE-96). En local, sin EMAIL_BACKEND, los correos salen en la consola.
+# En producción (DEBUG=False) sin EMAIL_BACKEND no se envía nada y queda un error
+# en el log, sin el contenido (el enlace de recuperar lleva un token): nunca la
+# consola. El chequeo sgde.W001 lo avisa al arrancar (apps/usuarios/checks.py).
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND") or (
+    "django.core.mail.backends.console.EmailBackend" if DEBUG else "apps.usuarios.correos.CorreoSinConfigurar"
+)
+# Enviar los correos fuera de la petición, para que el tiempo de respuesta no
+# revele qué correos están registrados. Las pruebas lo apagan con @correos_en_linea.
+CORREOS_EN_SEGUNDO_PLANO = os.getenv("CORREOS_EN_SEGUNDO_PLANO", "True").lower() in ("true", "1")
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = entero_positivo_entorno("EMAIL_PORT", 587)
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")

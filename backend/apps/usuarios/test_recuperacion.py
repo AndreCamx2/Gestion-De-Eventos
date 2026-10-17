@@ -10,7 +10,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.clientes.models import Cliente
-from apps.core.pruebas import sin_limite_de_intentos
+from apps.core.pruebas import correos_en_linea, sin_limite_de_intentos
 
 from .models import Rol, Usuario
 
@@ -38,6 +38,7 @@ def datos_del_enlace(correo):
     return enlace, uid, token
 
 
+@correos_en_linea
 @sin_limite_de_intentos
 @override_settings(FRONTEND_URL=FRONTEND)
 class SolicitarRecuperacionTests(APITestCase):
@@ -113,6 +114,7 @@ class SolicitarRecuperacionTests(APITestCase):
         self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
 
 
+@correos_en_linea
 @sin_limite_de_intentos
 @override_settings(FRONTEND_URL=FRONTEND)
 class RestablecerClaveTests(APITestCase):
@@ -183,6 +185,7 @@ class RestablecerClaveTests(APITestCase):
         self.assertEqual(respuesta.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
+@correos_en_linea
 @sin_limite_de_intentos
 @override_settings(FRONTEND_URL=FRONTEND)
 class BienvenidaTests(APITestCase):

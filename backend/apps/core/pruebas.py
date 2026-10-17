@@ -15,3 +15,13 @@ def sin_limite_de_intentos(clase):
     """
     tasas = {**settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"], **{e: "10000/min" for e in ESCOPOS_DE_ACCESO}}
     return override_settings(REST_FRAMEWORK={**settings.REST_FRAMEWORK, "DEFAULT_THROTTLE_RATES": tasas})(clase)
+
+
+def correos_en_linea(clase):
+    """Envía los correos dentro de la petición solo para esta clase de pruebas (SGDE-96).
+
+    En producción van en un hilo aparte (CORREOS_EN_SEGUNDO_PLANO). En una prueba, ese
+    hilo abriría otra conexión a la base y no vería los datos de la transacción de la
+    prueba: el correo no saldría y mail.outbox quedaría vacío.
+    """
+    return override_settings(CORREOS_EN_SEGUNDO_PLANO=False)(clase)
