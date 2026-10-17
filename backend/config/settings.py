@@ -51,6 +51,26 @@ if allowed_hosts_env:
 else:
     ALLOWED_HOSTS = ['*'] if DEBUG else ['.onrender.com', 'localhost', '127.0.0.1']
 
+# HTTPS en producción (SGDE-113). Solo con DEBUG=False: en local no hay HTTPS.
+# - Render recibe el HTTPS y le pasa la petición a Django por HTTP, avisando con
+#   X-Forwarded-Proto. Sin SECURE_PROXY_SSL_HEADER, Django creería que todo es HTTP
+#   (la redirección no pararía nunca y el admin rechazaría el login por CSRF).
+# - Las pruebas de CI corren con DEBUG=False y su cliente usa HTTP: apagan la
+#   redirección con SECURE_SSL_REDIRECT=False en .github/workflows/deploy.yml.
+# - HSTS empieza en 1 hora. Una vez confirmado que todo funciona por HTTPS, se sube
+#   con SECURE_HSTS_SECONDS (por ejemplo 31536000, un año) sin tocar código.
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() in ("true", "1")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = entero_positivo_entorno("SECURE_HSTS_SECONDS", 3600)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # W021 pide SECURE_HSTS_PRELOAD (la lista de HSTS que traen los navegadores).
+    # Esa lista solo acepta dominios propios, y sgde-backend.onrender.com es un
+    # subdominio de Render. Se silencia; con un dominio propio se puede activar.
+    SILENCED_SYSTEM_CHECKS = ["security.W021"]
+
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -71,7 +91,6 @@ INSTALLED_APPS = [
     "apps.catalogo",
     "apps.proveedores",
     "apps.cotizaciones",
-    "apps.eventos",
     "apps.core",
 ]
 
@@ -107,9 +126,13 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://gestion-de-eventos[a-z0-9-]*\.vercel\.app$",
 ]
 
+# Orígenes desde los que se aceptan formularios con CSRF. Solo los usa el admin de
+# Django (el API usa JWT, sin CSRF), que vive en el mismo dominio del backend.
+# Antes confiaba en cualquier *.onrender.com y *.vercel.app (SGDE-113).
 CSRF_TRUSTED_ORIGINS = [
-    "https://*.onrender.com",
-    "https://*.vercel.app",
+    origen.strip()
+    for origen in os.getenv("CSRF_TRUSTED_ORIGINS", "https://sgde-backend.onrender.com").split(",")
+    if origen.strip()
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -153,6 +176,18 @@ else:
         }
     }
 
+
+# Caché en la base de datos (SGDE-120). Los límites de intentos de DRF (SGDE-112)
+# cuentan en la caché. Con la de memoria, cada worker de gunicorn llevaría su
+# propia cuenta y el tope real se multiplicaría por el número de workers. La tabla
+# la crea `manage.py createcachetable` al arrancar (Dockerfile y docker-compose);
+# las pruebas la crean solas.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "sgde_cache",
+    }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

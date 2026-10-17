@@ -7,8 +7,9 @@ name: Liberar bloqueos vencidos
 # "liberada" (usuario vacío = el sistema) en cada cotización que libera.
 #
 # Necesita el secreto PROD_DATABASE_URL (Settings → Secrets and variables →
-# Actions): la "External Database URL" de la base en Render. Sin él, falla con
-# un aviso claro. GitHub pausa los workflows programados de un repositorio sin
+# Actions): la "External Database URL" de la base en Render. Sin él, el workflow
+# termina sin error y deja un aviso en Actions: no manda un correo de fallo cada
+# hora mientras el secreto no exista. GitHub pausa los workflows programados de un repositorio sin
 # actividad durante 60 días: se reactivan desde la pestaña Actions.
 
 on:
@@ -35,24 +36,31 @@ jobs:
       SECRET_KEY: clave-descartable-solo-para-el-comando
     steps:
       - name: Revisar el secreto
+        id: secreto
         run: |
           if [ -z "$DATABASE_URL" ]; then
-            echo "::error::Falta el secreto PROD_DATABASE_URL (External Database URL de Render)."
-            exit 1
+            echo "::warning::Falta el secreto PROD_DATABASE_URL (External Database URL de Render): no se liberó nada."
+            echo "hay=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "hay=true" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: actions/checkout@v4
+        if: steps.secreto.outputs.hay == 'true'
 
       - uses: actions/setup-python@v5
+        if: steps.secreto.outputs.hay == 'true'
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
       - name: Instalar dependencias
+        if: steps.secreto.outputs.hay == 'true'
         working-directory: backend
         run: pip install -r requirements.txt
 
       - name: Liberar bloqueos vencidos
+        if: steps.secreto.outputs.hay == 'true'
         working-directory: backend
         run: python manage.py liberar_bloqueos
