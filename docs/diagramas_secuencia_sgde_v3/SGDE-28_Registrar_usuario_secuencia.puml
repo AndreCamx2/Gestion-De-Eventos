@@ -1,5 +1,5 @@
 @startuml SGDE-28_Registrar_usuario_secuencia
-title SGDE-28 - Registrar usuario
+title SGDE-28 · Registrar usuario
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,35 +13,36 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
 actor "Administrador" as AD
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-AD -> UI : Seleccionar "Registrar usuario"
-UI --> AD : Mostrar formulario de usuario
-AD -> UI : Ingresar nombre, correo, rol y contraseña inicial
-opt Asociar usuario a un hotel
-  AD -> UI : Seleccionar hotel
-end
-UI -> SI : Enviar datos del usuario
-SI -> BD : Verificar si el correo ya existe
-BD --> SI : Resultado de consulta
-SI -> SI : Validar datos ingresados
-
-alt Campos obligatorios vacíos
-  SI --> UI : Informar campos obligatorios faltantes
-  UI --> AD : Mostrar alerta "Todos los campos son obligatorios"
-else Correo ya registrado
-  SI --> UI : Informar registro duplicado
-  UI --> AD : Mostrar alerta "Ya existe un usuario con ese correo"
+AD -> UI : Abrir Usuarios y "Nuevo usuario"
+UI -> SI : GET /api/roles/ y GET /api/sitios/
+SI --> UI : Roles y sitios del administrador
+AD -> UI : Usuario, correo, contraseña inicial, rol y sitios
+UI -> SI : POST /api/usuarios/
+SI -> SI : Validar campos, contraseña segura\ny que los sitios sean suyos
+alt Falta un campo o la contraseña es débil
+  SI --> UI : 400 con el error de cada campo
+  UI --> AD : Mostrar el error bajo cada campo
+else Usuario ya existe
+  SI --> UI : 400 en "username"
+  UI --> AD : Avisar que el usuario ya existe
+else Sitio que no es suyo
+  SI --> UI : 400 en "sitios"
+  UI --> AD : Mostrar el error bajo "sitios"
 else Datos válidos
   SI -> SI : Cifrar contraseña
-  SI -> BD : Guardar usuario
-  BD --> SI : Confirmar registro
-  SI --> UI : Informar registro exitoso
-  UI --> AD : Mostrar mensaje "Usuario registrado correctamente"
+  SI -> BD : Guardar usuario con rol y sitios
+  SI --> UI : 201 con el usuario
+  UI --> AD : Mostrar el usuario en la lista
 end
 @enduml

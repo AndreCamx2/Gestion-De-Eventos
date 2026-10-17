@@ -1,0 +1,65 @@
+@startuml Diagrama_Paquetes_SGDE
+!pragma layout smetana
+title Paquetes del repositorio
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam DefaultFontSize 12
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor black
+}
+
+package "frontend/src" {
+  package "pages" as F_PAGES
+  package "layouts" as F_LAYOUTS
+  package "routes" as F_ROUTES
+  package "components" as F_COMP
+  package "api" as F_API
+  package "utils" as F_UTILS
+}
+
+package "backend" {
+  package "config\n(settings, urls)" as B_CONFIG
+  package "apps" {
+    package "usuarios" as B_USUARIOS
+    package "sitios" as B_SITIOS
+    package "clientes" as B_CLIENTES
+    package "salones" as B_SALONES
+    package "catalogo" as B_CATALOGO
+    package "proveedores" as B_PROVEEDORES
+    package "cotizaciones" as B_COTIZACIONES
+    package "core" as B_CORE
+  }
+}
+
+F_ROUTES ..> F_PAGES : usa
+F_LAYOUTS ..> F_ROUTES : usa
+F_PAGES ..> F_COMP : usa
+F_PAGES ..> F_API : usa
+F_PAGES ..> F_UTILS : usa
+F_API ..> B_CONFIG : HTTP /api/
+
+B_CONFIG ..> B_USUARIOS : rutas
+B_CONFIG ..> B_COTIZACIONES : rutas
+B_COTIZACIONES ..> B_SALONES : importa
+B_COTIZACIONES ..> B_CATALOGO : importa
+B_COTIZACIONES ..> B_CLIENTES : importa
+B_COTIZACIONES ..> B_SITIOS : importa
+B_COTIZACIONES ..> B_CORE : importa
+B_SALONES ..> B_SITIOS : importa
+B_CATALOGO ..> B_SITIOS : importa
+B_CLIENTES ..> B_SITIOS : importa
+B_USUARIOS ..> B_SITIOS : importa
+B_PROVEEDORES ..> B_USUARIOS : importa
+
+note bottom of B_CORE
+  Cada app de Django tiene models.py, serializers.py,
+  views.py, tests.py y migrations/.
+  La app "eventos" existe pero no tiene uso.
+end note
+@enduml

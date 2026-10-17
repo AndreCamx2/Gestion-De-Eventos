@@ -1,5 +1,5 @@
 @startuml SGDE-14_Consultar_disponibilidad_secuencia
-title SGDE-14 - Consultar disponibilidad (RF-04)
+title SGDE-14 · Consultar disponibilidad (RF-04)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,25 +13,26 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
-actor "Ejecutivo comercial" as EC
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+actor "Administrador" as AD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-EC -> UI : Seleccionar "Consultar disponibilidad"
-UI --> EC : Mostrar calendario
-EC -> UI : Seleccionar salón, fecha y horario
-UI -> SI : Enviar salón, fecha y horario
-SI -> BD : Buscar reservas y bloqueos del rango
-BD --> SI : Resultado de consulta
-
-alt Sin reservas ni bloqueos (CP-07)
-  SI --> UI : Informar estado "Disponible"
-  UI --> EC : Mostrar salón "Disponible"
-else Con reserva o bloqueo (CP-08)
-  SI --> UI : Informar estado "Ocupado / Bloqueado"
-  UI --> EC : Notificar que el espacio no está disponible
+AD -> UI : Abrir Calendario (un salón, un mes)\no Rack (todos los salones, varios días)
+UI -> SI : GET /api/calendario/?salon=&desde=&hasta=
+SI -> SI : Validar fechas y salón (400 si no son válidos)
+SI -> BD : Cotizaciones no canceladas del rango,\nsolo de los sitios del administrador
+BD --> SI : Cotizaciones con estado y fecha
+SI --> UI : 200 con la lista
+alt Día sin cotizaciones (CP-07)
+  UI --> AD : Mostrar el día libre
+else Día con cotizaciones (CP-08)
+  UI --> AD : Mostrar el día con el color del estado más fuerte\n(confirmado, bloqueado, cotizado o vencida)
 end
 @enduml

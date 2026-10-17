@@ -1,4 +1,5 @@
-@startuml
+@startuml SGDE-22_Registrar_cancelacion
+!pragma layout smetana
 left to right direction
 skinparam backgroundColor white
 skinparam usecase {
@@ -11,35 +12,31 @@ skinparam rectangle {
   FontSize 13
   FontStyle bold
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+  FontSize 11
+}
 skinparam ArrowColor black
+skinparam actorStyle awesome
+title SGDE-22 · Registrar cancelación (RF-10)
 
-actor "Ejecutivo comercial" as EC
+actor "Administrador" as AD
 
-rectangle "Sistema SGDE" {
-  usecase "Registrar cliente" as UC1
-  usecase "Consultar clientes" as UC2
-  usecase "Consultar\ndisponibilidad" as UC3
-  usecase "Generar cotización" as UC4
-  usecase "Bloquear salón" as UC5
-  usecase "Definir vigencia" as UC6
-  usecase "Registrar aceptación\ny garantía" as UC7
-  usecase "Confirmar evento" as UC8
-  usecase "Registrar\ncancelación" as UC9
+rectangle "SGDE" {
+  usecase "Cancelar evento confirmado\n(SGDE-61, SGDE-68)" as UC1
+  usecase "Calcular monto retenido" as UC2
+  usecase "Liberar la fecha del salón" as UC3
+  usecase "Registrar movimiento" as UC4
 }
 
-EC -- UC1
-EC -- UC2
-EC -- UC3
-EC -- UC4
-EC -- UC5
-EC -- UC6
-EC -- UC7
-EC -- UC8
-EC -- UC9
+AD --> UC1
+UC1 ..> UC2 : <<include>>
+UC1 ..> UC3 : <<include>>
+UC1 ..> UC4 : <<include>>
 
-UC5 ..> UC4 : <<extend>>
-UC6 ..> UC4 : <<extend>>
-UC7 ..> UC4 : <<extend>>
-UC8 ..> UC7 : <<include>>
-UC9 ..> UC8 : <<extend>>
+note right of UC1
+  Pide penalización (%) y motivo.
+  Solo un evento confirmado (409 si no).
+end note
 @enduml

@@ -1,20 +1,42 @@
 @startuml CU03_ConfigurarSalon
-title CU-03: Diagrama de Actividades - Configurar Salón
+title CU-03 · Configurar salón y montajes (SGDE-12, SGDE-13)
 skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 
+|Administrador|
 start
-:Administrador selecciona "Nuevo Salón";
-:Ingresa nombre, dimensiones y capacidad física;
-:Selecciona los tipos de Montajes permitidos;
-repeat
-  :Asignar capacidad máxima para el montaje seleccionado;
-repeat while (¿Agregar otro montaje?) is (Sí)
-:Sistema valida que las capacidades no excedan la física;
-if (¿Validación correcta?) then (Sí)
-  :Guardar Salón y configuraciones (SalonMontaje);
-  :Estado del Salón = "Disponible";
-else (No)
-  :Mostrar error "Capacidad de montaje excede límite físico";
+:Registra el salón: sitio, nombre,
+alto, ancho y foto (URL);
+|Sistema|
+if (¿El sitio es suyo y los datos son válidos?) then (no)
+  :Responde 400;
+  stop
+else (sí)
+  :Guarda el salón activo;
 endif
+|Administrador|
+repeat
+  :Elige un tipo de montaje del catálogo
+  y escribe su aforo;
+  |Sistema|
+  if (¿El montaje ya estaba en este salón?) then (sí)
+    :Responde 400 (repetido);
+  else (no)
+    :Guarda la combinación salón–montaje
+    con su aforo;
+  endif
+  |Administrador|
+repeat while (¿Habilitar otro montaje?) is (sí)
+->no;
 stop
 @enduml

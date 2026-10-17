@@ -1,19 +1,43 @@
 @startuml CU05_GenerarCotizacion
-title CU-05: Diagrama de Actividades - Generar Cotización
+title CU-05 · Generar cotización (SGDE-18)
 skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 
+|Administrador|
 start
-:Ejecutivo Comercial inicia "Nueva Cotización";
-:Selecciona Cliente, Salón y Montaje;
-:Ingresa cantidad estimada de personas;
-if (¿Supera la capacidad del montaje?) then (Sí)
-  :Mostrar alerta de "Capacidad Excedida";
+:Abre "Nueva cotización";
+:Elige cliente, salón, montaje,
+fecha del evento y número de personas;
+:Agrega conceptos con su cantidad;
+:La pantalla muestra subtotal, impuestos
+(IVA, impoconsumo) y total;
+:Guarda;
+|Sistema|
+:Bloquea el salón y su montaje
+mientras revisa (SGDE-100);
+if (¿Todo válido?) then (no)
+  :Responde 400: cliente o salón dado de baja,
+  montaje no habilitado, aforo superado,
+  fecha pasada o concepto inactivo;
   stop
-else (No)
-  :Agregar conceptos (servicios/productos) al carrito;
-  :Sistema calcula subtotal, impuestos y total;
-  :Guardar cotización en estado "Cotizado";
-  :Generar PDF y enviar al cliente;
-  stop
+else (sí)
+  :Guarda la cotización en estado cotizado
+  con los precios del catálogo;
+  :Vigencia: la indicada o 15 días
+  (sin pasar del día del evento);
+  :Registra el movimiento "creada";
 endif
+|Administrador|
+:Ve el detalle de la cotización;
+stop
 @enduml

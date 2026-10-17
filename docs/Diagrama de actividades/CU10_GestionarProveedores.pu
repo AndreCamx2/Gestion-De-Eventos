@@ -1,16 +1,38 @@
 @startuml CU10_GestionarProveedores
-title CU-10: Diagrama de Actividades - Gestionar Proveedores
+title CU-10 · Gestionar proveedores (SGDE-39, SGDE-30)
 skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 
+|Administrador|
 start
-:Administrador selecciona "Nuevo Proveedor";
-:Ingresa NIT y Nombre de la empresa;
-:Sistema valida el NIT;
-if (¿NIT ya existe?) then (Sí)
-  :Cargar datos para modificar proveedor;
-else (No)
-  :Ingresa datos de contacto y servicios;
-  :Guardar proveedor en base de datos;
+:Registra el proveedor: nombre,
+identificación y contacto;
+|Sistema|
+:Guarda el proveedor;
+|Administrador|
+if (¿El proveedor tendrá acceso al sistema?) then (sí)
+  :Elige un usuario con rol proveedor;
+  |Sistema|
+  if (¿El usuario es proveedor y no está
+  vinculado a otro?) then (no)
+    :Responde 400 en "usuario";
+    stop
+  else (sí)
+    :Vincula el usuario al proveedor;
+  endif
+else (no)
 endif
+|Administrador|
+:Ve el proveedor en la lista;
 stop
 @enduml

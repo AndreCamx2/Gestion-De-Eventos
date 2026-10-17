@@ -1,4 +1,5 @@
-@startuml
+@startuml SGDE-09_Registrar_cliente
+!pragma layout smetana
 left to right direction
 skinparam backgroundColor white
 skinparam usecase {
@@ -11,35 +12,34 @@ skinparam rectangle {
   FontSize 13
   FontStyle bold
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+  FontSize 11
+}
 skinparam ArrowColor black
+skinparam actorStyle awesome
+title SGDE-09 · Registrar cliente (RF-01)
 
-actor "Ejecutivo comercial" as EC
+actor "Administrador" as AD
+actor "Visitante\n(sin sesión)" as VI
 
-rectangle "Sistema SGDE" {
+rectangle "SGDE" {
   usecase "Registrar cliente" as UC1
-  usecase "Consultar clientes" as UC2
-  usecase "Consultar\ndisponibilidad" as UC3
-  usecase "Generar cotización" as UC4
-  usecase "Bloquear salón" as UC5
-  usecase "Definir vigencia" as UC6
-  usecase "Registrar aceptación\ny garantía" as UC7
-  usecase "Confirmar evento" as UC8
-  usecase "Registrar\ncancelación" as UC9
+  usecase "Registrar empresa" as UC2
+  usecase "Registrarse como cliente\n(registro público)" as UC3
+  usecase "Crear usuario con rol cliente" as UC4
 }
 
-EC -- UC1
-EC -- UC2
-EC -- UC3
-EC -- UC4
-EC -- UC5
-EC -- UC6
-EC -- UC7
-EC -- UC8
-EC -- UC9
+AD --> UC1
+VI --> UC3
+UC2 .> UC1 : <<extend>>\n[cliente jurídico\ncon empresa nueva]
+UC3 ..> UC4 : <<include>>
+UC3 ..> UC2 : <<include>>
 
-UC5 ..> UC4 : <<extend>>
-UC6 ..> UC4 : <<extend>>
-UC7 ..> UC4 : <<extend>>
-UC8 ..> UC7 : <<include>>
-UC9 ..> UC8 : <<extend>>
+note right of UC1
+  Natural: identificación única.
+  Jurídico: la empresa es obligatoria y
+  el NIT es el de la empresa.
+end note
 @enduml

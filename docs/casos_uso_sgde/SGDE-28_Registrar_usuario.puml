@@ -1,4 +1,5 @@
-@startuml
+@startuml SGDE-28_Registrar_usuario
+!pragma layout smetana
 left to right direction
 skinparam backgroundColor white
 skinparam usecase {
@@ -11,33 +12,35 @@ skinparam rectangle {
   FontSize 13
   FontStyle bold
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+  FontSize 11
+}
 skinparam ArrowColor black
+skinparam actorStyle awesome
+title SGDE-28 · Registrar usuario
 
 actor "Administrador" as AD
 
-rectangle "Sistema SGDE" {
-  usecase "Registrar empresas" as UC1
-  usecase "Registrar salón" as UC2
-  usecase "Configurar\nmontajes" as UC3
-  usecase "Registrar conceptos" as UC4
-  usecase "Editar precios" as UC5
-  usecase "Consultar histórico" as UC6
-  usecase "Registrar usuario" as UC7
-  usecase "Registrar hotel" as UC8
-  usecase "Comparar\nproveedores" as UC9
+rectangle "SGDE" {
+  usecase "Registrar usuario interno" as UC1
+  usecase "Asignar rol y sitios" as UC2
+  usecase "Editar usuario (SGDE-37)" as UC3
+  usecase "Dar de baja usuario" as UC4
 }
 
 AD --> UC1
-AD --> UC2
 AD --> UC3
 AD --> UC4
-AD --> UC5
-AD --> UC6
-AD --> UC7
-AD --> UC8
-AD --> UC9
+UC1 ..> UC2 : <<include>>
 
-UC3 ..> UC2 : <<extend>>
-UC5 ..> UC4 : <<extend>>
-UC7 ..> UC8 : <<extend>>
+note right of UC2
+  Solo puede asignar sus propios sitios.
+  Nunca ve ni edita a un superusuario.
+end note
+note right of UC4
+  Baja lógica: queda inactivo
+  (y su cliente vinculado también).
+end note
 @enduml

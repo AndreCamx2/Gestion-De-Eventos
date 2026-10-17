@@ -1,0 +1,18 @@
+@startuml CU19_FinalizarEvento
+title CU-19: Diagrama de Actividades - Finalizar Evento · FUERA DEL ALCANCE DE LA BETA
+skinparam backgroundColor white
+
+note
+  Análisis inicial (septiembre de 2026). No hace parte de la beta:
+  ni la orden de servicio (BEO), ni la ejecución, liquidación, facturación
+  o reportes se construyen en esta versión. Ver docs/README.md.
+end note
+start
+:Cajero confirma liquidación (Pagado);
+:Coordinador selecciona "Finalizar Evento";
+:Notificar al área de Aseo para desmontaje del Salón;
+:Actualizar estado de Evento a "Finalizado";
+:Liberar espacio en el calendario de forma definitiva;
+:Enviar encuesta de satisfacción al Cliente;
+stop
+@enduml

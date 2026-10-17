@@ -1,4 +1,5 @@
-@startuml
+@startuml SGDE-12_Registrar_salon
+!pragma layout smetana
 left to right direction
 skinparam backgroundColor white
 skinparam usecase {
@@ -11,33 +12,35 @@ skinparam rectangle {
   FontSize 13
   FontStyle bold
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+  FontSize 11
+}
 skinparam ArrowColor black
+skinparam actorStyle awesome
+title SGDE-12 · Registrar salón (RF-02)
 
 actor "Administrador" as AD
 
-rectangle "Sistema SGDE" {
-  usecase "Registrar empresas" as UC1
-  usecase "Registrar salón" as UC2
-  usecase "Configurar\nmontajes" as UC3
-  usecase "Registrar conceptos" as UC4
-  usecase "Editar precios" as UC5
-  usecase "Consultar histórico" as UC6
-  usecase "Registrar usuario" as UC7
-  usecase "Registrar hotel" as UC8
-  usecase "Comparar\nproveedores" as UC9
+rectangle "SGDE" {
+  usecase "Registrar salón" as UC1
+  usecase "Editar salón" as UC2
+  usecase "Dar de baja salón\n(SGDE-99)" as UC3
+  usecase "Verificar que no tenga\ncotizaciones activas" as UC4
 }
 
-AD -- UC1
-AD -- UC2
-AD -- UC3
-AD -- UC4
-AD -- UC5
-AD -- UC6
-AD -- UC7
-AD -- UC8
-AD -- UC9
+AD --> UC1
+AD --> UC2
+AD --> UC3
+UC3 ..> UC4 : <<include>>
 
-UC3 ..> UC2 : <<extend>>
-UC5 ..> UC4 : <<extend>>
-UC7 ..> UC8 : <<extend>>
+note right of UC1
+  Nombre, alto, ancho y foto (URL) en uno
+  de los sitios del administrador.
+end note
+note right of UC4
+  Si tiene cotizaciones activas
+  responde 409 y no lo da de baja.
+end note
 @enduml

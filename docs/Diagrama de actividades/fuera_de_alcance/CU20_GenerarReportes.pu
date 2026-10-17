@@ -1,0 +1,19 @@
+@startuml CU20_GenerarReportes
+title CU-20: Diagrama de Actividades - Generar Reportes · FUERA DEL ALCANCE DE LA BETA
+skinparam backgroundColor white
+
+note
+  Análisis inicial (septiembre de 2026). No hace parte de la beta:
+  ni la orden de servicio (BEO), ni la ejecución, liquidación, facturación
+  o reportes se construyen en esta versión. Ver docs/README.md.
+end note
+start
+:Administrador ingresa a "Módulo de Reportes";
+:Selecciona tipo de reporte (Ventas, Ocupación de Salones, Cancelaciones);
+:Define rango de fechas;
+:Sistema consulta Base de Datos y calcula métricas;
+:Renderizar gráficos (Barras, Tortas, KPIs);
+:Usuario selecciona "Exportar a Excel / PDF";
+:Sistema genera y descarga el archivo;
+stop
+@enduml

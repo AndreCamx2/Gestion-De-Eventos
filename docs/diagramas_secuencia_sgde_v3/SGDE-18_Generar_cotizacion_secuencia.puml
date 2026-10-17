@@ -1,5 +1,5 @@
 @startuml SGDE-18_Generar_cotizacion_secuencia
-title SGDE-18 - Generar cotización (RF-06)
+title SGDE-18 · Generar cotización (RF-06)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,30 +13,33 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
-actor "Ejecutivo comercial" as EC
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+actor "Administrador" as AD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-EC -> UI : Seleccionar "Generar cotización"
-UI --> EC : Mostrar formulario de cotización
-EC -> UI : Ingresar cliente, salón, montaje, cantidad de personas y duración
-EC -> UI : Agregar productos, servicios e impuestos
-UI -> SI : Enviar datos de la cotización
-SI -> BD : Consultar capacidad del salón/montaje y precios
-BD --> SI : Capacidad máxima y precios
-SI -> SI : Validar cantidad de personas contra la capacidad
-
-alt Personas superan la capacidad máxima (CP-11)
-  SI --> UI : Informar capacidad excedida
-  UI --> EC : Mostrar alerta "La cantidad de personas supera el límite permitido"
-else Capacidad válida (CP-10)
-  SI -> SI : Calcular costos totales
-  SI -> BD : Guardar cotización
-  BD --> SI : Confirmar registro
-  SI --> UI : Enviar cotización detallada
-  UI --> EC : Mostrar cotización con los costos totales
+AD -> UI : Abrir "Nueva cotización"
+AD -> UI : Cliente, salón, montaje, fecha del evento,\npersonas y conceptos con su cantidad
+UI --> AD : Subtotal, impuestos (IVA, impoconsumo) y total en vivo
+UI -> SI : POST /api/cotizaciones/
+SI -> BD : Bloquear el salón y su montaje mientras se revisa
+SI -> SI : Validar cliente y salón activos, montaje habilitado,\nfecha futura y conceptos activos del sitio
+alt Personas superan el aforo del montaje (CP-11)
+  SI --> UI : 400 "Supera el aforo del montaje (N personas)"
+  UI --> AD : Mostrar el error bajo "personas"
+else Otro dato inválido
+  SI --> UI : 400 con el error de cada campo
+  UI --> AD : Mostrar el error bajo cada campo
+else Todo válido (CP-10)
+  SI -> BD : Guardar cotización "cotizada" y sus ítems\ncon el precio del catálogo
+  SI -> BD : Guardar movimiento "creada"
+  SI --> UI : 201 con la cotización y sus totales
+  UI --> AD : Abrir el detalle de la cotización
 end
 @enduml

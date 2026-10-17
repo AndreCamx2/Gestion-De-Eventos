@@ -1,20 +1,51 @@
 @startuml CU09_RecuperarContrasena
-title CU-09: Diagrama de Actividades - Recuperar Contraseña
+title CU-09 · Recuperar contraseña (SGDE-96)
 skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 
+|Usuario|
 start
-:Usuario selecciona "Olvidé mi contraseña";
-:Ingresa correo electrónico;
-:Sistema verifica si el correo existe;
-if (¿Correo registrado?) then (Sí)
-  :Generar token de recuperación;
-  :Enviar enlace al correo del usuario;
-  :Usuario hace clic en el enlace;
-  :Ingresa y confirma nueva contraseña;
-  :Sistema actualiza credenciales en BD;
-else (No)
-  :Mostrar mensaje genérico de envío;
-  note right: Por seguridad no se dice que no existe
+:Elige "¿Olvidaste tu contraseña?"
+y escribe su correo;
+|Sistema|
+if (¿Superó 5 solicitudes por hora?) then (sí)
+  :Responde 429;
+  stop
+else (no)
 endif
+if (¿Hay un usuario activo con ese correo?) then (sí)
+  :Envía un correo con un enlace
+  de un solo uso (vence en 60 min);
+else (no)
+  :No envía nada;
+endif
+:Responde siempre el mismo mensaje;
+note right
+  Así no se revela qué
+  correos están registrados.
+end note
+|Usuario|
+:Abre el enlace y escribe la contraseña nueva;
+|Sistema|
+if (¿El enlace es válido y la contraseña
+cumple las reglas?) then (no)
+  :Responde 400;
+  stop
+else (sí)
+  :Guarda la contraseña nueva;
+  :Cierra todas sus sesiones abiertas;
+endif
+|Usuario|
+:Inicia sesión con la contraseña nueva;
 stop
 @enduml
