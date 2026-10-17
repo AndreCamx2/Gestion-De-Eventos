@@ -8,7 +8,7 @@ Es un proyecto académico de **Unicolombo** desarrollado con un cliente real del
 
 | | |
 |---|---|
-| Aplicación (producción) | https://gestion-de-eventos-wine.vercel.app |
+| Aplicación (producción) | https://gestion-de-eventos-bice.vercel.app |
 | API (producción) | https://sgde-backend.onrender.com/api/ |
 | Backlog | Jira, proyecto `SGDE` |
 

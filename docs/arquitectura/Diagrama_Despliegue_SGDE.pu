@@ -23,7 +23,7 @@ node "Navegador del usuario" as NAV {
 }
 
 cloud "Vercel" {
-  node "Sitio estático\ngestion-de-eventos-wine.vercel.app" as VERCEL {
+  node "Sitio estático\ngestion-de-eventos-bice.vercel.app" as VERCEL {
     artifact "frontend/dist\n(Vite build)" as DIST
   }
 }
