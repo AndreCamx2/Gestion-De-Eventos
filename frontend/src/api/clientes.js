@@ -1,8 +1,9 @@
 import { apiFetch } from "./client";
+import { todasLasPaginas } from "./listas";
 
 export async function listarClientes({ incluirInactivos = false } = {}) {
   const query = incluirInactivos ? "?incluir_inactivos=true" : "";
-  return apiFetch(`/clientes/${query}`, { method: "GET" });
+  return todasLasPaginas(`/clientes/${query}`);
 }
 
 // PATCH: se envía solo lo que el formulario edita. El API valida que la
