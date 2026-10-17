@@ -14,14 +14,22 @@ class CotizacionQuerySet(models.QuerySet):
 
         Un evento pasado o una cotización vencida no cuentan. Bloquean quitar un
         montaje habilitado y bajar su aforo (SGDE-88).
+
+        Un bloqueo vencido que todavía no se liberó en la base se trata como cotizado
+        (SGDE-118): cuenta solo si la oferta sigue vigente.
         """
         hoy = timezone.localdate()
-        cotizada_vigente = models.Q(estado="cotizado") & (
-            models.Q(validez_oferta__isnull=True) | models.Q(validez_oferta__gte=hoy)
+        ahora = timezone.now()
+        oferta_vigente = models.Q(validez_oferta__isnull=True) | models.Q(validez_oferta__gte=hoy)
+        # Misma regla que Cotizacion.bloqueo_vencido: sin bloqueo_hasta, el bloqueo sigue vigente.
+        bloqueo_vigente = models.Q(estado="bloqueado") & (
+            models.Q(bloqueo_hasta__isnull=True) | models.Q(bloqueo_hasta__gt=ahora)
         )
+        bloqueo_vencido = models.Q(estado="bloqueado", bloqueo_hasta__lte=ahora)
+        cotizada_vigente = (models.Q(estado="cotizado") | bloqueo_vencido) & oferta_vigente
         return self.filter(
             models.Q(fecha_evento__gte=hoy)
-            & (models.Q(estado__in=["bloqueado", "confirmado"]) | cotizada_vigente)
+            & (models.Q(estado="confirmado") | bloqueo_vigente | cotizada_vigente)
         )
 
     def con_estado_efectivo(self, estado, ahora=None):
@@ -34,9 +42,6 @@ class CotizacionQuerySet(models.QuerySet):
             return self.filter(estado="bloqueado").exclude(vencido)
         return self.filter(estado=estado)
 
-
-
-        
 
 class Cotizacion(models.Model):
     ESTADO_CHOICES = [
@@ -106,6 +111,7 @@ class Cotizacion(models.Model):
             and self.validez_oferta is not None
             and self.validez_oferta < timezone.localdate()
         )
+
 
 class CotizacionItem(models.Model):
     cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name="items")
