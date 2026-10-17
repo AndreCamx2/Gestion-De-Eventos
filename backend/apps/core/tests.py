@@ -96,6 +96,20 @@ class SeedDemoTests(TestCase):
             sembrar()
         self.assertTrue(Usuario.objects.get(username="admin").check_password("clave-de-prueba-9"))
 
+    def test_sin_la_variable_admin_recibe_una_contrasena_aleatoria_que_se_muestra_una_vez(self):
+        """SGDE-114: el superusuario ya no tiene una contraseña por defecto escrita en el repo."""
+        entorno = {k: v for k, v in __import__("os").environ.items() if k != "SEED_ADMIN_PASSWORD"}
+        salida = StringIO()
+        with mock.patch.dict("os.environ", entorno, clear=True):
+            call_command("seed_demo", stdout=salida)
+        clave = salida.getvalue().split("solo se muestra ahora): ")[1].split()[0]
+        self.assertTrue(Usuario.objects.get(username="admin").check_password(clave))
+        self.assertGreaterEqual(len(clave), 16)
+
+        otra = StringIO()
+        call_command("seed_demo", stdout=otra)
+        self.assertNotIn("solo se muestra ahora", otra.getvalue())
+
 
 class SeedDemoProduccionTests(TestCase):
     @override_settings(DEBUG=False)
