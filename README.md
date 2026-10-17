@@ -120,9 +120,9 @@ El índice de toda la documentación y los diagramas está en [`docs/README.md`]
 
 | Integrante | Rol |
 |---|---|
-| Andrés Camilo Florez Bustamante | Backend y coordinación general |
+| Andrés Camilo Florez Bustamante | Frontend y backend · dirección del proyecto |
 | Lewis David De La Rosa Castro | Backend |
 | Felipe Bernal | Backend y base de datos |
-| Clara Isabel Imitola Teran | Frontend y backend |
+| Clara Isabel Imitola Teran | Soporte (apoyo puntual en frontend y backend) |
 | Jaber Vargas Echeverria | Frontend |
 | Bryan Pedroza | Frontend |
