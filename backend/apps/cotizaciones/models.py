@@ -24,6 +24,19 @@ class CotizacionQuerySet(models.QuerySet):
             & (models.Q(estado__in=["bloqueado", "confirmado"]) | cotizada_vigente)
         )
 
+    def con_estado_efectivo(self, estado, ahora=None):
+        """Filtra por el estado que ve el API: un bloqueo vencido cuenta como cotizado (SGDE-118)."""
+        ahora = ahora or timezone.now()
+        vencido = models.Q(estado="bloqueado", bloqueo_hasta__lte=ahora)
+        if estado == "cotizado":
+            return self.filter(models.Q(estado="cotizado") | vencido)
+        if estado == "bloqueado":
+            return self.filter(estado="bloqueado").exclude(vencido)
+        return self.filter(estado=estado)
+
+
+
+        
 
 class Cotizacion(models.Model):
     ESTADO_CHOICES = [
@@ -77,14 +90,22 @@ class Cotizacion(models.Model):
         return f"Cotización {self.id} - {self.cliente.nombre}"
 
     @property
-    def vencida(self):
-        """Se calcula al leer (no se guarda): sigue cotizada y ya pasó su vigencia."""
+    def bloqueo_vencido(self):
+        # SGDE-118: bloqueada, pero su bloqueo_hasta ya pasó y aún no se liberó en la base.
         return (
-            self.estado == "cotizado"
+            self.estado == "bloqueado"
+            and self.bloqueo_hasta is not None
+            and self.bloqueo_hasta <= timezone.now()
+        )
+
+    @property
+    def vencida(self):
+        # Se calcula al leer (no se guarda): está cotizada (o su bloqueo ya venció) y pasó su vigencia.
+        return (
+            (self.estado == "cotizado" or self.bloqueo_vencido)
             and self.validez_oferta is not None
             and self.validez_oferta < timezone.localdate()
         )
-
 
 class CotizacionItem(models.Model):
     cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name="items")

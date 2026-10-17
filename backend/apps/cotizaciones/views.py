@@ -30,7 +30,7 @@ class CotizacionCalendarioView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def get_queryset(self):
-        estados.liberar_bloqueos_vencidos()
+       
         # Un ?salon= de otro sitio devuelve una lista vacía: el filtro por sitio va primero.
         # select_related: sin él, cada fila hace una consulta por cliente, salón y montaje.
         queryset = filtrar_por_sitio(
@@ -60,10 +60,10 @@ def cotizaciones_con_relaciones():
 def cotizaciones_del_usuario(usuario):
     """Las cotizaciones de los sitios del usuario: un id de otro sitio da 404.
 
-    Antes libera los bloqueos vencidos, para que el listado y el detalle muestren
-    el estado real (no hay tareas programadas en Render Free).
+    No libera nada: un GET no escribe (SGDE-118). Un bloqueo vencido se muestra ya como
+    cotizado (ver Cotizacion.bloqueo_vencido) y se libera de verdad en la siguiente
+    acción o con `manage.py liberar_bloqueos`.
     """
-    estados.liberar_bloqueos_vencidos()
     return filtrar_por_sitio(cotizaciones_con_relaciones(), usuario)
 
 
@@ -127,7 +127,7 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
         if estado:
             if estado not in dict(Cotizacion.ESTADO_CHOICES):
                 raise ValidationError({"estado": [f"Estado inválido: {estado}."]})
-            queryset = queryset.filter(estado=estado)
+            queryset = queryset.con_estado_efectivo(estado)
 
         cliente = _id_param(params, "cliente", "Debe ser el id numérico del cliente.")
         if cliente:
@@ -152,7 +152,6 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
 
 class CotizacionDetailView(generics.RetrieveUpdateAPIView):
     """Detalle y cambio de vigencia (PATCH). Sin PUT ni DELETE."""
-
     serializer_class = CotizacionDetalleSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
     http_method_names = ["get", "patch", "head", "options"]
@@ -161,7 +160,7 @@ class CotizacionDetailView(generics.RetrieveUpdateAPIView):
         return cotizaciones_del_usuario(self.request.user)
 
     def partial_update(self, request, *args, **kwargs):
-        estados.liberar_bloqueos_vencidos()
+        estados.liberar_bloqueos_vencidos(usuario=request.user)
         with transaction.atomic():
             cotizacion = estados.tomar_para_cambio(
                 filtrar_por_sitio(Cotizacion.objects.all(), request.user), kwargs["pk"]
@@ -195,7 +194,7 @@ class AccionSobreCotizacionView(generics.GenericAPIView):
 
     def accion(self, datos=None):
         # Fuera de la transacción de la acción: ver el orden de bloqueo en estados.py.
-        estados.liberar_bloqueos_vencidos()
+        estados.liberar_bloqueos_vencidos(usuario=self.request.user)
         with transaction.atomic():
             cotizacion = estados.tomar_para_cambio(
                 filtrar_por_sitio(Cotizacion.objects.all(), self.request.user), self.kwargs["pk"]
@@ -252,7 +251,6 @@ class CotizacionMovimientosView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def get_queryset(self):
-        # Libera antes, para que un bloqueo vencido ya muestre su movimiento "liberada".
-        estados.liberar_bloqueos_vencidos()
+       
         cotizacion = get_object_or_404(filtrar_por_sitio(Cotizacion.objects.all(), self.request.user), pk=self.kwargs["pk"])
         return cotizacion.movimientos.select_related("usuario")
