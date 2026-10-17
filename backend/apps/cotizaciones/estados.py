@@ -27,6 +27,7 @@ from apps.core.exceptions import Conflicto
 from apps.salones.models import Salon
 
 from .models import Cotizacion, MovimientoCotizacion
+from apps.sitios.acceso import filtrar_por_sitio
 
 ESTADO_EN_FEMENINO = {
     "cotizado": "cotizada", "bloqueado": "bloqueada", "confirmado": "confirmada", "cancelado": "cancelada",
@@ -55,20 +56,22 @@ def registrar(cotizacion, tipo, usuario, detalle=""):
     MovimientoCotizacion.objects.create(cotizacion=cotizacion, tipo=tipo, usuario=usuario, detalle=detalle[:255])
 
 
-def liberar_bloqueos_vencidos(ahora=None):
+def liberar_bloqueos_vencidos(ahora=None, usuario=None):
     """Pasa a `cotizado` toda cotización bloqueada cuyo `bloqueo_hasta` ya pasó.
 
-    Render Free no tiene tareas programadas: se llama "al leer" (listado, detalle,
-    calendario y antes de cada acción) y con `manage.py liberar_bloqueos`.
+    Los GET no la llaman (SGDE-118): un bloqueo vencido ya se muestra como cotizado
+    sin escribir. Se libera de verdad antes de cada acción (con `usuario`, solo en sus
+    sitios) y con `manage.py liberar_bloqueos`, sin `usuario`, para todos los sitios.
     skip_locked: si otra petición tiene tomada una fila, se salta; esa misma
     acción la libera al revisarla (`_liberar_si_vencio`). Devuelve cuántas liberó.
     """
     ahora = ahora or timezone.now()
     with transaction.atomic():
-        vencidas = list(
-            Cotizacion.objects.select_for_update(skip_locked=True)
-            .filter(estado="bloqueado", bloqueo_hasta__lte=ahora)
-        )
+        candidatas = Cotizacion.objects.filter(estado="bloqueado", bloqueo_hasta__lte=ahora)
+        if usuario is not None:
+            # Subconsulta: el FOR UPDATE solo bloquea cotizaciones, sin joins.
+            candidatas = Cotizacion.objects.filter(pk__in=filtrar_por_sitio(candidatas, usuario).values("pk"))
+        vencidas = list(candidatas.select_for_update(skip_locked=True))
         # Una por una (no un update masivo): cada una deja su movimiento del sistema.
         for cotizacion in vencidas:
             _liberar_por_vencimiento(cotizacion)

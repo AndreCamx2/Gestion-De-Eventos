@@ -1,5 +1,9 @@
+from django.core.cache import cache
+from django.test import RequestFactory, SimpleTestCase
 from rest_framework import status
+from rest_framework.request import Request
 from rest_framework.test import APITestCase
+from rest_framework.throttling import ScopedRateThrottle
 
 from rest_framework.exceptions import ValidationError
 
@@ -644,3 +648,33 @@ class UsuarioMeTests(APITestCase):
         self.assertEqual(
             self.client.get("/api/usuarios/me/").data["proveedor"], {"id": proveedor.id, "nombre": "Sonido Caribe"}
         )
+
+
+class LimitePorIpDetrasDelProxyTests(SimpleTestCase):
+    """NUM_PROXIES (settings.py): el límite de intentos cuenta por la IP que agrega el
+    proxy de Render, no por lo que el cliente escriba en X-Forwarded-For."""
+
+    class Vista:
+        throttle_scope = "prueba_num_proxies"
+
+    class Limite(ScopedRateThrottle):
+        def get_rate(self):
+            return "5/min"
+
+    def setUp(self):
+        cache.clear()
+        self.addCleanup(cache.clear)
+
+    def permitidos(self, cabeceras):
+        fabrica = RequestFactory()
+        return [
+            self.Limite().allow_request(
+                Request(fabrica.post("/api/token/", REMOTE_ADDR="10.0.0.1", HTTP_X_FORWARDED_FOR=xff)), self.Vista()
+            )
+            for xff in cabeceras
+        ]
+
+    def test_cambiar_la_cabecera_no_salta_el_limite(self):
+        # El cliente inventa la primera parte; Render agrega su IP real (203.0.113.9) al final.
+        falsas = [f"9.9.9.{i}, 203.0.113.9" for i in range(10)]
+        self.assertEqual(self.permitidos(falsas), [True] * 5 + [False] * 5)
