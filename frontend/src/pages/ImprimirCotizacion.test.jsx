@@ -62,11 +62,33 @@ describe("Cotización imprimible (SGDE-70)", () => {
 
     const tabla = screen.getByRole("table", { name: "Conceptos cotizados" });
     expect(within(tabla).getByText("Almuerzo ejecutivo")).toBeInTheDocument();
-    expect(within(tabla).getByText(/Impuesto 8%/)).toHaveTextContent(/7\.200/);
+    expect(within(tabla).getByText(/Impoconsumo 8%/)).toHaveTextContent(/7\.200/);
     expect(within(tabla).getByText(/97\.200/)).toBeInTheDocument();
     expect(screen.getByText(/90\.000/)).toBeInTheDocument();
     const totales = screen.getByRole("region", { name: "Totales" });
-    expect(within(totales).getByText(/Impuesto/).closest("div")).toHaveTextContent(/7\.200/);
+    expect(within(totales).getByText("Impoconsumo 8%").closest("div")).toHaveTextContent(/7\.200/);
+  });
+
+  it("nombra cada impuesto como en el detalle: IVA e Impoconsumo, un renglón por tasa", async () => {
+    const conIva = {
+      ...COTIZACION,
+      items: [
+        ...COTIZACION.items,
+        {
+          id: 6, concepto: 7, concepto_nombre: "Video beam", cantidad: 1, precio_unitario: "250000.00",
+          subtotal: "250000.00", impuesto_pct: "19.00", impuesto: "47500.00", total: "297500.00",
+        },
+      ],
+    };
+    abrir({ "GET /cotizaciones/42/": [200, conIva] });
+
+    const tabla = await screen.findByRole("table", { name: "Conceptos cotizados" });
+    expect(within(tabla).getByText(/IVA 19%/)).toHaveTextContent(/47\.500/);
+    expect(within(tabla).getByText(/Impoconsumo 8%/)).toBeInTheDocument();
+    const totales = screen.getByRole("region", { name: "Totales" });
+    expect(within(totales).getByText("IVA 19%").closest("div")).toHaveTextContent(/47\.500/);
+    expect(within(totales).getByText("Impoconsumo 8%").closest("div")).toHaveTextContent(/7\.200/);
+    expect(within(totales).queryByText(/^Impuesto/)).not.toBeInTheDocument();
   });
 
   it("imprime desde el botón y mantiene un enlace de regreso al detalle", async () => {

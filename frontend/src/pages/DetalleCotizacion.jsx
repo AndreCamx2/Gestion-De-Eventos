@@ -215,8 +215,6 @@ export default function DetalleCotizacion() {
               <Boton
                 as={Link}
                 to={`/cotizaciones/${c.id}/imprimir`}
-                target="_blank"
-                rel="opener"
                 variante="secundario">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M7 14h10v7H7z" />

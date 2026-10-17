@@ -1,3 +1,5 @@
+import { nombreImpuesto } from "./nuevaCotizacion";
+
 export function adaptarCotizacion(cotizacion) {
   return {
     numero: cotizacion.id,
@@ -23,8 +25,9 @@ export function adaptarCotizacion(cotizacion) {
       cantidad: item.cantidad,
       precioUnitario: item.precio_unitario,
       total: item.total,
+      // Mismo nombre que en el detalle: "IVA 19%", "Impoconsumo 8%" (nombreImpuesto).
       impuesto: {
-        codigo: "Impuesto",
+        nombre: nombreImpuesto(item.impuesto_pct),
         porcentaje: item.impuesto_pct,
         valor: item.impuesto,
       },

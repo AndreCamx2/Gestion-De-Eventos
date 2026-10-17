@@ -1,4 +1,4 @@
-const NOMBRE_EN_RESUMEN = { IVA: "IVA", INC: "Impoconsumo" };
+import { pesos } from "./nuevaCotizacion";
 
 function aFechaLocal(valor) {
   if (!valor) return null;
@@ -23,42 +23,34 @@ function fechaLarga(valor, { conDiaSemana = false } = {}) {
   return limpio.charAt(0).toUpperCase() + limpio.slice(1);
 }
 
-function pesos(valor) {
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  }).format(Number(valor) || 0);
-}
-
 function etiquetaSalon(nombre) {
   return /^sal[oó]n\b/i.test(nombre) ? nombre : `Salón ${nombre}`;
 }
 
 function textoImpuesto(impuesto) {
-  if (!impuesto) return "—";
-  return `${impuesto.codigo} ${Number(impuesto.porcentaje)}% · ${pesos(impuesto.valor)}`;
+  if (!impuesto || !Number(impuesto.porcentaje)) return "—";
+  return `${impuesto.nombre} · ${pesos(impuesto.valor)}`;
 }
 
+// Un renglón por tasa, como el desglose del detalle (totalesCotizacion): sin las de 0%.
 function agruparImpuestos(items) {
   const grupos = new Map();
   items.forEach(({ impuesto }) => {
-    if (!impuesto) return;
-    const clave = `${impuesto.codigo}-${Number(impuesto.porcentaje)}`;
-    const previo = grupos.get(clave);
-    grupos.set(clave, { ...impuesto, valor: (previo?.valor ?? 0) + Number(impuesto.valor) });
+    const tasa = Number(impuesto?.porcentaje);
+    if (!tasa) return;
+    const previo = grupos.get(tasa);
+    grupos.set(tasa, { ...impuesto, valor: (previo?.valor ?? 0) + Number(impuesto.valor) });
   });
-  return [...grupos.values()];
+  return [...grupos.entries()].sort((a, b) => b[0] - a[0]).map(([, grupo]) => grupo);
 }
 
 export default function CotizacionImprimible({ cotizacion }) {
   const {
     numero, emitidaEn, validaHasta, fechaEvento, personas,
-    sitio, cliente, salon, montaje, items = [], subtotal, total, condiciones,
+    sitio, cliente, salon, montaje, items = [], subtotal, total,
   } = cotizacion;
 
   const resumenImpuestos = agruparImpuestos(items);
-  const pie = [sitio?.direccion, sitio?.telefono].filter(Boolean).join(" · ");
 
   return (
     <article className="cotizacion-hoja" aria-label={`Cotización ${numero}`}>
@@ -131,11 +123,8 @@ export default function CotizacionImprimible({ cotizacion }) {
               <dd>{pesos(subtotal)}</dd>
             </div>
             {resumenImpuestos.map((impuesto) => (
-              <div key={`${impuesto.codigo}-${impuesto.porcentaje}`}>
-                <dt>
-                  {NOMBRE_EN_RESUMEN[impuesto.codigo] ?? impuesto.codigo}{" "}
-                  {Number(impuesto.porcentaje)}%
-                </dt>
+              <div key={Number(impuesto.porcentaje)}>
+                <dt>{impuesto.nombre}</dt>
                 <dd>{pesos(impuesto.valor)}</dd>
               </div>
             ))}
@@ -145,17 +134,9 @@ export default function CotizacionImprimible({ cotizacion }) {
             <strong>{pesos(total)}</strong>
           </p>
         </section>
-
-        {condiciones && (
-          <section className="cotizacion-hoja__condiciones">
-            <h2 className="cotizacion-hoja__etiqueta">Condiciones</h2>
-            <p>{condiciones}</p>
-          </section>
-        )}
       </div>
 
       <footer className="cotizacion-hoja__pie">
-        {pie && <p>{pie}</p>}
         <p className="cotizacion-hoja__firma">Aceptación del cliente</p>
       </footer>
     </article>

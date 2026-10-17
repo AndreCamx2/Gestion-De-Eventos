@@ -20,7 +20,6 @@ export default function ImprimirCotizacion() {
   const [intento, setIntento] = useState(0);
 
   useEffect(() => {
-    if (window.opener) window.opener = null;
     let vigente = true;
     setCotizacion(null);
     setCargando(true);
