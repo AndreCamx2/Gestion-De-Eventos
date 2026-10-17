@@ -285,7 +285,7 @@ class BaseUsuariosAdminTests(APITestCase):
     def usernames(self, url="/api/usuarios/"):
         respuesta = self.client.get(url)
         self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
-        return sorted(u["username"] for u in respuesta.json())
+        return sorted(u["username"] for u in respuesta.json()["results"])
 
     def vincular_cliente(self, usuario=None):
         return Cliente.objects.create(
@@ -379,7 +379,7 @@ class ListaUsuariosTests(BaseUsuariosAdminTests):
         self.assertEqual(self.usernames(url + "&search=luis"), ["luis_baja"])
 
     def test_respuesta_no_expone_password_ni_banderas_de_privilegio(self):
-        usuario = self.client.get("/api/usuarios/").json()[0]
+        usuario = self.client.get("/api/usuarios/").json()["results"][0]
         for campo in ("password", "is_superuser", "is_staff", "groups", "user_permissions"):
             self.assertNotIn(campo, usuario)
         self.assertIn(usuario["rol_codigo"], ("administrador", "cliente", "proveedor"))
@@ -609,7 +609,7 @@ class BajaUsuarioYClienteIdaYVueltaTests(BaseUsuariosAdminTests):
         self.client.delete(f"/api/clientes/{cliente.pk}/")
         self.assertEqual(self.estado(cliente), (False, False))
         respuesta = self.client.get("/api/usuarios/?incluir_inactivos=true")
-        inactivos = [u["username"] for u in respuesta.json() if not u["is_active"]]
+        inactivos = [u["username"] for u in respuesta.json()["results"] if not u["is_active"]]
         self.assertIn("cliente@test.com", inactivos)
 
     def test_usuario_sin_cliente_no_falla(self):
