@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { login } from "../api/auth";
 import { Boton, Campo } from "../components/ui";
+import { recuperarClaveActiva } from "../utils/recuperarClave";
 import "../styles/acceso.css";
 
 // Pasos que se muestran junto al formulario (maqueta Main.dc.html).
@@ -78,9 +79,11 @@ function LoginForm({ onLoginSuccess }) {
             <label className="campo__etiqueta" htmlFor="password">
               Contraseña <span className="acceso-obligatorio" aria-hidden="true">*</span>
             </label>
-            <Link to="/recuperar-clave" className="acceso-enlace acceso-enlace--pequeno">
-              ¿La olvidaste?
-            </Link>
+            {recuperarClaveActiva() && (
+              <Link to="/recuperar-clave" className="acceso-enlace acceso-enlace--pequeno">
+                ¿La olvidaste?
+              </Link>
+            )}
           </div>
           <div className="acceso-clave">
             <input

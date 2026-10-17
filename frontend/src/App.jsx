@@ -28,6 +28,7 @@ import {
   SoloSinSesion,
 } from "./routes/guards";
 import { nombreVisible } from "./utils/nombreUsuario";
+import { recuperarClaveActiva } from "./utils/recuperarClave";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -89,15 +90,20 @@ export default function App() {
             </SoloSinSesion>
           }
         />
-        <Route
-          path="/recuperar-clave"
-          element={
-            <SoloSinSesion user={user} cargando={cargando}>
-              <RecuperarClave />
-            </SoloSinSesion>
-          }
-        />
-        <Route path="/restablecer-clave" element={<RestablecerClave />} />
+        {/* Ocultas hasta tener correo (SGDE-96): sin ellas, la ruta cae en "*" y lleva al login. */}
+        {recuperarClaveActiva() && (
+          <>
+            <Route
+              path="/recuperar-clave"
+              element={
+                <SoloSinSesion user={user} cargando={cargando}>
+                  <RecuperarClave />
+                </SoloSinSesion>
+              }
+            />
+            <Route path="/restablecer-clave" element={<RestablecerClave />} />
+          </>
+        )}
 
         {/* Todo lo de aquí adentro exige sesión iniciada */}
         <Route element={<ProtectedRoute user={user} cargando={cargando} />}>

@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { simularApi } from "../test/apiFalsa";
 import Login from "./Login";
 
@@ -19,6 +19,8 @@ function abrirLogin(onLoginSuccess = vi.fn()) {
 }
 
 describe("Login", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   it("con datos correctos guarda la sesión y lleva al inicio", async () => {
     const llamadas = simularApi({ "POST /token/": [200, { access: "acceso-123", refresh: "refresco-456" }] });
     const { usuario, onLoginSuccess } = abrirLogin();
@@ -71,7 +73,15 @@ describe("Login", () => {
     expect(llamadas).toHaveLength(0);
   });
 
-  it("el enlace ¿La olvidaste? lleva a recuperar la contraseña", async () => {
+  it("sin correo configurado no muestra ¿La olvidaste? (SGDE-96)", () => {
+    simularApi({});
+    abrirLogin();
+
+    expect(screen.queryByRole("link", { name: /la olvidaste/i })).not.toBeInTheDocument();
+  });
+
+  it("con VITE_RECUPERAR_CLAVE=true, ¿La olvidaste? lleva a recuperar la contraseña", async () => {
+    vi.stubEnv("VITE_RECUPERAR_CLAVE", "true");
     simularApi({});
     const { usuario } = abrirLogin();
 
