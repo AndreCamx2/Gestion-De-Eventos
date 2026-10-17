@@ -1,0 +1,58 @@
+name: Liberar bloqueos vencidos
+
+# SGDE-118: los GET no escriben en la base, así que un bloqueo vencido se muestra
+# como "cotizado" pero sigue guardado como "bloqueado" hasta la siguiente acción.
+# Render Free no tiene tareas programadas: este workflow corre cada hora
+# `manage.py liberar_bloqueos` contra la base de producción y deja un movimiento
+# "liberada" (usuario vacío = el sistema) en cada cotización que libera.
+#
+# Necesita el secreto PROD_DATABASE_URL (Settings → Secrets and variables →
+# Actions): la "External Database URL" de la base en Render. Sin él, falla con
+# un aviso claro. GitHub pausa los workflows programados de un repositorio sin
+# actividad durante 60 días: se reactivan desde la pestaña Actions.
+
+on:
+  schedule:
+    - cron: "7 * * * *" # cada hora, al minuto 7 (hora UTC)
+  workflow_dispatch:
+
+# Una sola ejecución a la vez: si una se demora, la siguiente espera.
+concurrency:
+  group: liberar-bloqueos
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  liberar:
+    name: Liberar bloqueos vencidos en producción
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+      # settings.py exige una SECRET_KEY para arrancar; el comando no firma nada.
+      SECRET_KEY: clave-descartable-solo-para-el-comando
+    steps:
+      - name: Revisar el secreto
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Falta el secreto PROD_DATABASE_URL (External Database URL de Render)."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Instalar dependencias
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Liberar bloqueos vencidos
+        working-directory: backend
+        run: python manage.py liberar_bloqueos
