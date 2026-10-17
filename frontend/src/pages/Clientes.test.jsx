@@ -39,6 +39,20 @@ describe("Clientes", () => {
     expect(within(fila).getByText("900111222-3")).toBeInTheDocument();
   });
 
+  it("con la respuesta paginada (SGDE-116), muestra los clientes de todas las páginas", async () => {
+    simularApi({
+      "GET /clientes/": ({ search }) =>
+        new URLSearchParams(search).get("page") === "2"
+          ? [200, { count: 2, next: null, previous: "http://x/api/clientes/", results: [CLIENTES[1]] }]
+          : [200, { count: 2, next: "http://x/api/clientes/?page=2", previous: null, results: [CLIENTES[0]] }],
+      "GET /empresas/": [200, EMPRESAS],
+    });
+    abrirClientes();
+
+    expect(await screen.findByText("Hotel Caribe")).toBeInTheDocument();
+    expect(screen.getByText("María Fernanda Ríos")).toBeInTheDocument();
+  });
+
   it("si el servidor falla, avisa en vez de mostrar una lista vacía", async () => {
     simularApi({ "GET /clientes/": [500, { detail: "Error" }], "GET /empresas/": [200, EMPRESAS] });
     abrirClientes();

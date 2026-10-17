@@ -1,8 +1,9 @@
 import { apiFetch } from "./client";
+import { todasLasPaginas } from "./listas";
 
 export async function listarClientes({ incluirInactivos = false } = {}) {
   const query = incluirInactivos ? "?incluir_inactivos=true" : "";
-  return apiFetch(`/clientes/${query}`, { method: "GET" });
+  return todasLasPaginas(`/clientes/${query}`);
 }
 
 // PATCH: se envía solo lo que el formulario edita. El API valida que la
@@ -25,7 +26,7 @@ export async function reactivarCliente(id) {
 }
 
 export async function listarEmpresas() {
-  return apiFetch("/empresas/", { method: "GET" });
+  return todasLasPaginas("/empresas/");
 }
 
 export async function crearCliente({
@@ -61,7 +62,7 @@ export async function crearCliente({
 
 export async function buscarClientes(texto = "") {
   const query = texto ? `?search=${encodeURIComponent(texto)}` : "";
-  return apiFetch(`/clientes/${query}`, { method: "GET" });
+  return todasLasPaginas(`/clientes/${query}`);
 }
 
 export async function crearEmpresa(datos) {

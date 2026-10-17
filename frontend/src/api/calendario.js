@@ -1,11 +1,7 @@
-import { apiFetch } from "./client";
+import { todasLasPaginas } from "./listas";
 
 // Solo para administrador (EsAdministrador en el backend). La usan el Inicio
 // (SGDE-77), el Rack (SGDE-69) y el Calendario (SGDE-45).
-// DRF puede devolver una lista simple o un objeto paginado { count, results }.
-function comoLista(data) {
-  return Array.isArray(data) ? data : data?.results ?? [];
-}
 
 // GET /api/calendario/?desde=AAAA-MM-DD&hasta=AAAA-MM-DD&salon=<id>
 // → [{ id, salon, salon_nombre, cliente, cliente_nombre, montaje, montaje_nombre,
@@ -18,5 +14,5 @@ export async function obtenerCalendario({ desde, hasta, salon } = {}) {
   if (hasta) params.append("hasta", hasta);
   if (salon) params.append("salon", salon);
   const query = params.toString();
-  return comoLista(await apiFetch(`/calendario/${query ? `?${query}` : ""}`, { method: "GET" }));
+  return todasLasPaginas(`/calendario/${query ? `?${query}` : ""}`);
 }

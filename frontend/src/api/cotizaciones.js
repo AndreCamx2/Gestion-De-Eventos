@@ -1,4 +1,5 @@
 import { apiFetch } from "./client";
+import { todasLasPaginas } from "./listas";
 
 export async function getCotizaciones({ desde, hasta, estado, cliente, salon } = {}) {
     const params = new URLSearchParams();
@@ -8,7 +9,7 @@ export async function getCotizaciones({ desde, hasta, estado, cliente, salon } =
     if (cliente) params.append("cliente", cliente);
     if (salon) params.append("salon", salon);
     const query = params.toString();
-    return apiFetch(`/cotizaciones/${query ? `?${query}` : ""}`, { method: "GET" });
+    return todasLasPaginas(`/cotizaciones/${query ? `?${query}` : ""}`);
 }
 
 // POST /api/cotizaciones/<id>/bloqueo/ { bloqueo_hasta: ISO con zona } → detalle (SGDE-40).
@@ -63,5 +64,5 @@ export function cancelarCotizacion(id, { penalizacionPct, motivo }) {
 }
 
 export function getMovimientos(id) {
-    return apiFetch(`/cotizaciones/${id}/movimientos/`, { method: "GET" });
+    return todasLasPaginas(`/cotizaciones/${id}/movimientos/`);
 }
