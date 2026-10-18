@@ -1,5 +1,5 @@
 from django.core.cache import cache
-from django.test import RequestFactory, SimpleTestCase
+from django.test import RequestFactory, TestCase
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.test import APITestCase
@@ -657,7 +657,7 @@ class UsuarioMeTests(APITestCase):
         )
 
 
-class LimitePorIpDetrasDelProxyTests(SimpleTestCase):
+class LimitePorIpDetrasDelProxyTests(TestCase):
     """NUM_PROXIES (settings.py): el límite de intentos cuenta por la IP que agrega el
     proxy de Render, no por lo que el cliente escriba en X-Forwarded-For."""
 

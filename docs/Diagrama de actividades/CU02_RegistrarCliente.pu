@@ -1,23 +1,42 @@
 @startuml CU02_RegistrarCliente
-title CU-02: Diagrama de Actividades - Registrar Cliente
+title CU-02 · Registrar cliente (SGDE-09)
 skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 
+|Administrador|
 start
-:Usuario selecciona "Registrar Cliente";
-:Ingresa documento (NIT/CC);
-:Sistema verifica existencia del documento;
-if (¿El cliente ya existe?) then (Sí)
-  :Mostrar alerta "Cliente ya registrado";
-  :Cargar datos actuales para edición;
-else (No)
-  :Usuario ingresa nombre, correo y teléfono;
-  :Sistema valida datos obligatorios;
-  if (¿Datos completos?) then (Sí)
-    :Guardar cliente en Base de Datos;
-    :Mostrar mensaje "Registro exitoso";
-  else (No)
-    :Mostrar alerta "Completar campos requeridos";
-  endif
+:Abre Clientes y elige "Nuevo cliente";
+:Elige el tipo: persona natural o jurídica;
+if (¿Jurídica?) then (sí)
+  :Elige una empresa ya registrada;
+else (no)
+  :Escribe la identificación (CC);
 endif
+:Escribe nombre, correo, teléfono,
+forma de pago y observaciones internas;
+|Sistema|
+if (¿Datos válidos?) then (no)
+  :Responde 400 con el error de cada campo
+  (identificación repetida, falta la empresa...);
+  |Administrador|
+  :Corrige los campos marcados;
+  stop
+else (sí)
+  :Guarda el cliente
+  (un jurídico queda sin identificación propia:
+  usa el NIT de su empresa);
+endif
+|Administrador|
+:Ve el cliente nuevo en la lista;
 stop
 @enduml

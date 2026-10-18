@@ -1,5 +1,5 @@
 @startuml SGDE-31_Comparar_proveedores_secuencia
-title SGDE-31 - Comparar proveedores
+title SGDE-31 · Comparar proveedores
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,27 +13,29 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
 actor "Administrador" as AD
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-AD -> UI : Seleccionar "Comparar proveedores"
-UI --> AD : Mostrar proveedores y criterios
-AD -> UI : Elegir proveedores y criterios de comparación
-UI -> SI : Enviar selección
-SI -> SI : Validar selección
-
-alt Menos de dos proveedores seleccionados
-  SI --> UI : Informar selección insuficiente
-  UI --> AD : Mostrar mensaje "Seleccione al menos dos proveedores"
-else Selección válida
-  SI -> BD : Consultar datos y stock actualizado de los proveedores
-  BD --> SI : Datos de los proveedores
-  SI -> SI : Construir cuadro comparativo
-  SI --> UI : Enviar cuadro comparativo
-  UI --> AD : Mostrar cuadro comparativo
+AD -> UI : Abrir Proveedores y "Comparar precios"
+AD -> UI : Escribir el elemento (por ejemplo, "silla tiffany")
+UI -> SI : GET /api/stock/comparar/?elemento=texto
+SI -> BD : Stock de todos los proveedores
+BD --> SI : Elementos con cantidad y valor
+SI -> SI : Agrupar el mismo elemento sin distinguir\nmayúsculas, tildes ni espacios de más
+SI -> SI : Marcar el mejor precio entre\nlos proveedores con unidades
+alt Hay coincidencias
+  SI --> UI : 200 con los grupos
+  UI --> AD : Mostrar el cuadro comparativo con el mejor precio
+else Sin coincidencias
+  SI --> UI : 200 con lista vacía
+  UI --> AD : Mostrar que ningún proveedor lo tiene
 end
 @enduml

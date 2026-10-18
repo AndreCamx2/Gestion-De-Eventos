@@ -1,0 +1,208 @@
+@startuml Modelo_Relacional_SGDE
+!pragma layout smetana
+title Modelo relacional de SGDE (generado desde los models.py)
+skinparam backgroundColor white
+skinparam linetype ortho
+skinparam ArrowColor black
+skinparam class {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+hide circle
+hide methods
+
+entity "sitios_ciudad" as sitios_ciudad {
+  * id : bigint <<PK>>
+  --
+  * codigo : varchar <<UK>>
+  * nombre : varchar
+}
+entity "sitios_sitio" as sitios_sitio {
+  * id : bigint <<PK>>
+  --
+  * nombre : varchar
+  * ciudad_id : bigint <<FK>>
+  * creado_en : timestamp
+}
+entity "usuarios_rol" as usuarios_rol {
+  * id : bigint <<PK>>
+  --
+  * codigo : varchar <<UK>>
+  * nombre : varchar
+  * descripcion : text
+}
+entity "usuarios_usuario" as usuarios_usuario {
+  * id : bigint <<PK>>
+  --
+  * password : varchar
+  last_login : timestamp
+  * is_superuser : boolean
+  * username : varchar <<UK>>
+  * first_name : varchar
+  * last_name : varchar
+  * email : varchar
+  * is_staff : boolean
+  * is_active : boolean
+  * date_joined : timestamp
+  * rol_id : bigint <<FK>>
+}
+entity "usuarios_usuario_sitios" as usuarios_usuario_sitios {
+  * id : bigint <<PK>>
+  --
+  * usuario_id : bigint <<FK>>
+  * sitio_id : bigint <<FK>>
+}
+entity "clientes_empresa" as clientes_empresa {
+  * id : bigint <<PK>>
+  --
+  * razon_social : varchar
+  * identificacion : varchar <<UK>>
+  * contacto : varchar
+  * correo : varchar
+  ciudad_id : bigint <<FK>>
+}
+entity "clientes_cliente" as clientes_cliente {
+  * id : bigint <<PK>>
+  --
+  usuario_id : bigint <<FK>> <<UK>>
+  * tipo : varchar
+  * nombre : varchar
+  identificacion : varchar <<UK>>
+  * telefono : varchar
+  * correo : varchar
+  empresa_id : bigint <<FK>>
+  * forma_pago : varchar
+  * observaciones_internas : text
+  * activo : boolean
+  * creado_en : timestamp
+}
+entity "salones_montaje" as salones_montaje {
+  * id : bigint <<PK>>
+  --
+  * codigo : varchar <<UK>>
+  * nombre : varchar
+  * descripcion : text
+}
+entity "salones_salon" as salones_salon {
+  * id : bigint <<PK>>
+  --
+  * sitio_id : bigint <<FK>>
+  * nombre : varchar
+  altura : decimal
+  ancho : decimal
+  * foto_url : varchar
+  * activo : boolean
+}
+entity "salones_salonmontaje" as salones_salonmontaje {
+  * id : bigint <<PK>>
+  --
+  * salon_id : bigint <<FK>>
+  * montaje_id : bigint <<FK>>
+  * aforo : int
+  * foto_url : varchar
+}
+entity "catalogo_concepto" as catalogo_concepto {
+  * id : bigint <<PK>>
+  --
+  * sitio_id : bigint <<FK>>
+  * nombre : varchar
+  * precio : decimal
+  * impuesto_pct : decimal
+  * activo : boolean
+}
+entity "catalogo_historialprecioconcepto" as catalogo_historialprecioconcepto {
+  * id : bigint <<PK>>
+  --
+  * concepto_id : bigint <<FK>>
+  * precio_anterior : decimal
+  * precio_nuevo : decimal
+  * modificado_por_id : bigint <<FK>>
+  * fecha_modificacion : timestamp
+}
+entity "proveedores_proveedor" as proveedores_proveedor {
+  * id : bigint <<PK>>
+  --
+  * nombre : varchar
+  * identificacion : varchar
+  * contacto : varchar
+  usuario_id : bigint <<FK>> <<UK>>
+}
+entity "proveedores_stockelemento" as proveedores_stockelemento {
+  * id : bigint <<PK>>
+  --
+  * proveedor_id : bigint <<FK>>
+  * nombre_elemento : varchar
+  * cantidad : int
+  * valor : decimal
+  * actualizado_en : timestamp
+}
+entity "cotizaciones_cotizacion" as cotizaciones_cotizacion {
+  * id : bigint <<PK>>
+  --
+  * sitio_id : bigint <<FK>>
+  * cliente_id : bigint <<FK>>
+  * usuario_id : bigint <<FK>>
+  * salon_id : bigint <<FK>>
+  * montaje_id : bigint <<FK>>
+  * estado : varchar
+  * fecha_evento : date
+  validez_oferta : date
+  * cantidad_personas : int
+  bloqueo_hasta : timestamp
+  * garantia_tipo : varchar
+  garantia_monto : decimal
+  garantia_registrada_en : timestamp
+  garantia_registrada_por_id : bigint <<FK>>
+  penalizacion_pct : decimal
+  * motivo_cancelacion : text
+  cancelado_en : timestamp
+  cancelado_por_id : bigint <<FK>>
+  * creado_en : timestamp
+}
+entity "cotizaciones_cotizacionitem" as cotizaciones_cotizacionitem {
+  * id : bigint <<PK>>
+  --
+  * cotizacion_id : bigint <<FK>>
+  * concepto_id : bigint <<FK>>
+  * cantidad : int
+  * precio_unitario : decimal
+  * impuesto_pct : decimal
+}
+entity "cotizaciones_movimientocotizacion" as cotizaciones_movimientocotizacion {
+  * id : bigint <<PK>>
+  --
+  * cotizacion_id : bigint <<FK>>
+  * tipo : varchar
+  usuario_id : bigint <<FK>>
+  * fecha : timestamp
+  * detalle : varchar
+}
+
+sitios_ciudad ||--o{ sitios_sitio
+usuarios_rol ||--o{ usuarios_usuario
+usuarios_usuario ||--o{ usuarios_usuario_sitios
+sitios_sitio ||--o{ usuarios_usuario_sitios
+sitios_ciudad |o--o{ clientes_empresa
+usuarios_usuario |o--o| clientes_cliente
+clientes_empresa |o--o{ clientes_cliente
+sitios_sitio ||--o{ salones_salon
+salones_salon ||--o{ salones_salonmontaje
+salones_montaje ||--o{ salones_salonmontaje
+sitios_sitio ||--o{ catalogo_concepto
+catalogo_concepto ||--o{ catalogo_historialprecioconcepto
+usuarios_usuario ||--o{ catalogo_historialprecioconcepto
+usuarios_usuario |o--o| proveedores_proveedor
+proveedores_proveedor ||--o{ proveedores_stockelemento
+sitios_sitio ||--o{ cotizaciones_cotizacion
+clientes_cliente ||--o{ cotizaciones_cotizacion
+usuarios_usuario ||--o{ cotizaciones_cotizacion
+salones_salon ||--o{ cotizaciones_cotizacion
+salones_montaje ||--o{ cotizaciones_cotizacion
+usuarios_usuario |o--o{ cotizaciones_cotizacion
+usuarios_usuario |o--o{ cotizaciones_cotizacion
+cotizaciones_cotizacion ||--o{ cotizaciones_cotizacionitem
+catalogo_concepto ||--o{ cotizaciones_cotizacionitem
+cotizaciones_cotizacion ||--o{ cotizaciones_movimientocotizacion
+usuarios_usuario |o--o{ cotizaciones_movimientocotizacion
+
+@enduml

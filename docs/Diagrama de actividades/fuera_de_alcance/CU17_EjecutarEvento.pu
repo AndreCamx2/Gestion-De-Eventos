@@ -1,0 +1,21 @@
+@startuml CU17_EjecutarEvento
+title CU-17: Diagrama de Actividades - Ejecutar Evento · FUERA DEL ALCANCE DE LA BETA
+skinparam backgroundColor white
+
+note
+  Análisis inicial (septiembre de 2026). No hace parte de la beta:
+  ni la orden de servicio (BEO), ni la ejecución, liquidación, facturación
+  o reportes se construyen en esta versión. Ver docs/README.md.
+end note
+start
+:Llega la fecha de inicio del Evento;
+:Sistema cambia estado del Evento a "En Ejecución";
+:Áreas operativas entregan servicios según Orden (BEO);
+if (¿Cliente solicita servicios extra de última hora?) then (Sí)
+  :Comercial o Coordinador agrega "Consumos Extra" al evento;
+  :Sistema actualiza cuenta por cobrar;
+else (No)
+endif
+:Culmina el horario del evento;
+stop
+@enduml

@@ -1,4 +1,5 @@
-@startuml
+@startuml SGDE-11_Registrar_empresas
+!pragma layout smetana
 left to right direction
 skinparam backgroundColor white
 skinparam usecase {
@@ -11,33 +12,29 @@ skinparam rectangle {
   FontSize 13
   FontStyle bold
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+  FontSize 11
+}
 skinparam ArrowColor black
+skinparam actorStyle awesome
+title SGDE-11 · Registrar empresas
 
 actor "Administrador" as AD
 
-rectangle "Sistema SGDE" {
-  usecase "Registrar empresas" as UC1
-  usecase "Registrar salón" as UC2
-  usecase "Configurar\nmontajes" as UC3
-  usecase "Registrar conceptos" as UC4
-  usecase "Editar precios" as UC5
-  usecase "Consultar histórico" as UC6
-  usecase "Registrar usuario" as UC7
-  usecase "Registrar hotel" as UC8
-  usecase "Comparar\nproveedores" as UC9
+rectangle "SGDE" {
+  usecase "Registrar empresa" as UC1
+  usecase "Consultar empresas" as UC2
+  usecase "Buscar por razón social\no identificación" as UC3
 }
 
-AD -- UC1
-AD -- UC2
-AD -- UC3
-AD -- UC4
-AD -- UC5
-AD -- UC6
-AD -- UC7
-AD -- UC8
-AD -- UC9
+AD --> UC1
+AD --> UC2
+UC3 .> UC2 : <<extend>>
 
-UC3 ..> UC2 : <<extend>>
-UC5 ..> UC4 : <<extend>>
-UC7 ..> UC8 : <<extend>>
+note right of UC1
+  La identificación (NIT) es única.
+  Las empresas se comparten entre sitios.
+end note
 @enduml

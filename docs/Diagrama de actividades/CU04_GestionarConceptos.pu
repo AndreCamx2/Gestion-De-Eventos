@@ -1,18 +1,43 @@
 @startuml CU04_GestionarConceptos
-title CU-04: Diagrama de Actividades - Gestionar Conceptos
+title CU-04 · Gestionar conceptos y precios (SGDE-16, SGDE-17)
 skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 
+|Administrador|
 start
-:Administrador selecciona "Nuevo Concepto";
-:Ingresa nombre y tipo (Alimentos, Equipos, Servicios);
-:Asigna Precio Base y porcentaje de Impuestos;
-:Asigna Proveedor (Opcional);
-if (¿El concepto requiere stock físico?) then (Sí)
-  :Vincular a inventario de Elementos;
-else (No)
-  :Marcar como servicio intangible;
+if (¿Concepto nuevo o edición?) then (nuevo)
+  :Escribe sitio, nombre, precio
+  e impuesto (%);
+  |Sistema|
+  :Guarda el concepto activo en el
+  catálogo de ese sitio;
+else (edición)
+  |Administrador|
+  :Cambia precio, impuesto o lo desactiva;
+  |Sistema|
+  if (¿Cambió el precio?) then (sí)
+    :Guarda el precio anterior, el nuevo,
+    quién y cuándo en el historial;
+  else (no)
+  endif
+  :Guarda los cambios;
 endif
-:Guardar concepto en el catálogo;
-:Concepto disponible para cotizaciones;
+|Administrador|
+:El concepto queda disponible
+(si está activo) para nuevas cotizaciones;
+note right
+  Las cotizaciones ya hechas conservan
+  el precio con que se cotizaron.
+end note
 stop
 @enduml

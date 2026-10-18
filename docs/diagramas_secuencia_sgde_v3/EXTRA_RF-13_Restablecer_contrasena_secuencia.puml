@@ -1,5 +1,5 @@
 @startuml EXTRA_RF-13_Restablecer_contrasena_secuencia
-title RF-13 - Restablecer contraseña
+title RF-13 · Restablecer contraseña (SGDE-96)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,44 +13,46 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
-actor "Usuario del sistema" as US
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
-participant "Servicio de correo" as Correo
-US -> UI : Seleccionar "Olvidé mi contraseña"
-UI --> US : Solicitar correo electrónico
-US -> UI : Ingresar correo electrónico
-UI -> SI : Enviar correo
-SI -> BD : Buscar usuario por correo
-BD --> SI : Resultado de consulta
-
-alt Correo no registrado (CP-21)
-  SI --> UI : Informar correo inexistente
-  UI --> US : Mostrar alerta "El correo no existe en la base de datos"
-else Correo registrado (CP-20)
-  SI -> SI : Generar código de verificación
-  SI -> BD : Guardar código con su vencimiento
-  BD --> SI : Confirmar registro
-  SI -> Correo : Enviar código de verificación
-  SI --> UI : Informar código enviado
-  UI --> US : Solicitar código y nueva contraseña
-  US -> UI : Ingresar código y nueva contraseña
-  UI -> SI : Enviar código y nueva contraseña
-  SI -> BD : Validar código
-  BD --> SI : Resultado de consulta
-
-  alt Código incorrecto o vencido
-    SI --> UI : Informar código inválido
-    UI --> US : Mostrar mensaje "El código no es válido"
-  else Código correcto (CP-22)
-    SI -> SI : Cifrar nueva contraseña
-    SI -> BD : Actualizar contraseña
-    BD --> SI : Confirmar actualización
-    SI --> UI : Informar restablecimiento exitoso
-    UI --> US : Mostrar mensaje "Contraseña actualizada, ya puede iniciar sesión"
+actor "Usuario" as US
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
+participant "Servidor de correo" as Correo
+US -> UI : "¿Olvidaste tu contraseña?" y escribir el correo
+UI -> SI : POST /api/clave/recuperar/ {email}
+alt Más de 5 solicitudes en una hora
+  SI --> UI : 429
+else
+  SI -> BD : Buscar usuario activo con ese correo
+  opt El correo existe (CP-20)
+    SI -> SI : Generar enlace de un solo uso\n(vence en 60 min)
+    SI -> Correo : Enviar el enlace
   end
+  SI --> UI : 200 con el mismo mensaje siempre (CP-21)
+  UI --> US : Mensaje genérico de "solicitud recibida"
 end
+US -> UI : Abrir el enlace y escribir la contraseña nueva
+UI -> SI : POST /api/clave/restablecer/ {uid, token, password}
+alt Enlace inválido o vencido
+  SI --> UI : 400 (enlace inválido o vencido)
+  UI --> US : Mostrar el aviso y ofrecer pedir otro
+else Contraseña débil
+  SI --> UI : 400 en "password"
+  UI --> US : Mostrar el error bajo el campo
+else Todo válido (CP-22)
+  SI -> BD : Guardar la contraseña cifrada
+  SI -> BD : Poner en la lista negra todos sus refresh vigentes
+  SI --> UI : 200 (contraseña actualizada)
+  UI --> US : Ir a iniciar sesión
+end
+note over SI
+  CP-21 cambia: el sistema NO dice que el correo no existe,
+  para no revelar qué correos están registrados.
+end note
 @enduml

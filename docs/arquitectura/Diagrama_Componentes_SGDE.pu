@@ -1,0 +1,72 @@
+@startuml Diagrama_Componentes_SGDE
+!pragma layout smetana
+title Componentes de SGDE
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam DefaultFontSize 12
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+
+skinparam component {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+skinparam package {
+  BorderColor #9AA3AE
+}
+
+package "Frontend (React + Vite)" {
+  [Pantallas\npages/] as PAGES
+  [Layout y rutas por rol\nlayouts/, routes/] as ROUTES
+  [Componentes Piedra viva\ncomponents/ui, components/bloqueo] as UI
+  [Cliente HTTP\napi/client.js (fetch + JWT)] as CLIENT
+  [Módulos de API\napi/*.js] as APIJS
+}
+
+package "Backend (Django REST Framework)" as BACK {
+  [Rutas del API\nconfig/urls.py] as URLS
+  [Autenticación JWT\nsimplejwt + lista negra] as AUTH
+  [usuarios\nRol, Usuario, permisos] as USUARIOS
+  [sitios\nCiudad, Sitio, filtro por sitio] as SITIOS
+  [clientes\nEmpresa, Cliente] as CLIENTES
+  [salones\nMontaje, Salon, SalonMontaje] as SALONES
+  [catalogo\nConcepto, historial de precios] as CATALOGO
+  [proveedores\nProveedor, StockElemento] as PROVEEDORES
+  [cotizaciones\nCotizacion, ítems, movimientos,\nestados.py] as COTIZACIONES
+  [core\nmanejador de errores, seed_demo] as CORE
+}
+
+database "PostgreSQL" as DB
+
+ROUTES --> PAGES
+PAGES --> UI
+PAGES --> APIJS
+APIJS --> CLIENT
+CLIENT --> URLS : HTTPS /api/... + JWT
+URLS --> AUTH
+URLS --> USUARIOS
+URLS --> CLIENTES
+URLS --> SALONES
+URLS --> CATALOGO
+URLS --> PROVEEDORES
+URLS --> COTIZACIONES
+
+COTIZACIONES --> SALONES
+COTIZACIONES --> CATALOGO
+COTIZACIONES --> CLIENTES
+COTIZACIONES --> SITIOS
+SALONES --> SITIOS
+CATALOGO --> SITIOS
+USUARIOS --> SITIOS
+PROVEEDORES --> USUARIOS
+CLIENTES --> USUARIOS
+
+BACK --> DB : ORM de Django
+
+note right of SITIOS
+  apps/sitios/acceso.py: cada vista filtra
+  por los sitios del usuario (SGDE-90).
+end note
+@enduml

@@ -1,16 +1,39 @@
 @startuml CU15_ConsultarCalendario
-title CU-15: Diagrama de Actividades - Consultar Calendario
+title CU-15 · Consultar disponibilidad (SGDE-14, SGDE-45, SGDE-69)
 skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 
+|Administrador|
 start
-:Usuario ingresa a "Calendario de Disponibilidad";
-:Filtra por Mes, Semana o Salón;
-:Sistema consulta en BD Bloqueos y Eventos Confirmados;
-:Renderizar grilla de tiempos (Timeline);
-if (¿Usuario selecciona una fecha disponible?) then (Sí)
-  :Habilitar botón "Crear Cotización para esta fecha";
-else (Selecciona fecha ocupada)
-  :Mostrar detalles del Bloqueo/Evento (Solo lectura);
+if (¿Qué vista?) then (calendario)
+  :Elige el salón y el mes;
+else (rack)
+  :Ve todos los salones
+  durante varios días;
+endif
+|Sistema|
+:Busca las cotizaciones no canceladas
+del rango, solo de sus sitios;
+|Administrador|
+:Ve cada día con el color de su estado
+(cotizado, bloqueado, confirmado, vencida);
+if (¿Abre un día de un salón?) then (sí)
+  :Ve las cotizaciones de ese día;
+  if (¿Quiere bloquear o liberar?) then (sí)
+    :Bloquea o libera desde el panel del día;
+  else (no)
+  endif
+else (no)
 endif
 stop
 @enduml

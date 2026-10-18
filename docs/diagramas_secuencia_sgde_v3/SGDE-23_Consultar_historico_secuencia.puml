@@ -1,5 +1,5 @@
 @startuml SGDE-23_Consultar_historico_secuencia
-title SGDE-23 - Consultar histórico (RF-11)
+title SGDE-23 · Consultar histórico (RF-11)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,25 +13,30 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
 actor "Administrador" as AD
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-AD -> UI : Seleccionar "Consultar histórico"
-UI --> AD : Mostrar filtros de búsqueda
-AD -> UI : Filtrar por estado (confirmados, cancelados o finalizados)
-UI -> SI : Enviar filtros
-SI -> BD : Buscar eventos que cumplan el filtro
-BD --> SI : Resultado de consulta
-
-alt Hay eventos que cumplen el filtro (CP-18)
-  SI --> UI : Enviar listado de eventos
-  UI --> AD : Mostrar listado detallado del histórico
+AD -> UI : Abrir Histórico y elegir filtros
+UI -> SI : GET /api/cotizaciones/?estado=&cliente=&desde=&hasta=
+SI -> BD : Cotizaciones de sus sitios que cumplen el filtro
+BD --> SI : Resultado
+alt Hay cotizaciones (CP-18)
+  SI --> UI : 200 con la lista
+  UI --> AD : Mostrar el listado del histórico
 else Sin resultados
-  SI --> UI : Informar que no hay resultados
-  UI --> AD : Mostrar mensaje "No hay eventos para el filtro seleccionado"
+  SI --> UI : 200 con lista vacía
+  UI --> AD : Mostrar que no hay resultados
 end
+AD -> UI : Abrir una cotización
+UI -> SI : GET /api/cotizaciones/{id}/movimientos/
+SI --> UI : 200 con quién hizo cada cambio y cuándo
+UI --> AD : Mostrar los movimientos (vacío = lo hizo el sistema)
 @enduml

@@ -1,5 +1,5 @@
 @startuml EXTRA_RF-12_Registrar_proveedor_secuencia
-title RF-12 - Registrar proveedor y sus montajes
+title RF-12 · Registrar proveedor
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,30 +13,34 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
 actor "Administrador" as AD
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-AD -> UI : Seleccionar "Registrar proveedor"
-UI -> SI : Solicitar tipos de montaje
-SI -> BD : Consultar montajes
-BD --> SI : Tipos de montaje
-SI --> UI : Enviar montajes
-UI --> AD : Mostrar formulario y montajes disponibles
-AD -> UI : Ingresar datos del proveedor y seleccionar los montajes que ofrece
-UI -> SI : Enviar datos del proveedor y montajes
-SI -> SI : Validar datos ingresados
-
-alt Campos obligatorios vacíos
-  SI --> UI : Informar campos obligatorios faltantes
-  UI --> AD : Mostrar alerta "Todos los campos son obligatorios"
+AD -> UI : Abrir Proveedores y "Nuevo proveedor"
+AD -> UI : Nombre, identificación, contacto\ny usuario de acceso (opcional)
+UI -> SI : POST /api/proveedores/
+SI -> SI : Validar campos
+alt Falta el nombre
+  SI --> UI : 400 en "nombre"
+  UI --> AD : Mostrar el error bajo el campo
+else El usuario no tiene rol proveedor o ya está vinculado a otro
+  SI --> UI : 400 en "usuario"
+  UI --> AD : Mostrar el error bajo el campo
 else Datos válidos (CP-19)
-  SI -> BD : Guardar proveedor y vincularlo con sus montajes
-  BD --> SI : Confirmar registro
-  SI --> UI : Informar registro exitoso
-  UI --> AD : Mostrar mensaje "Proveedor registrado y vinculado a sus montajes"
+  SI -> BD : Guardar proveedor
+  SI --> UI : 201 con el proveedor
+  UI --> AD : Mostrar el proveedor; luego se registra su stock
 end
+note over SI
+  En la beta el proveedor no se vincula a montajes:
+  se registra su stock de elementos (SGDE-39).
+end note
 @enduml

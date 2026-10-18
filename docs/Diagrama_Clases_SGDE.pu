@@ -1,7 +1,12 @@
 @startuml Diagrama_Clases_SGDE
+!pragma layout smetana
 ' Diagrama de clases de SGDE, regenerado desde los models.py de backend/apps/ (SGDE-105).
-' Si no coincide con models.py, el código manda. PNG: docs/Diagrama_Clases_SGDE.png, con
-'   docker run --rm -v "<ruta>/docs:/data" plantuml/plantuml:1.2026.8 -tpng /data/Diagrama_Clases_SGDE.pu
+' Si no coincide con models.py, el código manda. PNG: docs/Diagrama_Clases_SGDE.png, con la
+' extensión PlantUML de VS Code o con plantuml.jar (motor smetana: no necesita Graphviz).
+' Sin paquetes a propósito: el motor smetana falla con ellos. Clases por app de Django:
+'   sitios: Ciudad, Sitio · usuarios: Rol, Usuario · clientes: Empresa, Cliente
+'   salones: Montaje, Salon, SalonMontaje · catalogo: Concepto, HistorialPrecioConcepto
+'   proveedores: Proveedor, StockElemento · cotizaciones: Cotizacion, CotizacionItem, MovimientoCotizacion
 ' No hay entidades Hotel, Bloqueo ni Evento: el sitio es Sitio, el bloqueo es un
 ' estado de la cotización y el evento ES la Cotizacion confirmada.
 title Diagrama de Clases - SGDE (modelo actual)
@@ -9,7 +14,6 @@ skinparam backgroundColor white
 skinparam classAttributeIconSize 0
 hide empty methods
 
-package "sitios" {
   class Ciudad <<catálogo>> {
     +codigo: String {único}
     +nombre: String
@@ -18,9 +22,7 @@ package "sitios" {
     +nombre: String
     +creado_en: DateTime
   }
-}
 
-package "usuarios" {
   class Rol <<catálogo>> {
     +codigo: String {único}
     +nombre: String
@@ -33,9 +35,7 @@ package "usuarios" {
     +last_name: String
     +is_active: bool
   }
-}
 
-package "clientes" {
   class Empresa {
     +razon_social: String
     +identificacion: String {único}
@@ -57,9 +57,7 @@ package "clientes" {
     natural
     juridica
   }
-}
 
-package "salones" {
   class Montaje <<catálogo>> {
     +codigo: String {único}
     +nombre: String
@@ -76,9 +74,7 @@ package "salones" {
     +aforo: int
     +foto_url: URL
   }
-}
 
-package "catalogo" {
   class Concepto {
     +nombre: String
     +precio: Decimal
@@ -90,9 +86,7 @@ package "catalogo" {
     +precio_nuevo: Decimal
     +fecha_modificacion: DateTime
   }
-}
 
-package "proveedores" {
   class Proveedor {
     +nombre: String
     +identificacion: String
@@ -104,9 +98,7 @@ package "proveedores" {
     +valor: Decimal
     +actualizado_en: DateTime
   }
-}
 
-package "cotizaciones" {
   class Cotizacion {
     +estado: EstadoCotizacion
     +fecha_evento: Date
@@ -150,7 +142,6 @@ package "cotizaciones" {
     confirmada
     cancelada
   }
-}
 
 ' ---- Relaciones (muchos "1" del lado de la llave foránea) ----
 Ciudad "1" -- "0..*" Sitio
@@ -166,6 +157,7 @@ Sitio "1" -- "0..*" Concepto
 Concepto "1" *-- "0..*" HistorialPrecioConcepto
 Usuario "1" -- "0..*" HistorialPrecioConcepto : modificó >
 Proveedor "1" -- "0..*" StockElemento
+Usuario "0..1" -- "0..1" Proveedor : accede a "Mi stock" >
 Sitio "1" -- "0..*" Cotizacion
 Cliente "1" -- "0..*" Cotizacion
 Usuario "1" -- "0..*" Cotizacion : creó · registró garantía · canceló >

@@ -1,0 +1,46 @@
+@startuml SGDE-29_Registrar_sitio_secuencia
+title SGDE-29 · Registrar sitio
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+autonumber
+
+actor "Administrador" as AD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
+
+AD -> UI : Abrir Sitios y "Nuevo sitio"
+UI -> SI : GET /api/ciudades/
+SI --> UI : Ciudades (CTG...)
+AD -> UI : Nombre y ciudad
+UI -> SI : POST /api/sitios/
+SI -> SI : Validar campos
+alt Falta el nombre o la ciudad
+  SI --> UI : 400 con el error de cada campo
+  UI --> AD : Mostrar el error bajo cada campo
+else Datos válidos
+  SI -> BD : Guardar sitio
+  SI -> BD : Asignar el sitio a quien lo creó
+  SI --> UI : 201 con el sitio
+  UI --> AD : Mostrar el sitio en la lista
+end
+note over SI
+  Un sitio es un hotel, centro de convenciones,
+  finca o casa de eventos.
+end note
+@enduml

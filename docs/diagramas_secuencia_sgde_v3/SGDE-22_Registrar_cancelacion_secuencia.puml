@@ -1,5 +1,5 @@
 @startuml SGDE-22_Registrar_cancelacion_secuencia
-title SGDE-22 - Registrar cancelación (RF-10)
+title SGDE-22 · Registrar cancelación (RF-10)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,28 +13,35 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
-actor "Ejecutivo comercial" as EC
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+actor "Administrador" as AD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-EC -> UI : Seleccionar evento y "Registrar cancelación"
-UI --> EC : Solicitar causa de la cancelación
-EC -> UI : Ingresar causa
-UI -> SI : Enviar causa de cancelación
-SI -> BD : Consultar estado del evento
-BD --> SI : Estado del evento
-
-alt Evento no confirmado o ya cancelado
-  SI --> UI : Informar que no se puede cancelar
-  UI --> EC : Mostrar mensaje "El evento no se puede cancelar"
+AD -> UI : En un evento confirmado, "Cancelar evento"
+AD -> UI : Penalización (%) y motivo
+UI --> AD : Monto retenido en vivo
+UI -> SI : POST /api/cotizaciones/{id}/cancelacion/ {penalizacion_pct, motivo}
+SI -> SI : Validar penalización (0 a 100) y motivo
+alt Falta el motivo o la penalización no es válida
+  SI --> UI : 400 con el error de cada campo
+  UI --> AD : Mostrar el error bajo cada campo
+else No está confirmado
+  SI --> UI : 409 "Solo se puede cancelar un evento confirmado"
+  UI --> AD : Mostrar el aviso de conflicto
 else Evento confirmado (CP-17)
-  SI -> SI : Aplicar políticas del servicio (retención o devolución)
-  SI -> BD : Cambiar estado a "Cancelado", liberar agenda y registrar retención/devolución
-  BD --> SI : Confirmar actualización
-  SI --> UI : Informar cancelación registrada
-  UI --> EC : Mostrar estado "Cancelado" y retenciones o devoluciones
+  SI -> BD : Estado = cancelado, con penalización, motivo,\nquién y cuándo
+  SI -> BD : Guardar movimiento "cancelada"
+  SI --> UI : 200 con la cotización y el monto retenido
+  UI --> AD : Mostrar "Cotización cancelada" con lo retenido
 end
+note over SI, BD
+  Al dejar de estar confirmada, la fecha del salón queda libre.
+end note
 @enduml

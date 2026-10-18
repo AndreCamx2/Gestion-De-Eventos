@@ -1,5 +1,5 @@
 @startuml SGDE-20_Registrar_aceptacion_garantia_secuencia
-title SGDE-20 - Registrar aceptación y garantía (RF-08)
+title SGDE-20 · Registrar aceptación y garantía (RF-08)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,26 +13,41 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
-actor "Ejecutivo comercial" as EC
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+actor "Administrador" as AD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-EC -> UI : Seleccionar cotización y "Registrar aceptación"
-UI --> EC : Mostrar formulario de aceptación y garantía
-EC -> UI : Confirmar aceptación del cliente y adjuntar comprobante de garantía/pago
-UI -> SI : Enviar aceptación y comprobante
-SI -> SI : Validar soporte de garantía
-
-alt Sin soporte de garantía o pago mínimo (CP-15)
-  SI --> UI : Informar garantía obligatoria
-  UI --> EC : Mostrar alerta "La garantía es obligatoria para continuar"
-else Soporte adjunto (CP-14)
-  SI -> BD : Guardar aceptación y garantía
-  BD --> SI : Confirmar registro
-  SI --> UI : Informar registro exitoso
-  UI --> EC : Mostrar mensaje "Aceptación y garantía registradas"
+AD -> UI : En una cotización, "Registrar garantía"
+AD -> UI : Tipo (transferencia, tarjeta, consignación\no efectivo) y monto
+UI -> SI : POST /api/cotizaciones/{id}/aceptacion/ {tipo, monto}
+SI -> SI : Validar tipo y monto
+alt Falta el tipo o el monto (CP-15)
+  SI --> UI : 400 con el error de cada campo
+  UI --> AD : Mostrar el error bajo cada campo
+else Datos válidos
+  SI -> BD : Bloquear las filas del salón y de la cotización
+  alt No está cotizada (no vencida) ni bloqueada, o salón de baja
+    SI --> UI : 409 con el motivo
+    UI --> AD : Mostrar el aviso de conflicto
+  else Otra cotización ya está confirmada o bloqueada ese día
+    SI --> UI : 409 (fecha ocupada)
+    UI --> AD : Mostrar el aviso de conflicto
+  else Fecha libre (CP-14)
+    SI -> BD : Guardar garantía, quién y cuándo;\nestado = confirmado
+    SI -> BD : Guardar movimiento "confirmada"
+    SI --> UI : 200 con la cotización confirmada
+    UI --> AD : Mostrar "¡Evento confirmado!"
+  end
 end
+note over SI
+  No se adjuntan comprobantes:
+  la beta guarda el tipo y el monto.
+end note
 @enduml
