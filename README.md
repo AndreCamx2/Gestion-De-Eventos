@@ -34,6 +34,8 @@ Requerimientos oficiales: RF-01 a RF-13 y RNF-01 a RNF-08 ([`docs/Requerimientos
 
 **Cliente:** se registra, inicia sesión y ve su inicio.
 
+**App móvil** (Android e iOS, carpeta [`mobile/`](mobile/README.md)): inicio de sesión, disponibilidad y bloqueos para el administrador, y "Mi stock" para el proveedor.
+
 **Para todos:** inicio y cierre de sesión con JWT, y recuperación de contraseña por correo (en `rediseno`).
 
 **Fuera de alcance:** facturación, inscripción o acreditación de asistentes y pasarela de pago.
@@ -58,6 +60,7 @@ Gestion-De-Eventos/
 │   └── apps/           sitios, usuarios, clientes, salones, catalogo,
 │                       proveedores, cotizaciones y core
 ├── frontend/           Aplicación en React (src/api, src/pages, ...)
+├── mobile/             App móvil en React Native + Expo (ver mobile/README.md)
 ├── database/           Modelo relacional y esquema SQL de referencia
 ├── docs/               Requerimientos, diagramas, guía visual y guías del equipo
 ├── .github/workflows/  Pruebas y despliegue
@@ -90,6 +93,7 @@ Al arrancar, el backend aplica las migraciones y crea los datos de prueba (`seed
 ```powershell
 docker compose exec backend python manage.py test   # backend
 cd frontend; npm test; npm run lint; npm run build   # frontend (scripts de la rama rediseno)
+cd mobile; npm test; npx eslint .                    # app móvil
 ```
 
 El despliegue a producción corre primero las pruebas del backend: si fallan, no se despliega.
