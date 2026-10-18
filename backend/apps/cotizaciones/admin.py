@@ -21,8 +21,14 @@ class MovimientoInline(admin.TabularInline):
 
 class CotizacionAdmin(admin.ModelAdmin):
     inlines = [CotizacionItemInline, MovimientoInline]
-    # Los llenan los endpoints de aceptación y cancelación; no se editan a mano.
-    readonly_fields = ["garantia_registrada_en", "garantia_registrada_por", "cancelado_en", "cancelado_por"]
+    # El estado y todo lo que depende de él solo cambia por el API (estados.py), que aplica
+    # las reglas (fecha libre, salón activo, vigencia) y deja su movimiento (SGDE-119, RNF-03).
+    # Editarlos a mano en /admin/ se saltaba la máquina de estados.
+    readonly_fields = [
+        "estado", "bloqueo_hasta",
+        "garantia_tipo", "garantia_monto", "garantia_registrada_en", "garantia_registrada_por",
+        "penalizacion_pct", "motivo_cancelacion", "cancelado_en", "cancelado_por",
+    ]
 
 
 admin.site.register(Cotizacion, CotizacionAdmin)
