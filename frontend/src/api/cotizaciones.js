@@ -1,4 +1,5 @@
 import { apiFetch } from "./client";
+import { todasLasPaginas } from "./listas";
 
 /**
  * @param {Object} filters
@@ -43,7 +44,7 @@ export async function getCotizaciones(filters = {}) {
         const query = buildQueryParams(filters);
         const endpoint = `/cotizaciones/${query}`;
 
-        return await apiFetch(endpoint, { method: "GET" });
+        return await todasLasPaginas(endpoint);
     } catch (error) {
         console.error("Error en getCotizaciones API:", error);
         throw new Error(

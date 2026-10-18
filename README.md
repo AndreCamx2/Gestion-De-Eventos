@@ -8,11 +8,13 @@ Es un proyecto académico de **Unicolombo** desarrollado con un cliente real del
 
 | | |
 |---|---|
-| Aplicación (producción) | https://gestion-de-eventos-wine.vercel.app |
+| Aplicación (producción) | https://gestion-de-eventos-bice.vercel.app |
 | API (producción) | https://sgde-backend.onrender.com/api/ |
 | Backlog | Jira, proyecto `SGDE` |
 
 > El rediseño del frontend ("Piedra viva") vive en la rama `rediseno` y llega a producción cuando se fusione con `main` (SGDE-85).
+
+> Las cabeceras de seguridad del frontend (CSP, SGDE-113) están en `frontend/vercel.json`. Si cambia la URL del backend, hay que cambiarla también en `connect-src`, o el navegador bloqueará las llamadas al API.
 
 ## Qué hace la beta
 
@@ -31,6 +33,8 @@ Requerimientos oficiales: RF-01 a RF-13 y RNF-01 a RNF-08 ([`docs/Requerimientos
 **Proveedor:** actualiza su propio stock ("Mi stock").
 
 **Cliente:** se registra, inicia sesión y ve su inicio.
+
+**App móvil** (Android e iOS, carpeta [`mobile/`](mobile/README.md)): inicio de sesión, disponibilidad y bloqueos para el administrador, y "Mi stock" para el proveedor.
 
 **Para todos:** inicio y cierre de sesión con JWT, y recuperación de contraseña por correo (en `rediseno`).
 
@@ -56,6 +60,7 @@ Gestion-De-Eventos/
 │   └── apps/           sitios, usuarios, clientes, salones, catalogo,
 │                       proveedores, cotizaciones y core
 ├── frontend/           Aplicación en React (src/api, src/pages, ...)
+├── mobile/             App móvil en React Native + Expo (ver mobile/README.md)
 ├── database/           Modelo relacional y esquema SQL de referencia
 ├── docs/               Requerimientos, diagramas, guía visual y guías del equipo
 ├── .github/workflows/  Pruebas y despliegue
@@ -88,6 +93,7 @@ Al arrancar, el backend aplica las migraciones y crea los datos de prueba (`seed
 ```powershell
 docker compose exec backend python manage.py test   # backend
 cd frontend; npm test; npm run lint; npm run build   # frontend (scripts de la rama rediseno)
+cd mobile; npm test; npx eslint .                    # app móvil
 ```
 
 El despliegue a producción corre primero las pruebas del backend: si fallan, no se despliega.

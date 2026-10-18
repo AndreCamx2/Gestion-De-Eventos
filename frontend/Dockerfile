@@ -3,9 +3,11 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Instalamos dependencias primero para aprovechar el caché de Docker
+# Instalamos dependencias primero para aprovechar el caché de Docker.
+# npm ci instala exactamente las versiones de package-lock.json (SGDE-120):
+# el build es igual en todas las máquinas y falla si el lock no coincide.
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 
