@@ -1,5 +1,5 @@
 @startuml SGDE-15_Bloquear_salon_secuencia
-title SGDE-15 - Bloquear salón (RF-07)
+title SGDE-15 · Bloquear salón (RF-07)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,25 +13,38 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
-actor "Ejecutivo comercial" as EC
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+actor "Administrador" as AD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-EC -> UI : Seleccionar "Bloquear salón" desde la cotización
-UI -> SI : Enviar salón, fecha y horario a bloquear
-SI -> BD : Verificar si hay un bloqueo vigente
-BD --> SI : Resultado de consulta
-
-alt Ya existe un bloqueo temporal vigente (CP-13)
-  SI --> UI : Informar bloqueo activo
-  UI --> EC : Mostrar restricción por bloqueo activo
-else Salón sin bloqueo vigente
-  SI -> BD : Guardar bloqueo y cambiar estado del salón a "Bloqueado Temporalmente"
-  BD --> SI : Confirmar bloqueo
-  SI --> UI : Informar bloqueo registrado
-  UI --> EC : Mostrar mensaje "Salón bloqueado temporalmente"
+AD -> UI : En una cotización, "Bloquear" hasta una fecha y hora
+UI -> SI : POST /api/cotizaciones/{id}/bloqueo/ {bloqueo_hasta}
+SI -> BD : Bloquear las filas del salón y de la cotización
+BD --> SI : Salón y cotización
+alt No está cotizada, está vencida o el salón está de baja
+  SI --> UI : 409 con el motivo
+  UI --> AD : Mostrar el aviso de conflicto
+else La hora límite ya pasó o es después del evento
+  SI --> UI : 400 en "bloqueo_hasta"
+  UI --> AD : Mostrar el error bajo el campo
+else Otra cotización está confirmada o bloqueada ese día (CP-13)
+  SI --> UI : 409 (fecha ocupada)
+  UI --> AD : Mostrar el aviso de conflicto
+else Fecha libre (CP-12)
+  SI -> BD : Estado de la cotización = bloqueado, con bloqueo_hasta
+  SI -> BD : Guardar movimiento "bloqueada"
+  SI --> UI : 200 con la cotización
+  UI --> AD : Mostrar la cotización bloqueada
 end
+note over SI, BD
+  Lo que cambia es el estado de la COTIZACIÓN.
+  El salón solo tiene activo o inactivo.
+end note
 @enduml

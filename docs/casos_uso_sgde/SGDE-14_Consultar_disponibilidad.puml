@@ -1,4 +1,5 @@
-@startuml
+@startuml SGDE-14_Consultar_disponibilidad
+!pragma layout smetana
 left to right direction
 skinparam backgroundColor white
 skinparam usecase {
@@ -11,35 +12,35 @@ skinparam rectangle {
   FontSize 13
   FontStyle bold
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+  FontSize 11
+}
 skinparam ArrowColor black
+skinparam actorStyle awesome
+title SGDE-14 · Consultar disponibilidad (RF-04)
 
-actor "Ejecutivo comercial" as EC
+actor "Administrador" as AD
 
-rectangle "Sistema SGDE" {
-  usecase "Registrar cliente" as UC1
-  usecase "Consultar clientes" as UC2
-  usecase "Consultar\ndisponibilidad" as UC3
-  usecase "Generar cotización" as UC4
-  usecase "Bloquear salón" as UC5
-  usecase "Definir vigencia" as UC6
-  usecase "Registrar aceptación\ny garantía" as UC7
-  usecase "Confirmar evento" as UC8
-  usecase "Registrar\ncancelación" as UC9
+rectangle "SGDE" {
+  usecase "Consultar calendario\nde un salón (SGDE-45)" as UC1
+  usecase "Ver rack de salones\npor día (SGDE-69)" as UC2
+  usecase "Ver el día de un salón" as UC3
+  usecase "Bloquear salón" as UC4
+  usecase "Liberar bloqueo" as UC5
 }
 
-EC -- UC1
-EC -- UC2
-EC -- UC3
-EC -- UC4
-EC -- UC5
-EC -- UC6
-EC -- UC7
-EC -- UC8
-EC -- UC9
+AD --> UC1
+AD --> UC2
+UC3 .> UC1 : <<extend>>
+UC3 .> UC2 : <<extend>>
+UC4 .> UC3 : <<extend>>
+UC5 .> UC3 : <<extend>>
 
-UC5 ..> UC4 : <<extend>>
-UC6 ..> UC4 : <<extend>>
-UC7 ..> UC4 : <<extend>>
-UC8 ..> UC7 : <<include>>
-UC9 ..> UC8 : <<extend>>
+note right of UC2
+  Colores por estado: cotizado, bloqueado,
+  confirmado y vencida. Las canceladas
+  no se muestran.
+end note
 @enduml

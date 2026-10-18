@@ -23,8 +23,9 @@ services:
   backend:
     build: ./backend
     restart: unless-stopped
-    # Al levantar: aplica migraciones, siembra datos demo (idempotente) y arranca el servidor.
-    command: sh -c "python manage.py migrate --noinput && python manage.py seed_demo && python manage.py runserver 0.0.0.0:8000"
+    # Al levantar: aplica migraciones, crea la tabla de caché (límites de intentos),
+    # siembra datos demo (idempotente) y arranca el servidor.
+    command: sh -c "python manage.py migrate --noinput && python manage.py createcachetable && python manage.py seed_demo && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./backend:/app
     ports:

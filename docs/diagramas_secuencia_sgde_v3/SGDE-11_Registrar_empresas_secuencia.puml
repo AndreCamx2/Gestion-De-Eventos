@@ -1,5 +1,5 @@
 @startuml SGDE-11_Registrar_empresas_secuencia
-title SGDE-11 - Registrar empresas
+title SGDE-11 · Registrar empresas
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,31 +13,31 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
 actor "Administrador" as AD
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-AD -> UI : Seleccionar "Registrar empresa"
-UI --> AD : Mostrar formulario de registro
-AD -> UI : Ingresar datos de la empresa
-UI -> SI : Enviar datos de la empresa
-SI -> BD : Verificar si la empresa ya existe
-BD --> SI : Resultado de consulta
-SI -> SI : Validar datos ingresados
-
-alt Campos obligatorios vacíos
-  SI --> UI : Informar campos obligatorios faltantes
-  UI --> AD : Mostrar alerta "Todos los campos son obligatorios"
-else Empresa ya registrada
-  SI --> UI : Informar registro duplicado
-  UI --> AD : Mostrar alerta "La empresa ya se encuentra registrada"
+AD -> UI : Abrir "Nueva empresa"
+AD -> UI : Razón social, NIT, contacto, correo y ciudad
+UI -> SI : POST /api/empresas/
+SI -> SI : Validar campos
+alt Falta un campo obligatorio
+  SI --> UI : 400 con el error de cada campo
+  UI --> AD : Mostrar el error bajo cada campo
+else NIT ya registrado
+  SI --> UI : 400 en "identificacion"
+  UI --> AD : Avisar que el NIT ya está registrado
 else Datos válidos
   SI -> BD : Guardar empresa
-  BD --> SI : Confirmar registro
-  SI --> UI : Informar registro exitoso
-  UI --> AD : Mostrar mensaje "Empresa registrada correctamente"
+  BD --> SI : Empresa guardada
+  SI --> UI : 201 con la empresa
+  UI --> AD : Mostrar la empresa (ya se puede elegir para un cliente jurídico)
 end
 @enduml

@@ -1,23 +1,51 @@
 @startuml CU11_GestionarInventario
-title CU-11: Diagrama de Actividades - Gestionar Inventario
+title CU-11 · Actualizar stock (SGDE-30, SGDE-72, SGDE-98)
 skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 
+|Proveedor|
 start
-:Usuario ingresa al módulo de Inventario;
-:Selecciona "Nuevo Elemento" o "Actualizar Stock";
-if (¿Es nuevo elemento?) then (Sí)
-  :Ingresa nombre, descripción y proveedor;
-  :Asigna stock inicial;
-else (Actualizar)
-  :Selecciona elemento existente;
-  :Ingresa cantidad a sumar/restar;
+:Entra a "Mi stock";
+|Sistema|
+if (¿Su usuario está vinculado a un proveedor?) then (no)
+  :Responde 403 con
+  codigo "proveedor_sin_vincular";
+  |Proveedor|
+  :Ve el aviso para pedir la vinculación;
+  stop
+else (sí)
+  :Muestra solo el stock de su proveedor;
 endif
-:Sistema actualiza cantidad en BD;
-:Verificar si el stock es menor al mínimo;
-if (¿Alerta de stock bajo?) then (Sí)
-  :Mostrar notificación "Stock bajo";
-else (No)
-  :Confirmar operación exitosa;
+|Proveedor|
+if (¿Elemento nuevo?) then (sí)
+  :Escribe nombre, cantidad y valor;
+  |Sistema|
+  if (¿Ya tiene un elemento con ese nombre?) then (sí)
+    :Responde 400 "edítalo";
+    stop
+  else (no)
+    :Guarda el elemento;
+  endif
+else (no)
+  |Proveedor|
+  :Cambia cantidad y valor;
+  |Sistema|
+  if (¿Cantidad y valor no negativos?) then (no)
+    :Responde 400;
+    stop
+  else (sí)
+    :Guarda (el nombre no cambia);
+  endif
 endif
 stop
 @enduml

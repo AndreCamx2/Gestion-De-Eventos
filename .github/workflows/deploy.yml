@@ -42,6 +42,9 @@ jobs:
       DB_PASSWORD: postgres-ci
       DB_HOST: localhost
       DB_PORT: 5432
+      # Las pruebas corren con DEBUG=False y su cliente usa HTTP: sin esto, la
+      # redirección a HTTPS de producción (SGDE-113) respondería 301 a todo.
+      SECURE_SSL_REDIRECT: "False"
     steps:
       - uses: actions/checkout@v4
 

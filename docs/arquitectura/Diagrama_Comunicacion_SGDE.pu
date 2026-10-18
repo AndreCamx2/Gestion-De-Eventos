@@ -1,0 +1,35 @@
+@startuml Diagrama_Comunicacion_SGDE
+!pragma layout smetana
+title Comunicación: generar una cotización
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam DefaultFontSize 12
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+
+skinparam object {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+allow_mixing
+
+actor "Administrador" as AD
+object ": NuevaCotizacion\n(pantalla)" as UI
+object ": CotizacionListCreateView" as VISTA
+object ": CotizacionCrearSerializer" as SER
+object ": Salon / SalonMontaje" as SM
+object ": Concepto" as CON
+object "nueva : Cotizacion" as COT
+object ": MovimientoCotizacion" as MOV
+
+AD -right-> UI : 1: elegir cliente, salón, montaje,\nfecha, personas y conceptos
+UI -right-> VISTA : 2: POST /api/cotizaciones/
+VISTA -down-> SER : 3: is_valid() dentro de transaction.atomic()
+SER -down-> SM : 4: select_for_update(): salón activo,\nmontaje habilitado y aforo
+SER -down-> CON : 5: conceptos activos del mismo sitio
+SER -right-> COT : 6: create(): estado cotizado,\nprecio_unitario copiado del concepto
+COT -down-> MOV : 7: registrar "creada"
+VISTA -left-> UI : 8: 201 con la cotización y sus totales
+@enduml

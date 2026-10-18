@@ -1,24 +1,41 @@
 @startuml CU14_ModificarCotizacion
-title CU-14: Diagrama de Actividades - Modificar Cotización
+title CU-14 · Extender la vigencia de una cotización (SGDE-19)
 skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 
+|Administrador|
 start
-:Ejecutivo busca Cotización en estado "Cotizado";
-:Selecciona "Editar";
-:Agrega, elimina o modifica Conceptos (cantidades);
-:Sistema recalcula costos e impuestos;
-:Validar si requiere actualización de Bloqueo;
-if (¿Cambia la fecha o el salón?) then (Sí)
-  :Verificar nueva disponibilidad;
-  if (¿Disponible?) then (Sí)
-    :Actualizar Bloqueo temporal;
-  else (No)
-    :Mostrar error y revertir fecha;
-    stop
-  endif
-else (No)
+:Abre una cotización;
+:Elige una fecha nueva de validez de la oferta;
+|Sistema|
+if (¿Está en estado cotizado
+y el salón activo?) then (no)
+  :Responde 409;
+  stop
+elseif (¿La fecha va de hoy al día
+del evento?) then (no)
+  :Responde 400;
+  stop
+else (sí)
+  :Guarda la nueva vigencia
+  (aunque la oferta ya hubiera vencido);
+  :Registra el movimiento "vigencia"
+  con la fecha anterior y la nueva;
 endif
-:Guardar nueva versión de la Cotización;
-:Generar nuevo PDF;
+note right
+  En la beta solo cambia la vigencia:
+  conceptos, salón y fecha no se editan.
+  Para cambiarlos se hace otra cotización.
+end note
 stop
 @enduml

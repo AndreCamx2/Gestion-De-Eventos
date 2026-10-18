@@ -1,5 +1,5 @@
 @startuml SGDE-27_Iniciar_sesion_secuencia
-title SGDE-27 - Iniciar sesión (JWT)
+title SGDE-27 · Iniciar sesión (JWT)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,27 +13,35 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
-actor "Usuario del sistema" as US
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+actor "Usuario" as US
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-US -> UI : Ingresar correo y contraseña
-UI -> SI : Enviar credenciales
-SI -> BD : Buscar usuario por correo
-BD --> SI : Datos del usuario
+US -> UI : Usuario y contraseña (los clientes usan su correo)
+UI -> SI : POST /api/token/ {username, password}
+SI -> BD : Buscar usuario activo
+BD --> SI : Usuario
 SI -> SI : Verificar contraseña
-
 alt Credenciales inválidas
-  SI --> UI : Informar credenciales inválidas
-  UI --> US : Mostrar mensaje "Correo o contraseña incorrectos"
+  SI --> UI : 401
+  UI --> US : Mostrar "Usuario o contraseña incorrectos"
 else Credenciales válidas
-  SI -> SI : Generar token JWT
-  SI --> UI : Enviar token JWT
-  UI --> US : Dar acceso según su rol
+  SI -> BD : Registrar el refresh emitido
+  SI --> UI : 200 {access (30 min), refresh (12 h)}
+  UI -> UI : Guardar tokens en la pestaña (sessionStorage)
+  UI -> SI : GET /api/usuarios/me/ (con el access)
+  SI --> UI : 200 con rol, sitios y proveedor
+  UI --> US : Entrar al panel según su rol
 end
-
-note over UI, SI : Las siguientes peticiones incluyen el token JWT
+note over UI, SI
+  Detalle de la renovación y el cierre de sesión:
+  docs/arquitectura/Secuencia_Sesion_JWT.puml
+end note
 @enduml

@@ -1,5 +1,5 @@
 @startuml SGDE-30_Actualizar_stock_secuencia
-title SGDE-30 - Actualizar stock de elementos
+title SGDE-30 · Actualizar stock (Mi stock)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,30 +13,38 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
 actor "Proveedor" as PR
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-PR -> UI : Seleccionar "Actualizar stock"
-UI -> SI : Solicitar elementos del proveedor
-SI -> BD : Consultar elementos y stock actual
-BD --> SI : Elementos con su stock
-SI --> UI : Enviar elementos
-UI --> PR : Mostrar elementos con su stock actual
-PR -> UI : Seleccionar elemento e ingresar nueva cantidad
-UI -> SI : Enviar nueva cantidad
-SI -> SI : Validar cantidad
-
-alt Cantidad inválida (negativa o no numérica)
-  SI --> UI : Informar error de formato
-  UI --> PR : Mostrar mensaje de error de formato
-else Cantidad válida
-  SI -> BD : Actualizar stock
-  BD --> SI : Confirmar actualización
-  SI --> UI : Informar actualización exitosa
-  UI --> PR : Mostrar mensaje "Stock actualizado correctamente"
+PR -> UI : Abrir "Mi stock"
+UI -> SI : GET /api/mi-stock/
+alt Su usuario no está vinculado a un proveedor
+  SI --> UI : 403 {codigo: "proveedor_sin_vincular"}
+  UI --> PR : Mostrar el aviso para pedir la vinculación
+else Vinculado
+  SI -> BD : Stock de SU proveedor
+  BD --> SI : Elementos
+  SI --> UI : 200 con los elementos
+  UI --> PR : Mostrar su stock
+  PR -> UI : Cambiar cantidad y valor de un elemento
+  UI -> SI : PATCH /api/mi-stock/{id}/ {cantidad, valor}
+  alt Cantidad o valor negativos
+    SI --> UI : 400 con el error de cada campo
+    UI --> PR : Mostrar el error bajo cada campo
+  else Elemento de otro proveedor
+    SI --> UI : 404
+  else Datos válidos
+    SI -> BD : Actualizar cantidad y valor
+    SI --> UI : 200 con el elemento
+    UI --> PR : Mostrar el elemento actualizado
+  end
 end
 @enduml

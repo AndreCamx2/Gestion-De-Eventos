@@ -1,0 +1,32 @@
+# ETAPA 1: Build de la aplicación con Vite
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+# Instalamos dependencias primero para aprovechar el caché de Docker.
+# npm ci instala exactamente las versiones de package-lock.json (SGDE-120):
+# el build es igual en todas las máquinas y falla si el lock no coincide.
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+# Inyectamos la variable de entorno para la URL de la API de Django
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
+# Genera los archivos optimizados dentro de /app/dist
+RUN npm run build
+
+# ETAPA 2: servir con Nginx
+FROM nginx:alpine
+
+# Copiar la configuración personalizada de Nginx
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copiar la compilación estática de Vite
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

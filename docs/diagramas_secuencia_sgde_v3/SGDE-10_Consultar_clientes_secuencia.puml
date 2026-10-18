@@ -1,5 +1,5 @@
 @startuml SGDE-10_Consultar_clientes_secuencia
-title SGDE-10 - Consultar clientes
+title SGDE-10 · Consultar clientes (RF-01)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,25 +13,27 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
-actor "Ejecutivo comercial" as EC
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+actor "Administrador" as AD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-EC -> UI : Seleccionar "Consultar clientes"
-UI --> EC : Mostrar campo de búsqueda
-EC -> UI : Ingresar criterio de búsqueda (nombre, documento o correo)
-UI -> SI : Enviar criterio de búsqueda
+AD -> UI : Escribir en el buscador (nombre, identificación,\ncorreo o razón social)
+UI -> SI : GET /api/clientes/?search=texto
 SI -> BD : Buscar clientes que coincidan
-BD --> SI : Resultado de consulta
-
+BD --> SI : Clientes con sus cotizaciones
+SI -> SI : Dejar solo las cotizaciones\nde los sitios del administrador
 alt Hay coincidencias
-  SI --> UI : Enviar listado de clientes
-  UI --> EC : Mostrar listado de clientes
+  SI --> UI : 200 con la lista
+  UI --> AD : Mostrar los clientes
 else Sin coincidencias
-  SI --> UI : Informar que no hay resultados
-  UI --> EC : Mostrar mensaje "No se encontraron clientes"
+  SI --> UI : 200 con lista vacía
+  UI --> AD : Mostrar que no hay resultados
 end
 @enduml

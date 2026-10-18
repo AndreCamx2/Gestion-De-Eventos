@@ -1,5 +1,5 @@
 @startuml SGDE-16_Registrar_conceptos_secuencia
-title SGDE-16 - Registrar conceptos (RF-05)
+title SGDE-16 · Registrar conceptos (RF-05)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,26 +13,28 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
 actor "Administrador" as AD
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-AD -> UI : Seleccionar "Registrar concepto"
-UI --> AD : Mostrar formulario de producto o servicio
-AD -> UI : Ingresar nombre, precio base e impuestos aplicables
-UI -> SI : Enviar datos del concepto
-SI -> SI : Validar datos ingresados
-
-alt Datos inválidos o incompletos
-  SI --> UI : Informar error de validación
-  UI --> AD : Mostrar mensaje de error de validación
+AD -> UI : Abrir Conceptos y "Nuevo concepto"
+AD -> UI : Sitio, nombre, precio e impuesto (%)
+UI -> SI : POST /api/conceptos/
+SI -> SI : Validar datos y que el sitio sea del administrador
+alt Datos inválidos o sitio ajeno
+  SI --> UI : 400 con el error de cada campo
+  UI --> AD : Mostrar el error bajo cada campo
 else Datos válidos (CP-09)
-  SI -> BD : Guardar concepto y habilitarlo en el catálogo
-  BD --> SI : Confirmar registro
-  SI --> UI : Informar registro exitoso
-  UI --> AD : Mostrar mensaje "Concepto habilitado en el catálogo"
+  SI -> BD : Guardar concepto activo
+  BD --> SI : Concepto guardado
+  SI --> UI : 201 con el concepto
+  UI --> AD : Mostrar el concepto en el catálogo
 end
 @enduml

@@ -1,5 +1,5 @@
 @startuml SGDE-09_Registrar_cliente_secuencia
-title SGDE-09 - Registrar cliente (RF-01)
+title SGDE-09 · Registrar cliente (RF-01)
 skinparam backgroundColor white
 skinparam sequence {
   ArrowColor black
@@ -13,31 +13,31 @@ skinparam database {
   BackgroundColor #F2F2F2
   BorderColor black
 }
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
 autonumber
 
-actor "Ejecutivo comercial" as EC
-participant "Interfaz" as UI
-participant "Sistema" as SI
-database "Base de datos" as BD
+actor "Administrador" as AD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
 
-EC -> UI : Seleccionar "Registrar nuevo cliente"
-UI --> EC : Mostrar formulario de registro
-EC -> UI : Ingresar datos del cliente
-UI -> SI : Enviar datos del cliente
-SI -> BD : Verificar si correo/documento ya existe
-BD --> SI : Resultado de consulta
-SI -> SI : Validar datos ingresados
-
-alt Campos obligatorios vacíos (CP-02)
-  SI --> UI : Informar campos obligatorios faltantes
-  UI --> EC : Mostrar alerta "Todos los campos son obligatorios"
-else Correo o documento ya registrado (CP-03)
-  SI --> UI : Informar que el cliente ya existe
-  UI --> EC : Mostrar alerta "Ya existe una cuenta con ese correo o documento"
-else Datos válidos y cliente nuevo (CP-01)
+AD -> UI : Abrir Clientes y "Nuevo cliente"
+AD -> UI : Tipo (natural o jurídica), nombre, identificación\no empresa, correo, teléfono, forma de pago
+UI -> SI : POST /api/clientes/
+SI -> SI : Validar campos
+alt Falta un campo obligatorio o la empresa de un jurídico (CP-02)
+  SI --> UI : 400 con el error de cada campo
+  UI --> AD : Mostrar el error bajo cada campo
+else Identificación ya registrada (CP-03)
+  SI --> UI : 400 en "identificacion"
+  UI --> AD : Avisar que la identificación ya está registrada
+else Datos válidos (CP-01)
   SI -> BD : Guardar cliente
-  BD --> SI : Confirmar registro
-  SI --> UI : Informar registro exitoso
-  UI --> EC : Mostrar mensaje "Cliente registrado correctamente"
+  BD --> SI : Cliente guardado
+  SI --> UI : 201 con el cliente
+  UI --> AD : Mostrar el cliente en la lista
 end
 @enduml
