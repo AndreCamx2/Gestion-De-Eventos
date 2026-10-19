@@ -321,7 +321,7 @@ class BajaDeSalonTests(BaseSalonesTests):
         r = self.client.get(f"/api/cotizaciones/{vieja.pk}/")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertEqual(r.json()["salon"]["nombre"], "Salón Mar")
-        historial = self.client.get("/api/cotizaciones/", {"salon": self.salon.pk}).json()
+        historial = self.client.get("/api/cotizaciones/", {"salon": self.salon.pk}).json()["results"]
         self.assertEqual([c["id"] for c in historial], [vieja.pk])
 
     def test_una_cotizada_vencida_no_revive_en_un_salon_inactivo(self):

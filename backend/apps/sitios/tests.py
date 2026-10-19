@@ -34,7 +34,8 @@ def crear_usuario(username, codigo_rol="administrador", sitios=(), superusuario=
 
 
 def ids(respuesta):
-    return {fila["id"] for fila in respuesta.json()}
+    datos = respuesta.json()
+    return {fila["id"] for fila in (datos["results"] if isinstance(datos, dict) else datos)}
 
 
 class MultiSitioBaseTest(APITestCase):
@@ -123,7 +124,7 @@ class ListasPorSitioTests(MultiSitioBaseTest):
             with self.subTest(url=url):
                 r = self.client.get(url)
                 self.assertEqual(r.status_code, status.HTTP_200_OK)
-                self.assertEqual(r.json(), [])
+                self.assertEqual(ids(r), set())
         self.assertEqual(
             self.client.get(f"/api/conceptos/{self.a['concepto'].pk}/").status_code, status.HTTP_404_NOT_FOUND
         )
@@ -230,7 +231,7 @@ class DetallesDeOtroSitioTests(MultiSitioBaseTest):
         )
         r = self.client.get("/api/cotizaciones/", {"salon": self.b["salon"].pk})
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual(r.json(), [])
+        self.assertEqual(ids(r), set())
 
     def test_historial_de_un_concepto_inexistente_da_404(self):
         self.assertEqual(self.client.get("/api/conceptos/999999/historial/").status_code, status.HTTP_404_NOT_FOUND)
@@ -337,7 +338,7 @@ class ClientesCompartidosTests(MultiSitioBaseTest):
                 r = self.client.get(url)
                 self.assertEqual(r.status_code, status.HTTP_200_OK)
                 self.assertEqual(self.cotizaciones_del_cliente(r), {propio["cotizacion"].pk})
-                lista = self.client.get("/api/clientes/").json()
+                lista = self.client.get("/api/clientes/").json()["results"]
                 fila = next(c for c in lista if c["id"] == self.cliente.pk)
                 self.assertEqual({c["id"] for c in fila["cotizaciones"]}, {propio["cotizacion"].pk})
 
@@ -365,7 +366,7 @@ class UsuariosPorSitioTests(MultiSitioBaseTest):
     def usernames(self):
         r = self.client.get("/api/usuarios/")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        return {u["username"] for u in r.json()}
+        return {u["username"] for u in r.json()["results"]}
 
     def test_administrador_ve_a_si_mismo_a_sus_companeros_y_a_los_sin_sitios(self):
         self.client.force_authenticate(user=self.admin_a)
@@ -402,7 +403,7 @@ class UsuariosPorSitioTests(MultiSitioBaseTest):
 
         # La lista con ?incluir_inactivos tampoco los muestra.
         r = self.client.get("/api/usuarios/?incluir_inactivos=true")
-        self.assertFalse({"super@test.com", "super_a@test.com"} & {u["username"] for u in r.json()})
+        self.assertFalse({"super@test.com", "super_a@test.com"} & {u["username"] for u in r.json()["results"]})
 
     def test_superusuario_ve_a_todos(self):
         self.client.force_authenticate(user=self.superusuario)

@@ -5,6 +5,7 @@ from .serializers import RolSerializer, UsuarioRegistroSerializer, UsuarioMeSeri
 from .models import Rol, Usuario
 from .permissions import EsAdministrador
 from .services import validar_cambio_usuario
+from apps.core.pagination import PaginaEstandar
 
 
 def _usuarios():
@@ -37,6 +38,7 @@ class UsuarioListCreateView(generics.ListCreateAPIView):
     """
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
     filter_backends = [filters.SearchFilter]
+    pagination_class = PaginaEstandar
     search_fields = ["username", "first_name", "last_name", "email"]
 
     def get_serializer_class(self):
