@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Boton } from "../../components/ui";
 import { fechaCorta } from "./cotizaciones";
 import { pesosDeCentavos } from "./nuevaCotizacion";
+import VistaPreviaCotizacion from "./VistaPreviaCotizacion";
 
 const MENSAJES = {
   permiso: "Solo un administrador puede crear cotizaciones.",
@@ -19,6 +21,7 @@ function Fila({ etiqueta, children, tono }) {
 
 export default function ResumenCotizacion({ c }) {
   const { totales, errores } = c;
+  const [vistaPrevia, setVistaPrevia] = useState(false);
   const mensaje = errores.tipo && errores.tipo !== "datos" && errores.tipo !== "conflicto"
     ? MENSAJES[errores.tipo]
     : errores.general;
@@ -59,15 +62,17 @@ export default function ResumenCotizacion({ c }) {
         )}
 
         <Boton type="submit" className="nc-resumen__guardar" disabled={c.guardando}>
-          {c.guardando ? "Guardando…" : "Guardar cotización"}
+          {c.guardando ? "Guardando…" : c.editando ? "Guardar cambios" : "Guardar cotización"}
         </Boton>
-        <Boton variante="secundario" disabled title="Disponible cuando esté la vista para imprimir">
+        <Boton variante="secundario" onClick={() => setVistaPrevia(true)}>
           Vista previa para el cliente
         </Boton>
         <p className="nc-resumen__nota">
           El total final lo calcula el servidor al guardar; aquí se muestra una vista previa.
         </p>
       </div>
+
+      {vistaPrevia && <VistaPreviaCotizacion c={c} onCerrar={() => setVistaPrevia(false)} />}
     </aside>
   );
 }

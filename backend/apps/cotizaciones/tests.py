@@ -1230,3 +1230,139 @@ class GetNoEscribeSGDE118Tests(CotizacionBaseTest):
         self.vencida.refresh_from_db()
         self.assertEqual(self.vencida.estado, "cotizado")
         self.assertIsNone(self.vencida.bloqueo_hasta)
+
+def anulacion(pk):
+    return f"{detalle(pk)}anulacion/"
+
+
+def edicion(pk):
+    return f"{detalle(pk)}edicion/"
+
+
+class AnulacionTests(CotizacionBaseTest):
+    """Anular una cotización que no se confirmó: queda cancelada, sin penalización."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+
+    def test_anula_una_cotizada_sin_penalizacion_y_deja_movimiento(self):
+        cot = self.crear_en_bd()
+        r = self.client.post(anulacion(cot.pk), {"motivo": "El cliente eligió otra fecha."}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["estado"], "cancelado")
+        self.assertIsNone(r.data["penalizacion_pct"])
+        self.assertIsNone(r.data["monto_retenido"])
+        self.assertEqual(r.data["motivo_cancelacion"], "El cliente eligió otra fecha.")
+        self.assertEqual(r.data["cancelado_por"], "admin@test.com")
+        ultimo = self.client.get(movimientos(cot.pk)).data[-1]
+        self.assertEqual((ultimo["tipo"], ultimo["detalle"]), ("anulada", "Motivo: El cliente eligió otra fecha."))
+
+    def test_anula_una_vencida_y_una_bloqueada_que_suelta_su_fecha(self):
+        vencida = self.crear_en_bd(validez_oferta=hoy() - timedelta(days=1))
+        self.assertEqual(self.client.post(anulacion(vencida.pk), {"motivo": "No respondió."}, format="json").status_code, 200)
+
+        bloqueada = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=20))
+        self.assertEqual(self.client.post(bloqueo(bloqueada.pk), {"bloqueo_hasta": en(2)}, format="json").status_code, 200)
+        r = self.client.post(anulacion(bloqueada.pk), {"motivo": "Desistió."}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertIsNone(r.data["bloqueo_hasta"])
+
+        # La fecha quedó libre: otra cotización del mismo salón y día se puede bloquear.
+        otra = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=20))
+        self.assertEqual(self.client.post(bloqueo(otra.pk), {"bloqueo_hasta": en(2)}, format="json").status_code, 200)
+
+    def test_confirmada_o_cancelada_da_409(self):
+        for estado in ("confirmado", "cancelado"):
+            cot = self.crear_en_bd(estado=estado, fecha_evento=hoy() + timedelta(days=60 + len(estado)))
+            with self.subTest(estado=estado):
+                r = self.client.post(anulacion(cot.pk), {"motivo": "x"}, format="json")
+                self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+
+    def test_sin_motivo_400_y_otros_roles_403(self):
+        cot = self.crear_en_bd()
+        r = self.client.post(anulacion(cot.pk), {"motivo": ""}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("motivo", r.data)
+        self.client.force_authenticate(user=self.cliente_user)
+        self.assertEqual(self.client.post(anulacion(cot.pk), {"motivo": "x"}, format="json").status_code, 403)
+        cot.refresh_from_db()
+        self.assertEqual(cot.estado, "cotizado")
+
+
+class EdicionTests(CotizacionBaseTest):
+    """Editar una cotización cotizada con el mismo cuerpo que crear."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+        r = self.client.post(LISTA, self.payload(), format="json")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.pk = r.data["id"]
+
+    def test_cambia_fecha_personas_y_conceptos(self):
+        nueva_fecha = str(hoy() + timedelta(days=45))
+        datos = self.payload(
+            fecha_evento=nueva_fecha, cantidad_personas=100,
+            items=[{"concepto": self.almuerzo.pk, "cantidad": 100}],
+        )
+        r = self.client.put(edicion(self.pk), datos, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual((r.data["fecha_evento"], r.data["cantidad_personas"]), (nueva_fecha, 100))
+        self.assertEqual([(i["concepto"], i["cantidad"]) for i in r.data["items"]], [(self.almuerzo.pk, 100)])
+        self.assertEqual(r.data["total"], "4860000.00")  # 100 × 45.000 + 8 %
+
+        ultimo = self.client.get(movimientos(self.pk)).data[-1]
+        self.assertEqual(ultimo["tipo"], "editada")
+        self.assertIn("personas: 80 → 100", ultimo["detalle"])
+        self.assertIn("conceptos: 1", ultimo["detalle"])
+
+    def test_los_conceptos_que_ya_estaban_conservan_su_precio(self):
+        Concepto.objects.filter(pk=self.almuerzo.pk).update(precio=Decimal("99999.00"))
+        Concepto.objects.filter(pk=self.video_beam.pk).update(precio=Decimal("1.00"))
+        # El almuerzo ya estaba: conserva 45.000. El video beam se quita y vuelve: también estaba.
+        r = self.client.put(edicion(self.pk), self.payload(), format="json")
+        precios = {i["concepto"]: i["precio_unitario"] for i in r.data["items"]}
+        self.assertEqual(precios, {self.almuerzo.pk: "45000.00", self.video_beam.pk: "250000.00"})
+
+        nuevo = Concepto.objects.create(sitio=self.sitio, nombre="Coctel", precio=Decimal("12000.00"))
+        datos = self.payload(items=[{"concepto": nuevo.pk, "cantidad": 2}])
+        r = self.client.put(edicion(self.pk), datos, format="json")
+        self.assertEqual(r.data["items"][0]["precio_unitario"], "12000.00")
+
+    def test_valida_igual_que_crear(self):
+        r = self.client.put(edicion(self.pk), self.payload(cantidad_personas=500, items=[]), format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("items", r.data)
+        r = self.client.put(edicion(self.pk), self.payload(cantidad_personas=500), format="json")
+        self.assertIn("cantidad_personas", r.data)
+        self.assertEqual(Cotizacion.objects.get(pk=self.pk).cantidad_personas, 80)
+
+    def test_bloqueada_confirmada_o_cancelada_da_409(self):
+        self.assertEqual(self.client.post(bloqueo(self.pk), {"bloqueo_hasta": en(2)}, format="json").status_code, 200)
+        r = self.client.put(edicion(self.pk), self.payload(cantidad_personas=90), format="json")
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        for estado in ("confirmado", "cancelado"):
+            cot = self.crear_en_bd(estado=estado, fecha_evento=hoy() + timedelta(days=70 + len(estado)))
+            with self.subTest(estado=estado):
+                self.assertEqual(self.client.put(edicion(cot.pk), self.payload(), format="json").status_code, 409)
+
+    def test_una_vencida_se_edita_y_vuelve_a_quedar_vigente(self):
+        Cotizacion.objects.filter(pk=self.pk).update(validez_oferta=hoy() - timedelta(days=1))
+        datos = self.payload()
+        del datos["validez_oferta"]
+        r = self.client.put(edicion(self.pk), datos, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertFalse(r.data["vencida"])
+        self.assertEqual(r.data["validez_oferta"], str(hoy() + timedelta(days=15)))
+
+    def test_inexistente_404(self):
+        self.assertEqual(self.client.put(edicion(999999), self.payload(), format="json").status_code, 404)
+
+
+class FormatoGarantiaEnMovimientoTests(CotizacionBaseTest):
+    def test_el_monto_va_en_pesos(self):
+        self.client.force_authenticate(user=self.admin)
+        cot = self.crear_en_bd()
+        self.client.post(aceptacion(cot.pk), {"tipo": "transferencia", "monto": "1000000"}, format="json")
+        self.assertEqual(
+            self.client.get(movimientos(cot.pk)).data[-1]["detalle"], "Garantía: transferencia, $ 1.000.000."
+        )

@@ -9,6 +9,7 @@ import {
   validarAceptacion,
   validarVigencia,
 } from "./detalleCotizacion";
+import { useAnulacion } from "./useAnulacion";
 import { useCancelacion } from "./useCancelacion";
 
 export function useDetalleCotizacion(id) {
@@ -91,6 +92,24 @@ export function useDetalleCotizacion(id) {
     // En la ventana: al volver a entrar, la persona repite "Cancelar evento".
     onSesionVencida: () => setSesionVencida("cancelacion"),
   });
+
+  const anulacion = useAnulacion({
+    cotizacion,
+    onAnulada: (anulada) => {
+      setCotizacion(anulada);
+      cargarMovimientos();
+    },
+    onRecargar: () => Promise.all([cargar(), cargarMovimientos()]),
+    onSesionVencida: () => setSesionVencida("anulacion"),
+  });
+
+  // Para las acciones que viven en su propio panel (bloquear y liberar): ponen el
+  // detalle que respondió el API y se recargan los movimientos.
+  function reemplazar(actualizada) {
+    setCotizacion(actualizada);
+    setNuevaVigencia(actualizada.validez_oferta ?? "");
+    cargarMovimientos();
+  }
 
   function cambiarVigencia(valor) {
     setNuevaVigencia(valor);
@@ -201,5 +220,9 @@ export function useDetalleCotizacion(id) {
     errorMovimientos,
     cargarMovimientos,
     cancelacion,
+    anulacion,
+    reemplazar,
+    // Un 401 en un panel: se avisa y, al volver a entrar, la persona repite la acción.
+    avisarSesionVencida: () => setSesionVencida("panel"),
   };
 }

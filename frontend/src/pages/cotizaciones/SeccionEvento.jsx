@@ -161,6 +161,12 @@ export default function SeccionEvento({ c }) {
         </div>
       </div>
 
+      {c.avisoOcupacion && (
+        <p className={`nc-disponibilidad nc-disponibilidad--${c.avisoOcupacion.tono}`} role="status">
+          {c.avisoOcupacion.texto}
+        </p>
+      )}
+
       {c.aforo.excede && (
         <div className="nc-alerta" role="alert">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

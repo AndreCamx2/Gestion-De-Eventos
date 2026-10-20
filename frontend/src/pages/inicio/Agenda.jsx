@@ -25,6 +25,8 @@ export default function Agenda({ rol, calendario, agenda, onReintentar }) {
     .map((estado) => ({ estado, cantidad: agenda.filter((e) => e.estadoVisible === estado).length }))
     .filter((c) => c.cantidad > 0);
   const puedeVerCalendario = puedeEntrar("/calendario", rol);
+  // Cada evento abre el detalle de su cotización (el id del calendario es el de la cotización).
+  const puedeVerCotizaciones = puedeEntrar("/cotizaciones", rol);
 
   return (
     <Tarjeta as="section" className="inicio-bloque inicio-agenda" aria-labelledby="inicio-agenda-titulo">
@@ -64,14 +66,9 @@ export default function Agenda({ rol, calendario, agenda, onReintentar }) {
 
       {visibles.length > 0 && (
         <ol className="inicio-agenda__lista">
-          {visibles.map((e) => (
-            <li key={e.id} className="inicio-evento">
-              <time className="inicio-evento__fecha" dateTime={e.fecha_evento}>
-                <span className="inicio-evento__dia">{e.fecha.getDate()}</span>
-                <span className="inicio-evento__mes">{mesCorto(e.fecha)}</span>
-              </time>
-              <span className={`inicio-evento__punto inicio-evento__punto--${e.estadoVisible}`} aria-hidden="true" />
-              <div className="inicio-evento__cuerpo">
+          {visibles.map((e) => {
+            const cuerpo = (
+              <>
                 <div className="inicio-evento__textos">
                   <p className="inicio-evento__cliente">{e.cliente_nombre}</p>
                   <p className={`inicio-evento__detalle ${e.venceEn !== null ? "inicio-evento__detalle--alerta" : ""}`}>
@@ -80,9 +77,25 @@ export default function Agenda({ rol, calendario, agenda, onReintentar }) {
                   </p>
                 </div>
                 <EstadoBadge estado={e.estadoVisible} />
-              </div>
-            </li>
-          ))}
+              </>
+            );
+            return (
+              <li key={e.id} className="inicio-evento">
+                <time className="inicio-evento__fecha" dateTime={e.fecha_evento}>
+                  <span className="inicio-evento__dia">{e.fecha.getDate()}</span>
+                  <span className="inicio-evento__mes">{mesCorto(e.fecha)}</span>
+                </time>
+                <span className={`inicio-evento__punto inicio-evento__punto--${e.estadoVisible}`} aria-hidden="true" />
+                {puedeVerCotizaciones ? (
+                  <Link to={`/cotizaciones/${e.id}`} className="inicio-evento__cuerpo inicio-evento__cuerpo--enlace">
+                    {cuerpo}
+                  </Link>
+                ) : (
+                  <div className="inicio-evento__cuerpo">{cuerpo}</div>
+                )}
+              </li>
+            );
+          })}
         </ol>
       )}
 

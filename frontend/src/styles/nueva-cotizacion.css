@@ -484,6 +484,35 @@
     margin: 0;
 }
 
+/* Disponibilidad del salón ese día */
+.nc-disponibilidad {
+    margin: 0;
+    padding: var(--espacio-3) var(--espacio-4);
+    border-radius: 14px;
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-semi);
+}
+
+.nc-disponibilidad--error {
+    background: var(--estado-vencida-fondo);
+    color: var(--estado-vencida-texto);
+}
+
+.nc-disponibilidad--alerta {
+    background: var(--estado-bloqueado-fondo);
+    color: var(--estado-bloqueado-texto);
+}
+
+.nc-disponibilidad--info {
+    background: var(--estado-cotizado-fondo);
+    color: var(--estado-cotizado-texto);
+}
+
+.nc-disponibilidad--libre {
+    background: var(--estado-confirmado-fondo);
+    color: var(--estado-confirmado-texto);
+}
+
 /* Conceptos */
 
 .nc-tabla-caja {
@@ -781,6 +810,22 @@
     font-size: var(--texto-pequeno);
     line-height: var(--interlineado-cuerpo);
     color: var(--color-texto-tenue);
+}
+
+/* Vista previa para el cliente: ventana ancha con la hoja imprimible */
+.dialogo.dialogo--hoja {
+    width: min(9in, calc(100% - 2 * var(--espacio-4)));
+    background: var(--color-fondo);
+}
+
+.dialogo--hoja .cotizacion-hoja {
+    min-height: 0;
+}
+
+.nc-vista-previa__nota {
+    margin: var(--espacio-4) 0 0;
+    font-size: var(--texto-pequeno);
+    color: var(--color-texto-suave);
 }
 
 /* Cotización guardada */

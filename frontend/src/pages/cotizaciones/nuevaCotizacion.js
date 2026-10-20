@@ -43,7 +43,8 @@ export function iniciales(nombre) {
 }
 
 export function descripcionCliente(cliente) {
-  const tipo = cliente.tipo === "juridica" ? "Jurídica" : "Natural";
+  // Al editar, el cliente viene del detalle de la cotización, que no trae el tipo.
+  const tipo = cliente.tipo && (cliente.tipo === "juridica" ? "Jurídica" : "Natural");
   return [tipo, cliente.identificacion, cliente.correo].filter(Boolean).join(" · ");
 }
 
@@ -244,4 +245,91 @@ export function erroresDeGuardado(error, cantidadLineas) {
     general: generales || "Hay datos que el servidor no aceptó. Revisa lo marcado en rojo.",
     tipo,
   };
+}
+
+// Conceptos que se cobran por asistente ("Coffee break por persona"): al agregarlos,
+// la cantidad arranca en el número de personas y lo sigue mientras no se cambie a mano.
+export function esPorPersona(concepto) {
+  return /por persona/i.test(concepto?.nombre ?? "");
+}
+
+export function cantidadInicial(concepto, personas) {
+  const n = Number(personas);
+  return esPorPersona(concepto) && Number.isInteger(n) && n > 0 ? String(n) : "1";
+}
+
+// Las líneas que siguen a las personas toman la cantidad nueva (si es válida).
+export function seguirPersonas(lineas, personas) {
+  const n = Number(personas);
+  if (!Number.isInteger(n) || n < 1) return lineas;
+  return lineas.map((l) => (l.sigue ? { ...l, cantidad: String(n) } : l));
+}
+
+// --- Editar una cotización guardada ---
+
+// El formulario a partir del detalle (GET /cotizaciones/<id>/). Una vigencia ya pasada
+// queda vacía: el API toma la de por defecto (hoy + 15 días), así se reactiva la oferta.
+export function formDesdeCotizacion(cotizacion, hoy = hoyISO()) {
+  return {
+    cliente: cotizacion.cliente,
+    salon: cotizacion.salon?.id ?? null,
+    montaje: cotizacion.montaje?.id ?? null,
+    fecha_evento: cotizacion.fecha_evento,
+    cantidad_personas: String(cotizacion.cantidad_personas),
+    validez_oferta: cotizacion.validez_oferta && cotizacion.validez_oferta >= hoy ? cotizacion.validez_oferta : "",
+  };
+}
+
+// Las líneas con el precio e impuesto con que se cotizaron (los que conserva el API),
+// no los de hoy. Si el concepto ya no está en el catálogo, se arma con lo del item.
+export function lineasDesdeCotizacion(cotizacion, conceptos) {
+  const porId = new Map(conceptos.map((c) => [c.id, c]));
+  return cotizacion.items.map((item) => {
+    const base = porId.get(item.concepto) ?? { id: item.concepto, nombre: item.concepto_nombre, activo: true };
+    return {
+      concepto: { ...base, precio: item.precio_unitario, impuesto_pct: item.impuesto_pct },
+      cantidad: String(item.cantidad),
+      sigue: false,
+    };
+  });
+}
+
+// --- Disponibilidad del salón ese día ---
+
+// Del calendario de ese salón y día: las otras cotizaciones que ocupan la fecha
+// (confirmadas, bloqueadas o cotizadas vigentes). idPropio: la que se está editando.
+export function ocupacionDelDia(eventos, idPropio = null) {
+  const visibles = eventos.filter((e) => e.id !== idPropio && !(e.estado === "cotizado" && e.vencida));
+  return {
+    confirmada: visibles.find((e) => e.estado === "confirmado") ?? null,
+    bloqueada: visibles.find((e) => e.estado === "bloqueado") ?? null,
+    cotizadas: visibles.filter((e) => e.estado === "cotizado").length,
+  };
+}
+
+export function avisoOcupacion(ocupacion) {
+  if (!ocupacion) return null;
+  if (ocupacion.confirmada) {
+    return {
+      tono: "error",
+      texto: `El salón ya está confirmado ese día para ${ocupacion.confirmada.cliente_nombre}. `
+        + "Puedes guardar la cotización, pero no se podrá bloquear ni confirmar en esa fecha.",
+    };
+  }
+  if (ocupacion.bloqueada) {
+    return {
+      tono: "alerta",
+      texto: `El salón está bloqueado ese día para ${ocupacion.bloqueada.cliente_nombre}. `
+        + "Si ese bloqueo se confirma, esta cotización no podrá confirmarse.",
+    };
+  }
+  if (ocupacion.cotizadas > 0) {
+    const n = ocupacion.cotizadas;
+    return {
+      tono: "info",
+      texto: `Hay ${n} ${n === 1 ? "otra cotización abierta" : "otras cotizaciones abiertas"} para ese salón y día. `
+        + "La primera que se confirme se queda con la fecha.",
+    };
+  }
+  return { tono: "libre", texto: "El salón está libre ese día." };
 }

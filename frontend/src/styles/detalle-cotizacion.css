@@ -685,7 +685,9 @@
 .dc-linea__item--bloqueada,
 .dc-linea__item--liberada { --punto: var(--estado-bloqueado-punto); }
 .dc-linea__item--confirmada { --punto: var(--estado-confirmado-punto); }
-.dc-linea__item--cancelada { --punto: var(--estado-cancelado-punto); }
+.dc-linea__item--cancelada,
+.dc-linea__item--anulada { --punto: var(--estado-cancelado-punto); }
+.dc-linea__item--editada { --punto: var(--estado-cotizado-punto); }
 
 .dc-linea__cuerpo {
     min-width: 0;
@@ -710,4 +712,22 @@
     margin-top: var(--espacio-1) !important;
     font-size: var(--texto-pequeno);
     color: var(--color-texto-tenue);
+}
+
+/* Acciones de la cabecera: Editar e Imprimir */
+.dc-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-3);
+}
+
+/* Aviso tras guardar los cambios desde Editar */
+.dc-guardado {
+    margin: 0;
+    padding: var(--espacio-3) var(--espacio-4);
+    border-radius: var(--radio-control);
+    background: var(--estado-confirmado-fondo);
+    color: var(--estado-confirmado-texto);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-semi);
 }

@@ -63,6 +63,25 @@ export function cancelarCotizacion(id, { penalizacionPct, motivo }) {
     });
 }
 
+// Anula una cotización que no se confirmó (cotizada o bloqueada): queda cancelada sin
+// penalización. 409 si ya está confirmada o cancelada; 400 { motivo } si falta el motivo.
+export function anularCotizacion(id, motivo) {
+    return apiFetch(`/cotizaciones/${id}/anulacion/`, {
+        method: "POST",
+        body: JSON.stringify({ motivo }),
+    });
+}
+
+// PUT con el mismo cuerpo que crearCotizacion: reemplaza datos y conceptos de una
+// cotización cotizada. Los conceptos que ya estaban conservan su precio. 409 si no
+// está cotizada (una bloqueada se libera primero); 400 con los mismos campos que crear.
+export function editarCotizacion(id, datos) {
+    return apiFetch(`/cotizaciones/${id}/edicion/`, {
+        method: "PUT",
+        body: JSON.stringify(datos),
+    });
+}
+
 export function getMovimientos(id) {
     return todasLasPaginas(`/cotizaciones/${id}/movimientos/`);
 }

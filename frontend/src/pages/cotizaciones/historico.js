@@ -68,6 +68,8 @@ export const ETIQUETAS_MOVIMIENTO = {
   liberada: "Bloqueo liberado",
   confirmada: "Confirmada",
   cancelada: "Cancelada",
+  editada: "Editada",
+  anulada: "Anulada",
 };
 
 export function etiquetaMovimiento(tipo) {

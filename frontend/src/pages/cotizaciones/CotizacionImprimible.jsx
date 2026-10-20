@@ -44,24 +44,25 @@ function agruparImpuestos(items) {
   return [...grupos.entries()].sort((a, b) => b[0] - a[0]).map(([, grupo]) => grupo);
 }
 
-export default function CotizacionImprimible({ cotizacion }) {
+// nivelTitulo: "h1" en la página para imprimir; dentro de una ventana, uno menor.
+export default function CotizacionImprimible({ cotizacion, nivelTitulo: Titulo = "h1" }) {
   const {
     numero, emitidaEn, validaHasta, fechaEvento, personas,
     sitio, cliente, salon, montaje, items = [], subtotal, total,
   } = cotizacion;
 
   const resumenImpuestos = agruparImpuestos(items);
+  // Sin número es la vista previa de una cotización que aún no se guarda.
+  const titulo = numero ? `Cotización #${String(numero).padStart(3, "0")}` : "Cotización (borrador)";
 
   return (
-    <article className="cotizacion-hoja" aria-label={`Cotización ${numero}`}>
+    <article className="cotizacion-hoja" aria-label={numero ? `Cotización ${numero}` : titulo}>
       <header className="cotizacion-hoja__cabecera">
         <div className="cotizacion-hoja__marca">
           {sitio?.nombre && <span className="cotizacion-hoja__sitio">{sitio.nombre}</span>}
         </div>
         <div className="cotizacion-hoja__titulo-fila">
-          <h1 className="cotizacion-hoja__titulo">
-            Cotización #{String(numero).padStart(3, "0")}
-          </h1>
+          <Titulo className="cotizacion-hoja__titulo">{titulo}</Titulo>
           <div className="cotizacion-hoja__fechas">
             <p>Emitida: {fechaLarga(emitidaEn)}</p>
             <p className="cotizacion-hoja__vigencia">Válida hasta: {fechaLarga(validaHasta)}</p>

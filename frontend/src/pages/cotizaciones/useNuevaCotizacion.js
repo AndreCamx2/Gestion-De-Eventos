@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buscarClientes } from "../../api/clientes";
 import { listarConceptos } from "../../api/conceptos";
-import { crearCotizacion } from "../../api/cotizaciones";
+import { obtenerCalendario } from "../../api/calendario";
+import { crearCotizacion, editarCotizacion, getCotizacion } from "../../api/cotizaciones";
 import { listarMontajes, listarSalonMontajes, listarSalones } from "../../api/salones";
 import {
   ERRORES_VACIOS,
@@ -9,7 +10,14 @@ import {
   PASO_PERSONAS,
   ajustarCantidad,
   ajustarPersonas,
+  avisoOcupacion,
+  cantidadInicial,
   comoLista,
+  esPorPersona,
+  formDesdeCotizacion,
+  lineasDesdeCotizacion,
+  ocupacionDelDia,
+  seguirPersonas,
   erroresDeGuardado,
   estadoAforo,
   payloadCotizacion,
@@ -23,7 +31,9 @@ import {
 
 const CATALOGOS_VACIOS = { salones: [], conceptos: [] };
 
-export function useNuevaCotizacion() {
+// idEditar: el id de una cotización guardada para editarla (PUT .../edicion/); sin él,
+// el formulario arma una nueva. Solo se edita una cotizada: otra da errorCarga "noEditable".
+export function useNuevaCotizacion(idEditar = null) {
   const [catalogos, setCatalogos] = useState(CATALOGOS_VACIOS);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState(null);
@@ -41,6 +51,10 @@ export function useNuevaCotizacion() {
   const [errores, setErrores] = useState(ERRORES_VACIOS);
   const [guardando, setGuardando] = useState(false);
   const [guardada, setGuardada] = useState(null);
+  // Al editar: el detalle tal como llegó (número, estado) para la cabecera.
+  const [original, setOriginal] = useState(null);
+  // Otras cotizaciones del salón ese día: null mientras no hay salón y fecha.
+  const [ocupacion, setOcupacion] = useState(null);
 
   const busquedaRef = useRef(0);
 
@@ -48,24 +62,36 @@ export function useNuevaCotizacion() {
     setCargando(true);
     setErrorCarga(null);
     try {
-      const [salones, montajes, salonMontajes, conceptos] = await Promise.all([
+      const [salones, montajes, salonMontajes, conceptos, cotizacion] = await Promise.all([
         listarSalones(),
         listarMontajes(),
         listarSalonMontajes(),
         listarConceptos(),
+        idEditar != null ? getCotizacion(idEditar) : null,
       ]);
+      const listaConceptos = comoLista(conceptos);
       setCatalogos({
         salones: salonesConMontajes(comoLista(salones), comoLista(montajes), comoLista(salonMontajes)),
-        conceptos: comoLista(conceptos),
+        conceptos: listaConceptos,
       });
+      if (cotizacion) {
+        setOriginal(cotizacion);
+        // Solo una cotizada (vencida o no) se edita; una bloqueada se libera primero.
+        if (cotizacion.estado !== "cotizado") {
+          setErrorCarga("noEditable");
+          return;
+        }
+        setForm(formDesdeCotizacion(cotizacion));
+        setLineas(lineasDesdeCotizacion(cotizacion, listaConceptos));
+      }
     } catch (error) {
-      const tipo = tipoDeError(error);
+      const tipo = error?.status === 404 ? "noExiste" : tipoDeError(error);
       setErrorCarga(tipo);
       if (tipo === "sesion") setSesionVencida("carga");
     } finally {
       setCargando(false);
     }
-  }, []);
+  }, [idEditar]);
 
   useEffect(() => {
     cargar();
@@ -92,6 +118,25 @@ export function useNuevaCotizacion() {
     }, 300);
     return () => clearTimeout(espera);
   }, [busqueda, form.cliente, reintentoClientes]);
+
+  // Disponibilidad: con salón y fecha, se piden las cotizaciones de ese día en el
+  // calendario. Si falla, simplemente no se muestra el aviso (el API valida al bloquear).
+  const ocupacionRef = useRef(0);
+  useEffect(() => {
+    const peticion = ++ocupacionRef.current;
+    if (!form.salon || !form.fecha_evento) {
+      setOcupacion(null);
+      return;
+    }
+    const dia = form.fecha_evento;
+    obtenerCalendario({ desde: dia, hasta: dia, salon: form.salon })
+      .then((eventos) => {
+        if (peticion === ocupacionRef.current) setOcupacion(ocupacionDelDia(comoLista(eventos), idEditar));
+      })
+      .catch(() => {
+        if (peticion === ocupacionRef.current) setOcupacion(null);
+      });
+  }, [form.salon, form.fecha_evento, idEditar]);
 
   const salon = useMemo(
     () => catalogos.salones.find((s) => s.id === form.salon) ?? null,
@@ -131,6 +176,7 @@ export function useNuevaCotizacion() {
     const { name, value } = evento.target;
     limpiarError(name);
     setForm((prev) => ({ ...prev, [name]: value }));
+    if (name === "cantidad_personas") setLineas((prev) => seguirPersonas(prev, value));
   }
 
   function elegirCliente(cliente) {
@@ -163,25 +209,30 @@ export function useNuevaCotizacion() {
 
   function cambiarPersonas(delta) {
     limpiarError("cantidad_personas");
-    setForm((prev) => ({ ...prev, cantidad_personas: ajustarPersonas(prev.cantidad_personas, delta * PASO_PERSONAS) }));
+    const nuevas = ajustarPersonas(form.cantidad_personas, delta * PASO_PERSONAS);
+    setForm((prev) => ({ ...prev, cantidad_personas: nuevas }));
+    setLineas((prev) => seguirPersonas(prev, nuevas));
   }
 
   function agregarConcepto() {
     const concepto = catalogos.conceptos.find((c) => c.id === Number(conceptoElegido));
     if (!concepto) return;
-    setLineas((prev) => [...prev, { concepto, cantidad: "1" }]);
+    setLineas((prev) => [
+      ...prev,
+      { concepto, cantidad: cantidadInicial(concepto, form.cantidad_personas), sigue: esPorPersona(concepto) },
+    ]);
     setConceptoElegido("");
     setErrores((prev) => ({ ...prev, general: null }));
   }
 
   function cambiarCantidad(indice, valor) {
-    setLineas((prev) => prev.map((l, i) => (i === indice ? { ...l, cantidad: valor } : l)));
+    setLineas((prev) => prev.map((l, i) => (i === indice ? { ...l, cantidad: valor, sigue: false } : l)));
     setErrores((prev) => ({ ...prev, lineas: prev.lineas.map((e, i) => (i === indice ? null : e)) }));
   }
 
   function sumarCantidad(indice, delta) {
     setLineas((prev) =>
-      prev.map((l, i) => (i === indice ? { ...l, cantidad: ajustarCantidad(l.cantidad, delta) } : l)),
+      prev.map((l, i) => (i === indice ? { ...l, cantidad: ajustarCantidad(l.cantidad, delta), sigue: false } : l)),
     );
     setErrores((prev) => ({ ...prev, lineas: prev.lineas.map((e, i) => (i === indice ? null : e)) }));
   }
@@ -200,7 +251,8 @@ export function useNuevaCotizacion() {
     setErrores(ERRORES_VACIOS);
     setGuardando(true);
     try {
-      setGuardada(await crearCotizacion(payloadCotizacion(form, lineas)));
+      const payload = payloadCotizacion(form, lineas);
+      setGuardada(await (idEditar != null ? editarCotizacion(idEditar, payload) : crearCotizacion(payload)));
     } catch (error) {
       const resultado = erroresDeGuardado(error, lineas.length);
       setErrores(resultado);
@@ -233,6 +285,10 @@ export function useNuevaCotizacion() {
   }
 
   return {
+    editando: idEditar != null,
+    original,
+    ocupacion,
+    avisoOcupacion: avisoOcupacion(ocupacion),
     cargando,
     errorCarga,
     cargar,

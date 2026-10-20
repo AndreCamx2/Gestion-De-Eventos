@@ -177,6 +177,62 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
         )
         return cotizacion
 
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        """Edición de una cotización cotizada (PUT .../edicion/): reemplaza datos e items.
+
+        Los conceptos que ya estaban conservan el precio e impuesto con que se cotizaron
+        (como test_cambiar_precio_del_concepto_no_cambia_la_cotizacion); los nuevos toman
+        el precio actual del concepto. Deja un movimiento "editada" con lo que cambió.
+        """
+        items = validated_data.pop("items")
+        cambios = _cambios_de_edicion(instance, validated_data, items)
+        previos = {item.concepto_id: item for item in instance.items.all()}
+
+        for campo, valor in validated_data.items():
+            setattr(instance, campo, valor)
+        instance.sitio = instance.salon.sitio
+        instance.save()
+
+        instance.items.all().delete()
+        nuevos = []
+        for item in items:
+            concepto = item["concepto"]
+            previo = previos.get(concepto.pk)
+            nuevos.append(CotizacionItem(
+                cotizacion=instance,
+                concepto=concepto,
+                cantidad=item["cantidad"],
+                precio_unitario=previo.precio_unitario if previo else concepto.precio,
+                impuesto_pct=previo.impuesto_pct if previo else concepto.impuesto_pct,
+            ))
+        CotizacionItem.objects.bulk_create(nuevos)
+        registrar(instance, "editada", self.context["request"].user, cambios or "Sin cambios.")
+        return instance
+
+
+def _cambios_de_edicion(cotizacion, datos, items):
+    """Texto corto de lo que cambia una edición, para su movimiento."""
+    cambios = []
+    if datos["cliente"].pk != cotizacion.cliente_id:
+        cambios.append(f"cliente: {datos['cliente'].nombre}")
+    if datos["salon"].pk != cotizacion.salon_id or datos["montaje"].pk != cotizacion.montaje_id:
+        cambios.append(f"salón: {datos['salon'].nombre} · {datos['montaje'].nombre}")
+    if datos["fecha_evento"] != cotizacion.fecha_evento:
+        cambios.append(f"fecha: {fecha_corta(cotizacion.fecha_evento)} → {fecha_corta(datos['fecha_evento'])}")
+    if datos["cantidad_personas"] != cotizacion.cantidad_personas:
+        cambios.append(f"personas: {cotizacion.cantidad_personas} → {datos['cantidad_personas']}")
+    if datos["validez_oferta"] != cotizacion.validez_oferta:
+        cambios.append(f"vigencia: {fecha_corta(cotizacion.validez_oferta)} → {fecha_corta(datos['validez_oferta'])}")
+    antes = sorted((i.concepto_id, i.cantidad) for i in cotizacion.items.all())
+    despues = sorted((i["concepto"].pk, i["cantidad"]) for i in items)
+    if antes != despues:
+        cambios.append(f"conceptos: {len(despues)}")
+    if not cambios:
+        return ""
+    texto = "; ".join(cambios)
+    return f"{texto[0].upper()}{texto[1:]}."
+
 
 # --- Salida: detalle y listado ---------------------------------------------
 
@@ -391,6 +447,14 @@ class CancelacionSerializer(serializers.Serializer):
     )
     motivo = serializers.CharField(
         error_messages={"blank": "Escribe el motivo de la cancelación.", "required": "Escribe el motivo de la cancelación."},
+    )
+
+
+# --- Entrada: anulación de una cotización no confirmada ---------------------
+
+class AnulacionSerializer(serializers.Serializer):
+    motivo = serializers.CharField(
+        error_messages={"blank": "Escribe el motivo de la anulación.", "required": "Escribe el motivo de la anulación."},
     )
 
 

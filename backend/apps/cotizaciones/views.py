@@ -12,7 +12,7 @@ from apps.usuarios.permissions import EsAdministrador
 from . import estados
 from .models import Cotizacion
 from .serializers import (
-    AceptacionSerializer, BloqueoSerializer, CancelacionSerializer, CotizacionCalendarioSerializer,
+    AceptacionSerializer, AnulacionSerializer, BloqueoSerializer, CancelacionSerializer, CotizacionCalendarioSerializer,
     CotizacionCrearSerializer, CotizacionDetalleSerializer, CotizacionListaSerializer, CotizacionVigenciaSerializer,
     MovimientoSerializer,
 )
@@ -238,6 +238,39 @@ class CotizacionCancelacionView(AccionSobreCotizacionView):
 
     def ejecutar(self, cotizacion, datos):
         estados.cancelar(cotizacion, datos["penalizacion_pct"], datos["motivo"], self.request.user)
+
+
+class CotizacionAnulacionView(AccionSobreCotizacionView):
+    """Anula una cotización que no se confirmó (cotizada o bloqueada), con su motivo."""
+
+    def post(self, request, *args, **kwargs):
+        return self.accion(self.validar(AnulacionSerializer))
+
+    def ejecutar(self, cotizacion, datos):
+        estados.anular(cotizacion, datos["motivo"], self.request.user)
+
+
+class CotizacionEdicionView(generics.GenericAPIView):
+    """PUT con el mismo cuerpo que crear: cambia cliente, salón, montaje, fecha, personas,
+    vigencia y conceptos de una cotización cotizada (aunque esté vencida).
+
+    Una bloqueada da 409: hay que liberarla primero, porque el bloqueo es de ese salón y
+    esa fecha. Valida y guarda en la transacción que tiene tomados el salón y la cotización.
+    """
+
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+    def put(self, request, *args, **kwargs):
+        estados.liberar_bloqueos_vencidos(usuario=request.user)
+        with transaction.atomic():
+            cotizacion = estados.tomar_para_cambio(
+                filtrar_por_sitio(Cotizacion.objects.all(), request.user), kwargs["pk"]
+            )
+            exigir_estado_cotizado(cotizacion)
+            serializer = CotizacionCrearSerializer(cotizacion, data=request.data, context=self.get_serializer_context())
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        return Response(CotizacionDetalleSerializer(cotizaciones_con_relaciones().get(pk=cotizacion.pk)).data)
 
 
 class CotizacionMovimientosView(generics.ListAPIView):

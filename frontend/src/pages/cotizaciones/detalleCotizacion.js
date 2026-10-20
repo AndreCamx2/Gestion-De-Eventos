@@ -56,6 +56,22 @@ export function progreso(c, hoy = hoyLocal()) {
   return pasos;
 }
 
+// Editar y anular: solo lo que aún no se confirmó. Editar exige "cotizado" (una
+// bloqueada se libera primero); anular acepta también una bloqueada.
+export function puedeEditar(c) {
+  return c.estado === "cotizado";
+}
+
+export function puedeAnular(c) {
+  return c.estado === "cotizado" || c.estado === "bloqueado";
+}
+
+// Bloquear: cotizada vigente cuyo evento aún no pasó (el API da 409/400 en otro caso).
+export function puedeBloquear(c, hoy = hoyLocal()) {
+  if (c.estado === "bloqueado") return true;
+  return c.estado === "cotizado" && !c.vencida && desdeISO(c.fecha_evento) >= hoy;
+}
+
 export function puedeExtender(c) {
   return c.estado === "cotizado";
 }
@@ -100,6 +116,8 @@ export function mensajeVigencia(error) {
 export function resumenCancelacion(c) {
   if (c.estado !== "cancelado") return null;
   return {
+    // Anulada: se descartó sin haberse confirmado (sin garantía ni penalización).
+    anulada: !c.garantia && c.penalizacion_pct == null,
     dia: diaCorto(c.cancelado_en),
     por: c.cancelado_por,
     penalizacion: c.penalizacion_pct != null ? Number(c.penalizacion_pct) : null,

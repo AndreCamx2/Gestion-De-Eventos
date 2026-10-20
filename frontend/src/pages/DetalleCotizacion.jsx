@@ -1,12 +1,14 @@
-import { useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { AvisoError, Boton, CabeceraPagina, Esqueleto, EstadoBadge, EstadoVacio, Tarjeta } from "../components/ui";
 import SesionVencida from "../components/SesionVencida";
 import { hoyLocal } from "../utils/inicioCifras";
 import DetalleConceptos from "./cotizaciones/DetalleConceptos";
+import DialogoAnularCotizacion from "./cotizaciones/DialogoAnularCotizacion";
 import DialogoCancelarEvento from "./cotizaciones/DialogoCancelarEvento";
 import MovimientosCotizacion from "./cotizaciones/MovimientosCotizacion";
 import PanelAceptacion from "./cotizaciones/PanelAceptacion";
+import PanelBloqueo from "./cotizaciones/PanelBloqueo";
 import PanelVigencia, { AvisoAceptacionVencida } from "./cotizaciones/PanelVigencia";
 import { estadoVisible, fechaCorta, numeroCotizacion, vigencia } from "./cotizaciones/cotizaciones";
 import {
@@ -17,6 +19,9 @@ import {
   nombreGarantia,
   progreso,
   puedeAceptar,
+  puedeAnular,
+  puedeBloquear,
+  puedeEditar,
   puedeExtender,
   resumenCancelacion,
   textoAforo,
@@ -102,7 +107,9 @@ function PanelCancelada({ cotizacion, recien }) {
       aria-labelledby="dc-cancelada-titulo"
       role={recien ? "status" : undefined}
     >
-      <h2 id="dc-cancelada-titulo" className="dc-panel__titulo" tabIndex={-1}>Cotización cancelada</h2>
+      <h2 id="dc-cancelada-titulo" className="dc-panel__titulo" tabIndex={-1}>
+        {c.anulada ? "Cotización anulada" : "Cotización cancelada"}
+      </h2>
       <p className="dc-panel__texto">
         {[c.dia && `El ${c.dia}`, c.por && `por ${c.por}`].filter(Boolean).join(" ")}
         {c.penalizacion != null && ` · penalización del ${c.penalizacion}%`}
@@ -113,12 +120,15 @@ function PanelCancelada({ cotizacion, recien }) {
   );
 }
 
-function Contenido({ d, hoy }) {
+function Contenido({ d, hoy, recienEditada }) {
   const c = d.cotizacion;
   const cliente = datosCliente(c.cliente);
 
   return (
     <>
+      {recienEditada && (
+        <p className="dc-guardado" role="status">Los cambios de la cotización quedaron guardados.</p>
+      )}
       <Progreso cotizacion={c} hoy={hoy} />
 
       <div className="dc-layout">
@@ -137,6 +147,7 @@ function Contenido({ d, hoy }) {
         </div>
 
         <div className="dc-lateral">
+          {puedeBloquear(c, hoy) && <PanelBloqueo d={d} />}
           {puedeExtender(c) && <PanelVigencia d={d} />}
           {c.vencida && <AvisoAceptacionVencida />}
           {puedeAceptar(c) && <PanelAceptacion d={d} />}
@@ -146,7 +157,12 @@ function Contenido({ d, hoy }) {
               Cancelar evento
             </Boton>
           )}
-          <PanelCancelada cotizacion={c} recien={d.cancelacion.recienCancelada} />
+          {puedeAnular(c) && (
+            <Boton ref={d.anulacion.botonRef} variante="peligro" className="dc-cancelar__abrir" onClick={d.anulacion.abrir}>
+              Anular cotización
+            </Boton>
+          )}
+          <PanelCancelada cotizacion={c} recien={d.cancelacion.recienCancelada || d.anulacion.recienAnulada} />
         </div>
       </div>
     </>
@@ -158,6 +174,16 @@ export default function DetalleCotizacion() {
   const d = useDetalleCotizacion(idDeRuta(id));
   const hoy = useMemo(() => hoyLocal(), [d.cotizacion]);
   const c = d.cotizacion;
+  // Viene de "Guardar cambios" en /cotizaciones/<id>/editar. Se lee una vez y se quita
+  // del historial (al recargar no vuelve a salir); el aviso se va con la siguiente acción.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [editadaAlEntrar] = useState(() => Boolean(location.state?.editada));
+  useEffect(() => {
+    if (location.state?.editada) navigate(location.pathname, { replace: true, state: null });
+  }, [location, navigate]);
+  const ultimoMovimiento = d.movimientos[d.movimientos.length - 1];
+  const recienEditada = editadaAlEntrar && (!ultimoMovimiento || ultimoMovimiento.tipo === "editada");
 
   let cuerpo;
   if (d.cargando && !c) {
@@ -189,7 +215,7 @@ export default function DetalleCotizacion() {
       </Tarjeta>
     );
   } else if (c) {
-    cuerpo = <Contenido d={d} hoy={hoy} />;
+    cuerpo = <Contenido d={d} hoy={hoy} recienEditada={recienEditada} />;
   }
 
   return (
@@ -212,6 +238,15 @@ export default function DetalleCotizacion() {
           }
           acciones={
             c && (
+              <span className="dc-acciones">
+              {puedeEditar(c) && (
+                <Boton as={Link} to={`/cotizaciones/${c.id}/editar`} variante="secundario">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" />
+                  </svg>
+                  Editar
+                </Boton>
+              )}
               <Boton
                 as={Link}
                 to={`/cotizaciones/${c.id}/imprimir`}
@@ -221,6 +256,7 @@ export default function DetalleCotizacion() {
                 </svg>
                 Imprimir o PDF
               </Boton>
+              </span>
             )
           }
         />
@@ -229,6 +265,7 @@ export default function DetalleCotizacion() {
       {cuerpo}
 
       {c && d.cancelacion.abierta && <DialogoCancelarEvento d={d} />}
+      {c && d.anulacion.abierta && <DialogoAnularCotizacion d={d} />}
 
       <SesionVencida ref={d.sesionRef} visible={d.sesionVencida} onReingreso={d.alVolverAEntrar} />
     </div>

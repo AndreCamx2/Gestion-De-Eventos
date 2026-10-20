@@ -48,6 +48,13 @@ def fecha_corta(valor):
     return valor.strftime("%d/%m/%Y") if valor else "sin fecha"
 
 
+def pesos(valor):
+    """$ 1.000.000 (o $ 1.000.000,50 con centavos), como se escribe en Colombia."""
+    entero, _, centavos = f"{valor:,.2f}".partition(".")
+    texto = entero.replace(",", ".")
+    return f"$ {texto}" if centavos == "00" else f"$ {texto},{centavos}"
+
+
 def registrar(cotizacion, tipo, usuario, detalle=""):
     """Deja el movimiento (SGDE-62). Se llama dentro de la transacción de la acción.
 
@@ -192,7 +199,30 @@ def aceptar(cotizacion, tipo, monto, usuario):
             ])
     except IntegrityError:
         raise Conflicto("El salón ya está confirmado para esa fecha.")
-    registrar(cotizacion, "confirmada", usuario, f"Garantía: {tipo}, {monto}.")
+    registrar(cotizacion, "confirmada", usuario, f"Garantía: {tipo}, {pesos(monto)}.")
+
+
+def anular(cotizacion, motivo, usuario):
+    """Descarta una cotización que el cliente no tomó: cotizada (aunque esté vencida) o bloqueada.
+
+    Queda en `cancelado` sin penalización (penalizacion_pct null, sin monto retenido):
+    nunca se confirmó, así que no hay garantía que retener. Una bloqueada suelta su fecha.
+    """
+    if cotizacion.estado not in ("cotizado", "bloqueado"):
+        raise Conflicto(
+            "Solo se puede anular una cotización cotizada o bloqueada; "
+            f"esta está {en_femenino(cotizacion.estado)}."
+        )
+    cotizacion.estado = "cancelado"
+    cotizacion.bloqueo_hasta = None
+    cotizacion.penalizacion_pct = None
+    cotizacion.motivo_cancelacion = motivo
+    cotizacion.cancelado_en = timezone.now()
+    cotizacion.cancelado_por = usuario
+    cotizacion.save(update_fields=[
+        "estado", "bloqueo_hasta", "penalizacion_pct", "motivo_cancelacion", "cancelado_en", "cancelado_por",
+    ])
+    registrar(cotizacion, "anulada", usuario, f"Motivo: {motivo}")
 
 
 def cancelar(cotizacion, penalizacion_pct, motivo, usuario):

@@ -140,6 +140,8 @@ class MovimientoCotizacion(models.Model):
         ("liberada", "Liberada"),
         ("confirmada", "Confirmada"),
         ("cancelada", "Cancelada"),
+        ("editada", "Editada"),
+        ("anulada", "Anulada"),
     ]
 
     # CASCADE: el historial es parte de la cotización (el API no las borra).

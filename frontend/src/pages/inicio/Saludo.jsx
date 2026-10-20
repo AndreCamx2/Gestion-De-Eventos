@@ -113,16 +113,15 @@ export default function Saludo({ hoy, nombre, rol, cotizaciones, onReintentar })
           ))}
       </div>
 
-      {/* "Nueva cotización" queda deshabilitado hasta que exista su pantalla (SGDE-47). */}
+      {/* Lleva a la pantalla de nueva cotización (SGDE-47). */}
       {puedeNuevaCotizacion && (
         <div className="inicio-saludo__accion">
-          <Boton variante="principal" disabled aria-describedby="inicio-nueva-nota">
+          <Boton as={Link} to="/cotizaciones/nueva" variante="principal">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
               <path d="M12 5v14M5 12h14" />
             </svg>
             Nueva cotización
           </Boton>
-          <p id="inicio-nueva-nota" className="inicio-saludo__nota">Disponible pronto</p>
         </div>
       )}
     </section>
