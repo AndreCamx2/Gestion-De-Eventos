@@ -18,10 +18,9 @@ export default function ComparadorPrecios({ sesionVencida, onSesionVencida }) {
   const [cargando, setCargando] = useState(true);
   // null | "permiso" | "servidor"
   const [error, setError] = useState(null);
-  // Texto de la última búsqueda pedida: decide el mensaje del vacío.
   const [buscado, setBuscado] = useState("");
-  const pedidoRef = useRef(0); // una respuesta vieja no pisa a la nueva (como en Calendario)
-  const pendienteRef = useRef(false); // la sesión venció: repetir al volver a entrar
+  const pedidoRef = useRef(0); 
+  const pendienteRef = useRef(false); 
 
   async function buscar(valor) {
     const pedido = ++pedidoRef.current;

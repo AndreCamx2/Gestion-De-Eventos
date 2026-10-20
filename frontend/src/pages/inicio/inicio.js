@@ -12,7 +12,6 @@ export function plural(cantidad, singular, varios) {
   return `${numero(cantidad)} ${cantidad === 1 ? singular : varios}`;
 }
 
-// Cada ruta del Inicio se muestra solo si el rol puede entrar (la misma regla del menú).
 export function puedeEntrar(ruta, rol) {
   return rolesDeRuta(ruta).includes(rol);
 }
