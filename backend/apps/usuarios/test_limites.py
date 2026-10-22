@@ -125,7 +125,7 @@ class LimiteRegistroTests(LimpiarConteo):
     def datos(self, n):
         return {
             "tipo": "natural",
-            "nombre": f"Cliente {n}",
+            "nombre": f"Cliente {'ABC'[n]}",
             "identificacion": f"10000000{n}",
             "email": f"cliente{n}@correo.com",
             "ciudad": "CTG",
@@ -141,7 +141,7 @@ class LimiteRegistroTests(LimpiarConteo):
         respuesta = self.client.post(URL_REGISTRO, self.datos(2), format="json")
 
         self.assertEqual(respuesta.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
-        self.assertFalse(Cliente.objects.filter(nombre="Cliente 2").exists())
+        self.assertFalse(Cliente.objects.filter(nombre="Cliente C").exists())
 
 
 class TasasRealesTests(SimpleTestCase):

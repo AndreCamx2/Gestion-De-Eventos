@@ -512,6 +512,34 @@
     grid-column: 1 / -1;
 }
 
+.registro-consentimiento {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.registro-consentimiento__fila {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--color-texto-suave);
+    cursor: pointer;
+}
+
+.registro-consentimiento__fila input {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--color-tinta);
+}
+
+.registro-consentimiento--error .registro-consentimiento__fila input {
+    outline: 1.5px solid var(--color-peligro);
+    outline-offset: 2px;
+}
+
 /* ---------- Teléfono y pantallas medianas ---------- */
 
 @media (max-width: 900px) {

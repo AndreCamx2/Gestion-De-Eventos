@@ -31,7 +31,7 @@ def datos_juridico(**cambios):
         "tipo": "juridica",
         "nombre": "Carlos Pérez",
         "razon_social": "Eventos del Caribe S.A.S.",
-        "identificacion": "900123456-7",
+        "identificacion": "900123456-8",
         "telefono": "3000000001",
         "email": "contacto@caribe.com",
         "ciudad": "CTG",
@@ -53,7 +53,7 @@ class CiudadDelRegistroTests(APITestCase):
         respuesta = self.client.post(URL_REGISTRO, datos_juridico(), format="json")
 
         self.assertEqual(respuesta.status_code, status.HTTP_201_CREATED)
-        empresa = Empresa.objects.get(identificacion="900123456-7")
+        empresa = Empresa.objects.get(identificacion="900123456-8")
         self.assertEqual(empresa.ciudad, Ciudad.objects.get(codigo="CTG"))
 
 
@@ -69,7 +69,7 @@ class IdentificacionRepetidaTests(APITestCase):
         self.assertFalse(Usuario.objects.filter(username="maria@correo.com").exists())
 
     def test_juridico_con_nit_existente_da_400_en_identificacion(self):
-        Empresa.objects.create(razon_social="Empresa previa", identificacion="900123456-7")
+        Empresa.objects.create(razon_social="Empresa previa", identificacion="900123456-8")
 
         respuesta = self.client.post(URL_REGISTRO, datos_juridico(), format="json")
 
@@ -79,7 +79,7 @@ class IdentificacionRepetidaTests(APITestCase):
 
     def test_varios_errores_salen_juntos(self):
         Cliente.objects.create(tipo=Cliente.NATURAL, nombre="Otra persona", identificacion="1234567890")
-        self.client.post(URL_REGISTRO, datos_natural(identificacion="555"), format="json")
+        self.client.post(URL_REGISTRO, datos_natural(identificacion="5555555"), format="json")
 
         respuesta = self.client.post(URL_REGISTRO, datos_natural(), format="json")
 

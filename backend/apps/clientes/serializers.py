@@ -8,6 +8,9 @@ from apps.sitios.models import Ciudad
 from apps.cotizaciones.models import Cotizacion
 from apps.cotizaciones.serializers import EstadoEfectivoMixin
 from .models import Cliente, Empresa
+from .validadores import (
+    validar_cedula, validar_nit, validar_nombre, validar_razon_social, validar_telefono,
+)
 
 
 class CotizacionResumenSerializer(EstadoEfectivoMixin, serializers.ModelSerializer):
@@ -170,6 +173,20 @@ class RegistroPublicoSerializer(serializers.Serializer):
     # Solo si tipo = "juridica"
     razon_social = serializers.CharField(max_length=150, required=False, allow_blank=True)
 
+    def validate_nombre(self, value):
+        return validar_nombre(value)
+
+    def validate_razon_social(self, value):
+        return validar_razon_social(value) if value.strip() else ""
+
+    def validate_identificacion(self, value):
+        if self.initial_data.get("tipo") == Cliente.JURIDICA:
+            return validar_nit(value)
+        return validar_cedula(value)
+
+    def validate_telefono(self, value):
+        return validar_telefono(value)
+
     def validate(self, data):
         # Se juntan todos los errores en una sola respuesta 400, para que el usuario
         # corrija el formulario de una vez.
@@ -218,6 +235,7 @@ class RegistroPublicoSerializer(serializers.Serializer):
             tipo=validated_data["tipo"],
             nombre=validated_data["nombre"],
             identificacion=validated_data["identificacion"] if empresa is None else None,
+            telefono=validated_data.get("telefono", ""),
             empresa=empresa,
         )
 
