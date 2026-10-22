@@ -182,7 +182,7 @@ class RegistroUsuariosInternosTests(APITestCase):
 class CadenaEscaladaSEG004Tests(APITestCase):
     """SEG-004 de punta a punta, sin credenciales previas ni force_authenticate."""
 
-    REGISTRO = {"tipo": "natural", "nombre": "Atacante", "identificacion": "999",
+    REGISTRO = {"tipo": "natural", "nombre": "Atacante", "identificacion": "9999999",
                 "email": "atacante@test.com", "ciudad": "CTG", "password": PASSWORD}
 
     def test_la_cadena_completa_ya_no_produce_un_administrador(self):
