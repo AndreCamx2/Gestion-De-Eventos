@@ -44,4 +44,21 @@ end
 note over SI, BD
   Al dejar de estar confirmada, la fecha del salón queda libre.
 end note
+
+== Anular una cotización no confirmada ==
+AD -> UI : En una cotizada o bloqueada, "Anular cotización"
+AD -> UI : Motivo
+UI -> SI : POST /api/cotizaciones/{id}/anulacion/ {motivo}
+alt Falta el motivo
+  SI --> UI : 400 en "motivo"
+  UI --> AD : Mostrar el error bajo el campo
+else Está confirmada o cancelada
+  SI --> UI : 409 "Solo se puede anular una cotización cotizada o bloqueada"
+  UI --> AD : Mostrar el aviso de conflicto
+else Cotizada (también vencida) o bloqueada
+  SI -> BD : Estado = cancelado, sin penalización ni bloqueo,\ncon motivo, quién y cuándo
+  SI -> BD : Guardar movimiento "anulada"
+  SI --> UI : 200 con la cotización
+  UI --> AD : Mostrar "Cotización anulada" con el motivo
+end
 @enduml

@@ -21,11 +21,14 @@ bloqueado --> cotizado : vence bloqueo_hasta\n(sistema)
 cotizado --> confirmado : registrar garantía\n[oferta no vencida, fecha libre]
 bloqueado --> confirmado : registrar garantía\n[fecha libre; el bloqueo sostiene la oferta]
 confirmado --> cancelado : cancelar\n(penalización % y motivo)
+cotizado --> cancelado : anular\n(motivo, sin penalización)
+bloqueado --> cancelado : anular\n(motivo; suelta la fecha)
 cancelado --> [*]
 
 cotizado : la vigencia (validez_oferta)\nse puede extender
+cotizado : se puede editar (cliente, salón,\nfecha, personas y conceptos)
 confirmado : garantía (tipo y monto)
-cancelado : monto retenido =\ntotal × penalización
+cancelado : monto retenido =\ntotal × penalización\n(anulada: sin monto retenido)
 
 note right of cotizado
   "Vencida" no es un estado: se calcula

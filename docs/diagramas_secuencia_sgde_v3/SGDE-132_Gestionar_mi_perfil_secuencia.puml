@@ -1,0 +1,80 @@
+@startuml SGDE-132_Gestionar_mi_perfil_secuencia
+title SGDE-132 · Gestionar mi perfil (cliente y proveedor)
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+autonumber
+
+actor "Cliente o Proveedor" as US
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
+
+== Ver y editar mis datos ==
+US -> UI : Abrir "Mi perfil"
+UI -> SI : GET /api/mi-perfil/
+alt Administrador
+  SI --> UI : 403 codigo "sin_perfil"
+else Sin vincular a un cliente o proveedor
+  SI --> UI : 403 codigo "cliente_sin_vincular" o "proveedor_sin_vincular"
+  UI --> US : Aviso amable; correo y contraseña siguen disponibles
+else Vinculado
+  SI -> BD : Leer su ficha (sin observaciones internas)
+  SI --> UI : 200 con sus datos y su correo
+  UI --> US : Datos como texto; teléfono (cliente) o contacto (proveedor) editable
+end
+US -> UI : Nuevo teléfono o contacto
+UI -> SI : PATCH /api/mi-perfil/ {telefono} o {contacto}
+alt Campo no editable o valor inválido
+  SI --> UI : 400 en ese campo
+  UI --> US : Mostrar el error bajo el campo
+else Válido
+  SI -> BD : Guardar solo ese campo
+  SI --> UI : 200 con los datos
+  UI --> US : "Datos actualizados"
+end
+
+== Cambiar el correo de acceso ==
+US -> UI : Correo nuevo y contraseña actual
+UI -> SI : POST /api/mi-perfil/correo/ {correo_nuevo, password_actual}
+alt Contraseña incorrecta, correo igual o ya registrado
+  SI --> UI : 400 en password_actual o correo_nuevo
+  UI --> US : Mostrar el error bajo el campo
+else Válido
+  SI -> BD : En una transacción: email, usuario (si era el correo)\ny correo de la ficha del cliente
+  SI --> UI : 200 con el correo y con qué usuario inicia sesión
+  UI --> US : "Correo actualizado"
+end
+
+== Cambiar la contraseña ==
+US -> UI : Contraseña actual, nueva y confirmación
+UI -> SI : POST /api/mi-perfil/contrasena/ {password_actual, password_nueva}
+alt Contraseña actual incorrecta, nueva igual o débil
+  SI --> UI : 400 en password_actual o password_nueva
+  UI --> US : Mostrar el error bajo el campo
+else Válida
+  SI -> BD : Guardar la contraseña nueva
+  SI -> BD : Invalidar todos los refresh tokens del usuario
+  SI --> UI : 200 con access y refresh nuevos
+  UI -> UI : Guardar los tokens nuevos
+  UI --> US : "Contraseña cambiada" y campos limpios
+end
+note over UI, SI
+  Correo y contraseña tienen límite de intentos por usuario
+  (cambiar_credenciales): pasado el límite responde 429.
+end note
+@enduml
