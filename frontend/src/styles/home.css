@@ -656,3 +656,41 @@
         padding: 0;
     }
 }
+
+.inicio .inicio-inventario {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    padding: var(--espacio-5);
+}
+
+.inicio-inventario__cifras {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--espacio-4);
+    margin: 0;
+}
+
+.inicio-inventario__cifra dt {
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-semi);
+    color: var(--color-texto-suave);
+}
+
+.inicio-inventario__cifra dd {
+    margin: 2px 0 0;
+    font-size: 28px;
+    font-weight: var(--peso-extra);
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+}
+
+.inicio-inventario__cifra--alerta dd {
+    color: var(--estado-vencida-texto);
+}
+
+.inicio-inventario__accion {
+    display: flex;
+    justify-content: flex-end;
+}
