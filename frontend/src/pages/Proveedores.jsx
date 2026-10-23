@@ -10,6 +10,7 @@ import DialogoNuevoProveedor from "./proveedores/DialogoNuevoProveedor";
 import DialogoNuevoElemento from "./proveedores/DialogoNuevoElemento";
 import DialogoEditarStock from "./proveedores/DialogoEditarStock";
 import DialogoUsuarioAcceso from "./proveedores/DialogoUsuarioAcceso";
+import AvisoGuardado from "./proveedores/AvisoGuardado";
 import SelectorVista from "./proveedores/SelectorVista";
 import ComparadorPrecios from "./proveedores/ComparadorPrecios";
 import "../styles/proveedores.css";
@@ -41,6 +42,7 @@ export default function Proveedores() {
   const [dialogo, setDialogo] = useState(null);
   // Elemento del stock que se edita (con dialogo === "editar").
   const [editando, setEditando] = useState(null);
+  const [guardado, setGuardado] = useState(false);
   // ?vista=comparar muestra "Comparar precios" (SGDE-71); sin parámetro, el stock.
   const [parametros, setParametros] = useSearchParams();
   const enComparar = parametros.get("vista") === "comparar";
@@ -104,6 +106,7 @@ export default function Proveedores() {
 
   function elegir(proveedor) {
     setSeleccionId(proveedor.id);
+    setGuardado(false);
     // En teléfono la tabla queda lejos, debajo de todas las tarjetas: se baja hasta ella.
     if (window.matchMedia("(max-width: 600px)").matches) {
       const suave = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -115,6 +118,7 @@ export default function Proveedores() {
 
   function abrir(tipo, boton) {
     disparadorRef.current = boton;
+    setGuardado(false);
     setDialogo(tipo);
   }
 
@@ -130,6 +134,7 @@ export default function Proveedores() {
   // La fila se reemplaza en el sitio: no se recarga la pantalla.
   function alEditarStock(actualizado) {
     setStock((prev) => prev.map((e) => (e.id === actualizado.id ? actualizado : e)));
+    setGuardado(true);
     cerrarDialogo();
   }
 
@@ -149,6 +154,7 @@ export default function Proveedores() {
     // Si /stock/ no había cargado, se pide completo; si no, se suma a la lista.
     if (stock) setStock((prev) => [...prev, elemento]);
     else cargarStock();
+    setGuardado(true);
     cerrarDialogo();
   }
 
@@ -205,6 +211,8 @@ export default function Proveedores() {
         }
       />
 
+      <AvisoGuardado visible={guardado} />
+
       {errorCarga !== "permiso" && (
         <SelectorVista vista={enComparar ? "comparar" : "stock"} onCambiar={(v) => setParametros(v === "comparar" ? { vista: v } : {}, { replace: true })} />
       )}
@@ -256,6 +264,7 @@ export default function Proveedores() {
           />
           <div ref={stockRef} className="proveedores-stock-ancla">
             <StockTabla
+              key={seleccionado.id}
               proveedor={seleccionado}
               elementos={elementos}
               onReintentar={cargarStock}

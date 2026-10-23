@@ -1,5 +1,6 @@
-import { AvisoError, Boton, EstadoVacio, TablaContenedor, Tarjeta } from "../../components/ui";
-import { fechaActualizado, pesos, valorTotal, valorTotalElemento } from "./proveedores";
+import { useState } from "react";
+import { AvisoError, Boton, Campo, EstadoBadge, EstadoVacio, TablaContenedor, Tarjeta } from "../../components/ui";
+import { estaAgotado, fechaActualizado, filtrarStock, pesos, valorTotal, valorTotalElemento } from "./proveedores";
 
 // "Stock de {proveedor}" (maqueta Proveedores.dc.html): valor total arriba y la
 // tabla con Elemento, Cantidad, Valor unitario, Valor total y Actualizado.
@@ -13,6 +14,7 @@ const formatoCantidad = new Intl.NumberFormat("es-CO");
 
 export default function StockTabla({ proveedor, elementos, onReintentar, onAgregar, onEditar, vacio }) {
   const titulo = `Stock de ${proveedor.nombre}`;
+  const [busqueda, setBusqueda] = useState("");
 
   if (elementos === null) {
     return (
@@ -42,6 +44,8 @@ export default function StockTabla({ proveedor, elementos, onReintentar, onAgreg
     );
   }
 
+  const visibles = filtrarStock(elementos, busqueda);
+
   return (
     <section className="proveedores-stock" aria-labelledby="proveedores-stock-titulo">
       <div className="proveedores-stock__cabecera">
@@ -50,41 +54,61 @@ export default function StockTabla({ proveedor, elementos, onReintentar, onAgreg
           Valor total <strong>{pesos(valorTotal(elementos))}</strong>
         </p>
       </div>
-      <TablaContenedor etiqueta={titulo}>
-        <table className="proveedores-tabla">
-          <thead>
-            <tr>
-              <th scope="col">Elemento</th>
-              <th scope="col" className="proveedores-tabla__num">Cantidad</th>
-              <th scope="col" className="proveedores-tabla__num">Valor unitario</th>
-              <th scope="col" className="proveedores-tabla__num">Valor total</th>
-              <th scope="col">Actualizado</th>
-              <th scope="col"><span className="visually-hidden">Acciones</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            {elementos.map((e) => (
-              <tr key={e.id}>
-                <td className="proveedores-tabla__elemento">{e.nombre_elemento}</td>
-                <td className="proveedores-tabla__num proveedores-tabla__cantidad">{formatoCantidad.format(e.cantidad)}</td>
-                <td className="proveedores-tabla__num proveedores-tabla__suave">{pesos(Number(e.valor))}</td>
-                <td className="proveedores-tabla__num proveedores-tabla__fuerte">{pesos(valorTotalElemento(e))}</td>
-                <td className="proveedores-tabla__suave">{fechaActualizado(e.actualizado_en)}</td>
-                <td className="proveedores-tabla__acciones">
-                  <Boton
-                    variante="secundario"
-                    className="proveedores-tabla__editar"
-                    aria-label={`Editar ${e.nombre_elemento}`}
-                    onClick={(evento) => onEditar(e, evento.currentTarget)}
-                  >
-                    Editar
-                  </Boton>
-                </td>
+      <Campo
+        etiqueta="Buscar elemento"
+        type="search"
+        autoComplete="off"
+        placeholder="Ej. silla, mantel, cabina"
+        className="proveedores-stock__buscar"
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+      />
+      {visibles.length === 0 ? (
+        <Tarjeta>
+          <EstadoVacio nivel="h3" titulo={`No hay elementos que coincidan con «${busqueda.trim()}»`} />
+        </Tarjeta>
+      ) : (
+        <TablaContenedor etiqueta={titulo}>
+          <table className="proveedores-tabla">
+            <thead>
+              <tr>
+                <th scope="col">Elemento</th>
+                <th scope="col" className="proveedores-tabla__num">Cantidad</th>
+                <th scope="col" className="proveedores-tabla__num">Valor unitario</th>
+                <th scope="col" className="proveedores-tabla__num">Valor total</th>
+                <th scope="col">Actualizado</th>
+                <th scope="col"><span className="visually-hidden">Acciones</span></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </TablaContenedor>
+            </thead>
+            <tbody>
+              {visibles.map((e) => (
+                <tr key={e.id}>
+                  <td className="proveedores-tabla__elemento">
+                    <span className="proveedores-tabla__nombre">
+                      {e.nombre_elemento}
+                      {estaAgotado(e) && <EstadoBadge estado="Agotado" className="estado-badge--vencida" />}
+                    </span>
+                  </td>
+                  <td className="proveedores-tabla__num proveedores-tabla__cantidad">{formatoCantidad.format(e.cantidad)}</td>
+                  <td className="proveedores-tabla__num proveedores-tabla__suave">{pesos(Number(e.valor))}</td>
+                  <td className="proveedores-tabla__num proveedores-tabla__fuerte">{pesos(valorTotalElemento(e))}</td>
+                  <td className="proveedores-tabla__suave">{fechaActualizado(e.actualizado_en)}</td>
+                  <td className="proveedores-tabla__acciones">
+                    <Boton
+                      variante="secundario"
+                      className="proveedores-tabla__editar"
+                      aria-label={`Editar ${e.nombre_elemento}`}
+                      onClick={(evento) => onEditar(e, evento.currentTarget)}
+                    >
+                      Editar
+                    </Boton>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TablaContenedor>
+      )}
     </section>
   );
 }

@@ -3,6 +3,7 @@ import { getUsuarioActual } from "../api/auth";
 import { crearMiStock, editarMiStock, listarMiStock } from "../api/proveedores";
 import SesionVencida from "../components/SesionVencida";
 import { AvisoError, Boton, CabeceraPagina, Esqueleto, EstadoVacio, Tarjeta } from "../components/ui";
+import AvisoGuardado from "./proveedores/AvisoGuardado";
 import DialogoEditarStock from "./proveedores/DialogoEditarStock";
 import DialogoNuevoElemento from "./proveedores/DialogoNuevoElemento";
 import StockTabla from "./proveedores/StockTabla";
@@ -36,6 +37,7 @@ export default function MiStock() {
   // Ventana abierta: null | "elemento" | "editar".
   const [dialogo, setDialogo] = useState(null);
   const [editando, setEditando] = useState(null);
+  const [guardado, setGuardado] = useState(false);
   const disparadorRef = useRef(null);
   const agregarRef = useRef(null);
   const sesionRef = useRef(null);
@@ -69,6 +71,7 @@ export default function MiStock() {
 
   function abrir(tipo, boton) {
     disparadorRef.current = boton;
+    setGuardado(false);
     setDialogo(tipo);
   }
 
@@ -79,11 +82,13 @@ export default function MiStock() {
 
   function alCrear(elemento) {
     setElementos((prev) => [...prev, elemento]);
+    setGuardado(true);
     setDialogo(null);
   }
 
   function alEditar(actualizado) {
     setElementos((prev) => prev.map((e) => (e.id === actualizado.id ? actualizado : e)));
+    setGuardado(true);
     setDialogo(null);
   }
 
@@ -138,6 +143,8 @@ export default function MiStock() {
           )
         }
       />
+
+      <AvisoGuardado visible={guardado} />
 
       {cuerpo ? (
         <Tarjeta>{cuerpo}</Tarjeta>

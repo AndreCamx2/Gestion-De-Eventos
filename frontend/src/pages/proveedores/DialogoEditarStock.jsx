@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { editarStock } from "../../api/proveedores";
 import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 import { Boton, Campo, Dialogo, cerrarDialogoDe } from "../../components/ui";
-import { cambiosStock, erroresEdicionStock, formDesdeElemento, validarEdicionStock } from "./proveedores";
+import { cambiosStock, erroresEdicionStock, formDesdeElemento, quedaAgotado, validarEdicionStock } from "./proveedores";
 
 // Ventana "Editar elemento" del stock (SGDE-98): cantidad y valor unitario. El
 // proveedor y el nombre del elemento se muestran, pero no se editan.
@@ -97,6 +97,11 @@ export default function DialogoEditarStock({
             error={errores.valor}
           />
         </div>
+        {quedaAgotado(form) && (
+          <p className="proveedores-dialogo__aviso" role="status">
+            El elemento quedará como agotado
+          </p>
+        )}
         {sesionVencida && <AvisoSesionEnVentana onEntrar={() => onEntrarDeNuevo(guardarRef.current)} />}
         {error && <p className="dialogo__error" role="alert">{error}</p>}
         <div className="dialogo__acciones">

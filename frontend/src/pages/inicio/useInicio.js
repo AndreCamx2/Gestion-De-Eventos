@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getUsuarioActual } from "../../api/auth";
 import { obtenerCalendario } from "../../api/calendario";
 import { listarCotizaciones } from "../../api/inicio";
+import { listarMiStock } from "../../api/proveedores";
 import { listarSalones } from "../../api/salones";
 import { fechaISO, hoyLocal, sumarDias } from "../../utils/inicioCifras";
 import { nombreVisible } from "../../utils/nombreUsuario";
@@ -12,8 +13,19 @@ const BLOQUE_INICIAL = { fase: "cargando", datos: [], error: null };
 // Tipo de error para AvisoError: "sesion" (401), "permiso" (403) o "servidor".
 function tipoDeError(err) {
   if (err?.status === 401) return "sesion";
-  if (err?.status === 403) return "permiso";
+  if (err?.status === 403) return err.body?.codigo === "proveedor_sin_vincular" ? "sinVincular" : "permiso";
   return "servidor";
+}
+
+async function ejecutar(pedir, setBloque, setSesionVencida) {
+  setBloque((prev) => ({ ...prev, fase: "cargando", error: null }));
+  try {
+    setBloque({ fase: "listo", datos: await pedir(), error: null });
+  } catch (err) {
+    const tipo = tipoDeError(err);
+    if (tipo === "sesion") setSesionVencida(true);
+    setBloque({ fase: "error", datos: [], error: tipo });
+  }
 }
 
 // Datos del Inicio (SGDE-103): el usuario y, solo para el administrador, las
@@ -30,32 +42,24 @@ export function useInicio() {
   const [cotizaciones, setCotizaciones] = useState(BLOQUE_INICIAL);
   const [calendario, setCalendario] = useState(BLOQUE_INICIAL);
   const [salones, setSalones] = useState(BLOQUE_INICIAL);
+  const [stock, setStock] = useState(BLOQUE_INICIAL);
   const [sesionVencida, setSesionVencida] = useState(false);
 
   const rol = usuario.datos?.rol?.codigo;
   const nombre = nombreVisible(usuario.datos);
   const esAdmin = rol === "administrador";
+  const esProveedor = rol === "proveedor";
 
-  // Pide un bloque y guarda su resultado. Si falla, solo ese bloque muestra el error.
-  async function ejecutar(pedir, setBloque) {
-    setBloque((prev) => ({ ...prev, fase: "cargando", error: null }));
-    try {
-      setBloque({ fase: "listo", datos: await pedir(), error: null });
-    } catch (err) {
-      const tipo = tipoDeError(err);
-      if (tipo === "sesion") setSesionVencida(true);
-      setBloque({ fase: "error", datos: [], error: tipo });
-    }
-  }
-
-  const cargarUsuario = () => ejecutar(getUsuarioActual, setUsuario);
-  const cargarCotizaciones = () => ejecutar(listarCotizaciones, setCotizaciones);
+  const cargarUsuario = () => ejecutar(getUsuarioActual, setUsuario, setSesionVencida);
+  const cargarCotizaciones = () => ejecutar(listarCotizaciones, setCotizaciones, setSesionVencida);
   const cargarCalendario = () =>
     ejecutar(
       () => obtenerCalendario({ desde: fechaISO(hoy), hasta: fechaISO(sumarDias(hoy, DIAS_VENTANA - 1)) }),
       setCalendario,
+      setSesionVencida,
     );
-  const cargarSalones = () => ejecutar(listarSalones, setSalones);
+  const cargarSalones = () => ejecutar(listarSalones, setSalones, setSesionVencida);
+  const cargarStock = useCallback(() => ejecutar(listarMiStock, setStock, setSesionVencida), []);
 
   useEffect(() => {
     cargarUsuario();
@@ -70,6 +74,11 @@ export function useInicio() {
     cargarSalones();
   }, [esAdmin]);
 
+  useEffect(() => {
+    if (!esProveedor) return;
+    cargarStock();
+  }, [esProveedor, cargarStock]);
+
   function alVolverAEntrar() {
     setSesionVencida(false);
     // Lo que falló por la sesión se pide otra vez.
@@ -77,6 +86,7 @@ export function useInicio() {
     if (cotizaciones.error === "sesion") cargarCotizaciones();
     if (calendario.error === "sesion") cargarCalendario();
     if (salones.error === "sesion") cargarSalones();
+    if (stock.error === "sesion") cargarStock();
   }
 
   return {
@@ -85,6 +95,7 @@ export function useInicio() {
     cotizaciones,
     calendario,
     salones,
+    stock,
     sesionVencida,
     rol,
     nombre,
@@ -93,6 +104,7 @@ export function useInicio() {
     cargarCotizaciones,
     cargarCalendario,
     cargarSalones,
+    cargarStock,
     alVolverAEntrar,
   };
 }

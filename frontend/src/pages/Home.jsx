@@ -19,6 +19,7 @@ export default function Home() {
     cotizaciones,
     calendario,
     salones,
+    stock,
     sesionVencida,
     rol,
     nombre,
@@ -27,6 +28,7 @@ export default function Home() {
     cargarCotizaciones,
     cargarCalendario,
     cargarSalones,
+    cargarStock,
     alVolverAEntrar,
   } = useInicio();
 
@@ -64,7 +66,7 @@ export default function Home() {
       />
     );
   } else {
-    contenido = <InicioSinPanel hoy={hoy} nombre={nombre} rol={rol} />;
+    contenido = <InicioSinPanel hoy={hoy} nombre={nombre} rol={rol} stock={stock} onReintentarStock={cargarStock} />;
   }
 
   return (
