@@ -4,6 +4,7 @@ from rest_framework import filters, generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .serializers import (
     RestablecerClaveSerializer, RolSerializer, SolicitarRecuperacionSerializer, UsuarioRegistroSerializer,
@@ -14,7 +15,10 @@ from .limites import ConLimiteDeIntentos
 from .recuperacion import cambiar_clave, solicitar_recuperacion, usuario_del_enlace
 from .validators import validar_password_candidata
 from .models import Rol, Usuario
-from .permissions import EsAdministrador
+from .perfil import (
+    CambioContrasenaSerializer, CambioCorreoSerializer, actualizar_perfil, cambiar_correo, datos_perfil,
+)
+from .permissions import EsAdministrador, EsClienteOProveedor, TienePerfilVinculado
 from .services import validar_cambio_usuario
 
 
@@ -168,3 +172,44 @@ class RenovarTokenView(ConLimiteDeIntentos, TokenRefreshView):
     """POST /api/token/refresh/ → {access, refresh}. Pasado el límite responde 429."""
 
     throttle_scope = "renovar_token"
+
+
+def _usuario_con_perfil(usuario):
+    return Usuario.objects.select_related("rol", "cliente__empresa", "proveedor").get(pk=usuario.pk)
+
+
+class MiPerfilView(APIView):
+    permission_classes = [permissions.IsAuthenticated, TienePerfilVinculado]
+
+    def get(self, request):
+        return Response(datos_perfil(_usuario_con_perfil(request.user)))
+
+    def patch(self, request):
+        usuario = _usuario_con_perfil(request.user)
+        actualizar_perfil(usuario, request.data)
+        return Response(datos_perfil(usuario))
+
+
+class CambiarCorreoView(ConLimiteDeIntentos, APIView):
+    permission_classes = [permissions.IsAuthenticated, EsClienteOProveedor]
+    throttle_scope = "cambiar_credenciales"
+
+    def post(self, request):
+        usuario = _usuario_con_perfil(request.user)
+        serializer = CambioCorreoSerializer(data=request.data, context={"usuario": usuario})
+        serializer.is_valid(raise_exception=True)
+        acceso = cambiar_correo(usuario, serializer.validated_data["correo_nuevo"])
+        return Response({"detail": "Correo actualizado.", **acceso})
+
+
+class CambiarContrasenaView(ConLimiteDeIntentos, APIView):
+    permission_classes = [permissions.IsAuthenticated, EsClienteOProveedor]
+    throttle_scope = "cambiar_credenciales"
+
+    def post(self, request):
+        usuario = _usuario_con_perfil(request.user)
+        serializer = CambioContrasenaSerializer(data=request.data, context={"usuario": usuario})
+        serializer.is_valid(raise_exception=True)
+        cambiar_clave(usuario, serializer.validated_data["password_nueva"])
+        refresh = RefreshToken.for_user(usuario)
+        return Response({"detail": "Contraseña cambiada.", "access": str(refresh.access_token), "refresh": str(refresh)})

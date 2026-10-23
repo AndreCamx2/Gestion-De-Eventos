@@ -25,6 +25,7 @@ export const ROLES_POR_RUTA = {
   "/rack": SOLO_ADMIN, // /calendario/, /salones/ y /cotizaciones/<id>/bloqueo/
   "/usuarios": SOLO_ADMIN, // /usuarios/, /roles/, /sitios/
   "/mi-stock": ["proveedor"], // /mi-stock/ (SGDE-72)
+  "/mi-perfil": ["cliente", "proveedor"],
 };
 
 // Roles de la ruta que se está viendo. Acepta subrutas por tramos completos:

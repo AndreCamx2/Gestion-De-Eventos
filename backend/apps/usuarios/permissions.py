@@ -52,3 +52,36 @@ class EsProveedor(BasePermission):
                 "codigo": CODIGO_PROVEEDOR_SIN_VINCULAR,
             })
         return True
+
+
+CODIGO_SIN_PERFIL = "sin_perfil"
+CODIGO_CLIENTE_SIN_VINCULAR = "cliente_sin_vincular"
+
+
+class EsClienteOProveedor(BasePermission):
+    def has_permission(self, request, view):
+        usuario = request.user
+        if not (usuario and usuario.is_authenticated):
+            return False
+        if usuario.rol.codigo not in ("cliente", "proveedor"):
+            raise PermissionDenied({
+                "detail": "Mi perfil es solo para clientes y proveedores.",
+                "codigo": CODIGO_SIN_PERFIL,
+            })
+        return True
+
+
+class TienePerfilVinculado(EsClienteOProveedor):
+    def has_permission(self, request, view):
+        if not super().has_permission(request, view):
+            return False
+        usuario = request.user
+        if usuario.rol.codigo == "proveedor":
+            return EsProveedor().has_permission(request, view)
+        if getattr(usuario, "cliente", None) is None:
+            raise PermissionDenied({
+                "detail": "Tu usuario todavía no está vinculado a un cliente. "
+                          "Pídele al administrador que lo vincule.",
+                "codigo": CODIGO_CLIENTE_SIN_VINCULAR,
+            })
+        return True
