@@ -2,11 +2,11 @@
 from django.conf import settings
 from django.test import override_settings
 
-ESCOPOS_DE_ACCESO = ("login", "renovar_token", "registro")
+ESCOPOS_DE_ACCESO = ("login", "renovar_token", "registro", "cambiar_credenciales")
 
 
 def sin_limite_de_intentos(clase):
-    """Sube los límites de login, renovación y registro solo para esta clase de pruebas.
+    """Sube los límites de login, renovación, registro y Mi perfil solo para esta clase de pruebas.
 
     Muchas pruebas entran al login o se registran varias veces seguidas y, con las
     tasas reales (SGDE-112), recibirían 429. settings.py no sabe nada de pruebas:

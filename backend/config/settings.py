@@ -217,6 +217,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 TASA_LOGIN = os.getenv("THROTTLE_LOGIN", "5/min")
 TASA_RENOVAR_TOKEN = os.getenv("THROTTLE_RENOVAR_TOKEN", "30/min")
 TASA_REGISTRO = os.getenv("THROTTLE_REGISTRO", "10/hour")
+TASA_CAMBIAR_CREDENCIALES = os.getenv("THROTTLE_CAMBIAR_CREDENCIALES", "10/hour")
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -239,6 +240,7 @@ REST_FRAMEWORK = {
         "login": TASA_LOGIN,
         "renovar_token": TASA_RENOVAR_TOKEN,
         "registro": TASA_REGISTRO,
+        "cambiar_credenciales": TASA_CAMBIAR_CREDENCIALES,
     },
 }
 

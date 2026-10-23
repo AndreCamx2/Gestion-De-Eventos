@@ -5,6 +5,7 @@ from apps.usuarios.views import (
     RegistrarUsuarioView, MeView, RolListView, UsuarioListCreateView, UsuarioDetailView,
     SolicitarRecuperacionView, RestablecerClaveView,
     LoginView, RenovarTokenView,
+    MiPerfilView, CambiarCorreoView, CambiarContrasenaView,
 )
 from apps.sitios.views import SitioListCreateView, CiudadListView
 from apps.salones.views import (
@@ -38,6 +39,9 @@ urlpatterns = [
     path('api/clave/restablecer/', RestablecerClaveView.as_view(), name='clave_restablecer'),
     path('api/usuarios/registro/', RegistrarUsuarioView.as_view(), name='usuario_registro'),
     path('api/usuarios/me/', MeView.as_view(), name='usuario_me'),
+    path('api/mi-perfil/', MiPerfilView.as_view(), name='mi_perfil'),
+    path('api/mi-perfil/correo/', CambiarCorreoView.as_view(), name='mi_perfil_correo'),
+    path('api/mi-perfil/contrasena/', CambiarContrasenaView.as_view(), name='mi_perfil_contrasena'),
     path('api/usuarios/', UsuarioListCreateView.as_view(), name='usuario_list_create'),
     path('api/usuarios/<int:pk>/', UsuarioDetailView.as_view(), name='usuario_detail'),
     path('api/roles/', RolListView.as_view(), name='rol_list'),
