@@ -141,6 +141,8 @@ hide empty methods
     liberada
     confirmada
     cancelada
+    editada
+    anulada
   }
 
 ' ---- Relaciones (muchos "1" del lado de la llave foránea) ----

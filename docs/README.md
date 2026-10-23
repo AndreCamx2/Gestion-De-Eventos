@@ -1,6 +1,6 @@
 # Documentación de SGDE
 
-Índice de la documentación y los diagramas del proyecto. Todos los diagramas describen el **sistema construido** (revisados contra el código el 2026-10-17). La excepción es la carpeta de actividades fuera de alcance, que es análisis inicial.
+Índice de la documentación y los diagramas del proyecto. Todos los diagramas describen el **sistema construido** (revisados contra el código el 2026-10-22). Las excepciones son la carpeta de actividades fuera de alcance, que es análisis inicial, y `casos_uso_sgde/SGDE-126_Consultar_mis_cotizaciones`, que está marcado "por construir".
 
 ## Documentos
 

@@ -18,9 +18,15 @@ start
 :Abre "Nueva cotización";
 :Elige cliente, salón, montaje,
 fecha del evento y número de personas;
-:Agrega conceptos con su cantidad;
+|Sistema|
+:Avisa la disponibilidad del salón ese día
+(confirmado, bloqueado, otras abiertas o libre);
+|Administrador|
+:Agrega conceptos con su cantidad
+(los "por persona" toman el número de personas);
 :La pantalla muestra subtotal, impuestos
 (IVA, impoconsumo) y total;
+:Puede abrir la vista previa para el cliente;
 :Guarda;
 |Sistema|
 :Bloquea el salón y su montaje
@@ -38,6 +44,6 @@ else (sí)
   :Registra el movimiento "creada";
 endif
 |Administrador|
-:Ve el detalle de la cotización;
+:Ve "Quedó guardada" con el enlace al detalle;
 stop
 @enduml

@@ -1,5 +1,5 @@
 @startuml CU14_ModificarCotizacion
-title CU-14 · Extender la vigencia de una cotización (SGDE-19)
+title CU-14 · Modificar una cotización: editar o extender la vigencia (SGDE-19)
 skinparam backgroundColor white
 skinparam ActivityBackgroundColor #F2F2F2
 skinparam ActivityBorderColor black
@@ -16,26 +16,43 @@ skinparam note {
 |Administrador|
 start
 :Abre una cotización;
-:Elige una fecha nueva de validez de la oferta;
-|Sistema|
-if (¿Está en estado cotizado
-y el salón activo?) then (no)
-  :Responde 409;
-  stop
-elseif (¿La fecha va de hoy al día
-del evento?) then (no)
-  :Responde 400;
-  stop
-else (sí)
-  :Guarda la nueva vigencia
-  (aunque la oferta ya hubiera vencido);
-  :Registra el movimiento "vigencia"
-  con la fecha anterior y la nueva;
+if (¿Qué quiere cambiar?) then (solo la vigencia)
+  :Elige una fecha nueva de validez de la oferta;
+  |Sistema|
+  if (¿Está en estado cotizado
+  y el salón activo?) then (no)
+    :Responde 409;
+    stop
+  elseif (¿La fecha va de hoy al día
+  del evento?) then (no)
+    :Responde 400;
+    stop
+  else (sí)
+    :Guarda la nueva vigencia
+    (aunque la oferta ya hubiera vencido);
+    :Registra el movimiento "vigencia"
+    con la fecha anterior y la nueva;
+  endif
+else (cliente, salón, fecha, personas o conceptos)
+  |Administrador|
+  :Elige "Editar" y cambia los datos;
+  |Sistema|
+  if (¿Está en estado cotizado?) then (no)
+    :Responde 409
+    (una bloqueada se libera primero);
+    stop
+  elseif (¿Datos válidos, igual que al crear?) then (no)
+    :Responde 400 con el error de cada campo;
+    stop
+  else (sí)
+    :Reemplaza los datos y los conceptos;
+    :Los conceptos que ya estaban conservan su precio;
+    :Registra el movimiento "editada"
+    con lo que cambió;
+  endif
+  |Administrador|
+  :Vuelve al detalle con
+  "Los cambios quedaron guardados";
 endif
-note right
-  En la beta solo cambia la vigencia:
-  conceptos, salón y fecha no se editan.
-  Para cambiarlos se hace otra cotización.
-end note
 stop
 @enduml
