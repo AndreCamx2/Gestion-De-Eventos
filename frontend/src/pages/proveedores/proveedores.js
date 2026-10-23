@@ -29,6 +29,24 @@ export function porNombre(a, b) {
   return a.nombre.localeCompare(b.nombre, "es");
 }
 
+function normalizar(texto) {
+  return String(texto ?? "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .trim();
+}
+
+export function filtrarStock(elementos, busqueda) {
+  const texto = normalizar(busqueda);
+  if (!texto) return elementos;
+  return elementos.filter((e) => normalizar(e.nombre_elemento).includes(texto));
+}
+
+export function estaAgotado(elemento) {
+  return Number(elemento.cantidad) === 0;
+}
+
 // Elementos de un proveedor, por nombre.
 export function stockDe(stock, idProveedor) {
   return stock
@@ -88,23 +106,47 @@ export function erroresProveedor(body) {
 export const ELEMENTO_VACIO = { nombre_elemento: "", cantidad: "", valor: "" };
 const CAMPOS_ELEMENTO = ["nombre_elemento", "cantidad", "valor"];
 
+export const MAX_NOMBRE_ELEMENTO = 120;
+const MAX_DIGITOS_ENTEROS_VALOR = 10;
+const MAX_DECIMALES_VALOR = 2;
+
 export function validarElemento(form) {
   const errores = validarCantidadYValor(form);
-  if (!form.nombre_elemento.trim()) errores.nombre_elemento = "Escribe el nombre del elemento.";
+  const nombre = form.nombre_elemento.trim();
+  if (!nombre) errores.nombre_elemento = "Escribe el nombre del elemento.";
+  else if (nombre.length > MAX_NOMBRE_ELEMENTO)
+    errores.nombre_elemento = `El nombre admite máximo ${MAX_NOMBRE_ELEMENTO} caracteres.`;
   return errores;
 }
 
-// Cantidad entera y valor, los dos 0 o más. La comparten agregar y editar.
+function validarCantidad(texto) {
+  if (texto === "") return "Escribe la cantidad.";
+  if (!/^\d+$/.test(texto)) return "La cantidad es un número entero, 0 o más, sin decimales.";
+  return null;
+}
+
+function validarValor(texto) {
+  if (texto === "") return "Escribe el valor unitario.";
+  const partes = /^(\d+)(?:\.(\d+))?$/.exec(texto);
+  if (!partes) return "El valor es un número, 0 o más.";
+  const [, enteros, decimales = ""] = partes;
+  if (decimales.length > MAX_DECIMALES_VALOR) return `El valor admite máximo ${MAX_DECIMALES_VALOR} decimales.`;
+  if (enteros.replace(/^0+(?=\d)/, "").length > MAX_DIGITOS_ENTEROS_VALOR)
+    return `El valor admite máximo ${MAX_DIGITOS_ENTEROS_VALOR} dígitos antes de los decimales.`;
+  return null;
+}
+
 function validarCantidadYValor(form) {
   const errores = {};
-  if (form.cantidad === "") errores.cantidad = "Escribe la cantidad.";
-  else if (!Number.isInteger(Number(form.cantidad)) || Number(form.cantidad) < 0)
-    errores.cantidad = "La cantidad es un número entero, 0 o más.";
-
-  if (form.valor === "") errores.valor = "Escribe el valor unitario.";
-  else if (Number.isNaN(Number(form.valor)) || Number(form.valor) < 0)
-    errores.valor = "El valor es un número, 0 o más.";
+  const cantidad = validarCantidad(String(form.cantidad).trim());
+  const valor = validarValor(String(form.valor).trim());
+  if (cantidad) errores.cantidad = cantidad;
+  if (valor) errores.valor = valor;
   return errores;
+}
+
+export function quedaAgotado(form) {
+  return /^0+$/.test(String(form.cantidad).trim());
 }
 
 export function payloadElemento(form, idProveedor) {
@@ -112,7 +154,7 @@ export function payloadElemento(form, idProveedor) {
     proveedor: idProveedor,
     nombre_elemento: form.nombre_elemento.trim(),
     cantidad: Number(form.cantidad),
-    valor: form.valor,
+    valor: String(form.valor).trim(),
   };
 }
 
@@ -163,7 +205,7 @@ export function validarEdicionStock(form) {
 export function cambiosStock(form, elemento) {
   const cambios = {};
   if (Number(form.cantidad) !== elemento.cantidad) cambios.cantidad = Number(form.cantidad);
-  if (Number(form.valor) !== Number(elemento.valor)) cambios.valor = form.valor;
+  if (Number(form.valor) !== Number(elemento.valor)) cambios.valor = String(form.valor).trim();
   return cambios;
 }
 

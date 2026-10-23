@@ -182,6 +182,47 @@
     font-weight: var(--peso-extra);
 }
 
+.proveedores-guardado {
+    align-self: flex-start;
+    margin: 0;
+    padding: var(--espacio-2) var(--espacio-4);
+    border-radius: var(--radio-pildora);
+    background: var(--estado-confirmado-fondo);
+    color: var(--estado-confirmado-texto);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-negrita);
+}
+
+.proveedores-guardado:empty {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+
+.proveedores-dialogo__aviso {
+    margin: 0;
+    padding: var(--espacio-3) var(--espacio-4);
+    border-radius: var(--radio-control);
+    background: var(--estado-vencida-fondo);
+    color: var(--estado-vencida-texto);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-semi);
+}
+
+.proveedores-stock__buscar {
+    max-width: 360px;
+}
+
+.proveedores-tabla__nombre {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-2);
+}
+
 .proveedores-tabla__cantidad {
     font-size: 18px;
     font-weight: var(--peso-extra);
