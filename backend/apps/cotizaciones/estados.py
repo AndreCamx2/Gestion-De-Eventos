@@ -27,6 +27,7 @@ from apps.core.exceptions import Conflicto
 from apps.salones.models import Salon
 
 from .models import Cotizacion, MovimientoCotizacion
+from .services import garantia_minima, totales_cotizacion
 from apps.sitios.acceso import filtrar_por_sitio
 
 ESTADO_EN_FEMENINO = {
@@ -170,6 +171,18 @@ def liberar(cotizacion, usuario):
     registrar(cotizacion, "liberada", usuario, "Liberada a mano.")
 
 
+def _exigir_garantia_minima(cotizacion, monto):
+    """400 si el monto no llega al mínimo (30% o 100%, ver garantia_minima) o pasa del total."""
+    total = totales_cotizacion(cotizacion.items.all())["total"]
+    minima = garantia_minima(total, cotizacion.fecha_evento, timezone.localdate())
+    if monto < minima["monto"]:
+        raise ValidationError({"monto": [
+            f"La garantía mínima es {pesos(minima['monto'])} ({minima['porcentaje']:g}% del total)."
+        ]})
+    if monto > total:
+        raise ValidationError({"monto": [f"La garantía no puede superar el total ({pesos(total)})."]})
+
+
 def aceptar(cotizacion, tipo, monto, usuario):
     """Registra la garantía y confirma (SGDE-20). Desde cotizada no vencida o bloqueada.
 
@@ -182,6 +195,7 @@ def aceptar(cotizacion, tipo, monto, usuario):
     if cotizacion.vencida:
         raise Conflicto("La cotización está vencida.")
     _exigir_fecha_libre(cotizacion, timezone.now())
+    _exigir_garantia_minima(cotizacion, monto)
 
     cotizacion.garantia_tipo = tipo
     cotizacion.garantia_monto = monto

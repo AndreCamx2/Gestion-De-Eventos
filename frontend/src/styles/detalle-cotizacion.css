@@ -547,6 +547,12 @@
     color: var(--color-texto-tenue);
 }
 
+.dc-minima {
+    margin: 0;
+    font-size: var(--texto-pequeno);
+    font-weight: 700;
+}
+
 .dc-aceptacion__boton {
     width: 100%;
     min-height: 54px;

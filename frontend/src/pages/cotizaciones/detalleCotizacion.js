@@ -1,4 +1,4 @@
-import { desdeISO, fechaISO, fechaLarga, hoyLocal, mesCorto } from "../../utils/inicioCifras";
+import { desdeISO, dineroCompleto, fechaISO, fechaLarga, hoyLocal, mesCorto } from "../../utils/inicioCifras";
 import { textoError } from "../../utils/erroresApi";
 import { fechaCorta } from "./cotizaciones";
 
@@ -165,14 +165,29 @@ export function porcentajeDelTotal(monto, total) {
   return Math.round((monto / base) * 1000) / 10;
 }
 
-export function validarAceptacion(form) {
+// Garantía mínima (2026-10-27): 30% del total con 5 días o más de anticipación,
+// 100% si el evento es antes. La calcula el backend (garantia_minima del detalle).
+export function textoGarantiaMinima(minima) {
+  if (!minima) return null;
+  const motivo = minima.porcentaje === "100" ? ": el evento es en menos de 5 días" : "";
+  return `Garantía mínima: ${dineroCompleto(Number(minima.monto))} (${minima.porcentaje}% del total${motivo}).`;
+}
+
+// La misma regla del backend, para avisar antes de enviar. `c` es la cotización.
+export function validarAceptacion(form, c) {
   const campos = {};
   if (!form.tipo) campos.tipo = "Elige cómo dejó la garantía el cliente.";
   const monto = parsearMonto(form.monto);
+  const minima = c?.garantia_minima;
   if (monto == null) campos.monto = "Escribe el monto recibido.";
   else if (Number.isNaN(monto)) campos.monto = "Escribe solo números, por ejemplo 3.220.000.";
   else if (monto <= 0) campos.monto = "El monto debe ser mayor que 0.";
   else if (monto >= 1e10) campos.monto = "El monto es demasiado grande.";
+  else if (minima && monto < Number(minima.monto)) {
+    campos.monto = `La garantía mínima es ${dineroCompleto(Number(minima.monto))} (${minima.porcentaje}% del total).`;
+  } else if (c?.total != null && monto > Number(c.total)) {
+    campos.monto = `La garantía no puede superar el total (${dineroCompleto(Number(c.total))}).`;
+  }
   return Object.keys(campos).length ? { tipo: "datos", campos, texto: null } : null;
 }
 

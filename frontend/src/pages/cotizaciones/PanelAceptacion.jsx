@@ -1,6 +1,6 @@
 import { Boton } from "../../components/ui";
 import { pesos } from "./nuevaCotizacion";
-import { TIPOS_GARANTIA, parsearMonto, porcentajeDelTotal } from "./detalleCotizacion";
+import { TIPOS_GARANTIA, parsearMonto, porcentajeDelTotal, textoGarantiaMinima } from "./detalleCotizacion";
 
 export default function PanelAceptacion({ d }) {
   const { cotizacion: c, aceptacion: form } = d;
@@ -8,6 +8,7 @@ export default function PanelAceptacion({ d }) {
   const campos = error?.campos ?? {};
   const pct = porcentajeDelTotal(parsearMonto(form.monto), c.total);
   const ayudaMonto = pct != null ? `${pct.toLocaleString("es-CO")}% del total (${pesos(c.total)})` : `Total: ${pesos(c.total)}`;
+  const minima = textoGarantiaMinima(c.garantia_minima);
 
   return (
     <section className="dc-panel dc-panel--aceptacion" aria-labelledby="dc-aceptacion-titulo">
@@ -41,6 +42,7 @@ export default function PanelAceptacion({ d }) {
 
         <div className="dc-monto">
           <label htmlFor="dc-monto" className="dc-etiqueta">Monto recibido</label>
+          {minima && <p id="dc-garantia-minima" className="dc-minima">{minima}</p>}
           <div className={["dc-monto__campo", campos.monto && "dc-monto__campo--error"].filter(Boolean).join(" ")}>
             <span className="dc-monto__signo" aria-hidden="true">$</span>
             <input
@@ -52,7 +54,9 @@ export default function PanelAceptacion({ d }) {
               value={form.monto}
               onChange={(e) => d.cambiarAceptacion("monto", e.target.value)}
               aria-invalid={campos.monto ? true : undefined}
-              aria-describedby={campos.monto ? "dc-error-monto dc-ayuda-monto" : "dc-ayuda-monto"}
+              aria-describedby={[campos.monto && "dc-error-monto", minima && "dc-garantia-minima", "dc-ayuda-monto"]
+                .filter(Boolean)
+                .join(" ")}
             />
           </div>
           {campos.monto && <p id="dc-error-monto" className="dc-error">{campos.monto}</p>}

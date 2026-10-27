@@ -241,7 +241,7 @@ class DetallesDeOtroSitioTests(MultiSitioBaseTest):
         self.assertEqual(len(r.json()), 1)
         r = self.client.post(
             f"/api/cotizaciones/{self.a['cotizacion'].pk}/aceptacion/",
-            {"tipo": "transferencia", "monto": "100"}, format="json",
+            {"tipo": "transferencia", "monto": "500"}, format="json",
         )
         self.assertEqual(r.status_code, status.HTTP_200_OK)
 

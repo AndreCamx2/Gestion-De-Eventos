@@ -156,7 +156,7 @@ export function useDetalleCotizacion(id) {
   }
 
   async function enviarAceptacion() {
-    const local = validarAceptacion(aceptacion);
+    const local = validarAceptacion(aceptacion, cotizacion);
     if (local) {
       setErrorAceptacion(local);
       return;

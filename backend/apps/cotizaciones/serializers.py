@@ -13,7 +13,7 @@ from apps.sitios.models import Sitio
 
 from .estados import fecha_corta, registrar
 from .models import Cotizacion, CotizacionItem, MovimientoCotizacion
-from .services import redondear, totales_cotizacion, totales_linea
+from .services import garantia_minima, redondear, totales_cotizacion, totales_linea
 
 DIAS_VIGENCIA_POR_DEFECTO = 15
 
@@ -332,6 +332,7 @@ class CotizacionDetalleSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, s
     impuestos = serializers.SerializerMethodField()
     total = serializers.SerializerMethodField()
     garantia = serializers.SerializerMethodField()
+    garantia_minima = serializers.SerializerMethodField()
     # Solo la aceptación (SGDE-20) confirma, y en el mismo save registra la garantía:
     # esa fecha es la de confirmación. Lo confirmado a mano en /admin/ queda en null.
     confirmado_en = serializers.DateTimeField(source="garantia_registrada_en", read_only=True)
@@ -342,7 +343,7 @@ class CotizacionDetalleSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, s
             "id", "estado", "vencida", "sitio", "cliente", "salon", "montaje", "aforo",
             "fecha_evento", "cantidad_personas", "validez_oferta", "bloqueo_hasta", "creado_en",
             "creado_por", "confirmado_en", "items", "subtotal", "impuestos", "total", "garantia",
-            *CAMPOS_CANCELACION,
+            "garantia_minima", *CAMPOS_CANCELACION,
         ]
         read_only_fields = fields
 
@@ -364,6 +365,13 @@ class CotizacionDetalleSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, s
 
     def get_garantia(self, obj):
         return garantia_de(obj)
+
+    def get_garantia_minima(self, obj):
+        """Lo mínimo que hay que recibir para confirmar hoy; null si ya no se puede aceptar."""
+        if obj.estado not in ("cotizado", "bloqueado"):
+            return None
+        minima = garantia_minima(_totales(obj)["total"], obj.fecha_evento, timezone.localdate())
+        return {"porcentaje": f"{minima['porcentaje']:g}", "monto": str(minima["monto"])}
 
 
 class CotizacionListaSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, serializers.ModelSerializer):
