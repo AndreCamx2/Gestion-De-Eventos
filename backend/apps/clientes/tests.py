@@ -8,6 +8,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from apps.core.pruebas import sin_limite_de_intentos
 from apps.cotizaciones.models import Cotizacion
 from apps.salones.models import Montaje, Salon
 from apps.sitios.models import Ciudad, Sitio
@@ -28,6 +29,7 @@ def detalle(pk):
     return f"/api/clientes/{pk}/"
 
 
+@sin_limite_de_intentos
 class BaseClientesTests(APITestCase):
     @classmethod
     def setUpTestData(cls):
@@ -472,6 +474,7 @@ class ClienteAdminTests(BaseClientesTests):
         self.assertIsNone(Cliente.objects.get(nombre="Contacto admin").identificacion)
 
 
+@sin_limite_de_intentos
 class MigracionLimpiezaIdentificacionTests(TransactionTestCase):
     """SGDE-91: la 0007 deja los datos listos para el constraint de la 0008.
 

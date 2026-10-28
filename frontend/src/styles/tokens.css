@@ -1,0 +1,122 @@
+/* SGDE — Variables de diseño "Piedra viva"
+   Fuente de verdad: docs/diseno/piedra-viva/README.md (secciones 1 a 4).
+   Se importa una sola vez en main.jsx, antes que cualquier otro CSS.
+   Ningún componente escribe colores en hex: todo sale de aquí. */
+
+:root {
+    /* 1. Colores */
+    --color-fondo: #F3F2F0;
+    --color-superficie: #FFFFFF;
+    --color-superficie-2: #F7F6F3;
+    --color-campo: #F1EFEB;
+    --color-linea: #E4E2DE;
+    --color-linea-fuerte: #D6D3CD;
+    --color-texto: #1D232B;
+    --color-texto-suave: #5D6673;
+    --color-texto-tenue: #646B77;
+    --color-tinta: #2F4A6D;
+    --color-tinta-hover: #243B58;
+    --color-tinta-suave: #E6ECF4;
+    --color-mandarina: #EE8A63;
+    --color-mandarina-texto: #A64E2B;
+    --color-durazno: #FCE5D9;
+    --color-mantequilla: #F0B429;
+    --color-mantequilla-texto: #875A00;
+    --color-peligro: #B42318;
+
+    /* Colores de botones (sección 6 de la guía) que no están en la sección 1 */
+    --color-sobre-oscuro: #FFFFFF;
+    --color-exito: #34A86A;
+    --color-exito-texto: #0E3B24;
+    --color-peligro-borde: #F3C9B5;
+
+    /* 2. Estados de cotización: fondo, texto y punto */
+    --estado-cotizado-fondo: rgba(240, 180, 41, 0.16);
+    --estado-cotizado-texto: #875A00;
+    --estado-cotizado-punto: #F0B429;
+
+    --estado-bloqueado-fondo: rgba(111, 131, 217, 0.18);
+    --estado-bloqueado-texto: #3A4C99;
+    --estado-bloqueado-punto: #6F83D9;
+
+    --estado-confirmado-fondo: rgba(52, 168, 106, 0.14);
+    --estado-confirmado-texto: #1F6E44;
+    --estado-confirmado-punto: #34A86A;
+
+    --estado-vencida-fondo: rgba(238, 138, 99, 0.16);
+    --estado-vencida-texto: #9C4826;
+    --estado-vencida-punto: #EE8A63;
+
+    --estado-cancelado-fondo: rgba(93, 102, 115, 0.18);
+    --estado-cancelado-texto: #525A66;
+    --estado-cancelado-punto: #6E7581;
+
+    /* Día sin cotizaciones que ocupen la fecha (Rack y Calendario, SGDE-69) */
+    --estado-disponible-fondo: rgba(93, 102, 115, 0.07);
+    --estado-disponible-texto: #4A525E;
+    --estado-disponible-punto: #AEB4BC;
+
+    /* 3. Tipografía */
+    --fuente-base: "Plus Jakarta Sans", system-ui, sans-serif;
+
+    --texto-titulo: 48px;
+    --texto-seccion: 22px;
+    --texto-subtitulo: 16px;
+    --texto-cuerpo: 15px;
+    --texto-navegacion: 14px;
+    --texto-etiqueta: 13px;
+    --texto-antetitulo: 13px;
+    --texto-pequeno: 12px;
+
+    --peso-normal: 400;
+    --peso-medio: 500;
+    --peso-semi: 600;
+    --peso-negrita: 700;
+    --peso-extra: 800;
+
+    --interlineado-cuerpo: 1.5;
+    --tracking-titulo: -0.035em;
+    --tracking-seccion: -0.02em;
+    --tracking-antetitulo: 0.12em;
+    --tracking-tabla: 0.06em;
+
+    /* 4. Forma y espacio */
+    --radio-tarjeta: 20px;
+    --radio-tarjeta-grande: 22px;
+    --radio-control: 12px;
+    --radio-pildora: 999px;
+
+    --borde: 1px solid var(--color-linea);
+    --sombra-flotante: 0 1px 2px rgba(29, 35, 43, 0.06), 0 24px 48px -24px rgba(29, 35, 43, 0.18);
+
+    --espacio-1: 4px;
+    --espacio-2: 8px;
+    --espacio-3: 12px;
+    --espacio-4: 16px;
+    --espacio-5: 20px;
+    --espacio-6: 24px;
+    --espacio-7: 28px;
+    --espacio-8: 32px;
+    --espacio-10: 40px;
+
+    --alto-tocable: 44px;
+    --alto-boton: 48px;
+    --alto-barra: 68px;
+    --ancho-contenido: 1320px;
+
+    /* Barra inferior del teléfono (SGDE-102, maqueta Movil.dc.html) */
+    --alto-pieza-barra: 52px;
+    --alto-barra-inferior: 70px; /* pieza de 52 px + relleno de 8 px arriba y abajo + borde */
+    --radio-barra-inferior: 24px;
+    --sombra-boton-nuevo: 0 10px 24px -8px rgba(238, 138, 99, 0.6);
+
+    /* Movimiento (sección 7) */
+    --curva-salida: cubic-bezier(0.23, 1, 0.32, 1);
+    --duracion-presion: 160ms;
+    --duracion-menu: 200ms;
+
+    /* Accesibilidad (sección 8) */
+    --foco: 2px solid var(--color-tinta);
+    --foco-separacion: 2px;
+    --anillo-campo: 0 0 0 4px rgba(238, 138, 99, 0.18);
+}

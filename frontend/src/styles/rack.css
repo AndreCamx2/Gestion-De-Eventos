@@ -1,0 +1,263 @@
+/* Rack de salones (SGDE-69). Solo variables de tokens.css: ningún color en hex.
+   Lenguaje visual de la maqueta Calendario: leyenda, colores por estado y panel del día. */
+
+.rack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-6);
+}
+
+/* ---- Controles: navegación de fechas y sitios ---- */
+.rack__controles {
+    display: flex;
+    flex-wrap: wrap; /* en teléfono bajan a varias líneas */
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-3) var(--espacio-4);
+}
+
+.rack__navegacion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-2);
+}
+
+.rack__rango {
+    margin: 0 0 0 var(--espacio-2);
+    color: var(--color-texto);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-negrita);
+}
+
+/* Sitios: control segmentado como el de la maqueta (Todos / Bolívar / ...) */
+.rack__sitios {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 4px;
+    border: var(--borde);
+    border-radius: var(--radio-control);
+    background: var(--color-superficie);
+}
+
+.rack__sitio {
+    min-height: 36px;
+    padding: 0 var(--espacio-3);
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--color-texto-suave);
+    font: inherit;
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-negrita);
+    cursor: pointer;
+}
+
+.rack__sitio[aria-pressed="true"] {
+    background: var(--color-texto);
+    color: var(--color-fondo);
+}
+
+.rack__sitio:focus-visible {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+/* ---- Tarjeta con la rejilla y la leyenda ---- */
+.rack__tarjeta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    min-width: 0;
+}
+
+.rack__tarjeta[aria-busy="true"] .rack-rejilla {
+    opacity: 0.55;
+    transition: opacity 160ms ease;
+}
+
+/* ---- Rejilla: se desplaza en horizontal DENTRO de su contenedor ---- */
+.rack-rejilla {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
+
+.rack-rejilla:focus-visible {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+.rack-rejilla__tabla {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 4px;
+}
+
+.rack-rejilla__esquina,
+.rack-rejilla__salon {
+    /* La columna de salones queda fija al desplazar la rejilla */
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    width: 150px;
+    min-width: 120px;
+    max-width: 180px;
+    padding: 0 var(--espacio-3) 0 0;
+    background: var(--color-superficie);
+    /* Tapa el hueco de border-spacing: las celdas no se ven pasar junto a la columna fija */
+    box-shadow: 4px 0 0 var(--color-superficie);
+    text-align: left;
+}
+
+.rack-rejilla__esquina {
+    color: var(--color-texto-tenue);
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-negrita);
+    letter-spacing: var(--tracking-tabla);
+    text-transform: uppercase;
+}
+
+.rack-rejilla__salon {
+    overflow: hidden;
+    color: var(--color-texto);
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-negrita);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rack-rejilla__dia {
+    min-width: 44px;
+    padding-bottom: var(--espacio-1);
+    text-align: center;
+    font-weight: var(--peso-negrita);
+}
+
+.rack-rejilla__semana {
+    display: block;
+    color: var(--color-texto-tenue);
+    font-size: var(--texto-pequeno);
+    letter-spacing: var(--tracking-tabla);
+    text-transform: uppercase;
+}
+
+.rack-rejilla__numero {
+    display: inline-block;
+    min-width: 28px;
+    padding: 2px 6px;
+    border-radius: var(--radio-pildora);
+    color: var(--color-texto);
+    font-size: var(--texto-etiqueta);
+}
+
+/* Fin de semana: el día de la semana en mandarina, como el SÁB de la maqueta */
+.rack-rejilla__dia--fin-de-semana .rack-rejilla__semana {
+    color: var(--color-mandarina-texto);
+}
+
+/* Hoy: el número sobre una píldora tinta suave */
+.rack-rejilla__dia--hoy .rack-rejilla__numero {
+    background: var(--color-tinta-suave);
+    color: var(--color-tinta);
+}
+
+.rack-rejilla__celda {
+    padding: 0;
+}
+
+/* ---- Celda: un botón con el color del estado ---- */
+.rack-celda {
+    /* Cada estado cambia estas tres */
+    --celda-fondo: var(--estado-disponible-fondo);
+    --celda-texto: var(--estado-disponible-texto);
+    --celda-borde: transparent;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 44px;
+    height: var(--alto-tocable);
+    padding: 0 2px;
+    border: 1.5px solid var(--celda-borde);
+    border-radius: 10px;
+    background: var(--celda-fondo);
+    color: var(--celda-texto);
+    font: inherit;
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-extra);
+    cursor: pointer;
+    transition: border-color 160ms ease;
+}
+
+.rack-celda--cotizado {
+    --celda-fondo: var(--estado-cotizado-fondo);
+    --celda-texto: var(--estado-cotizado-texto);
+    --celda-borde: var(--estado-cotizado-punto);
+}
+
+.rack-celda--bloqueado {
+    --celda-fondo: var(--estado-bloqueado-fondo);
+    --celda-texto: var(--estado-bloqueado-texto);
+    --celda-borde: var(--estado-bloqueado-punto);
+}
+
+.rack-celda--confirmado {
+    --celda-fondo: var(--estado-confirmado-fondo);
+    --celda-texto: var(--estado-confirmado-texto);
+    --celda-borde: var(--estado-confirmado-punto);
+}
+
+.rack-celda:focus-visible {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+.rack-celda__texto {
+    white-space: nowrap;
+}
+
+.rack-celda__cantidad {
+    margin-left: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .rack-celda:hover {
+        border-color: var(--color-linea-fuerte);
+    }
+
+    .rack-celda--cotizado:hover,
+    .rack-celda--bloqueado:hover,
+    .rack-celda--confirmado:hover {
+        border-color: var(--color-texto-suave);
+    }
+
+    .rack__sitio[aria-pressed="false"]:hover {
+        background: var(--color-campo);
+        color: var(--color-texto);
+    }
+}
+
+/* ---- Teléfono ---- */
+@media (max-width: 600px) {
+    .rack__rango {
+        flex-basis: 100%;
+        margin-left: 0;
+    }
+
+    .rack-rejilla__esquina,
+    .rack-rejilla__salon {
+        width: 104px;
+        min-width: 104px;
+        max-width: 104px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rack-celda,
+    .rack__tarjeta[aria-busy="true"] .rack-rejilla {
+        transition: none;
+    }
+}

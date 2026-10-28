@@ -1,124 +1,270 @@
-.sitios {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: 1.5rem;
-  align-items: start;
+/* Sitios — maqueta Sitios.dc.html y guía Piedra viva. Solo variables de tokens.css. */
+.sitios-pv {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-7);
 }
 
-.sitios__panel {
-  background: #fff;
-  border-radius: 10px;
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 1px 3px rgba(15, 31, 56, 0.06);
+/* Tarjetas a la izquierda y formulario a la derecha; en teléfono, el formulario
+   baja debajo de las tarjetas (flex-wrap). */
+.sitios-cuerpo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--espacio-5);
 }
 
-.sitios__encabezado {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 1rem;
+.sitios-lista {
+    flex: 2 1 520px;
+    min-width: 0;
 }
 
-.sitios__titulo {
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: #0f1f38;
-  margin: 0 0 1rem;
+.sitios-grilla {
+    position: relative;
+    display: grid;
+    /* min(): en pantallas de menos de 300 px la columna no se desborda */
+    grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+    gap: var(--espacio-5);
 }
 
-.sitios__encabezado .sitios__titulo {
-  margin: 0;
+/* ===== Tarjeta de sitio ===== */
+
+.sitio-tarjeta {
+    min-width: 0;
+    overflow: hidden;
+    background: var(--color-superficie);
+    border: var(--borde);
+    border-radius: var(--radio-tarjeta-grande);
 }
 
-.sitios__contador {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #4a5568;
-  background: #f1f2f4;
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
+.sitio-tarjeta__cabecera {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--espacio-4);
+    min-height: 150px;
+    padding: var(--espacio-6);
+    background: var(--color-tinta);
+    color: var(--color-sobre-oscuro);
 }
 
-.sitios__estado {
-  color: #8b95a5;
-  font-size: 0.9rem;
-  margin: 1rem 0;
+.sitio-tarjeta__ciudad {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: var(--radio-pildora);
+    background: var(--color-fondo);
+    color: var(--color-texto);
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-extra);
 }
 
-/* ===== Tabla ===== */
-
-.sitios__tabla-wrap {
-  overflow-x: auto;
+.sitio-tarjeta__titulo {
+    margin: 0;
+    /* 36 px como la maqueta; baja a 28 px en teléfono para no partir el nombre */
+    font-size: clamp(28px, 20px + 2vw, 36px);
+    font-weight: var(--peso-extra);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    overflow-wrap: anywhere;
 }
 
-.sitios__tabla {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
+.sitio-tarjeta__conteos {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--espacio-3);
+    margin: 0;
+    padding: var(--espacio-5) var(--espacio-6) var(--espacio-3);
+    list-style: none;
 }
 
-.sitios__tabla thead th {
-  text-align: left;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: #8b95a5;
-  padding: 0.7rem 0.75rem;
-  border-bottom: 1px solid #eceef1;
+.sitio-tarjeta__conteo {
+    min-width: 0;
 }
 
-.sitios__tabla tbody td {
-  padding: 0.8rem 0.75rem;
-  border-bottom: 1px solid #f2f3f5;
-  color: #333;
+.sitio-tarjeta__enlace {
+    display: flex;
+    flex-direction: column;
+    min-height: var(--alto-tocable);
+    border-radius: var(--radio-control);
+    color: inherit;
+    text-decoration: none;
 }
 
-.sitios__nombre {
-  font-weight: 600;
-  color: #0f1f38;
+a.sitio-tarjeta__enlace:focus-visible {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
 }
 
-/* ===== Alertas ===== */
-
-.sitios__alerta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  font-size: 0.85rem;
-  padding: 0.65rem 0.85rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
+.sitio-tarjeta__numero {
+    font-size: 32px;
+    font-weight: var(--peso-extra);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
 }
 
-.sitios__alerta--error {
-  background: #fce6e4;
-  color: #b3261e;
+.sitio-tarjeta__nombre-conteo {
+    font-size: var(--texto-etiqueta);
+    color: var(--color-texto-suave);
 }
 
-.sitios__alerta--exito {
-  background: #e3f5e9;
-  color: #2f7a4f;
+.sitio-tarjeta__fecha {
+    margin: 0;
+    padding: 0 var(--espacio-6) 22px;
+    font-size: var(--texto-etiqueta);
+    color: var(--color-texto-tenue);
 }
 
-.sitios__reintentar {
-  background: none;
-  border: 1px solid currentColor;
-  color: inherit;
-  border-radius: 6px;
-  padding: 0.25rem 0.7rem;
-  font-size: 0.8rem;
-  cursor: pointer;
+/* Esqueleto de carga con la forma de la tarjeta */
+.sitio-tarjeta--cargando .sitio-tarjeta__cabecera {
+    background: var(--color-campo);
 }
 
-/* ===== Formulario ===== */
+/* ===== Tarjeta "Agregar otro sitio" ===== */
 
-.sitios .field {
-  margin-bottom: 1rem;
+.sitios-agregar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--espacio-3);
+    min-height: 280px;
+    padding: var(--espacio-6);
+    border: 2px dashed var(--color-linea-fuerte);
+    border-radius: var(--radio-tarjeta-grande);
+    background: transparent;
+    color: var(--color-texto-suave);
+    font: inherit;
+    text-align: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform var(--duracion-presion) var(--curva-salida);
 }
 
-@media (max-width: 900px) {
-  .sitios {
-    grid-template-columns: 1fr;
-  }
+.sitios-agregar:active {
+    transform: scale(0.97);
+}
+
+.sitios-agregar:focus-visible {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+.sitios-agregar__icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radio-pildora);
+    background: var(--color-campo);
+    color: var(--color-mantequilla-texto);
+}
+
+.sitios-agregar__titulo {
+    font-size: 16px;
+    font-weight: var(--peso-extra);
+    color: var(--color-texto);
+}
+
+.sitios-agregar__nota {
+    font-size: var(--texto-etiqueta);
+}
+
+/* Hover solo con mouse (guía, sección 7) */
+@media (hover: hover) and (pointer: fine) {
+    .sitios-agregar:hover {
+        background: var(--color-superficie-2);
+    }
+
+    a.sitio-tarjeta__enlace:hover .sitio-tarjeta__nombre-conteo {
+        color: var(--color-texto);
+        text-decoration: underline;
+    }
+}
+
+/* ===== Formulario "Nuevo sitio" ===== */
+
+.sitios-form {
+    display: flex;
+    flex: 1 1 320px;
+    flex-direction: column;
+    gap: var(--espacio-4);
+    min-width: 0;
+    padding: var(--espacio-6);
+    background: var(--color-superficie);
+    border: var(--borde);
+    border-radius: var(--radio-tarjeta-grande);
+}
+
+.sitios-form__titulo {
+    margin: 0;
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-seccion);
+}
+
+.sitios-form__aviso {
+    margin: 0;
+    font-size: var(--texto-pequeno);
+    color: var(--color-texto-suave);
+}
+
+.sitios-form__reintentar {
+    min-height: var(--alto-tocable);
+    padding: 0 var(--espacio-1);
+    border: 0;
+    background: transparent;
+    color: var(--color-tinta);
+    font: inherit;
+    font-weight: var(--peso-negrita);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.sitios-form__reintentar:focus-visible {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+.sitios-form__error,
+.sitios-form__exito {
+    margin: 0;
+    padding: 10px var(--espacio-3);
+    border-radius: var(--radio-control);
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-negrita);
+}
+
+.sitios-form__error {
+    background: var(--estado-vencida-fondo);
+    color: var(--color-peligro);
+}
+
+.sitios-form__exito {
+    background: var(--estado-confirmado-fondo);
+    color: var(--estado-confirmado-texto);
+}
+
+.sitios-form__crear {
+    width: 100%;
+}
+
+.sitios-form__nota {
+    margin: 0;
+    font-size: var(--texto-pequeno);
+    line-height: var(--interlineado-cuerpo);
+    color: var(--color-texto-tenue);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sitios-agregar {
+        transition: none;
+    }
+
+    .sitios-agregar:active {
+        transform: none;
+    }
 }

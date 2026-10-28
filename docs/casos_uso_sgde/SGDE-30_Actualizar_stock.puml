@@ -29,16 +29,27 @@ rectangle "SGDE" {
   usecase "Agregar elemento" as UC2
   usecase "Actualizar cantidad y valor" as UC3
   usecase "Vincular usuario al proveedor" as UC4
+  usecase "Buscar elemento por nombre" as UC5
+  usecase "Ver resumen del inventario\nen el Inicio" as UC6
 }
 
 PR --> UC1
 PR --> UC2
 PR --> UC3
+PR --> UC6
 AD --> UC4
+UC1 <.. UC5 : <<extend>>
 
 note right of UC1
   El proveedor solo ve y edita el stock
   de su propio Proveedor. Sin vincular: 403
   con codigo "proveedor_sin_vincular".
+  Cantidad 0 se marca "Agotado".
+end note
+
+note right of UC3
+  Cantidad entera de 0 o más. Valor con
+  máximo 2 decimales y 10 dígitos enteros.
+  El nombre no se edita y no hay borrar.
 end note
 @enduml

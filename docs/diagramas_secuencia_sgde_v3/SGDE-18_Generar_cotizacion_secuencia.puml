@@ -27,6 +27,9 @@ database "Base de datos\n(PostgreSQL)" as BD
 AD -> UI : Abrir "Nueva cotización"
 AD -> UI : Cliente, salón, montaje, fecha del evento,\npersonas y conceptos con su cantidad
 UI --> AD : Subtotal, impuestos (IVA, impoconsumo) y total en vivo
+UI -> SI : GET /api/calendario/?desde=fecha&hasta=fecha&salon={id}
+SI --> UI : 200 con las cotizaciones de ese salón y día
+UI --> AD : Aviso de disponibilidad (confirmado, bloqueado,\notras abiertas o libre)
 UI -> SI : POST /api/cotizaciones/
 SI -> BD : Bloquear el salón y su montaje mientras se revisa
 SI -> SI : Validar cliente y salón activos, montaje habilitado,\nfecha futura y conceptos activos del sitio
@@ -40,6 +43,26 @@ else Todo válido (CP-10)
   SI -> BD : Guardar cotización "cotizada" y sus ítems\ncon el precio del catálogo
   SI -> BD : Guardar movimiento "creada"
   SI --> UI : 201 con la cotización y sus totales
-  UI --> AD : Abrir el detalle de la cotización
+  UI --> AD : Mostrar "Quedó guardada" con el enlace al detalle
+end
+
+== Editar una cotización cotizada ==
+AD -> UI : En el detalle, "Editar"
+UI -> SI : GET /api/cotizaciones/{id}/
+SI --> UI : 200 con la cotización
+UI --> AD : Formulario lleno con los precios con que se cotizó
+AD -> UI : Cambia cliente, salón, fecha, personas o conceptos
+UI -> SI : PUT /api/cotizaciones/{id}/edicion/ (mismo cuerpo que crear)
+alt No está cotizada (bloqueada, confirmada o cancelada)
+  SI --> UI : 409 "La cotización está ..."
+  UI --> AD : Mostrar el aviso de conflicto
+else Dato inválido
+  SI --> UI : 400 con el error de cada campo
+  UI --> AD : Mostrar el error bajo cada campo
+else Todo válido
+  SI -> BD : Reemplazar datos e ítems; los conceptos que ya\nestaban conservan su precio
+  SI -> BD : Guardar movimiento "editada" con lo que cambió
+  SI --> UI : 200 con la cotización
+  UI --> AD : Volver al detalle con "Los cambios quedaron guardados"
 end
 @enduml

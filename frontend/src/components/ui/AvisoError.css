@@ -1,0 +1,72 @@
+/* Aviso de error (403 y servidor caído) — maqueta CasosLimite. Solo variables de tokens.css. */
+.aviso-error {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+}
+
+.aviso-error__cuerpo {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.aviso-error__icono {
+    display: inline-flex;
+    flex: 0 0 44px;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    border-radius: 14px;
+}
+
+.aviso-error--permiso .aviso-error__icono {
+    background: var(--estado-bloqueado-fondo);
+    color: var(--estado-bloqueado-texto);
+}
+
+.aviso-error--servidor .aviso-error__icono {
+    background: var(--estado-cotizado-fondo);
+    color: var(--color-mantequilla-texto);
+}
+
+.aviso-error--conflicto .aviso-error__icono {
+    background: var(--estado-vencida-fondo);
+    color: var(--estado-vencida-texto);
+}
+
+.aviso-error__textos {
+    min-width: 0;
+}
+
+.aviso-error__titulo {
+    font-size: 20px;
+    font-weight: var(--peso-extra);
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+
+.aviso-error__texto {
+    margin-top: 6px;
+    font-size: var(--texto-navegacion);
+    color: var(--color-texto-suave);
+}
+
+.aviso-error__accion {
+    align-self: flex-start;
+}
+
+/* "Reintentar" en mantequilla, como la maqueta. Se sube la especificidad para
+   ganarle a .boton--secundario sin tocar Boton.css. */
+.aviso-error .boton.aviso-error__reintentar {
+    background: var(--color-mantequilla);
+    border-color: transparent;
+    color: var(--color-texto);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .aviso-error .boton.aviso-error__reintentar:hover:not(:disabled) {
+        background: var(--color-mantequilla);
+        filter: brightness(1.06);
+    }
+}

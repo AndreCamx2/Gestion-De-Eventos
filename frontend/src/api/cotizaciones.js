@@ -1,74 +1,87 @@
 import { apiFetch } from "./client";
 import { todasLasPaginas } from "./listas";
 
-/**
- * @param {Object} filters
- * @returns {string}
- * @returns {Promise<Array|Object>} 
- * @param {Object} filters
- * @param {Object} filters
- * @returns {Promise<Array|Object>} 
- */
-
-function buildQueryParams(filters = {}) {
+export async function getCotizaciones({ desde, hasta, estado, cliente, salon } = {}) {
     const params = new URLSearchParams();
-
-    if (filters.estado && filters.estado !== "Todos") {
-        params.append("estado", filters.estado.toLowerCase());
-    }
-
-    if (filters.tipo && filters.tipo !== "Todos") {
-        const tipoMap = {
-            Persona: "natural",
-            Empresa: "juridica",
-        };
-        if (tipoMap[filters.tipo]) {
-            params.append("tipo_cliente", tipoMap[filters.tipo]);
-        }
-    }
-
-    if (filters.rangoFecha && filters.rangoFecha !== "Todos") {
-        params.append("rango", filters.rangoFecha);
-    }
-
-    if (filters.page && Number.isInteger(Number(filters.page)) && Number(filters.page) > 0) {
-        params.append("page", filters.page);
-    }
-
-    const queryString = params.toString();
-    return queryString ? `?${queryString}` : "";
+    if (desde) params.append("desde", desde);
+    if (hasta) params.append("hasta", hasta);
+    if (estado) params.append("estado", estado);
+    if (cliente) params.append("cliente", cliente);
+    if (salon) params.append("salon", salon);
+    const query = params.toString();
+    return todasLasPaginas(`/cotizaciones/${query ? `?${query}` : ""}`);
 }
 
-export async function getCotizaciones(filters = {}) {
-    try {
-        const query = buildQueryParams(filters);
-        const endpoint = `/cotizaciones/${query}`;
-
-        return await todasLasPaginas(endpoint);
-    } catch (error) {
-        console.error("Error en getCotizaciones API:", error);
-        throw new Error(
-            error.message || "No se pudieron obtener las cotizaciones del servidor."
-        );
-    }
-}
-
-export async function crearCotizacion(cotizacionData) {
-    if (!cotizacionData.salon_id) {
-        throw new Error("Debes seleccionar un salón válido.");
-    }
-    if (!cotizacionData.montaje_id) {
-        throw new Error("Debes seleccionar un tipo de montaje.");
-    }
-    if (!cotizacionData.asistentes || Number(cotizacionData.asistentes) <= 0) {
-        throw new Error("La cantidad de asistentes debe ser mayor a 0.");
-    }
-    if (!cotizacionData.fecha_evento) {
-        throw new Error("La fecha del evento es obligatoria.");
-    }
-
-    return await apiFetch("/cotizaciones/", {
+// POST /api/cotizaciones/<id>/bloqueo/ { bloqueo_hasta: ISO con zona } → detalle (SGDE-40).
+// 409 { detail }: no está cotizada, está vencida, el salón está dado de baja, o la
+// fecha ya está confirmada o bloqueada por otra. 400 { bloqueo_hasta: [...] }:
+// en el pasado o después del día del evento.
+export function bloquearCotizacion(id, bloqueoHasta) {
+    return apiFetch(`/cotizaciones/${id}/bloqueo/`, {
         method: "POST",
-        body: JSON.stringify(cotizacionData),
+        body: JSON.stringify({ bloqueo_hasta: bloqueoHasta }),
     });
+}
+
+// DELETE /api/cotizaciones/<id>/bloqueo/ → detalle, de vuelta en "cotizado".
+// 409 si no está bloqueada.
+export function liberarBloqueo(id) {
+    return apiFetch(`/cotizaciones/${id}/bloqueo/`, { method: "DELETE" });
+}
+
+export function crearCotizacion(datos) {
+    return apiFetch("/cotizaciones/", {
+        method: "POST",
+        body: JSON.stringify(datos),
+    });
+}
+
+export function getCotizacion(id) {
+    return apiFetch(`/cotizaciones/${id}/`, { method: "GET" });
+}
+
+export function extenderVigencia(id, validezOferta) {
+    return apiFetch(`/cotizaciones/${id}/`, {
+        method: "PATCH",
+        body: JSON.stringify({ validez_oferta: validezOferta }),
+    });
+}
+
+export function registrarAceptacion(id, { tipo, monto }) {
+    return apiFetch(`/cotizaciones/${id}/aceptacion/`, {
+        method: "POST",
+        body: JSON.stringify({ tipo, monto }),
+    });
+}
+
+// Cancela un evento confirmado (SGDE-68). El API recibe el porcentaje (0 a 100) y
+// calcula el monto retenido; responde el detalle ya cancelado o 409 si no estaba confirmado.
+export function cancelarCotizacion(id, { penalizacionPct, motivo }) {
+    return apiFetch(`/cotizaciones/${id}/cancelacion/`, {
+        method: "POST",
+        body: JSON.stringify({ penalizacion_pct: penalizacionPct, motivo }),
+    });
+}
+
+// Anula una cotización que no se confirmó (cotizada o bloqueada): queda cancelada sin
+// penalización. 409 si ya está confirmada o cancelada; 400 { motivo } si falta el motivo.
+export function anularCotizacion(id, motivo) {
+    return apiFetch(`/cotizaciones/${id}/anulacion/`, {
+        method: "POST",
+        body: JSON.stringify({ motivo }),
+    });
+}
+
+// PUT con el mismo cuerpo que crearCotizacion: reemplaza datos y conceptos de una
+// cotización cotizada. Los conceptos que ya estaban conservan su precio. 409 si no
+// está cotizada (una bloqueada se libera primero); 400 con los mismos campos que crear.
+export function editarCotizacion(id, datos) {
+    return apiFetch(`/cotizaciones/${id}/edicion/`, {
+        method: "PUT",
+        body: JSON.stringify(datos),
+    });
+}
+
+export function getMovimientos(id) {
+    return todasLasPaginas(`/cotizaciones/${id}/movimientos/`);
 }

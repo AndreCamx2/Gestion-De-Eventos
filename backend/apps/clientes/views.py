@@ -1,5 +1,8 @@
+from django.db import transaction
 from django.db.models import Prefetch
 from rest_framework import generics, permissions, filters
+from apps.usuarios.correos import en_segundo_plano, enviar_bienvenida
+from apps.usuarios.limites import ConLimiteDeIntentos
 from .serializers import RegistroPublicoSerializer, ClienteAdminSerializer, EmpresaSerializer
 from .models import Cliente, Empresa
 from apps.core.pagination import PaginaEstandar
@@ -8,9 +11,16 @@ from apps.sitios.acceso import filtrar_por_sitio
 from apps.usuarios.permissions import EsAdministrador
 
 
-class RegistroPublicoView(generics.CreateAPIView):
+class RegistroPublicoView(ConLimiteDeIntentos, generics.CreateAPIView):
     serializer_class = RegistroPublicoSerializer
     permission_classes = [permissions.AllowAny]
+    # SGDE-112: tope de cuentas nuevas por IP (DEFAULT_THROTTLE_RATES["registro"]).
+    throttle_scope = "registro"
+
+    def perform_create(self, serializer):
+        cliente = serializer.save()
+        # Después del commit y fuera de la petición: un SMTP lento no demora el registro (SGDE-96).
+        transaction.on_commit(lambda: en_segundo_plano(enviar_bienvenida, cliente))
 
 
 # Clientes y empresas son COMPARTIDOS entre sitios (decisión de diseño, SGDE-90):

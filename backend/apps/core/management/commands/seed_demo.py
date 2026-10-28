@@ -4,11 +4,14 @@ Datos semilla de demostración para desarrollo local.
 Uso:  python manage.py seed_demo
 
 Es idempotente: se puede correr varias veces sin duplicar nada.
-Las contraseñas salen de variables de entorno (SEED_*_PASSWORD); los valores por
-defecto existen solo para desarrollo local. Por seguridad, el comando se niega a
-correr con DEBUG=False (producción) salvo que se use --force.
+Las contraseñas salen de variables de entorno (SEED_*_PASSWORD). cliente_demo y
+proveedor_demo tienen valores por defecto solo para desarrollo local. El superusuario
+admin no (SGDE-114): sin SEED_ADMIN_PASSWORD se le genera una contraseña aleatoria
+que se muestra una sola vez. Por seguridad, el comando se niega a correr con
+DEBUG=False (producción) salvo que se use --force.
 """
 import os
+import secrets
 from decimal import Decimal
 
 from django.conf import settings
@@ -89,7 +92,7 @@ class Command(BaseCommand):
 
             admin = self._usuario(
                 "admin", "admin@sgde.com", roles["administrador"],
-                "SEED_ADMIN_PASSWORD", "admin-dev-123", superusuario=True,
+                "SEED_ADMIN_PASSWORD", None, superusuario=True,
             )
             admin.sitios.add(sitio)
             cliente_user = self._usuario(
@@ -118,7 +121,14 @@ class Command(BaseCommand):
             defaults={"email": email, "rol": rol},
         )
         if creado:
-            usuario.set_password(os.getenv(env_var) or default)
+            clave = os.getenv(env_var) or default
+            if clave is None:
+                # Sin valor por defecto en el repositorio (SGDE-114): una aleatoria, una sola vez.
+                clave = secrets.token_urlsafe(12)
+                self.stdout.write(self.style.WARNING(
+                    f"  {username}: no definiste {env_var}. Contraseña generada (solo se muestra ahora): {clave}"
+                ))
+            usuario.set_password(clave)
         # Se reafirman rol y banderas por si alguien los cambió a mano.
         usuario.rol = rol
         usuario.is_staff = usuario.is_superuser = superusuario

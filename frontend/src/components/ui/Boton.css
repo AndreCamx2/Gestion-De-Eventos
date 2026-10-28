@@ -1,0 +1,86 @@
+/* Botón — guía Piedra viva, secciones 6 y 7. Solo variables de tokens.css. */
+.boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--espacio-2);
+    min-height: var(--alto-boton);
+    padding: 0 var(--espacio-5);
+    border: 1px solid transparent;
+    border-radius: var(--radio-control);
+    font-family: inherit;
+    font-size: var(--texto-cuerpo);
+    font-weight: var(--peso-extra);
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    /* Solo se anima transform: el encogimiento al presionar */
+    transition: transform var(--duracion-presion) var(--curva-salida);
+}
+
+.boton:active:not(:disabled):not([aria-disabled="true"]) {
+    transform: scale(0.97);
+}
+
+.boton--principal {
+    background: var(--color-tinta);
+    color: var(--color-sobre-oscuro);
+}
+
+.boton--oscuro {
+    background: var(--color-texto);
+    color: var(--color-sobre-oscuro);
+}
+
+.boton--secundario {
+    background: var(--color-superficie);
+    color: var(--color-texto);
+    border-color: var(--color-linea-fuerte);
+}
+
+.boton--peligro {
+    background: transparent;
+    color: var(--color-mandarina-texto);
+    border-color: var(--color-peligro-borde);
+}
+
+.boton--exito {
+    background: var(--color-exito);
+    color: var(--color-exito-texto);
+}
+
+.boton:disabled,
+.boton[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Hover solo con mouse: en pantallas táctiles se quedaría "pegado" */
+@media (hover: hover) and (pointer: fine) {
+    .boton--principal:hover:not(:disabled):not([aria-disabled="true"]) {
+        background: var(--color-tinta-hover);
+    }
+
+    .boton--oscuro:hover:not(:disabled):not([aria-disabled="true"]),
+    .boton--exito:hover:not(:disabled):not([aria-disabled="true"]) {
+        filter: brightness(1.08);
+    }
+
+    .boton--secundario:hover:not(:disabled):not([aria-disabled="true"]),
+    .boton--peligro:hover:not(:disabled):not([aria-disabled="true"]) {
+        background: var(--color-superficie-2);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .boton {
+        transition: none;
+    }
+
+    .boton:active:not(:disabled):not([aria-disabled="true"]) {
+        transform: none;
+    }
+}
