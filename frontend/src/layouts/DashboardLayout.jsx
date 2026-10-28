@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { to: "/clientes", label: "Clientes", roles: ROLES_POR_RUTA["/clientes"] },
   { to: "/sitios", label: "Sitios", roles: ROLES_POR_RUTA["/sitios"] },
   { to: "/usuarios", label: "Usuarios", roles: ROLES_POR_RUTA["/usuarios"] },
+  { to: "/mis-cotizaciones", label: "Mis cotizaciones", roles: ROLES_POR_RUTA["/mis-cotizaciones"] },
   { to: "/mi-stock", label: "Mi stock", roles: ROLES_POR_RUTA["/mi-stock"] },
   { to: "/mi-perfil", label: "Mi perfil", roles: ROLES_POR_RUTA["/mi-perfil"] },
 ];

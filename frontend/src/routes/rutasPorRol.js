@@ -24,6 +24,7 @@ export const ROLES_POR_RUTA = {
   "/proveedores": SOLO_ADMIN, // /proveedores/, /stock/
   "/rack": SOLO_ADMIN, // /calendario/, /salones/ y /cotizaciones/<id>/bloqueo/
   "/usuarios": SOLO_ADMIN, // /usuarios/, /roles/, /sitios/
+  "/mis-cotizaciones": ["cliente"], // /mis-cotizaciones/ (SGDE-126)
   "/mi-stock": ["proveedor"], // /mi-stock/ (SGDE-72)
   "/mi-perfil": ["cliente", "proveedor"],
 };

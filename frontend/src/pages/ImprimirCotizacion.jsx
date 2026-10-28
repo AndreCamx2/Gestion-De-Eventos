@@ -12,7 +12,8 @@ function mensajeError(error) {
   return "No pudimos cargar la cotización. Inténtalo de nuevo.";
 }
 
-export default function ImprimirCotizacion() {
+// El cliente usa esta misma página con su propio endpoint y su detalle (SGDE-131).
+export default function ImprimirCotizacion({ cargar = getCotizacion, rutaDetalle = (id) => `/cotizaciones/${id}` }) {
   const { id } = useParams();
   const [cotizacion, setCotizacion] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -25,7 +26,7 @@ export default function ImprimirCotizacion() {
     setCargando(true);
     setError(null);
 
-    getCotizacion(id)
+    cargar(id)
       .then((data) => {
         if (vigente) setCotizacion(adaptarCotizacion(data));
       })
@@ -39,12 +40,12 @@ export default function ImprimirCotizacion() {
     return () => {
       vigente = false;
     };
-  }, [id, intento]);
+  }, [cargar, id, intento]);
 
   return (
     <main className="pagina-cotizacion-imprimible">
       <nav className="cotizacion-imprimible-acciones no-imprimir" aria-label="Acciones de impresión">
-        <Link className="cotizacion-imprimible-volver" to={`/cotizaciones/${id}`}>
+        <Link className="cotizacion-imprimible-volver" to={rutaDetalle(id)}>
           Volver a la cotización
         </Link>
         <button
