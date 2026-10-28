@@ -1,11 +1,15 @@
 import unicodedata
 
+from django.db import transaction
+from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.usuarios.permissions import EsAdministrador, EsProveedor
-from .models import Proveedor, StockElemento
-from .serializers import MiStockSerializer, ProveedorSerializer, StockElementoSerializer
+from .models import HistorialStockElemento, Proveedor, StockElemento
+from .serializers import (
+    HistorialStockElementoSerializer, MiStockSerializer, ProveedorSerializer, StockElementoSerializer,
+)
 
 
 def _dinero(valor):
@@ -50,7 +54,39 @@ class StockElementoListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
 
-class StockElementoDetailView(generics.RetrieveUpdateAPIView):
+class RegistraHistorialStockMixin:
+    """Si un PATCH cambia la cantidad o el valor, guarda quién y cuándo (SGDE-134).
+
+    La usan las dos formas de editar el stock: /api/stock/<id>/ y /api/mi-stock/<id>/.
+    """
+
+    @transaction.atomic
+    def perform_update(self, serializer):
+        anterior = (
+            StockElemento.objects.select_for_update()
+            .values("cantidad", "valor")
+            .get(pk=serializer.instance.pk)
+        )
+        elemento = serializer.save()
+        if (elemento.cantidad, elemento.valor) != (anterior["cantidad"], anterior["valor"]):
+            HistorialStockElemento.objects.create(
+                elemento=elemento,
+                cantidad_anterior=anterior["cantidad"],
+                cantidad_nueva=elemento.cantidad,
+                valor_anterior=anterior["valor"],
+                valor_nuevo=elemento.valor,
+                modificado_por=self.request.user,
+            )
+
+
+def _historial_de(elementos, pk):
+    """Historial de un elemento, del cambio más reciente al más antiguo. 404 si el
+    elemento no está en `elementos` (no existe o es de otro proveedor)."""
+    elemento = get_object_or_404(elementos, pk=pk)
+    return elemento.historial.select_related("modificado_por")
+
+
+class StockElementoDetailView(RegistraHistorialStockMixin, generics.RetrieveUpdateAPIView):
     """Ver y editar la cantidad y el valor de un elemento de stock (SGDE-98).
 
     Sin DELETE: para darlo por agotado se deja la cantidad en 0. Sin PUT.
@@ -60,6 +96,16 @@ class StockElementoDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = StockElementoSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
     http_method_names = ["get", "patch", "head", "options"]
+
+
+class StockHistorialListView(generics.ListAPIView):
+    """GET /api/stock/<id>/historial/: cambios de cantidad y valor (SGDE-134)."""
+
+    serializer_class = HistorialStockElementoSerializer
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+    def get_queryset(self):
+        return _historial_de(StockElemento.objects.all(), self.kwargs["pk"])
 
 
 class MiStockMixin:
@@ -90,11 +136,21 @@ class MiStockListCreateView(MiStockMixin, generics.ListCreateAPIView):
         serializer.save(proveedor=self.request.user.proveedor)
 
 
-class MiStockDetailView(MiStockMixin, generics.RetrieveUpdateAPIView):
+class MiStockDetailView(MiStockMixin, RegistraHistorialStockMixin, generics.RetrieveUpdateAPIView):
     """GET/PATCH /api/mi-stock/<id>/: solo cantidad y valor, como SGDE-98.
     Sin DELETE: para darlo por agotado se deja la cantidad en 0. Sin PUT."""
 
     http_method_names = ["get", "patch", "head", "options"]
+
+
+class MiStockHistorialView(MiStockMixin, generics.ListAPIView):
+    """GET /api/mi-stock/<id>/historial/: el proveedor solo ve el historial de su
+    propio stock; el elemento de otro proveedor da 404 (SGDE-134)."""
+
+    serializer_class = HistorialStockElementoSerializer
+
+    def get_queryset(self):
+        return _historial_de(super().get_queryset(), self.kwargs["pk"])
 
 
 class StockCompararView(APIView):

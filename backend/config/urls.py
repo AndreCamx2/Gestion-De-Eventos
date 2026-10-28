@@ -16,7 +16,7 @@ from apps.catalogo.views import (
 )
 from apps.proveedores.views import (
     ProveedorListCreateView, ProveedorDetailView, StockElementoListCreateView, StockElementoDetailView,
-    StockCompararView, MiStockListCreateView, MiStockDetailView,
+    StockCompararView, StockHistorialListView, MiStockListCreateView, MiStockDetailView, MiStockHistorialView,
 )
 from apps.clientes.views import (
     RegistroPublicoView, ClienteAdminListCreateView, ClienteAdminRetrieveUpdateDestroyView, EmpresaListCreateView,
@@ -63,8 +63,10 @@ urlpatterns = [
     path('api/stock/', StockElementoListCreateView.as_view(), name='stock_list_create'),
     path('api/stock/comparar/', StockCompararView.as_view(), name='stock_comparar'),
     path('api/stock/<int:pk>/', StockElementoDetailView.as_view(), name='stock_detail'),
+    path('api/stock/<int:pk>/historial/', StockHistorialListView.as_view(), name='stock_historial'),
     path('api/mi-stock/', MiStockListCreateView.as_view(), name='mi_stock_list_create'),
     path('api/mi-stock/<int:pk>/', MiStockDetailView.as_view(), name='mi_stock_detail'),
+    path('api/mi-stock/<int:pk>/historial/', MiStockHistorialView.as_view(), name='mi_stock_historial'),
     path('api/mis-cotizaciones/', MisCotizacionesView.as_view(), name='mis_cotizaciones'),
     path('api/mis-cotizaciones/<int:pk>/', MiCotizacionDetalleView.as_view(), name='mi_cotizacion_detalle'),
     path('api/cotizaciones/', CotizacionListCreateView.as_view(), name='cotizacion_list_create'),

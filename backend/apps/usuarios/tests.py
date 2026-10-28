@@ -45,6 +45,7 @@ ENDPOINTS_ADMIN_DETALLE = [
     ("/api/conceptos/1/", ["get", "put", "patch"]),
     ("/api/conceptos/1/historial/", ["get"]),
     ("/api/stock/1/", ["get", "patch"]),
+    ("/api/stock/1/historial/", ["get"]),
     ("/api/proveedores/1/", ["get", "patch"]),
     ("/api/cotizaciones/1/", ["get", "patch"]),
     ("/api/cotizaciones/1/aceptacion/", ["post"]),
