@@ -1,9 +1,13 @@
+from django.db.models import Prefetch
 from django.db import transaction
 from rest_framework import generics, permissions, filters
 from apps.usuarios.correos import en_segundo_plano, enviar_bienvenida
 from apps.usuarios.limites import ConLimiteDeIntentos
 from .serializers import RegistroPublicoSerializer, ClienteAdminSerializer, EmpresaSerializer
 from .models import Cliente, Empresa
+from apps.core.pagination import PaginaEstandar
+from apps.cotizaciones.models import Cotizacion
+from apps.sitios.acceso import filtrar_por_sitio
 from apps.usuarios.permissions import EsAdministrador
 
 
@@ -23,18 +27,29 @@ class RegistroPublicoView(ConLimiteDeIntentos, generics.CreateAPIView):
 # un mismo cliente puede cotizar en varios sitios y el modelo no tiene sitio.
 # Lo que sí es de cada sitio son sus cotizaciones: ClienteAdminSerializer solo
 # muestra las de los sitios del usuario.
-def _clientes():
-    return Cliente.objects.select_related("empresa", "usuario").prefetch_related("cotizaciones")
+def _clientes(usuario=None):
+    """Clientes con sus cotizaciones. Con `usuario`, el Prefetch trae solo las de
+    sus sitios (SGDE-116): la base filtra y no se cargan filas de otros sitios.
+    El serializer repite el filtro porque tras un PATCH DRF borra esta caché."""
+    cotizaciones = Cotizacion.objects.all()
+    if usuario is not None:
+        cotizaciones = filtrar_por_sitio(cotizaciones, usuario)
+    return (
+        Cliente.objects.select_related("empresa", "usuario")
+        .prefetch_related(Prefetch("cotizaciones", queryset=cotizaciones))
+        .order_by("nombre", "id")
+    )
 
 
 class ClienteAdminListCreateView(generics.ListCreateAPIView):
     serializer_class = ClienteAdminSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
     filter_backends = [filters.SearchFilter]
+    pagination_class = PaginaEstandar
     search_fields = ["nombre", "identificacion", "correo", "empresa__razon_social"]
 
     def get_queryset(self):
-        queryset = _clientes()
+        queryset = _clientes(self.request.user)
         incluir = self.request.query_params.get("incluir_inactivos", "").lower()
         if incluir not in ("true", "1"):
             queryset = queryset.filter(activo=True)
@@ -46,9 +61,11 @@ class ClienteAdminRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIVie
 
     DELETE es lógico: marca activo=False y desactiva su Usuario (no borra la fila).
     """
-    queryset = _clientes()
     serializer_class = ClienteAdminSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+    def get_queryset(self):
+        return _clientes(self.request.user)
 
     def perform_destroy(self, instance):
         instance.set_activo(False)

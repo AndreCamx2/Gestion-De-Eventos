@@ -6,6 +6,44 @@ from apps.clientes.models import Cliente
 from apps.salones.models import Salon, Montaje
 from apps.catalogo.models import Concepto
 
+class GrupoEvento(models.Model):
+    """Grupo del catálogo de tipos de evento (SGDE-142): Reuniones, Social, etc."""
+
+    nombre = models.CharField(max_length=80, unique=True)
+    orden = models.PositiveSmallIntegerField(default=0)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["orden", "id"]
+        verbose_name = "grupo de evento"
+        verbose_name_plural = "grupos de evento"
+
+    def __str__(self):
+        return self.nombre
+
+
+class TipoEvento(models.Model):
+    """Tipo de evento estandarizado de una cotización (SGDE-142).
+
+    Se administra desde /admin/: el cliente agrega o desactiva tipos sin programar.
+    Desactivar uno no toca las cotizaciones que ya lo usan (PROTECT en Cotizacion).
+    """
+
+    nombre = models.CharField(max_length=120)
+    grupo = models.ForeignKey(GrupoEvento, on_delete=models.PROTECT, related_name="tipos")
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["grupo__orden", "id"]
+        verbose_name = "tipo de evento"
+        verbose_name_plural = "tipos de evento"
+        constraints = [
+            models.UniqueConstraint(fields=["grupo", "nombre"], name="uq_grupo_tipo_evento_nombre")
+        ]
+
+    def __str__(self):
+        return f"{self.grupo.nombre}: {self.nombre}"
+
 
 class CotizacionQuerySet(models.QuerySet):
     def activas(self):
@@ -60,6 +98,11 @@ class Cotizacion(models.Model):
     fecha_evento = models.DateField(db_index=True)
     validez_oferta = models.DateField(null=True, blank=True)
     cantidad_personas = models.PositiveIntegerField()
+        # Obligatorio al crear (lo exige el serializer); null solo en las anteriores a SGDE-142,
+    # que se muestran como "Sin clasificar".
+    tipo_evento = models.ForeignKey(
+        TipoEvento, on_delete=models.PROTECT, related_name="cotizaciones", null=True, blank=True
+    )
     bloqueo_hasta = models.DateTimeField(null=True, blank=True)
     garantia_tipo = models.CharField(max_length=30, blank=True)
     garantia_monto = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
@@ -136,6 +179,7 @@ class MovimientoCotizacion(models.Model):
     TIPO_CHOICES = [
         ("creada", "Creada"),
         ("vigencia", "Vigencia cambiada"),
+        ("tipo_evento", "Tipo de evento cambiado"),
         ("bloqueada", "Bloqueada"),
         ("liberada", "Liberada"),
         ("confirmada", "Confirmada"),

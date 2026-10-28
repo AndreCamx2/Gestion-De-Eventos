@@ -6,6 +6,9 @@ from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.usuarios.permissions import EsAdministrador, EsProveedor
+from apps.core.pagination import PaginaEstandar
+from .models import Proveedor, StockElemento
+from .serializers import MiStockSerializer, ProveedorSerializer, StockElementoSerializer
 from .models import HistorialStockElemento, Proveedor, StockElemento
 from .serializers import (
     HistorialStockElementoSerializer, MiStockSerializer, ProveedorSerializer, StockElementoSerializer,
@@ -49,7 +52,8 @@ class ProveedorDetailView(generics.RetrieveUpdateAPIView):
 
 
 class StockElementoListCreateView(generics.ListCreateAPIView):
-    queryset = StockElemento.objects.all()
+    queryset = StockElemento.objects.order_by("id")
+    pagination_class = PaginaEstandar
     serializer_class = StockElementoSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 

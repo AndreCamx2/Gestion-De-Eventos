@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
 from rest_framework import generics, permissions, status
@@ -6,12 +7,16 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from apps.core.exceptions import Conflicto
+from apps.core.pagination import PaginaEstandar
 from apps.sitios.acceso import filtrar_por_sitio
 from apps.usuarios.permissions import EsAdministrador, EsCliente
 
 from . import estados
-from .models import Cotizacion
+from .models import Cotizacion, GrupoEvento, TipoEvento
 from .serializers import (
+    AceptacionSerializer, BloqueoSerializer, CancelacionSerializer, CotizacionCalendarioSerializer,
+    CotizacionCrearSerializer, CotizacionDetalleSerializer, CotizacionEdicionSerializer, 
+    CotizacionListaSerializer, GrupoEventoConTiposSerializer, MovimientoSerializer,
     AceptacionSerializer, AnulacionSerializer, BloqueoSerializer, CancelacionSerializer, CotizacionCalendarioSerializer,
     CotizacionCrearSerializer, CotizacionDetalleSerializer, CotizacionListaSerializer, CotizacionVigenciaSerializer,
     MiCotizacionDetalleSerializer, MiCotizacionListaSerializer, MovimientoSerializer,
@@ -22,6 +27,9 @@ def exigir_estado_cotizado(cotizacion):
     if cotizacion.estado != "cotizado":
         raise Conflicto(f"La cotización está {estados.en_femenino(cotizacion.estado)}.")
 
+    
+def nombre_tipo(tipo):
+    return str(tipo) if tipo else "Sin clasificar"
 
 class CotizacionCalendarioView(generics.ListAPIView):
     serializer_class = CotizacionCalendarioSerializer
@@ -48,9 +56,11 @@ def cotizaciones_con_relaciones():
     """Trae en pocas consultas todo lo que muestran el detalle y el listado (evita N+1)."""
     return (
         Cotizacion.objects
-        .select_related(
+                .select_related(
             "sitio", "cliente", "salon", "montaje", "usuario", "garantia_registrada_por", "cancelado_por",
+            "tipo_evento__grupo",
         )
+        
         .prefetch_related("items__concepto")
     )
 
@@ -101,7 +111,6 @@ def filtrar_por_fechas(queryset, params):
         queryset = queryset.filter(fecha_evento__lte=hasta)
     return queryset
 
-
 class CotizacionListCreateView(generics.ListCreateAPIView):
     """Listado con filtros (?estado, ?cliente, ?salon, ?desde, ?hasta) y creación de cotizaciones.
 
@@ -109,6 +118,8 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
     """
 
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+    pagination_class = PaginaEstandar
 
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -133,6 +144,15 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
         if salon:
             queryset = queryset.filter(salon_id=salon)
 
+        # SGDE-142: filtros por catálogo de eventos
+        tipo_evento = _id_param(params, "tipo_evento", "Debe ser el id numérico del tipo de evento.")
+        if tipo_evento:
+            queryset = queryset.filter(tipo_evento_id=tipo_evento)
+
+        grupo_evento = _id_param(params, "grupo_evento", "Debe ser el id numérico del grupo de evento.")
+        if grupo_evento:
+            queryset = queryset.filter(tipo_evento__grupo_id=grupo_evento)
+
         return filtrar_por_fechas(queryset, params)
 
     def create(self, request, *args, **kwargs):
@@ -147,7 +167,7 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
 
 
 class CotizacionDetailView(generics.RetrieveUpdateAPIView):
-    """Detalle y cambio de vigencia (PATCH). Sin PUT ni DELETE."""
+    """Detalle y cambio de vigencia/tipo (PATCH). Sin PUT ni DELETE."""
     serializer_class = CotizacionDetalleSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
     http_method_names = ["get", "patch", "head", "options"]
@@ -164,14 +184,26 @@ class CotizacionDetailView(generics.RetrieveUpdateAPIView):
             # Se permite aunque esté vencida: así se extiende una oferta que ya venció.
             exigir_estado_cotizado(cotizacion)
             estados.exigir_salon_activo(cotizacion)
-            anterior = cotizacion.validez_oferta
-            serializer = CotizacionVigenciaSerializer(cotizacion, data=request.data)
+            anterior_validez = cotizacion.validez_oferta
+            anterior_tipo = nombre_tipo(cotizacion.tipo_evento)
+            
+            serializer = CotizacionEdicionSerializer(cotizacion, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
-            serializer.save()
-            estados.registrar(
-                cotizacion, "vigencia", request.user,
-                f"Vigencia: {estados.fecha_corta(anterior)} → {estados.fecha_corta(cotizacion.validez_oferta)}.",
-            )
+            
+            # Solo guardamos si de verdad hay algo que actualizar
+            if serializer.validated_data:
+                serializer.save()
+
+            if "validez_oferta" in request.data:
+                estados.registrar(
+                    cotizacion, "vigencia", request.user,
+                    f"Vigencia: {estados.fecha_corta(anterior_validez)} → {estados.fecha_corta(cotizacion.validez_oferta)}.",
+                )
+            if "tipo_evento" in request.data:
+                estados.registrar(
+                    cotizacion, "tipo_evento", request.user,
+                    f"Tipo de evento: {anterior_tipo} → {nombre_tipo(cotizacion.tipo_evento)}.",
+                )
         return Response(CotizacionDetalleSerializer(cotizaciones_con_relaciones().get(pk=cotizacion.pk)).data)
 
 
@@ -284,6 +316,23 @@ class CotizacionMovimientosView(generics.ListAPIView):
         return cotizacion.movimientos.select_related("usuario")
 
 
+class TipoEventoListView(generics.ListAPIView):
+    """Los tipos de evento activos, agrupados por grupo, para el formulario de cotización (SGDE-142).
+
+    Un grupo inactivo, o sin tipos activos, no aparece. Es un catálogo corto: sin paginar.
+    """
+
+    serializer_class = GrupoEventoConTiposSerializer
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+    pagination_class = None
+
+    def get_queryset(self):
+        tipos_activos = TipoEvento.objects.filter(activo=True).order_by("id")
+        return (
+            GrupoEvento.objects.filter(activo=True, tipos__activo=True)
+            .distinct()
+            .prefetch_related(Prefetch("tipos", queryset=tipos_activos))
+        )
 # --- "Mis cotizaciones" del rol cliente (SGDE-126) ----------------------------
 
 def mis_cotizaciones(usuario):

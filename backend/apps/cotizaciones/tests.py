@@ -17,7 +17,7 @@ from apps.salones.models import Montaje, Salon, SalonMontaje
 from apps.sitios.models import Ciudad, Sitio
 from apps.usuarios.models import Rol, Usuario
 
-from .models import Cotizacion, CotizacionItem, MovimientoCotizacion
+from .models import Cotizacion, CotizacionItem, GrupoEvento, MovimientoCotizacion, TipoEvento
 from .services import totales_linea
 
 PASSWORD = "Clave-Segura-123"
@@ -79,12 +79,15 @@ class CotizacionBaseTest(APITestCase):
         cls.de_otro_sitio = Concepto.objects.create(
             sitio=cls.otro_sitio, nombre="Almuerzo finca", precio=Decimal("30000.00")
         )
+        cls.grupo_evento = GrupoEvento.objects.create(nombre="Grupo Test", orden=1)
+        cls.tipo_evento = TipoEvento.objects.create(nombre="Tipo Test", grupo=cls.grupo_evento)
 
     def payload(self, **cambios):
         datos = {
             "cliente": self.cliente.pk,
             "salon": self.salon.pk,
             "montaje": self.montaje.pk,
+            "tipo_evento": self.tipo_evento.pk,
             "fecha_evento": str(hoy() + timedelta(days=40)),
             "cantidad_personas": 80,
             "validez_oferta": str(hoy() + timedelta(days=10)),
@@ -269,10 +272,10 @@ class ListadoCotizacionesTests(CotizacionBaseTest):
         self.client.force_authenticate(user=self.admin)
         r = self.client.get(LISTA)
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual([c["id"] for c in r.data], [pronto.pk, tarde.pk])
-        self.assertEqual(r.data[0]["cliente_nombre"], "Ana Pérez")
-        self.assertEqual(r.data[0]["salon_nombre"], "Salón Barú")
-        self.assertEqual(r.data[0]["total"], "2430000.00")  # 50 x 45.000 + 8 %
+        self.assertEqual([c["id"] for c in r.data["results"]], [pronto.pk, tarde.pk])
+        self.assertEqual(r.data["results"][0]["cliente_nombre"], "Ana Pérez")
+        self.assertEqual(r.data["results"][0]["salon_nombre"], "Salón Barú")
+        self.assertEqual(r.data["results"][0]["total"], "2430000.00")  # 50 x 45.000 + 8 %
 
     def test_filtros_estado_cliente_y_fechas(self):
         dentro = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=20))
@@ -283,7 +286,7 @@ class ListadoCotizacionesTests(CotizacionBaseTest):
             "estado": "cotizado", "cliente": self.cliente.pk,
             "desde": str(hoy() + timedelta(days=10)), "hasta": str(hoy() + timedelta(days=30)),
         })
-        self.assertEqual([c["id"] for c in r.data], [dentro.pk])
+        self.assertEqual([c["id"] for c in r.data["results"]], [dentro.pk])
 
     def test_filtro_con_fecha_invalida_400(self):
         self.client.force_authenticate(user=self.admin)
@@ -308,7 +311,7 @@ class ListadoCotizacionesTests(CotizacionBaseTest):
         self.client.force_authenticate(user=self.admin)
         # cotizaciones (con joins) + items + conceptos, sin importar cuántas haya.
         # SGDE-118: el GET ya no libera bloqueos, así que no hay consultas fijas de más.
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(4):
             self.client.get(LISTA)
 
 
@@ -345,7 +348,7 @@ class VigenciaTests(CotizacionBaseTest):
         for pk, valor in esperado.items():
             with self.subTest(pk=pk):
                 self.assertIs(self.client.get(detalle(pk)).data["vencida"], valor)
-        self.assertEqual({c["id"]: c["vencida"] for c in self.client.get(LISTA).data}, esperado)
+        self.assertEqual({c["id"]: c["vencida"] for c in self.client.get(LISTA).data["results"]}, esperado)
 
     def test_patch_cambia_la_vigencia_aunque_este_vencida(self):
         cot = self.crear_en_bd(validez_oferta=hoy() - timedelta(days=3))
@@ -648,7 +651,7 @@ class ListadoCamposSGDE89Tests(CotizacionBaseTest):
         self.client.force_authenticate(user=self.admin)
 
     def fila(self, cot):
-        return next(c for c in self.client.get(LISTA).data if c["id"] == cot.pk)
+        return next(c for c in self.client.get(LISTA).data["results"] if c["id"] == cot.pk)
 
     def test_confirmado_en_y_garantia_null_antes_de_la_aceptacion(self):
         fila = self.fila(self.crear_en_bd())
@@ -833,7 +836,7 @@ class LiberacionAutomaticaTests(CotizacionBaseTest):
         self.assertFalse(MovimientoCotizacion.objects.filter(cotizacion=self.vencido).exists())    
 
     def test_al_listar(self):
-        filas = {c["id"]: c for c in self.client.get(LISTA).data}
+        filas = {c["id"]: c for c in self.client.get(LISTA).data["results"]}
         self.assertEqual(filas[self.vencido.pk]["estado"], "cotizado")
         self.assertIsNone(filas[self.vencido.pk]["bloqueo_hasta"])
         self.assertSinEscribir()
@@ -925,7 +928,7 @@ class CancelacionTests(CotizacionBaseTest):
     def test_el_listado_trae_los_campos_de_la_cancelacion(self):
         cot = self.confirmada()
         self.client.post(cancelacion(cot.pk), self.datos, format="json")
-        fila = {c["id"]: c for c in self.client.get(LISTA).data}[cot.pk]
+        fila = {c["id"]: c for c in self.client.get(LISTA).data["results"]}[cot.pk]
         self.assertEqual(
             (fila["estado"], fila["penalizacion_pct"], fila["monto_retenido"], fila["cancelado_por"]),
             ("cancelado", "20.00", "486000.00", "admin@test.com"),
@@ -1085,7 +1088,7 @@ class HistoricoPorSalonTests(CotizacionBaseTest):
         ajena.save()
         r = self.client.get(LISTA, {"salon": self.salon.pk})
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual({c["id"] for c in r.data}, {cancelada.pk, confirmada.pk})
+        self.assertEqual({c["id"] for c in r.data["results"]}, {cancelada.pk, confirmada.pk})
 
     def test_salon_no_numerico_400(self):
         r = self.client.get(LISTA, {"salon": "abc"})
@@ -1212,15 +1215,15 @@ class GetNoEscribeSGDE118Tests(CotizacionBaseTest):
         r = self.client.get(detalle(self.vencida.pk))
         self.assertEqual(r.data["estado"], "cotizado")
         self.assertIsNone(r.data["bloqueo_hasta"])
-        fila = next(c for c in self.client.get(LISTA).data if c["id"] == self.vencida.pk)
+        fila = next(c for c in self.client.get(LISTA).data["results"] if c["id"] == self.vencida.pk)
         self.assertEqual(fila["estado"], "cotizado")
         self.assertIsNone(fila["bloqueo_hasta"])
 
     def test_filtro_por_estado_usa_el_estado_efectivo(self):
         vigente = self.crear_en_bd(estado="bloqueado", fecha_evento=hoy() + timedelta(days=31))
         Cotizacion.objects.filter(pk=vigente.pk).update(bloqueo_hasta=timezone.now() + timedelta(hours=2))
-        bloqueadas = [c["id"] for c in self.client.get(LISTA, {"estado": "bloqueado"}).data]
-        cotizadas = [c["id"] for c in self.client.get(LISTA, {"estado": "cotizado"}).data]
+        bloqueadas = [c["id"] for c in self.client.get(LISTA, {"estado": "bloqueado"}).data["results"]]
+        cotizadas = [c["id"] for c in self.client.get(LISTA, {"estado": "cotizado"}).data["results"]]
         self.assertEqual(bloqueadas, [vigente.pk])
         self.assertEqual(cotizadas, [self.vencida.pk])
 
