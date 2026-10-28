@@ -8,6 +8,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.exceptions import ValidationError
 
 from apps.clientes.models import Cliente
+from apps.core.pruebas import sin_limite_de_intentos
 
 from .models import Rol, Usuario
 from .services import MSG_ROL_CLIENTE, MSG_ROL_CON_CLIENTE, validar_cambio_usuario
@@ -44,6 +45,7 @@ ENDPOINTS_ADMIN_DETALLE = [
     ("/api/conceptos/1/", ["get", "put", "patch"]),
     ("/api/conceptos/1/historial/", ["get"]),
     ("/api/stock/1/", ["get", "patch"]),
+    ("/api/stock/1/historial/", ["get"]),
     ("/api/proveedores/1/", ["get", "patch"]),
     ("/api/cotizaciones/1/", ["get", "patch"]),
     ("/api/cotizaciones/1/aceptacion/", ["post"]),
@@ -58,6 +60,7 @@ def crear_usuario(username, codigo_rol):
     return Usuario.objects.create_user(username=username, password=PASSWORD, rol=rol)
 
 
+@sin_limite_de_intentos
 class MatrizAccesoPorRolTests(APITestCase):
     """SEG-001: cliente y proveedor no pueden usar los endpoints de administración."""
 
@@ -119,6 +122,7 @@ class MatrizAccesoPorRolTests(APITestCase):
                 self.assertEqual(self.client.get("/api/usuarios/me/").status_code, status.HTTP_200_OK)
 
 
+@sin_limite_de_intentos
 class RegistroUsuariosInternosTests(APITestCase):
     """SEG-004: solo un administrador puede crear usuarios internos y fijar su rol."""
 
@@ -175,10 +179,11 @@ class RegistroUsuariosInternosTests(APITestCase):
         self.assertEqual(Usuario.objects.get(username="atacante@test.com").rol.codigo, "cliente")
 
 
+@sin_limite_de_intentos
 class CadenaEscaladaSEG004Tests(APITestCase):
     """SEG-004 de punta a punta, sin credenciales previas ni force_authenticate."""
 
-    REGISTRO = {"tipo": "natural", "nombre": "Atacante", "identificacion": "999",
+    REGISTRO = {"tipo": "natural", "nombre": "Atacante", "identificacion": "9999999",
                 "email": "atacante@test.com", "ciudad": "CTG", "password": PASSWORD}
 
     def test_la_cadena_completa_ya_no_produce_un_administrador(self):
@@ -213,6 +218,7 @@ class CadenaEscaladaSEG004Tests(APITestCase):
         self.assertFalse(Usuario.objects.filter(rol=rol_admin).exists())
 
 
+@sin_limite_de_intentos
 class RegistroPublicoPasswordTests(APITestCase):
     """POST /api/registro/ valida la contraseña con AUTH_PASSWORD_VALIDATORS."""
 
@@ -272,6 +278,7 @@ def detalle(pk):
     return f"/api/usuarios/{pk}/"
 
 
+@sin_limite_de_intentos
 class BaseUsuariosAdminTests(APITestCase):
     @classmethod
     def setUpTestData(cls):
@@ -622,6 +629,7 @@ class BajaUsuarioYClienteIdaYVueltaTests(BaseUsuariosAdminTests):
         self.assertFalse(self.proveedor.is_active)
 
 
+@sin_limite_de_intentos
 class UsuarioMeTests(APITestCase):
     """SGDE-89: el saludo del Inicio usa first_name, y si viene vacío, username."""
 

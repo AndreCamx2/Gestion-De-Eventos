@@ -114,3 +114,13 @@ class UsuarioMeSerializer(serializers.ModelSerializer):
     def get_proveedor(self, usuario):
         proveedor = getattr(usuario, "proveedor", None)
         return {"id": proveedor.id, "nombre": proveedor.nombre} if proveedor else None
+
+
+class SolicitarRecuperacionSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class RestablecerClaveSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    password = serializers.CharField(write_only=True)

@@ -28,15 +28,25 @@ rectangle "SGDE" {
   usecase "Calcular monto retenido" as UC2
   usecase "Liberar la fecha del salón" as UC3
   usecase "Registrar movimiento" as UC4
+  usecase "Anular cotización\nno confirmada" as UC5
 }
 
 AD --> UC1
+AD --> UC5
 UC1 ..> UC2 : <<include>>
 UC1 ..> UC3 : <<include>>
 UC1 ..> UC4 : <<include>>
+UC5 ..> UC3 : <<include>>
+UC5 ..> UC4 : <<include>>
 
 note right of UC1
   Pide penalización (%) y motivo.
   Solo un evento confirmado (409 si no).
+end note
+
+note right of UC5
+  Cotizada (también vencida) o bloqueada.
+  Pide motivo, sin penalización. Queda
+  cancelada con el movimiento "anulada".
 end note
 @enduml

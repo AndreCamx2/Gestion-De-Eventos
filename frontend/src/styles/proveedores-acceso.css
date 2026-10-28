@@ -1,0 +1,28 @@
+/* Usuario de acceso del proveedor (SGDE-72): la línea en la tarjeta, el botón
+   debajo de la elegida y la ayuda de su ventana. */
+
+.proveedores-tarjetas__celda {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+}
+
+.proveedores-tarjetas__celda .proveedor-tarjeta {
+    flex: 1;
+}
+
+.proveedor-tarjeta__acceso {
+    font-size: var(--texto-pequeno);
+    color: var(--color-texto-suave);
+    overflow-wrap: anywhere;
+}
+
+.proveedor-tarjeta__vincular {
+    width: 100%;
+}
+
+.proveedores-dialogo__ayuda {
+    margin: 0;
+    font-size: var(--texto-etiqueta);
+    color: var(--color-texto-suave);
+}

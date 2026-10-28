@@ -1,0 +1,63 @@
+/* Estado vacío — maqueta CasosLimite ("Lista vacía"). Solo variables de tokens.css. */
+.estado-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--espacio-3);
+    padding: var(--espacio-6) 0;
+    text-align: center;
+}
+
+.estado-vacio__icono {
+    display: flex;
+    justify-content: center;
+    margin-bottom: var(--espacio-1);
+    color: var(--color-texto-tenue);
+}
+
+.estado-vacio__barras {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.estado-vacio__barra {
+    width: 28px;
+    border-radius: var(--radio-pildora) var(--radio-pildora) 0 0;
+    background: var(--color-linea-fuerte);
+}
+
+.estado-vacio__barra--baja {
+    height: 44px;
+}
+
+.estado-vacio__barra--alta {
+    height: 60px;
+    background: var(--color-mantequilla);
+}
+
+.estado-vacio__barra--minima {
+    height: 36px;
+}
+
+.estado-vacio__titulo {
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-seccion);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.estado-vacio__texto {
+    max-width: 320px;
+    font-size: var(--texto-navegacion);
+    color: var(--color-texto-suave);
+}
+
+.estado-vacio__accion {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--espacio-3);
+    margin-top: var(--espacio-1);
+}

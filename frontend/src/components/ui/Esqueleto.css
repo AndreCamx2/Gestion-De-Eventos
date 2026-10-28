@@ -1,0 +1,80 @@
+/* Esqueleto de carga — maqueta CasosLimite y guía, sección 7. Solo variables de tokens.css. */
+.esqueleto {
+    /* relative: el texto oculto (.visually-hidden, absoluto) se queda dentro */
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.esqueleto__fila {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-3);
+    min-height: 68px;
+    padding: 0 var(--espacio-5);
+}
+
+.esqueleto__fila + .esqueleto__fila {
+    border-top: var(--borde);
+}
+
+.esqueleto__bloque {
+    display: block;
+    background: var(--color-linea);
+    /* Solo se anima la opacidad (guía, sección 7): un pulso suave */
+    animation: esqueleto-pulso 1400ms ease-in-out infinite alternate;
+}
+
+.esqueleto__avatar {
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: var(--radio-pildora);
+}
+
+.esqueleto__textos {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.esqueleto__linea {
+    height: 12px;
+    border-radius: 6px;
+}
+
+.esqueleto__linea--corta {
+    height: 10px;
+    border-radius: 5px;
+}
+
+.esqueleto__columna {
+    flex: 0 0 64px;
+    height: 12px;
+    border-radius: 6px;
+}
+
+@keyframes esqueleto-pulso {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0.45;
+    }
+}
+
+/* En teléfono, las columnas extra aplastarían el texto: se ocultan */
+@media (max-width: 600px) {
+    .esqueleto__columna {
+        display: none;
+    }
+}
+
+/* Movimiento reducido: bloques quietos */
+@media (prefers-reduced-motion: reduce) {
+    .esqueleto__bloque {
+        animation: none;
+    }
+}

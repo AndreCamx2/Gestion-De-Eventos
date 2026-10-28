@@ -14,6 +14,8 @@ from apps.sitios.models import Sitio
 from .estados import fecha_corta, registrar
 from .models import Cotizacion, CotizacionItem, GrupoEvento, MovimientoCotizacion, TipoEvento
 from .services import redondear, totales_cotizacion, totales_linea
+from .models import Cotizacion, CotizacionItem, MovimientoCotizacion
+from .services import garantia_minima, redondear, totales_cotizacion, totales_linea
 
 DIAS_VIGENCIA_POR_DEFECTO = 15
 
@@ -187,6 +189,62 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
         )
         return cotizacion
 
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        """Edición de una cotización cotizada (PUT .../edicion/): reemplaza datos e items.
+
+        Los conceptos que ya estaban conservan el precio e impuesto con que se cotizaron
+        (como test_cambiar_precio_del_concepto_no_cambia_la_cotizacion); los nuevos toman
+        el precio actual del concepto. Deja un movimiento "editada" con lo que cambió.
+        """
+        items = validated_data.pop("items")
+        cambios = _cambios_de_edicion(instance, validated_data, items)
+        previos = {item.concepto_id: item for item in instance.items.all()}
+
+        for campo, valor in validated_data.items():
+            setattr(instance, campo, valor)
+        instance.sitio = instance.salon.sitio
+        instance.save()
+
+        instance.items.all().delete()
+        nuevos = []
+        for item in items:
+            concepto = item["concepto"]
+            previo = previos.get(concepto.pk)
+            nuevos.append(CotizacionItem(
+                cotizacion=instance,
+                concepto=concepto,
+                cantidad=item["cantidad"],
+                precio_unitario=previo.precio_unitario if previo else concepto.precio,
+                impuesto_pct=previo.impuesto_pct if previo else concepto.impuesto_pct,
+            ))
+        CotizacionItem.objects.bulk_create(nuevos)
+        registrar(instance, "editada", self.context["request"].user, cambios or "Sin cambios.")
+        return instance
+
+
+def _cambios_de_edicion(cotizacion, datos, items):
+    """Texto corto de lo que cambia una edición, para su movimiento."""
+    cambios = []
+    if datos["cliente"].pk != cotizacion.cliente_id:
+        cambios.append(f"cliente: {datos['cliente'].nombre}")
+    if datos["salon"].pk != cotizacion.salon_id or datos["montaje"].pk != cotizacion.montaje_id:
+        cambios.append(f"salón: {datos['salon'].nombre} · {datos['montaje'].nombre}")
+    if datos["fecha_evento"] != cotizacion.fecha_evento:
+        cambios.append(f"fecha: {fecha_corta(cotizacion.fecha_evento)} → {fecha_corta(datos['fecha_evento'])}")
+    if datos["cantidad_personas"] != cotizacion.cantidad_personas:
+        cambios.append(f"personas: {cotizacion.cantidad_personas} → {datos['cantidad_personas']}")
+    if datos["validez_oferta"] != cotizacion.validez_oferta:
+        cambios.append(f"vigencia: {fecha_corta(cotizacion.validez_oferta)} → {fecha_corta(datos['validez_oferta'])}")
+    antes = sorted((i.concepto_id, i.cantidad) for i in cotizacion.items.all())
+    despues = sorted((i["concepto"].pk, i["cantidad"]) for i in items)
+    if antes != despues:
+        cambios.append(f"conceptos: {len(despues)}")
+    if not cambios:
+        return ""
+    texto = "; ".join(cambios)
+    return f"{texto[0].upper()}{texto[1:]}."
+
 
 # --- Salida: detalle y listado ---------------------------------------------
 
@@ -315,6 +373,7 @@ class CotizacionDetalleSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, s
     impuestos = serializers.SerializerMethodField()
     total = serializers.SerializerMethodField()
     garantia = serializers.SerializerMethodField()
+    garantia_minima = serializers.SerializerMethodField()
     # Solo la aceptación (SGDE-20) confirma, y en el mismo save registra la garantía:
     # esa fecha es la de confirmación. Lo confirmado a mano en /admin/ queda en null.
     confirmado_en = serializers.DateTimeField(source="garantia_registrada_en", read_only=True)
@@ -330,7 +389,7 @@ class CotizacionDetalleSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, s
             "tipo_evento", "grupo_evento",
             "fecha_evento", "cantidad_personas", "validez_oferta", "bloqueo_hasta", "creado_en",
             "creado_por", "confirmado_en", "items", "subtotal", "impuestos", "total", "garantia",
-            *CAMPOS_CANCELACION,
+            "garantia_minima", *CAMPOS_CANCELACION,
         ]
         read_only_fields = fields
 
@@ -355,6 +414,13 @@ class CotizacionDetalleSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, s
 
     def get_garantia(self, obj):
         return garantia_de(obj)
+
+    def get_garantia_minima(self, obj):
+        """Lo mínimo que hay que recibir para confirmar hoy; null si ya no se puede aceptar."""
+        if obj.estado not in ("cotizado", "bloqueado"):
+            return None
+        minima = garantia_minima(_totales(obj)["total"], obj.fecha_evento, timezone.localdate())
+        return {"porcentaje": f"{minima['porcentaje']:g}", "monto": str(minima["monto"])}
 
 
 class CotizacionListaSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, serializers.ModelSerializer):
@@ -460,6 +526,14 @@ class CancelacionSerializer(serializers.Serializer):
     )
 
 
+# --- Entrada: anulación de una cotización no confirmada ---------------------
+
+class AnulacionSerializer(serializers.Serializer):
+    motivo = serializers.CharField(
+        error_messages={"blank": "Escribe el motivo de la anulación.", "required": "Escribe el motivo de la anulación."},
+    )
+
+
 # --- Salida: movimientos (SGDE-62) ------------------------------------------
 
 class MovimientoSerializer(serializers.ModelSerializer):
@@ -472,3 +546,35 @@ class MovimientoSerializer(serializers.ModelSerializer):
 
     def get_usuario(self, obj):
         return obj.usuario.username if obj.usuario else "sistema"
+
+
+# --- Salida: "Mis cotizaciones" del rol cliente (SGDE-126) ------------------
+# Los mismos datos que ve el administrador, menos los internos: quién creó la
+# cotización, quién registró la garantía o la cancelación, y la garantía mínima
+# (es una ayuda para quien registra la aceptación).
+
+CAMPOS_INTERNOS = ("creado_por", "cancelado_por", "garantia_minima")
+
+
+def sin_datos_internos(data):
+    for campo in CAMPOS_INTERNOS:
+        data.pop(campo, None)
+    if data.get("garantia"):
+        data["garantia"] = {k: v for k, v in data["garantia"].items() if k != "registrada_por"}
+    return data
+
+
+class MiCotizacionListaSerializer(CotizacionListaSerializer):
+    sitio_nombre = serializers.CharField(source="sitio.nombre", read_only=True)
+
+    class Meta(CotizacionListaSerializer.Meta):
+        fields = [*CotizacionListaSerializer.Meta.fields, "sitio_nombre"]
+        read_only_fields = fields
+
+    def to_representation(self, instance):
+        return sin_datos_internos(super().to_representation(instance))
+
+
+class MiCotizacionDetalleSerializer(CotizacionDetalleSerializer):
+    def to_representation(self, instance):
+        return sin_datos_internos(super().to_representation(instance))

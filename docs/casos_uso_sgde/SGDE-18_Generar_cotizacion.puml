@@ -29,17 +29,33 @@ rectangle "SGDE" {
   usecase "Validar aforo del montaje" as UC3
   usecase "Calcular subtotal, impuestos\ny total" as UC4
   usecase "Imprimir cotización / PDF\n(SGDE-70)" as UC5
+  usecase "Editar cotización cotizada" as UC6
+  usecase "Avisar la disponibilidad\ndel salón ese día" as UC7
+  usecase "Vista previa para el cliente" as UC8
 }
 
 AD --> UC1
 AD --> UC5
+AD --> UC6
 UC1 ..> UC2 : <<include>>
 UC1 ..> UC3 : <<include>>
 UC1 ..> UC4 : <<include>>
+UC1 ..> UC7 : <<include>>
+UC6 ..> UC7 : <<include>>
+UC8 ..> UC1 : <<extend>>
 
 note right of UC1
   Cliente activo, salón activo, montaje
   habilitado, fecha futura. Nace "cotizada"
   con vigencia de 15 días si no se indica.
+  Los conceptos "por persona" toman el
+  número de personas como cantidad.
+end note
+
+note right of UC6
+  Solo una cotizada (aunque esté vencida).
+  Una bloqueada da 409: se libera primero.
+  Los conceptos que ya estaban conservan su
+  precio. Deja el movimiento "editada".
 end note
 @enduml

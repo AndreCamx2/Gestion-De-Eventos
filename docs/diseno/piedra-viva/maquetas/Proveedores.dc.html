@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SGDE · Piedra viva · Proveedores y stock</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F2F0}
+a{color:#B4562F}a:hover{color:#8F3F1F}
+.btn{transition:transform 160ms cubic-bezier(0.23,1,0.32,1),filter 160ms ease}
+.btn:active{transform:scale(0.97)}
+@media (hover:hover) and (pointer:fine){.btn:hover{filter:brightness(1.08)}.nav[aria-current="false"]:hover{background:#F1EFEB !important;color:#1D232B !important}.row:hover{background:#F7F6F3}}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}.btn:active{transform:none}}
+.tab{transition:color 160ms ease}@media (hover:hover) and (pointer:fine){.tab[aria-current="false"]:hover{color:#1D232B !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; align-content: flex-start; background: #F3F2F0; color: #1D232B; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;">
+
+  <header style="flex: 1 1 100%; background: #FFFFFF; border-bottom: 1px solid #E4E2DE;">
+    <div style="max-width: 1320px; margin: 0 auto; padding: 0 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px; min-height: 68px;">
+      <a href="Inicio.dc.html" style="display: flex; align-items: center; gap: 10px; color: #1D232B; text-decoration: none;"><span style="position: relative; width: 34px; height: 34px; border-radius: 10px; background: #1D232B; color: #F3F2F0; display: flex; align-items: center; justify-content: center; font-weight: 800;">S<span style="position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 5px; background: #EE8A63; box-shadow: 0 0 0 2px #FFFFFF;"></span></span><span style="font-weight: 700;">SGDE</span></a>
+      <nav aria-label="Principal" style="display: flex; flex-wrap: wrap; gap: 2px; flex: 1; align-self: stretch;"><a class="tab" href="Inicio.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Inicio</a><a class="tab" href="Cotizaciones.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Cotizaciones</a><a class="tab" href="Calendario.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Calendario</a><a class="tab" href="Salones.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Salones</a><a class="tab" href="Conceptos.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Conceptos</a><a class="tab" href="Proveedores.dc.html" aria-current="page" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid #EE8A63; color: #1D232B; font-weight: 700; font-size: 14px; text-decoration: none;">Proveedores</a><a class="tab" href="Clientes.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Clientes</a><a class="tab" href="Sitios.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Sitios</a><a class="tab" href="Usuarios.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Usuarios</a></nav>
+      <a href="Main.dc.html" title="Cerrar sesión" style="width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; text-decoration: none;"><span style="width: 36px; height: 36px; border-radius: 18px; background: #FCE5D9; color: #B4562F; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">AF</span></a>
+    </div>
+  </header>
+
+  <main style="flex: 1 1 100%; max-width: 1320px; margin: 0 auto; min-width: 0; padding: 32px 40px 56px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px;">
+    <header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px;">
+      <div>
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #B4562F;">Catálogo</div>
+        <h1 style="margin: 8px 0 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 48px; line-height: 1; letter-spacing: -0.035em;">Proveedores y stock</h1>
+        <p style="margin: 10px 0 0; color: #5D6673; font-size: 16px;">Quién provee qué, cuánto hay y cuánto vale.</p>
+      </div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="btn" type="button" style="height: 48px; padding: 0 18px; border-radius: 14px; background: transparent; border: 1px solid #D6D3CD; color: #1D232B; font: inherit; font-weight: 800; cursor: pointer;">Agregar elemento</button>
+        <button class="btn" type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 20px; border-radius: 14px; background: #2F4A6D; color: #FFFFFF; border: 0; font: inherit; font-weight: 800; font-size: 15px; cursor: pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nuevo proveedor</button>
+      </div>
+    </header>
+
+    <section role="tablist" aria-label="Proveedores" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+      <sc-for list="{{ proveedores }}" as="p" hint-placeholder-count="3">
+        <button class="btn" type="button" role="tab" aria-selected="{{ p.selected }}" onClick="{{ p.pick }}" style="text-align: left; padding: 18px; border-radius: 18px; background: {{ p.bg }}; border: 2px solid {{ p.border }}; color: {{ p.fg }}; font: inherit; cursor: pointer; display: flex; flex-direction: column; gap: 10px;">
+          <span style="display: flex; align-items: center; gap: 12px;">
+            <span style="flex: 0 0 40px; height: 40px; border-radius: 12px; background: {{ p.iconBg }}; color: {{ p.iconFg }}; display: flex; align-items: center; justify-content: center; font-weight: 800;">{{ p.ini }}</span>
+            <span style="min-width: 0;"><span style="display: block; font-weight: 800; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ p.nombre }}</span><span style="display: block; font-size: 12px; opacity: 0.8;">{{ p.ident }}</span></span>
+          </span>
+          <span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700;"><span>{{ p.contacto }}</span><span>{{ p.items }} elementos</span></span>
+        </button>
+      </sc-for>
+    </section>
+
+    <section style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E2DE; overflow-x: auto;">
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px; padding: 20px 20px 8px;">
+        <h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 22px;">Stock de {{ selNombre }}</h2>
+        <span style="font-size: 14px; color: #5D6673;">Valor total <strong style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; color: #9A6700; font-variant-numeric: tabular-nums;">{{ selTotal }}</strong></span>
+      </div>
+      <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums;">
+        <thead><tr style="text-align: left; color: #6E7581; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;">
+          <th scope="col" style="padding: 12px 20px; font-weight: 800;">Elemento</th>
+          <th scope="col" style="padding: 12px; font-weight: 800; text-align: right;">Cantidad</th>
+          <th scope="col" style="padding: 12px; font-weight: 800; text-align: right;">Valor unitario</th>
+          <th scope="col" style="padding: 12px; font-weight: 800; text-align: right;">Valor total</th>
+          <th scope="col" style="padding: 12px 20px; font-weight: 800;">Actualizado</th>
+        </tr></thead>
+        <tbody>
+          <sc-for list="{{ stock }}" as="s" hint-placeholder-count="3">
+            <tr class="row" style="border-top: 1px solid #E4E2DE;">
+              <td style="padding: 16px 20px; font-weight: 800;">{{ s.nombre }}</td>
+              <td style="padding: 16px 12px; text-align: right;"><span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 18px;">{{ s.cantidad }}</span></td>
+              <td style="padding: 16px 12px; text-align: right; color: #5D6673;">{{ s.valor }}</td>
+              <td style="padding: 16px 12px; text-align: right; font-weight: 800;">{{ s.total }}</td>
+              <td style="padding: 16px 20px; color: #5D6673;">{{ s.fecha }}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+const NAV_SGDE = [
+  ['Operación', [
+    ['Inicio', 'Inicio.dc.html', 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z'],
+    ['Cotizaciones', 'Cotizaciones.dc.html', 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6'],
+    ['Calendario', 'Calendario.dc.html', 'M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3 10h18M8 3v4M16 3v4']
+  ]],
+  ['Catálogo', [
+    ['Salones', 'Salones.dc.html', 'M4 21V5l8-2 8 2v16M9 21v-6h6v6'],
+    ['Conceptos y precios', 'Conceptos.dc.html', 'M20 12l-8 8-9-9V3h8zM7.5 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z'],
+    ['Proveedores', 'Proveedores.dc.html', 'M3 6h11v10H3zM14 10h4l3 3v3h-7M7 16a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM17 16a2 2 0 1 0 0 4 2 2 0 0 0 0-4z']
+  ]],
+  ['Administración', [
+    ['Clientes', 'Clientes.dc.html', 'M9 4.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zM2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c2 .6 3.2 2.5 3.5 5.5'],
+    ['Sitios', 'Sitios.dc.html', 'M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12zM12 6.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z'],
+    ['Usuarios', 'Usuarios.dc.html', 'M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6zM9 12l2 2 4-4']
+  ]]
+];
+function navSgde(activo) {
+  return NAV_SGDE.map((s) => ({
+    titulo: s[0],
+    items: s[1].map((i) => {
+      const on = i[0] === activo;
+      return { label: i[0], href: i[1], d: i[2], current: on ? 'page' : 'false', bg: on ? 'rgba(238,138,99,0.16)' : 'transparent', fg: on ? '#1D232B' : '#5D6673', weight: on ? 800 : 600 };
+    })
+  }));
+}
+const PESOS = (n) => '$ ' + Math.round(n).toLocaleString('es-CO');
+const PROVEEDORES = [
+  { id: 'sonido', nombre: 'Sonido Caribe Ltda.', ident: 'NIT 900.554.221-1', contacto: 'Rafael Ortiz', ini: 'SC', stock: [
+    ['Cabina activa 15 pulgadas', 12, 180000, '8 oct'], ['Micrófono inalámbrico', 20, 95000, '8 oct'], ['Consola digital 16 canales', 2, 650000, '1 oct']
+  ] },
+  { id: 'flores', nombre: 'Flores Getsemaní', ident: 'C.C. 1.047.889.112', contacto: 'Paola Díaz', ini: 'FG', stock: [
+    ['Centro de mesa tropical', 40, 85000, '7 oct'], ['Arco floral', 3, 1200000, '28 sep']
+  ] },
+  { id: 'mobiliario', nombre: 'Mobiliario El Puerto S.A.S.', ident: 'NIT 901.223.660-4', contacto: 'Jorge Pinto', ini: 'MP', stock: [
+    ['Silla Tiffany blanca', 400, 6500, '9 oct'], ['Mesa redonda 10 puestos', 40, 25000, '9 oct'], ['Mantel blanco redondo', 60, 9000, '30 sep']
+  ] }
+];
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sel: 'sonido' };
+  }
+  renderVals() {
+    const proveedores = PROVEEDORES.map((p) => {
+      const on = p.id === this.state.sel;
+      return {
+        nombre: p.nombre, ident: p.ident, contacto: p.contacto, ini: p.ini, items: p.stock.length,
+        selected: on ? 'true' : 'false',
+        bg: on ? '#6F83D9' : '#FFFFFF', border: on ? '#6F83D9' : '#E4E2DE', fg: on ? '#FFFFFF' : '#1D232B',
+        iconBg: on ? '#FFFFFF' : '#F1EFEB', iconFg: on ? '#3A4C99' : '#3A4C99',
+        pick: () => this.setState({ sel: p.id })
+      };
+    });
+    const sel = PROVEEDORES.find((p) => p.id === this.state.sel);
+    let total = 0;
+    const stock = sel.stock.map((s) => {
+      total += s[1] * s[2];
+      return { nombre: s[0], cantidad: s[1].toLocaleString('es-CO'), valor: PESOS(s[2]), total: PESOS(s[1] * s[2]), fecha: s[3] };
+    });
+    return { nav: navSgde('Proveedores'), proveedores, stock, selNombre: sel.nombre, selTotal: PESOS(total) };
+  }
+}
+</script>
+</body>
+</html>

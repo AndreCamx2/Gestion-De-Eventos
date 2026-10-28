@@ -24,28 +24,39 @@ if (¿Su usuario está vinculado a un proveedor?) then (no)
   :Ve el aviso para pedir la vinculación;
   stop
 else (sí)
-  :Muestra solo el stock de su proveedor;
+  |Sistema|
+  :Muestra solo el stock de su proveedor
+  y marca "Agotado" lo que tiene cantidad 0;
 endif
 |Proveedor|
+:Puede buscar un elemento por nombre
+(sin importar mayúsculas ni tildes);
 if (¿Elemento nuevo?) then (sí)
-  :Escribe nombre, cantidad y valor;
+  :Escribe nombre, cantidad y valor
+  (la pantalla revisa: nombre de hasta 120,
+  cantidad entera y valor con 2 decimales);
   |Sistema|
   if (¿Ya tiene un elemento con ese nombre?) then (sí)
-    :Responde 400 "edítalo";
+    :Responde 400 "edítalo"
+    (se muestra bajo "Elemento");
     stop
   else (no)
     :Guarda el elemento;
   endif
 else (no)
   |Proveedor|
-  :Cambia cantidad y valor;
+  :Cambia cantidad y valor
+  (si la cantidad es 0, la pantalla avisa
+  que quedará agotado);
   |Sistema|
-  if (¿Cantidad y valor no negativos?) then (no)
+  if (¿Cantidad y valor válidos?) then (no)
     :Responde 400;
     stop
   else (sí)
     :Guarda (el nombre no cambia);
   endif
 endif
+|Proveedor|
+:Ve "Guardado";
 stop
 @enduml

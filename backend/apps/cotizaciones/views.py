@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from apps.core.exceptions import Conflicto
 from apps.core.pagination import PaginaEstandar
 from apps.sitios.acceso import filtrar_por_sitio
-from apps.usuarios.permissions import EsAdministrador
+from apps.usuarios.permissions import EsAdministrador, EsCliente
 
 from . import estados
 from .models import Cotizacion, GrupoEvento, TipoEvento
@@ -17,6 +17,9 @@ from .serializers import (
     AceptacionSerializer, BloqueoSerializer, CancelacionSerializer, CotizacionCalendarioSerializer,
     CotizacionCrearSerializer, CotizacionDetalleSerializer, CotizacionEdicionSerializer, 
     CotizacionListaSerializer, GrupoEventoConTiposSerializer, MovimientoSerializer,
+    AceptacionSerializer, AnulacionSerializer, BloqueoSerializer, CancelacionSerializer, CotizacionCalendarioSerializer,
+    CotizacionCrearSerializer, CotizacionDetalleSerializer, CotizacionListaSerializer, CotizacionVigenciaSerializer,
+    MiCotizacionDetalleSerializer, MiCotizacionListaSerializer, MovimientoSerializer,
 )
 
 
@@ -269,6 +272,39 @@ class CotizacionCancelacionView(AccionSobreCotizacionView):
         estados.cancelar(cotizacion, datos["penalizacion_pct"], datos["motivo"], self.request.user)
 
 
+class CotizacionAnulacionView(AccionSobreCotizacionView):
+    """Anula una cotización que no se confirmó (cotizada o bloqueada), con su motivo."""
+
+    def post(self, request, *args, **kwargs):
+        return self.accion(self.validar(AnulacionSerializer))
+
+    def ejecutar(self, cotizacion, datos):
+        estados.anular(cotizacion, datos["motivo"], self.request.user)
+
+
+class CotizacionEdicionView(generics.GenericAPIView):
+    """PUT con el mismo cuerpo que crear: cambia cliente, salón, montaje, fecha, personas,
+    vigencia y conceptos de una cotización cotizada (aunque esté vencida).
+
+    Una bloqueada da 409: hay que liberarla primero, porque el bloqueo es de ese salón y
+    esa fecha. Valida y guarda en la transacción que tiene tomados el salón y la cotización.
+    """
+
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+    def put(self, request, *args, **kwargs):
+        estados.liberar_bloqueos_vencidos(usuario=request.user)
+        with transaction.atomic():
+            cotizacion = estados.tomar_para_cambio(
+                filtrar_por_sitio(Cotizacion.objects.all(), request.user), kwargs["pk"]
+            )
+            exigir_estado_cotizado(cotizacion)
+            serializer = CotizacionCrearSerializer(cotizacion, data=request.data, context=self.get_serializer_context())
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        return Response(CotizacionDetalleSerializer(cotizaciones_con_relaciones().get(pk=cotizacion.pk)).data)
+
+
 class CotizacionMovimientosView(generics.ListAPIView):
     """Los movimientos de una cotización, en orden (SGDE-62). Otro sitio da 404."""
 
@@ -297,3 +333,27 @@ class TipoEventoListView(generics.ListAPIView):
             .distinct()
             .prefetch_related(Prefetch("tipos", queryset=tipos_activos))
         )
+# --- "Mis cotizaciones" del rol cliente (SGDE-126) ----------------------------
+
+def mis_cotizaciones(usuario):
+    """Solo las del Cliente vinculado al usuario: el filtro sale del token, nunca
+    de un id que mande el frontend. Una cotización de otro cliente da 404."""
+    return cotizaciones_con_relaciones().filter(cliente__usuario=usuario)
+
+
+class MisCotizacionesView(generics.ListAPIView):
+    """Las cotizaciones del cliente que inició sesión, por fecha del evento. Solo lectura."""
+
+    serializer_class = MiCotizacionListaSerializer
+    permission_classes = [permissions.IsAuthenticated, EsCliente]
+
+    def get_queryset(self):
+        return mis_cotizaciones(self.request.user).order_by("fecha_evento", "id")
+
+
+class MiCotizacionDetalleView(generics.RetrieveAPIView):
+    serializer_class = MiCotizacionDetalleSerializer
+    permission_classes = [permissions.IsAuthenticated, EsCliente]
+
+    def get_queryset(self):
+        return mis_cotizaciones(self.request.user)

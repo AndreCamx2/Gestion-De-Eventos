@@ -1,37 +1,92 @@
 import { apiFetch } from "./client";
+import { comoLista, todasLasPaginas } from "./listas";
 
-
-export async function getProveedores() {
-    try {
-        return await apiFetch("/proveedores/", { method: "GET" });
-    } catch (error) {
-        console.error("Error en getProveedores API:", error);
-        throw new Error(
-            error.message || "No se pudieron obtener los proveedores del servidor."
-        );
-    }
+// Este módulo es para administrador (EsAdministrador en el backend), salvo
+// "Mi stock", que es del proveedor (EsProveedor).
+// Usa apiFetch directo: los errores conservan error.status y error.body, así la
+// pantalla distingue un 401 de un 400. Las listas aceptan una lista simple o un
+// objeto paginado (api/listas.js).
+// Del stock se editan la cantidad y el valor (SGDE-98). No hay borrar, ni de
+// proveedores ni de stock: un elemento agotado queda con cantidad 0.
+// GET /api/proveedores/ → [{ id, nombre, identificacion, contacto }]
+export async function listarProveedores() {
+  return todasLasPaginas("/proveedores/");
 }
 
-
-export async function crearProveedor(proveedorData) {
-    if (!proveedorData.nombre || !proveedorData.nombre.trim()) {
-        throw new Error("El nombre del proveedor es obligatorio.");
-    }
-    if (!proveedorData.contacto || !proveedorData.contacto.trim()) {
-        throw new Error("El contacto o teléfono del proveedor es obligatorio.");
-    }
-
-    return await apiFetch("/proveedores/", {
-        method: "POST",
-        body: JSON.stringify(proveedorData),
-    });
+// POST /api/proveedores/. Solo el nombre es obligatorio.
+export function crearProveedor({ nombre, identificacion, contacto }) {
+  return apiFetch("/proveedores/", {
+    method: "POST",
+    body: JSON.stringify({ nombre, identificacion, contacto }),
+  });
 }
 
+// PATCH /api/proveedores/<id>/ { usuario } (SGDE-30): vincula el usuario de acceso
+// del proveedor (un usuario con rol proveedor, uno por proveedor) o lo desvincula con null.
+// → { id, nombre, identificacion, contacto, usuario, usuario_nombre }
+export function vincularUsuarioProveedor(id, usuario) {
+  return apiFetch(`/proveedores/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify({ usuario }),
+  });
+}
 
-export async function eliminarProveedor(id) {
-    if (!id) throw new Error("ID de proveedor no válido.");
+// GET /api/stock/ → [{ id, proveedor, nombre_elemento, cantidad, valor, actualizado_en }]
+// Trae el stock de TODOS los proveedores: la pantalla lo filtra por proveedor.
+export async function listarStock() {
+  return todasLasPaginas("/stock/");
+}
 
-    return await apiFetch(`/proveedores/${id}/`, {
-        method: "DELETE",
-    });
+// POST /api/stock/. Un elemento no se repite en el mismo proveedor.
+export function crearElementoStock({ proveedor, nombre_elemento, cantidad, valor }) {
+  return apiFetch("/stock/", {
+    method: "POST",
+    body: JSON.stringify({ proveedor, nombre_elemento, cantidad, valor }),
+  });
+}
+
+// PATCH /api/stock/<id>/ con solo lo que cambió: { cantidad?, valor? }.
+// Devuelve el elemento completo, con actualizado_en nuevo.
+export function editarStock(id, cambios) {
+  return apiFetch(`/stock/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(cambios),
+  });
+}
+
+// ===== Mi stock (SGDE-30 y 72): solo el rol proveedor, con su Proveedor vinculado =====
+// El backend pone el proveedor; el stock de otro da 404. El 403 trae
+// { detail, codigo }: "proveedor_sin_vincular" o "no_es_proveedor".
+
+// GET /api/mi-stock/ → mismos campos que /stock/, solo los del proveedor.
+export async function listarMiStock() {
+  return todasLasPaginas("/mi-stock/");
+}
+
+// POST /api/mi-stock/ { nombre_elemento, cantidad, valor }.
+export function crearMiStock({ nombre_elemento, cantidad, valor }) {
+  return apiFetch("/mi-stock/", {
+    method: "POST",
+    body: JSON.stringify({ nombre_elemento, cantidad, valor }),
+  });
+}
+
+// PATCH /api/mi-stock/<id>/ con solo lo que cambió: { cantidad?, valor? }.
+export function editarMiStock(id, cambios) {
+  return apiFetch(`/mi-stock/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(cambios),
+  });
+}
+
+// GET /api/stock/comparar/?elemento=<texto> (SGDE-31): el stock agrupado por
+// elemento, sin distinguir mayúsculas, tildes ni espacios de más. Sin texto, todos.
+// → [{ elemento, mejor_precio, ofertas: [{ stock_id, proveedor_id, proveedor,
+//      contacto, cantidad, valor, actualizado_en, es_mejor_precio }] }]
+// Las ofertas llegan ordenadas: disponibles de la más barata a la más cara y las
+// agotadas al final. mejor_precio es null si todas están agotadas.
+export async function compararStock(elemento = "") {
+  const texto = elemento.trim();
+  const query = texto ? `?elemento=${encodeURIComponent(texto)}` : "";
+  return comoLista(await apiFetch(`/stock/comparar/${query}`, { method: "GET" }));
 }

@@ -20,8 +20,13 @@ export async function darDeBajaCliente(id) {
   return apiFetch(`/clientes/${id}/`, { method: "DELETE" });
 }
 
+// Reactivar (SGDE-95): activo=True en el Cliente y en su Usuario, si tiene.
+export async function reactivarCliente(id) {
+  return actualizarCliente(id, { activo: true });
+}
+
 export async function listarEmpresas() {
-  return apiFetch("/empresas/", { method: "GET" });
+  return todasLasPaginas("/empresas/");
 }
 
 export async function crearCliente({
@@ -52,5 +57,17 @@ export async function crearCliente({
   return apiFetch("/clientes/", {
     method: "POST",
     body: JSON.stringify(body),
+  });
+}
+
+export async function buscarClientes(texto = "") {
+  const query = texto ? `?search=${encodeURIComponent(texto)}` : "";
+  return todasLasPaginas(`/clientes/${query}`);
+}
+
+export async function crearEmpresa(datos) {
+  return apiFetch("/empresas/", {
+    method: "POST",
+    body: JSON.stringify(datos),
   });
 }

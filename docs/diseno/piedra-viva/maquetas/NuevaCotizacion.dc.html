@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SGDE · Piedra viva · Nueva cotización</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F2F0}
+a{color:#B4562F}a:hover{color:#8F3F1F}
+.btn{transition:transform 160ms cubic-bezier(0.23,1,0.32,1),filter 160ms ease}
+.btn:active{transform:scale(0.97)}
+.meter{transition:width 240ms cubic-bezier(0.23,1,0.32,1),background-color 200ms ease}
+.field:focus-within{border-color:#2F4A6D;box-shadow:0 0 0 4px rgba(238,138,99,0.18)}
+@media (hover:hover) and (pointer:fine){.btn:hover{filter:brightness(1.08)}.nav[aria-current="false"]:hover{background:#F1EFEB !important;color:#1D232B !important}.row:hover{background:#F7F6F3}}
+@media (prefers-reduced-motion:reduce){.btn,.meter{transition:none}.btn:active{transform:none}}
+.tab{transition:color 160ms ease}@media (hover:hover) and (pointer:fine){.tab[aria-current="false"]:hover{color:#1D232B !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; align-content: flex-start; background: #F3F2F0; color: #1D232B; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;">
+
+  <header style="flex: 1 1 100%; background: #FFFFFF; border-bottom: 1px solid #E4E2DE;">
+    <div style="max-width: 1320px; margin: 0 auto; padding: 0 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px; min-height: 68px;">
+      <a href="Inicio.dc.html" style="display: flex; align-items: center; gap: 10px; color: #1D232B; text-decoration: none;"><span style="position: relative; width: 34px; height: 34px; border-radius: 10px; background: #1D232B; color: #F3F2F0; display: flex; align-items: center; justify-content: center; font-weight: 800;">S<span style="position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 5px; background: #EE8A63; box-shadow: 0 0 0 2px #FFFFFF;"></span></span><span style="font-weight: 700;">SGDE</span></a>
+      <nav aria-label="Principal" style="display: flex; flex-wrap: wrap; gap: 2px; flex: 1; align-self: stretch;"><a class="tab" href="Inicio.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Inicio</a><a class="tab" href="Cotizaciones.dc.html" aria-current="page" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid #EE8A63; color: #1D232B; font-weight: 700; font-size: 14px; text-decoration: none;">Cotizaciones</a><a class="tab" href="Calendario.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Calendario</a><a class="tab" href="Salones.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Salones</a><a class="tab" href="Conceptos.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Conceptos</a><a class="tab" href="Proveedores.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Proveedores</a><a class="tab" href="Clientes.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Clientes</a><a class="tab" href="Sitios.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Sitios</a><a class="tab" href="Usuarios.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Usuarios</a></nav>
+      <a href="Main.dc.html" title="Cerrar sesión" style="width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; text-decoration: none;"><span style="width: 36px; height: 36px; border-radius: 18px; background: #FCE5D9; color: #B4562F; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">AF</span></a>
+    </div>
+  </header>
+
+  <main style="flex: 1 1 100%; max-width: 1320px; margin: 0 auto; min-width: 0; padding: 32px 40px 56px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px;">
+    <header>
+      <nav aria-label="Ruta" style="display: flex; gap: 8px; font-size: 14px; font-weight: 700; color: #6E7581;"><a href="Cotizaciones.dc.html" style="text-decoration: none;">Cotizaciones</a><span aria-hidden="true">/</span><span>Nueva</span></nav>
+      <h1 style="margin: 8px 0 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 48px; line-height: 1; letter-spacing: -0.035em;">Nueva cotización</h1>
+    </header>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start;">
+      <div style="flex: 2 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 20px;">
+
+        <section style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;"><span style="width: 32px; height: 32px; border-radius: 16px; background: #2F4A6D; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800;">1</span><h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 22px;">Cliente</h2></div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 16px; border-radius: 16px; background: #F1EFEB; border: 1px solid #D6D3CD;">
+            <div style="flex: 0 0 48px; height: 48px; border-radius: 24px; background: #6F83D9; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800;">IC</div>
+            <div style="flex: 1 1 220px; min-width: 0;"><div style="font-weight: 800; font-size: 16px;">Inversiones Caribe S.A.S.</div><div style="font-size: 13px; color: #5D6673; margin-top: 2px;">Jurídica · NIT 900.123.456-7 · eventos@caribe.co</div></div>
+            <button class="btn" type="button" style="height: 44px; padding: 0 16px; border-radius: 12px; background: transparent; border: 1px solid #D6D3CD; color: #1D232B; font: inherit; font-weight: 800; cursor: pointer;">Cambiar cliente</button>
+          </div>
+        </section>
+
+        <section style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 24px; display: flex; flex-direction: column; gap: 18px;">
+          <div style="display: flex; align-items: center; gap: 12px;"><span style="width: 32px; height: 32px; border-radius: 16px; background: #2F4A6D; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800;">2</span><h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 22px;">Salón, montaje y fecha</h2></div>
+          <div role="radiogroup" aria-label="Salón" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+            <button class="btn" type="button" role="radio" aria-checked="false" style="text-align: left; padding: 16px; border-radius: 16px; background: #F1EFEB; border: 1.5px solid #D6D3CD; color: #1D232B; font: inherit; cursor: pointer;"><span style="display: block; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 18px;">Bolívar</span><span style="display: block; font-size: 13px; color: #5D6673; margin-top: 4px;">20 × 4,5 m · hasta 400</span></button>
+            <button class="btn" type="button" role="radio" aria-checked="true" style="text-align: left; padding: 16px; border-radius: 16px; background: rgba(238,138,99,0.12); border: 2px solid #2F4A6D; color: #1D232B; font: inherit; cursor: pointer;"><span style="display: flex; justify-content: space-between; align-items: center; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 18px;">Heredia<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F4A6D" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span><span style="display: block; font-size: 13px; color: #5D6673; margin-top: 4px;">12 × 3,8 m · hasta 120</span></button>
+            <button class="btn" type="button" role="radio" aria-checked="false" style="text-align: left; padding: 16px; border-radius: 16px; background: #F1EFEB; border: 1.5px solid #D6D3CD; color: #1D232B; font: inherit; cursor: pointer;"><span style="display: block; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 18px;">Getsemaní</span><span style="display: block; font-size: 13px; color: #5D6673; margin-top: 4px;">8 × 3,2 m · hasta 50</span></button>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;" role="radiogroup" aria-label="Montaje">
+            <button class="btn" type="button" role="radio" aria-checked="true" style="height: 40px; padding: 0 14px; border-radius: 999px; background: #1D232B; color: #F3F2F0; border: 0; font: inherit; font-weight: 800; font-size: 14px; cursor: pointer;">Auditorio · 120</button>
+            <button class="btn" type="button" role="radio" aria-checked="false" style="height: 40px; padding: 0 14px; border-radius: 999px; background: transparent; color: #5D6673; border: 1px solid #D6D3CD; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer;">Imperial · 40</button>
+            <button class="btn" type="button" role="radio" aria-checked="false" style="height: 40px; padding: 0 14px; border-radius: 999px; background: transparent; color: #5D6673; border: 1px solid #D6D3CD; font: inherit; font-weight: 700; font-size: 14px; cursor: pointer;">Espina de pescado · 80</button>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+            <div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 8px;">
+              <span style="font-size: 13px; font-weight: 700; color: #5D6673;" id="lbl-personas">Personas</span>
+              <div style="display: flex; align-items: center; gap: 8px;" role="group" aria-labelledby="lbl-personas">
+                <button class="btn" type="button" aria-label="Diez personas menos" onClick="{{ menosPersonas }}" style="width: 44px; height: 44px; border-radius: 12px; background: #F1EFEB; border: 1px solid #D6D3CD; color: #1D232B; font: inherit; font-size: 20px; font-weight: 800; cursor: pointer;">−</button>
+                <span style="min-width: 72px; text-align: center; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 28px; font-variant-numeric: tabular-nums;">{{ personas }}</span>
+                <button class="btn" type="button" aria-label="Diez personas más" onClick="{{ masPersonas }}" style="width: 44px; height: 44px; border-radius: 12px; background: #F1EFEB; border: 1px solid #D6D3CD; color: #1D232B; font: inherit; font-size: 20px; font-weight: 800; cursor: pointer;">+</button>
+              </div>
+              <div style="height: 8px; border-radius: 4px; background: #D6D3CD; overflow: hidden;"><div class="meter" style="height: 8px; border-radius: 4px; width: {{ aforoPct }}%; background: {{ aforoColor }};"></div></div>
+              <span style="font-size: 13px; font-weight: 700; color: {{ aforoColor }};">{{ aforoTexto }}</span>
+            </div>
+            <div style="flex: 1 1 180px; display: flex; flex-direction: column; gap: 8px;">
+              <label for="f-evento" style="font-size: 13px; font-weight: 700; color: #5D6673;">Fecha del evento</label>
+              <div class="field" style="display: flex; align-items: center; height: 48px; padding: 0 14px; border-radius: 12px; background: #F1EFEB; border: 1.5px solid #D6D3CD;"><input id="f-evento" type="date" value="2026-11-20" style="flex: 1; background: transparent; border: 0; outline: 0; color: #1D232B; font: inherit; font-size: 15px; color-scheme: dark;"></div>
+            </div>
+            <div style="flex: 1 1 180px; display: flex; flex-direction: column; gap: 8px;">
+              <label for="f-vigencia" style="font-size: 13px; font-weight: 700; color: #5D6673;">Válida hasta</label>
+              <div class="field" style="display: flex; align-items: center; height: 48px; padding: 0 14px; border-radius: 12px; background: #F1EFEB; border: 1.5px solid #D6D3CD;"><input id="f-vigencia" type="date" value="2026-10-25" style="flex: 1; background: transparent; border: 0; outline: 0; color: #1D232B; font: inherit; font-size: 15px; color-scheme: dark;"></div>
+            </div>
+          </div>
+          <sc-if value="{{ excede }}" hint-placeholder-val="{{ false }}">
+            <div role="alert" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 14px; background: rgba(238,138,99,0.12); border: 1px solid rgba(238,138,99,0.5); color: #8F3F1F; font-size: 14px; font-weight: 700;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2zM12 10v5M12 18h.01"/></svg>
+              El montaje Auditorio del salón Heredia admite 120 personas. Cambia a Bolívar o baja la cantidad para poder guardar.
+            </div>
+          </sc-if>
+        </section>
+
+        <section style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E2DE; padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;"><span style="width: 32px; height: 32px; border-radius: 16px; background: #2F4A6D; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 800;">3</span><h2 style="margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 22px;">Conceptos</h2></div>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 14px;">
+              <thead><tr style="text-align: left; color: #6E7581; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;">
+                <th scope="col" style="padding: 8px 8px 12px 0; font-weight: 800;">Concepto</th>
+                <th scope="col" style="padding: 8px 8px 12px; font-weight: 800;">Cantidad</th>
+                <th scope="col" style="padding: 8px 8px 12px; font-weight: 800; text-align: right;">Precio u.</th>
+                <th scope="col" style="padding: 8px 8px 12px; font-weight: 800; text-align: right;">Imp.</th>
+                <th scope="col" style="padding: 8px 8px 12px; font-weight: 800; text-align: right;">Total</th>
+                <th scope="col" style="padding: 8px 0 12px;"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Quitar</span></th>
+              </tr></thead>
+              <tbody>
+                <sc-for list="{{ lineas }}" as="l" hint-placeholder-count="3">
+                  <tr style="border-top: 1px solid #E4E2DE;">
+                    <td style="padding: 12px 8px 12px 0; font-weight: 800;">{{ l.nombre }}</td>
+                    <td style="padding: 12px 8px;"><div style="display: inline-flex; align-items: center; gap: 4px; border-radius: 12px; background: #F1EFEB; border: 1px solid #D6D3CD; padding: 2px;">
+                      <button class="btn" type="button" aria-label="Uno menos" onClick="{{ l.dec }}" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: #1D232B; font: inherit; font-size: 18px; font-weight: 800; cursor: pointer;">−</button>
+                      <span style="min-width: 36px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums;">{{ l.q }}</span>
+                      <button class="btn" type="button" aria-label="Uno más" onClick="{{ l.inc }}" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: #1D232B; font: inherit; font-size: 18px; font-weight: 800; cursor: pointer;">+</button>
+                    </div></td>
+                    <td style="padding: 12px 8px; text-align: right; color: #5D6673; font-variant-numeric: tabular-nums; white-space: nowrap;">{{ l.precioTxt }}</td>
+                    <td style="padding: 12px 8px; text-align: right;"><span style="font-size: 12px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: #F1EFEB; color: #5D6673;">{{ l.impTxt }}</span></td>
+                    <td style="padding: 12px 8px; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap;">{{ l.totalTxt }}</td>
+                    <td style="padding: 12px 0; text-align: right;"><button class="btn" type="button" aria-label="Quitar concepto" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: transparent; color: #6E7581; cursor: pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            <label class="field" style="flex: 1 1 300px; display: flex; align-items: center; height: 48px; padding: 0 14px; border-radius: 12px; background: #F1EFEB; border: 1.5px solid #D6D3CD;"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Agregar concepto</span><select style="flex: 1; background: transparent; border: 0; outline: 0; color: #1D232B; font: inherit; font-size: 15px; color-scheme: dark;"><option>Coffee break por persona · $ 25.000 · 8%</option><option>Decoración floral · $ 450.000 · 19%</option></select></label>
+            <button class="btn" type="button" style="height: 48px; padding: 0 18px; border-radius: 12px; background: #1D232B; color: #F3F2F0; border: 0; font: inherit; font-weight: 800; cursor: pointer;">Agregar</button>
+          </div>
+        </section>
+      </div>
+
+      <aside aria-label="Resumen de la cotización" style="flex: 1 1 340px; min-width: 0; border-radius: 22px; overflow: hidden; background: #FFFFFF; border: 1px solid #E4E2DE; box-shadow: 0 24px 48px -28px rgba(29,35,43,0.45);">
+        <div style="background: #2F4A6D; color: #FFFFFF; padding: 24px;">
+          <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;">Total con impuestos</div>
+          <div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 44px; letter-spacing: -0.03em; margin-top: 6px; font-variant-numeric: tabular-nums;">{{ totalTxt }}</div>
+        </div>
+        <div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; font-size: 14px;">
+          <div style="display: flex; justify-content: space-between;"><span style="color: #5D6673;">Subtotal</span><span style="font-weight: 800; font-variant-numeric: tabular-nums;">{{ subtotalTxt }}</span></div>
+          <div style="display: flex; justify-content: space-between;"><span style="color: #5D6673;">IVA 19%</span><span style="font-weight: 800; font-variant-numeric: tabular-nums;">{{ ivaTxt }}</span></div>
+          <div style="display: flex; justify-content: space-between;"><span style="color: #5D6673;">Impoconsumo 8%</span><span style="font-weight: 800; font-variant-numeric: tabular-nums;">{{ impoTxt }}</span></div>
+          <div style="height: 1px; background: #E4E2DE; margin: 4px 0;"></div>
+          <div style="display: flex; justify-content: space-between;"><span style="color: #5D6673;">Salón</span><span style="font-weight: 700;">Heredia · Auditorio</span></div>
+          <div style="display: flex; justify-content: space-between;"><span style="color: #5D6673;">Evento</span><span style="font-weight: 700;">20 nov 2026</span></div>
+          <div style="display: flex; justify-content: space-between;"><span style="color: #5D6673;">Válida hasta</span><span style="font-weight: 700; color: #9A6700;">25 oct 2026</span></div>
+          <a class="btn" href="DetalleCotizacion.dc.html" style="margin-top: 8px; display: flex; align-items: center; justify-content: center; height: 52px; border-radius: 14px; background: #2F4A6D; color: #FFFFFF; font-weight: 800; font-size: 15px; text-decoration: none;">Guardar cotización</a>
+          <a class="btn" href="CotizacionPDF.dc.html" style="display: flex; align-items: center; justify-content: center; height: 48px; border-radius: 14px; border: 1px solid #D6D3CD; color: #1D232B; font-weight: 800; font-size: 14px; text-decoration: none;">Vista previa para el cliente</a>
+          <p style="margin: 4px 0 0; font-size: 12px; color: #6E7581; line-height: 1.5;">El total final lo calcula el servidor al guardar; aquí se muestra una vista previa.</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+const NAV_SGDE = [
+  ['Operación', [
+    ['Inicio', 'Inicio.dc.html', 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z'],
+    ['Cotizaciones', 'Cotizaciones.dc.html', 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6'],
+    ['Calendario', 'Calendario.dc.html', 'M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3 10h18M8 3v4M16 3v4']
+  ]],
+  ['Catálogo', [
+    ['Salones', 'Salones.dc.html', 'M4 21V5l8-2 8 2v16M9 21v-6h6v6'],
+    ['Conceptos y precios', 'Conceptos.dc.html', 'M20 12l-8 8-9-9V3h8zM7.5 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z'],
+    ['Proveedores', 'Proveedores.dc.html', 'M3 6h11v10H3zM14 10h4l3 3v3h-7M7 16a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM17 16a2 2 0 1 0 0 4 2 2 0 0 0 0-4z']
+  ]],
+  ['Administración', [
+    ['Clientes', 'Clientes.dc.html', 'M9 4.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zM2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c2 .6 3.2 2.5 3.5 5.5'],
+    ['Sitios', 'Sitios.dc.html', 'M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12zM12 6.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z'],
+    ['Usuarios', 'Usuarios.dc.html', 'M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6zM9 12l2 2 4-4']
+  ]]
+];
+function navSgde(activo) {
+  return NAV_SGDE.map((s) => ({
+    titulo: s[0],
+    items: s[1].map((i) => {
+      const on = i[0] === activo;
+      return { label: i[0], href: i[1], d: i[2], current: on ? 'page' : 'false', bg: on ? 'rgba(238,138,99,0.16)' : 'transparent', fg: on ? '#1D232B' : '#5D6673', weight: on ? 800 : 600 };
+    })
+  }));
+}
+const PESOS = (n) => '$ ' + Math.round(n).toLocaleString('es-CO');
+const CONCEPTOS = [
+  { id: 'alquiler', nombre: 'Alquiler de salón (día)', precio: 3500000, imp: 19 },
+  { id: 'almuerzo', nombre: 'Almuerzo ejecutivo por persona', precio: 65000, imp: 8 },
+  { id: 'audio', nombre: 'Servicio de audio y video', precio: 800000, imp: 19 }
+];
+const AFORO = 120;
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { qty: { alquiler: 1, almuerzo: 80, audio: 1 }, personas: 80 };
+  }
+  cambiar(id, delta) {
+    const qty = Object.assign({}, this.state.qty);
+    qty[id] = Math.max(1, qty[id] + delta);
+    this.setState({ qty });
+  }
+  renderVals() {
+    let subtotal = 0, iva = 0, impo = 0;
+    const lineas = CONCEPTOS.map((c) => {
+      const q = this.state.qty[c.id];
+      const sub = q * c.precio;
+      const imp = Math.round(sub * c.imp / 100);
+      subtotal += sub;
+      if (c.imp === 19) iva += imp; else impo += imp;
+      return {
+        nombre: c.nombre, q, precioTxt: PESOS(c.precio), impTxt: c.imp + '%', totalTxt: PESOS(sub + imp),
+        inc: () => this.cambiar(c.id, 1), dec: () => this.cambiar(c.id, -1)
+      };
+    });
+    const personas = this.state.personas;
+    const excede = personas > AFORO;
+    return {
+      nav: navSgde('Cotizaciones'),
+      lineas,
+      personas,
+      excede,
+      aforoPct: Math.min(100, Math.round(personas / AFORO * 100)),
+      aforoColor: excede ? '#2F4A6D' : '#34A86A',
+      aforoTexto: excede ? 'Supera el aforo por ' + (personas - AFORO) + ' personas' : personas + ' de ' + AFORO + ' personas · quedan ' + (AFORO - personas) + ' cupos',
+      menosPersonas: () => this.setState({ personas: Math.max(10, personas - 10) }),
+      masPersonas: () => this.setState({ personas: personas + 10 }),
+      subtotalTxt: PESOS(subtotal), ivaTxt: PESOS(iva), impoTxt: PESOS(impo), totalTxt: PESOS(subtotal + iva + impo)
+    };
+  }
+}
+</script>
+</body>
+</html>
