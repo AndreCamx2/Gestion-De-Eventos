@@ -1,9 +1,15 @@
-import { EstadoVacio, Tarjeta } from "../../components/ui";
+import { Link } from "react-router-dom";
+import { Boton, EstadoVacio, Tarjeta } from "../../components/ui";
 import { fechaLarga } from "../../utils/inicioCifras";
 import ResumenProveedor from "./ResumenProveedor";
 
 const TEXTO_SIN_PANEL = {
-  cliente: "Pronto verás aquí tus cotizaciones y eventos.",
+  cliente: "Consulta las propuestas que te ha enviado tu asesor y el estado de tus eventos.",
+};
+
+// El cliente llega a "Mis cotizaciones" (SGDE-127) desde aquí.
+const ACCION_SIN_PANEL = {
+  cliente: <Boton as={Link} to="/mis-cotizaciones">Ver mis cotizaciones</Boton>,
 };
 
 export default function InicioSinPanel({ hoy, nombre, rol, stock, onReintentarStock }) {
@@ -25,6 +31,7 @@ export default function InicioSinPanel({ hoy, nombre, rol, stock, onReintentarSt
           <EstadoVacio
             titulo="Tu cuenta está activa"
             texto={TEXTO_SIN_PANEL[rol] ?? "Pronto verás aquí la información de tu cuenta."}
+            accion={ACCION_SIN_PANEL[rol]}
           />
         </Tarjeta>
       )}

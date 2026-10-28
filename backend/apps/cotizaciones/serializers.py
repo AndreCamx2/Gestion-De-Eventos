@@ -478,3 +478,35 @@ class MovimientoSerializer(serializers.ModelSerializer):
 
     def get_usuario(self, obj):
         return obj.usuario.username if obj.usuario else "sistema"
+
+
+# --- Salida: "Mis cotizaciones" del rol cliente (SGDE-126) ------------------
+# Los mismos datos que ve el administrador, menos los internos: quién creó la
+# cotización, quién registró la garantía o la cancelación, y la garantía mínima
+# (es una ayuda para quien registra la aceptación).
+
+CAMPOS_INTERNOS = ("creado_por", "cancelado_por", "garantia_minima")
+
+
+def sin_datos_internos(data):
+    for campo in CAMPOS_INTERNOS:
+        data.pop(campo, None)
+    if data.get("garantia"):
+        data["garantia"] = {k: v for k, v in data["garantia"].items() if k != "registrada_por"}
+    return data
+
+
+class MiCotizacionListaSerializer(CotizacionListaSerializer):
+    sitio_nombre = serializers.CharField(source="sitio.nombre", read_only=True)
+
+    class Meta(CotizacionListaSerializer.Meta):
+        fields = [*CotizacionListaSerializer.Meta.fields, "sitio_nombre"]
+        read_only_fields = fields
+
+    def to_representation(self, instance):
+        return sin_datos_internos(super().to_representation(instance))
+
+
+class MiCotizacionDetalleSerializer(CotizacionDetalleSerializer):
+    def to_representation(self, instance):
+        return sin_datos_internos(super().to_representation(instance))

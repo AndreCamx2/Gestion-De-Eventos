@@ -21,6 +21,9 @@ import Rack from "./pages/Rack";
 import Calendario from "./pages/Calendario";
 import MiStock from "./pages/MiStock";
 import MiPerfil from "./pages/MiPerfil";
+import MisCotizaciones from "./pages/MisCotizaciones";
+import MiCotizacion from "./pages/MiCotizacion";
+import { getMiCotizacion } from "./api/misCotizaciones";
 import { getUsuarioActual, logout } from "./api/auth";
 import {
   ProtectedRoute,
@@ -110,6 +113,10 @@ export default function App() {
         <Route element={<ProtectedRoute user={user} cargando={cargando} />}>
           <Route element={<RoleRoute user={user} />}>
             <Route path="/cotizaciones/:id/imprimir" element={<ImprimirCotizacion />} />
+            <Route
+              path="/mis-cotizaciones/:id/imprimir"
+              element={<ImprimirCotizacion cargar={getMiCotizacion} rutaDetalle={(id) => `/mis-cotizaciones/${id}`} />}
+            />
           </Route>
 
           {/* Y todo lo de aquí adentro comparte la misma barra superior */}
@@ -137,6 +144,8 @@ export default function App() {
               <Route path="/proveedores" element={<Proveedores />} />
               <Route path="/rack" element={<Rack />} />
               <Route path="/calendario" element={<Calendario />} />
+              <Route path="/mis-cotizaciones" element={<MisCotizaciones />} />
+              <Route path="/mis-cotizaciones/:id" element={<MiCotizacion />} />
               <Route path="/mi-stock" element={<MiStock />} />
               <Route path="/mi-perfil" element={<MiPerfil />} />
             </Route>

@@ -24,7 +24,7 @@ from apps.clientes.views import (
 from apps.cotizaciones.views import (
     CotizacionCalendarioView, CotizacionListCreateView, CotizacionDetailView, CotizacionAceptacionView,
     CotizacionBloqueoView, CotizacionCancelacionView, CotizacionMovimientosView,
-    CotizacionAnulacionView, CotizacionEdicionView,
+    CotizacionAnulacionView, CotizacionEdicionView, MisCotizacionesView, MiCotizacionDetalleView,
 )
 
 urlpatterns = [
@@ -65,6 +65,8 @@ urlpatterns = [
     path('api/stock/<int:pk>/', StockElementoDetailView.as_view(), name='stock_detail'),
     path('api/mi-stock/', MiStockListCreateView.as_view(), name='mi_stock_list_create'),
     path('api/mi-stock/<int:pk>/', MiStockDetailView.as_view(), name='mi_stock_detail'),
+    path('api/mis-cotizaciones/', MisCotizacionesView.as_view(), name='mis_cotizaciones'),
+    path('api/mis-cotizaciones/<int:pk>/', MiCotizacionDetalleView.as_view(), name='mi_cotizacion_detalle'),
     path('api/cotizaciones/', CotizacionListCreateView.as_view(), name='cotizacion_list_create'),
     path('api/cotizaciones/<int:pk>/', CotizacionDetailView.as_view(), name='cotizacion_detail'),
     path('api/cotizaciones/<int:pk>/aceptacion/', CotizacionAceptacionView.as_view(), name='cotizacion_aceptacion'),

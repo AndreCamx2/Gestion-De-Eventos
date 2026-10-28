@@ -112,9 +112,9 @@ describe("Inicio según el rol (SGDE-128)", () => {
     expect(pidioMiStock(llamadas)).toBe(false);
   });
 
-  it("el cliente conserva su aviso y no pide /mi-stock/", async () => {
+  it("el cliente ve el acceso a Mis cotizaciones y no pide /mi-stock/", async () => {
     const llamadas = abrirInicio("cliente");
-    expect(await screen.findByText("Pronto verás aquí tus cotizaciones y eventos.")).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Ver mis cotizaciones" })).toHaveAttribute("href", "/mis-cotizaciones");
     expect(pidioMiStock(llamadas)).toBe(false);
   });
 });
