@@ -17,7 +17,7 @@ from apps.salones.models import Montaje, Salon, SalonMontaje
 from apps.sitios.models import Ciudad, Sitio
 from apps.usuarios.models import Rol, Usuario
 
-from .models import Cotizacion, CotizacionItem, MovimientoCotizacion
+from .models import Cotizacion, CotizacionItem, GrupoEvento, MovimientoCotizacion, TipoEvento
 from .services import totales_linea
 
 PASSWORD = "Clave-Segura-123"
@@ -79,12 +79,15 @@ class CotizacionBaseTest(APITestCase):
         cls.de_otro_sitio = Concepto.objects.create(
             sitio=cls.otro_sitio, nombre="Almuerzo finca", precio=Decimal("30000.00")
         )
+        cls.grupo_evento = GrupoEvento.objects.create(nombre="Grupo Test", orden=1)
+        cls.tipo_evento = TipoEvento.objects.create(nombre="Tipo Test", grupo=cls.grupo_evento)
 
     def payload(self, **cambios):
         datos = {
             "cliente": self.cliente.pk,
             "salon": self.salon.pk,
             "montaje": self.montaje.pk,
+            "tipo_evento": self.tipo_evento.pk,
             "fecha_evento": str(hoy() + timedelta(days=40)),
             "cantidad_personas": 80,
             "validez_oferta": str(hoy() + timedelta(days=10)),

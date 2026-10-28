@@ -305,10 +305,15 @@ class BajaDeSalonTests(BaseSalonesTests):
         self.assertTrue(self.salon.activo)
 
     def test_un_salon_inactivo_no_se_puede_cotizar(self):
+        from apps.cotizaciones.models import GrupoEvento, TipoEvento
+        grupo = GrupoEvento.objects.create(nombre="Test", orden=1)
+        tipo = TipoEvento.objects.create(nombre="Test Tipo", grupo=grupo)
+
         concepto = Concepto.objects.create(sitio=self.sitio, nombre="Almuerzo", precio=Decimal("1000"))
         self.baja()
         r = self.client.post("/api/cotizaciones/", {
             "cliente": self.cliente.pk, "salon": self.salon.pk, "montaje": self.auditorio.pk,
+            "tipo_evento": tipo.pk,  # <--- Línea nueva
             "fecha_evento": str(timezone.localdate() + timedelta(days=30)), "cantidad_personas": 10,
             "items": [{"concepto": concepto.pk, "cantidad": 1}],
         }, format="json")

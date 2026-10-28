@@ -18,6 +18,7 @@ from apps.clientes.models import Cliente
 from apps.cotizaciones.models import Cotizacion, CotizacionItem
 from apps.salones.models import Montaje, Salon, SalonMontaje
 from apps.usuarios.models import Rol, Usuario
+from apps.cotizaciones.models import GrupoEvento, TipoEvento
 
 from .models import Ciudad, Sitio
 
@@ -46,6 +47,8 @@ class MultiSitioBaseTest(APITestCase):
         cls.cliente = Cliente.objects.create(tipo="natural", nombre="Ana Pérez", identificacion="1047000111")
         cls.a = cls.crear_sitio("Hotel A")
         cls.b = cls.crear_sitio("Finca B")
+        cls.grupo_evento = GrupoEvento.objects.create(nombre="Test", orden=1)
+        cls.tipo_evento = TipoEvento.objects.create(nombre="Test Tipo", grupo=cls.grupo_evento)
 
         cls.admin_a = crear_usuario("admin_a@test.com", sitios=[cls.a["sitio"]])
         cls.admin_b = crear_usuario("admin_b@test.com", sitios=[cls.b["sitio"]])
@@ -86,10 +89,10 @@ class MultiSitioBaseTest(APITestCase):
     def payload_cotizacion(self, salon, concepto):
         return {
             "cliente": self.cliente.pk, "salon": salon.pk, "montaje": self.montaje.pk,
+            "tipo_evento": self.tipo_evento.pk, 
             "fecha_evento": str(timezone.localdate() + timedelta(days=40)), "cantidad_personas": 10,
             "items": [{"concepto": concepto.pk, "cantidad": 1}],
         }
-
     def listas(self, d):
         """(url, ids esperados de un sitio) para cada lista filtrada por sitio."""
         return [
