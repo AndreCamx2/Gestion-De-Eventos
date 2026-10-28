@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Proveedor, StockElemento
+from .models import HistorialStockElemento, Proveedor, StockElemento
 
 
 class ProveedorSerializer(serializers.ModelSerializer):
@@ -70,3 +70,15 @@ class MiStockSerializer(StockElementoSerializer):
         if self.instance is None and proveedor.stock.filter(nombre_elemento=nombre).exists():
             raise serializers.ValidationError("Ya tienes un elemento con este nombre: edítalo.")
         return nombre
+
+
+class HistorialStockElementoSerializer(serializers.ModelSerializer):
+    modificado_por = serializers.CharField(source="modificado_por.username", read_only=True)
+
+    class Meta:
+        model = HistorialStockElemento
+        fields = [
+            "id", "elemento", "cantidad_anterior", "cantidad_nueva", "valor_anterior", "valor_nuevo",
+            "modificado_por", "fecha_modificacion",
+        ]
+        read_only_fields = fields
