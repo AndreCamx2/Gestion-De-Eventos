@@ -71,6 +71,36 @@ class EsClienteOProveedor(BasePermission):
         return True
 
 
+CODIGO_NO_ES_CLIENTE = "no_es_cliente"
+
+
+class EsCliente(BasePermission):
+    """
+    Permite el acceso solo a usuarios con rol "cliente" que tienen un Cliente
+    vinculado (Cliente.usuario). Lo usa "Mis cotizaciones" (SGDE-126).
+
+    Como EsProveedor, el 403 trae {"detail", "codigo"} para que el frontend sepa
+    si el usuario no es cliente o si todavía no lo han vinculado.
+    """
+
+    def has_permission(self, request, view):
+        usuario = request.user
+        if not (usuario and usuario.is_authenticated):
+            return False
+        if usuario.rol.codigo != "cliente":
+            raise PermissionDenied({
+                "detail": "Solo los clientes pueden realizar esta acción.",
+                "codigo": CODIGO_NO_ES_CLIENTE,
+            })
+        if getattr(usuario, "cliente", None) is None:
+            raise PermissionDenied({
+                "detail": "Tu usuario todavía no está vinculado a un cliente. "
+                          "Pídele al administrador que lo vincule.",
+                "codigo": CODIGO_CLIENTE_SIN_VINCULAR,
+            })
+        return True
+
+
 class TienePerfilVinculado(EsClienteOProveedor):
     def has_permission(self, request, view):
         if not super().has_permission(request, view):

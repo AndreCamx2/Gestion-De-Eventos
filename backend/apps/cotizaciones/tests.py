@@ -1408,3 +1408,76 @@ class FormatoGarantiaEnMovimientoTests(CotizacionBaseTest):
         self.assertEqual(
             self.client.get(movimientos(cot.pk)).data[-1]["detalle"], "Garantía: transferencia, $ 1.000.000."
         )
+
+
+MIS_COTIZACIONES = "/api/mis-cotizaciones/"
+
+
+class MisCotizacionesTests(CotizacionBaseTest):
+    """SGDE-126: el cliente ve solo sus cotizaciones, sin datos internos y sin poder cambiarlas."""
+
+    def setUp(self):
+        Cliente.objects.filter(pk=self.cliente.pk).update(usuario=self.cliente_user)
+        self.otro_cliente = Cliente.objects.create(
+            tipo="natural", nombre="Luis Gómez", identificacion="1047000222", correo="luis@test.com"
+        )
+        self.mia = self.crear_en_bd()
+        self.ajena = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=31))
+        Cotizacion.objects.filter(pk=self.ajena.pk).update(cliente=self.otro_cliente)
+        self.client.force_authenticate(user=self.cliente_user)
+
+    def test_sin_token_401_y_otros_roles_403_con_codigo(self):
+        self.client.force_authenticate(user=None)
+        self.assertEqual(self.client.get(MIS_COTIZACIONES).status_code, status.HTTP_401_UNAUTHORIZED)
+        for usuario in (self.admin, self.proveedor_user):
+            self.client.force_authenticate(user=usuario)
+            with self.subTest(rol=usuario.rol.codigo):
+                r = self.client.get(MIS_COTIZACIONES)
+                self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+                self.assertEqual(r.data["codigo"], "no_es_cliente")
+
+    def test_cliente_sin_vincular_403(self):
+        self.client.force_authenticate(user=crear_usuario("nuevo@test.com", "cliente"))
+        r = self.client.get(MIS_COTIZACIONES)
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(r.data["codigo"], "cliente_sin_vincular")
+
+    def test_la_lista_trae_solo_las_suyas(self):
+        r = self.client.get(MIS_COTIZACIONES)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual([c["id"] for c in r.data], [self.mia.pk])
+        self.assertEqual(r.data[0]["sitio_nombre"], "Hotel Caribe")
+        self.assertEqual(r.data[0]["total"], "2430000.00")
+
+    def test_el_detalle_de_una_ajena_da_404(self):
+        self.assertEqual(self.client.get(f"{MIS_COTIZACIONES}{self.ajena.pk}/").status_code, status.HTTP_404_NOT_FOUND)
+        r = self.client.get(f"{MIS_COTIZACIONES}{self.mia.pk}/")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(r.data["items"]), 1)
+        self.assertEqual(r.data["cliente"]["nombre"], "Ana Pérez")
+
+    def test_no_trae_datos_internos(self):
+        self.client.force_authenticate(user=self.admin)
+        self.client.post(f"{detalle(self.mia.pk)}aceptacion/", {"tipo": "efectivo", "monto": "1000000"}, format="json")
+        self.client.force_authenticate(user=self.cliente_user)
+
+        fila = self.client.get(MIS_COTIZACIONES).data[0]
+        datos = self.client.get(f"{MIS_COTIZACIONES}{self.mia.pk}/").data
+        for respuesta in (fila, datos):
+            with self.subTest(respuesta="lista" if respuesta is fila else "detalle"):
+                for campo in ("creado_por", "cancelado_por", "garantia_minima"):
+                    self.assertNotIn(campo, respuesta)
+                self.assertEqual(respuesta["garantia"]["monto"], "1000000.00")
+                self.assertNotIn("registrada_por", respuesta["garantia"])
+
+    def test_es_solo_lectura(self):
+        url = f"{MIS_COTIZACIONES}{self.mia.pk}/"
+        self.assertEqual(self.client.post(MIS_COTIZACIONES, self.payload(), format="json").status_code,
+                         status.HTTP_405_METHOD_NOT_ALLOWED)
+        for metodo in (self.client.patch, self.client.put, self.client.delete):
+            with self.subTest(metodo=metodo.__name__):
+                self.assertEqual(metodo(url, {}, format="json").status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        # Las rutas del administrador siguen cerradas para el cliente.
+        self.assertEqual(self.client.get(detalle(self.mia.pk)).status_code, status.HTTP_403_FORBIDDEN)
+        r = self.client.post(f"{detalle(self.mia.pk)}aceptacion/", {"tipo": "efectivo", "monto": "1000000"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)

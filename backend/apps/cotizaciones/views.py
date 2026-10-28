@@ -7,14 +7,14 @@ from rest_framework.response import Response
 
 from apps.core.exceptions import Conflicto
 from apps.sitios.acceso import filtrar_por_sitio
-from apps.usuarios.permissions import EsAdministrador
+from apps.usuarios.permissions import EsAdministrador, EsCliente
 
 from . import estados
 from .models import Cotizacion
 from .serializers import (
     AceptacionSerializer, AnulacionSerializer, BloqueoSerializer, CancelacionSerializer, CotizacionCalendarioSerializer,
     CotizacionCrearSerializer, CotizacionDetalleSerializer, CotizacionListaSerializer, CotizacionVigenciaSerializer,
-    MovimientoSerializer,
+    MiCotizacionDetalleSerializer, MiCotizacionListaSerializer, MovimientoSerializer,
 )
 
 
@@ -282,3 +282,29 @@ class CotizacionMovimientosView(generics.ListAPIView):
     def get_queryset(self):
         cotizacion = get_object_or_404(filtrar_por_sitio(Cotizacion.objects.all(), self.request.user), pk=self.kwargs["pk"])
         return cotizacion.movimientos.select_related("usuario")
+
+
+# --- "Mis cotizaciones" del rol cliente (SGDE-126) ----------------------------
+
+def mis_cotizaciones(usuario):
+    """Solo las del Cliente vinculado al usuario: el filtro sale del token, nunca
+    de un id que mande el frontend. Una cotización de otro cliente da 404."""
+    return cotizaciones_con_relaciones().filter(cliente__usuario=usuario)
+
+
+class MisCotizacionesView(generics.ListAPIView):
+    """Las cotizaciones del cliente que inició sesión, por fecha del evento. Solo lectura."""
+
+    serializer_class = MiCotizacionListaSerializer
+    permission_classes = [permissions.IsAuthenticated, EsCliente]
+
+    def get_queryset(self):
+        return mis_cotizaciones(self.request.user).order_by("fecha_evento", "id")
+
+
+class MiCotizacionDetalleView(generics.RetrieveAPIView):
+    serializer_class = MiCotizacionDetalleSerializer
+    permission_classes = [permissions.IsAuthenticated, EsCliente]
+
+    def get_queryset(self):
+        return mis_cotizaciones(self.request.user)
