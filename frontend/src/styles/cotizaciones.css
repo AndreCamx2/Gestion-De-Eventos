@@ -124,7 +124,8 @@
 }
 
 .cotizaciones-buscar,
-.cotizaciones-fecha {
+.cotizaciones-fecha,
+.cotizaciones-evento {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -175,15 +176,61 @@
     font-weight: var(--peso-semi);
 }
 
+.cotizaciones-evento {
+    flex-wrap: wrap;
+    gap: 4px 8px;
+}
+
+.cotizaciones-evento__etiqueta {
+    color: var(--color-texto-suave);
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-semi);
+    white-space: nowrap;
+}
+
+.cotizaciones-evento__control {
+    min-width: 120px;
+    min-height: 40px;
+    border: 0;
+    background: transparent;
+    color: var(--color-texto);
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: var(--peso-semi);
+}
+
+.cotizaciones-evento__control:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
 .cotizaciones-buscar:focus-within,
-.cotizaciones-fecha:focus-within {
+.cotizaciones-fecha:focus-within,
+.cotizaciones-evento:focus-within {
     border-color: var(--color-tinta);
     box-shadow: var(--anillo-campo);
 }
 
 .cotizaciones-buscar__input:focus-visible,
-.cotizaciones-fecha__input:focus-visible {
+.cotizaciones-fecha__input:focus-visible,
+.cotizaciones-evento__control:focus-visible {
     outline: none;
+}
+
+.cotizaciones-filtros__error {
+    margin: 0;
+    color: var(--color-peligro);
+    font-size: var(--texto-etiqueta);
+}
+
+.cotizaciones-filtros__error button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: var(--peso-negrita);
+    text-decoration: underline;
 }
 
 .cotizaciones-tabla td {
@@ -194,6 +241,17 @@
 
 .cotizaciones-tabla .cotizaciones-tabla__num {
     text-align: right;
+}
+
+.cotizaciones-tabla__tipo {
+    min-width: 150px;
+    white-space: normal !important;
+}
+
+.cotizaciones-tabla__grupo {
+    display: block;
+    color: var(--color-texto-tenue);
+    font-size: var(--texto-pequeno);
 }
 
 .cotizaciones-tabla__numero {

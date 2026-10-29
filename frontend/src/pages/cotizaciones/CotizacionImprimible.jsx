@@ -47,7 +47,7 @@ function agruparImpuestos(items) {
 // nivelTitulo: "h1" en la página para imprimir; dentro de una ventana, uno menor.
 export default function CotizacionImprimible({ cotizacion, nivelTitulo: Titulo = "h1" }) {
   const {
-    numero, emitidaEn, validaHasta, fechaEvento, personas,
+    numero, emitidaEn, validaHasta, fechaEvento, personas, tipoEvento,
     sitio, cliente, salon, montaje, items = [], subtotal, total,
   } = cotizacion;
 
@@ -90,6 +90,7 @@ export default function CotizacionImprimible({ cotizacion, nivelTitulo: Titulo =
             <p>
               {personas} personas{salon?.aforo ? ` (aforo ${salon.aforo})` : ""}
             </p>
+            <p>Tipo de evento: {tipoEvento || "Sin clasificar"}</p>
           </div>
         </section>
 

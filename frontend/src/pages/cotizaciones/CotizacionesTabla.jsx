@@ -2,10 +2,6 @@ import { Link } from "react-router-dom";
 import { EstadoBadge, TablaContenedor } from "../../components/ui";
 import { estadoVisible, fechaCorta, numeroCotizacion, pesos, vigencia } from "./cotizaciones";
 
-// Tabla de cotizaciones (maqueta Cotizaciones.dc.html). La garantía y el bloqueo
-// no tienen columna propia: van como nota debajo de la vigencia.
-// - cotizaciones: las que pasan los filtros; total: cuántas se cargaron.
-// - hoy: fecha local de hoy, para contar los días de vigencia.
 export default function CotizacionesTabla({ cotizaciones, total, hoy }) {
   return (
     <TablaContenedor etiqueta="Listado de cotizaciones">
@@ -15,6 +11,7 @@ export default function CotizacionesTabla({ cotizaciones, total, hoy }) {
             <th scope="col">N.º</th>
             <th scope="col">Cliente</th>
             <th scope="col">Salón y montaje</th>
+            <th scope="col">Tipo de evento</th>
             <th scope="col">Evento</th>
             <th scope="col" className="cotizaciones-tabla__num">Personas</th>
             <th scope="col">Vigencia</th>
@@ -33,6 +30,12 @@ export default function CotizacionesTabla({ cotizaciones, total, hoy }) {
                 </td>
                 <td className="cotizaciones-tabla__suave">
                   {c.salon_nombre} · {c.montaje_nombre}
+                </td>
+                <td className="cotizaciones-tabla__tipo">
+                  <span>{c.tipo_evento?.nombre || "Sin clasificar"}</span>
+                  {c.grupo_evento?.nombre && (
+                    <small className="cotizaciones-tabla__grupo">{c.grupo_evento.nombre}</small>
+                  )}
                 </td>
                 <td>{fechaCorta(c.fecha_evento)}</td>
                 <td className="cotizaciones-tabla__num">{c.cantidad_personas}</td>

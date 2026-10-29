@@ -7,6 +7,7 @@ export function adaptarCotizacion(cotizacion) {
     validaHasta: cotizacion.validez_oferta,
     fechaEvento: cotizacion.fecha_evento,
     personas: cotizacion.cantidad_personas,
+    tipoEvento: cotizacion.tipo_evento?.nombre || "Sin clasificar",
     sitio: cotizacion.sitio ? { nombre: cotizacion.sitio.nombre } : null,
     cliente: cotizacion.cliente
       ? {
@@ -40,8 +41,11 @@ export function adaptarCotizacion(cotizacion) {
 // La cotización que se está armando, para la vista previa antes de guardar.
 // Una nueva va sin número; al editar lleva el de la guardada. Los totales de useNuevaCotizacion
 // vienen en centavos; la hoja recibe pesos.
-export function adaptarBorrador({ form, salon, montaje, lineas, totales, vigencia, original }) {
+export function adaptarBorrador({ form, salon, montaje, lineas, totales, vigencia, original, tiposEvento = [] }) {
   const enPesos = (centavos) => centavos / 100;
+  const tipoEvento = tiposEvento
+    .flatMap((grupo) => grupo.tipos)
+    .find((tipo) => String(tipo.id) === String(form.tipo_evento));
   return {
     // Al editar, la hoja lleva el número de la cotización que se está cambiando.
     numero: original?.id ?? null,
@@ -49,6 +53,7 @@ export function adaptarBorrador({ form, salon, montaje, lineas, totales, vigenci
     validaHasta: vigencia,
     fechaEvento: form.fecha_evento || null,
     personas: Number(form.cantidad_personas) || 0,
+    tipoEvento: tipoEvento?.nombre || "Sin clasificar",
     sitio: salon?.sitio_nombre ? { nombre: salon.sitio_nombre } : null,
     cliente: form.cliente
       ? {

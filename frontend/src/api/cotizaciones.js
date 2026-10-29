@@ -1,13 +1,17 @@
 import { apiFetch } from "./client";
 import { todasLasPaginas } from "./listas";
 
-export async function getCotizaciones({ desde, hasta, estado, cliente, salon } = {}) {
+export async function getCotizaciones({
+    desde, hasta, estado, cliente, salon, tipo_evento: tipoEvento, grupo_evento: grupoEvento,
+} = {}) {
     const params = new URLSearchParams();
     if (desde) params.append("desde", desde);
     if (hasta) params.append("hasta", hasta);
     if (estado) params.append("estado", estado);
     if (cliente) params.append("cliente", cliente);
     if (salon) params.append("salon", salon);
+    if (tipoEvento) params.append("tipo_evento", tipoEvento);
+    if (grupoEvento) params.append("grupo_evento", grupoEvento);
     const query = params.toString();
     return todasLasPaginas(`/cotizaciones/${query ? `?${query}` : ""}`);
 }

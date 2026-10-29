@@ -122,3 +122,18 @@ describe("Vista imprimible (SGDE-70)", () => {
     expect(enlace).not.toHaveAttribute("target");
   });
 });
+
+describe("Tipo de evento en el detalle (SGDE-143)", () => {
+  it("muestra el tipo clasificado y marca las cotizaciones antiguas como Sin clasificar", async () => {
+    abrirDetalle({
+      "GET /cotizaciones/7/": [200, {
+        ...BASE,
+        tipo_evento: { id: 2, nombre: "Boda", grupo: { id: 1, nombre: "Social" } },
+      }],
+    });
+    expect(await screen.findByText("Boda")).toBeInTheDocument();
+
+    abrirDetalle({ "GET /cotizaciones/7/": [200, BASE] });
+    expect(await screen.findByText("Sin clasificar")).toBeInTheDocument();
+  });
+});

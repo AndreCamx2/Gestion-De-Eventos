@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { getCotizaciones } from "../api/cotizaciones";
+import { listarTiposEvento } from "../api/tiposEvento";
 import {
   AvisoError,
   Boton,
@@ -26,7 +27,6 @@ import "../styles/cotizaciones.css";
 // Pantalla de Cotizaciones: carga, filtros y qué vista se muestra. Las cifras,
 // la tabla y los formatos viven en pages/cotizaciones/.
 export default function Cotizaciones() {
-  // Regla: las cifras resumen TODAS las cotizaciones; los filtros (estado,
   // búsqueda y fechas del evento) solo afectan la tabla.
   // - todas: lista sin filtro de fechas, para las cifras.
   // - cotizaciones: lista de la tabla (con el filtro de fechas, si lo hay).
@@ -43,26 +43,56 @@ export default function Cotizaciones() {
   const [busqueda, setBusqueda] = useState("");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
-
-  // Cada cambio de fecha lanza una carga. Si una vieja (por ejemplo, solo con
-  // "desde") responde después de la nueva, se descarta: solo vale la última.
+  const [grupoEvento, setGrupoEvento] = useState("");
+  const [tipoEvento, setTipoEvento] = useState("");
+  const [gruposEvento, setGruposEvento] = useState([]);
+  const [cargandoTiposEvento, setCargandoTiposEvento] = useState(true);
+  const [errorTiposEvento, setErrorTiposEvento] = useState(null);
   const ultimaPeticionRef = useRef(0);
 
-  // Sin fechas, una sola petición sirve para las cifras y la tabla. Con fechas,
-  // una sin fechas para las cifras y otra con fechas para la tabla.
+  const cargarTiposEvento = useCallback(async () => {
+    setCargandoTiposEvento(true);
+    setErrorTiposEvento(null);
+    try {
+      setGruposEvento(await listarTiposEvento());
+    } catch (error) {
+      setGruposEvento([]);
+      setErrorTiposEvento(
+        error?.status === 401
+          ? "Tu sesión expiró. Vuelve a entrar para filtrar por tipo de evento."
+          : error?.status === 403
+            ? "No tienes permiso para consultar el catálogo de tipos de evento."
+            : "No pudimos cargar los tipos de evento. Inténtalo de nuevo.",
+      );
+      if (error?.status === 401) setSesionVencida(true);
+    } finally {
+      setCargandoTiposEvento(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    cargarTiposEvento();
+  }, [cargarTiposEvento]);
+
+  // una sin filtros para las cifras y otra filtrada para la tabla.
   const cargarDatos = useCallback(async () => {
     const peticion = ++ultimaPeticionRef.current;
-    const conFechas = Boolean(desde || hasta);
+    const conFiltrosTabla = Boolean(desde || hasta || grupoEvento || tipoEvento);
     setCargando(true);
     setErrorCarga(null);
     const [deTodas, deTabla] = await Promise.allSettled([
       getCotizaciones(),
-      conFechas ? getCotizaciones({ desde, hasta }) : null,
+      conFiltrosTabla ? getCotizaciones({
+        desde,
+        hasta,
+        grupo_evento: grupoEvento,
+        tipo_evento: tipoEvento,
+      }) : null,
     ]);
     if (peticion !== ultimaPeticionRef.current) return;
 
     const lista = (r) => (Array.isArray(r.value) ? r.value : []);
-    const tabla = conFechas ? deTabla : deTodas;
+    const tabla = conFiltrosTabla ? deTabla : deTodas;
     if (deTodas.status === "fulfilled") {
       setTodas(lista(deTodas));
       setTodasCargadas(true);
@@ -75,7 +105,7 @@ export default function Cotizaciones() {
     setErrorCarga(tipoTabla);
     if (tipoCifras === "sesion" || tipoTabla === "sesion") setSesionVencida(true);
     setCargando(false);
-  }, [desde, hasta]);
+  }, [desde, hasta, grupoEvento, tipoEvento]);
 
   useEffect(() => {
     cargarDatos();
@@ -83,6 +113,7 @@ export default function Cotizaciones() {
 
   function alVolverAEntrar() {
     setSesionVencida(false);
+    if (errorTiposEvento?.startsWith("Tu sesión")) cargarTiposEvento();
     if (errorCarga === "sesion" || errorCifras === "sesion") cargarDatos();
   }
 
@@ -101,13 +132,16 @@ export default function Cotizaciones() {
     });
   }, [cotizaciones, filtro, busqueda]);
 
-  const hayFiltros = filtro !== "todas" || busqueda.trim() !== "" || desde !== "" || hasta !== "";
+  const hayFiltros = filtro !== "todas" || busqueda.trim() !== "" || desde !== "" || hasta !== ""
+    || grupoEvento !== "" || tipoEvento !== "";
 
   function quitarFiltros() {
     setFiltro("todas");
     setBusqueda("");
     setDesde("");
     setHasta("");
+    setGrupoEvento("");
+    setTipoEvento("");
   }
 
   let vista = "lista";
@@ -115,12 +149,10 @@ export default function Cotizaciones() {
   else if (errorCarga === "fechas") vista = "fechas";
   else if (errorCarga === "sesion") vista = "sesion";
   else if (cargando) vista = "carga";
-  else if (cotizaciones.length === 0 && !desde && !hasta) vista = "vacio";
+  else if (cotizaciones.length === 0 && !desde && !hasta && !grupoEvento && !tipoEvento) vista = "vacio";
   else if (filtradas.length === 0) vista = "sinCoincidencias";
 
-  // Los conteos de los botones de estado son de la tabla; las cifras, de todas.
   const sinConteos = vista === "error" || vista === "sesion" || vista === "carga" || vista === "fechas";
-  // Mientras se recarga se siguen viendo las cifras anteriores: no dependen de las fechas.
   const cifrasVisibles = todasCargadas && !errorCifras;
 
   return (
@@ -160,6 +192,41 @@ export default function Cotizaciones() {
         </div>
 
         <div className="cotizaciones-campos">
+          <label className="cotizaciones-evento">
+            <span className="cotizaciones-evento__etiqueta">Grupo de evento</span>
+            <select
+              className="cotizaciones-evento__control"
+              value={grupoEvento}
+              onChange={(evento) => {
+                setGrupoEvento(evento.target.value);
+                setTipoEvento("");
+              }}
+              disabled={cargandoTiposEvento || Boolean(errorTiposEvento)}
+            >
+              <option value="">Todos los grupos</option>
+              {gruposEvento.map((grupo) => (
+                <option key={grupo.id} value={String(grupo.id)}>{grupo.nombre}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="cotizaciones-evento">
+            <span className="cotizaciones-evento__etiqueta">Tipo de evento</span>
+            <select
+              className="cotizaciones-evento__control"
+              value={tipoEvento}
+              onChange={(evento) => setTipoEvento(evento.target.value)}
+              disabled={cargandoTiposEvento || Boolean(errorTiposEvento)}
+            >
+              <option value="">Todos los tipos</option>
+              {gruposEvento
+                .filter((grupo) => !grupoEvento || String(grupo.id) === grupoEvento)
+                .flatMap((grupo) => grupo.tipos.map((tipo) => (
+                  <option key={tipo.id} value={String(tipo.id)}>{tipo.nombre}</option>
+                )))}
+            </select>
+          </label>
+
           <label className="cotizaciones-buscar">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <circle cx="11" cy="11" r="7" />
@@ -197,6 +264,12 @@ export default function Cotizaciones() {
             />
           </label>
         </div>
+        {errorTiposEvento && (
+          <p className="cotizaciones-filtros__error" role="alert">
+            {errorTiposEvento}{" "}
+            <button type="button" onClick={cargarTiposEvento}>Reintentar</button>
+          </p>
+        )}
       </div>
 
       {vista === "error" && (
@@ -208,8 +281,8 @@ export default function Cotizaciones() {
       {vista === "fechas" && (
         <Tarjeta>
           <EstadoVacio
-            titulo="Revisa las fechas del evento"
-            texto="Una de las fechas no es válida. Corrígela o quita el filtro de fechas."
+            titulo="Revisa los filtros de cotizaciones"
+            texto="Uno de los filtros no es válido. Corrígelo o quita los filtros."
             accion={<Boton variante="secundario" onClick={quitarFiltros}>Quitar filtros</Boton>}
           />
         </Tarjeta>

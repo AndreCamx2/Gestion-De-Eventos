@@ -15,6 +15,7 @@ const COTIZACION = {
   cliente: { id: 2, nombre: "María Ríos", identificacion: "1047338221", correo: "maria@example.com" },
   salon: { id: 3, nombre: "Salón Bolívar" },
   montaje: { id: 4, nombre: "Auditorio" },
+  tipo_evento: { id: 20, nombre: "Boda", grupo: { id: 2, nombre: "Social" } },
   aforo: 300,
   items: [{
     id: 5,
@@ -54,6 +55,7 @@ describe("Cotización imprimible (SGDE-70)", () => {
 
     expect(await screen.findByRole("heading", { name: "Cotización #042" })).toBeInTheDocument();
     expect(screen.getByText("Hotel Cartagena")).toBeInTheDocument();
+    expect(screen.getByText("Tipo de evento: Boda")).toBeInTheDocument();
     expect(screen.getByText("María Ríos")).toBeInTheDocument();
     expect(screen.getByText("maria@example.com")).toBeInTheDocument();
     expect(screen.getByText(/Salón Bolívar · montaje Auditorio/)).toBeInTheDocument();
@@ -67,6 +69,12 @@ describe("Cotización imprimible (SGDE-70)", () => {
     expect(screen.getByText(/90\.000/)).toBeInTheDocument();
     const totales = screen.getByRole("region", { name: "Totales" });
     expect(within(totales).getByText("Impoconsumo 8%").closest("div")).toHaveTextContent(/7\.200/);
+  });
+
+  it("muestra Sin clasificar en documentos históricos que no tienen tipo", async () => {
+    abrir({ "GET /cotizaciones/42/": [200, { ...COTIZACION, tipo_evento: null, grupo_evento: null }] });
+
+    expect(await screen.findByText("Tipo de evento: Sin clasificar")).toBeInTheDocument();
   });
 
   it("nombra cada impuesto como en el detalle: IVA e Impoconsumo, un renglón por tasa", async () => {
