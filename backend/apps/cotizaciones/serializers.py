@@ -144,7 +144,7 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
             if not concepto.activo:
                 errores_items.append({"concepto": ["El concepto está inactivo."]})
             elif concepto.sitio_id != salon.sitio_id:
-                errores_items.append({"concepto": ["El concepto no pertenece al sitio del salón."]})
+                errores_items.append({"concepto": ["El concepto no pertenece al venue del salón."]})
             else:
                 errores_items.append({})
         if any(errores_items):

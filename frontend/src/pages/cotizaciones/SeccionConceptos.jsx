@@ -92,7 +92,7 @@ export default function SeccionConceptos({ c }) {
       <TituloPaso numero={3} id="nc-paso-conceptos">Conceptos</TituloPaso>
 
       {!c.salon ? (
-        <p className="nc-ayuda">Elige un salón para ver los conceptos de su sitio.</p>
+        <p className="nc-ayuda">Elige un salón para ver los conceptos de su venue.</p>
       ) : (
         <>
           {c.lineas.length > 0 ? (
@@ -111,7 +111,7 @@ export default function SeccionConceptos({ c }) {
                 disabled={sinOpciones}
               >
                 <option value="">
-                  {sinOpciones ? "No quedan conceptos activos de este sitio" : "Elige un concepto…"}
+                  {sinOpciones ? "No quedan conceptos activos de este venue" : "Elige un concepto…"}
                 </option>
                 {c.conceptosDisponibles.map((concepto) => (
                   <option key={concepto.id} value={String(concepto.id)}>

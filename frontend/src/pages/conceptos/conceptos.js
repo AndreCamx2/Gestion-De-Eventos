@@ -60,7 +60,7 @@ export function impuestoFueraDeLista(impuestoPct) {
 export function validarForm(form) {
   const errores = {};
   if (!form.sitio)
-    errores.sitio = "Selecciona el sitio al que pertenece el concepto.";
+    errores.sitio = "Selecciona el venue al que pertenece el concepto.";
   if (!form.nombre.trim()) errores.nombre = "El nombre es obligatorio.";
   if (form.precio === "") {
     errores.precio = "El precio es obligatorio.";
@@ -92,7 +92,7 @@ export function payloadEdicion(form) {
 const CAMPOS = ["sitio", "nombre", "precio", "impuesto_pct"];
 
 const MSG_NOMBRE_DUPLICADO =
-  "Ya existe un concepto con ese nombre en este sitio.";
+  "Ya existe un concepto con ese nombre en este venue.";
 
 // Envuelve el clasificador común de utils/erroresApi.js: el error de "único"
 // (nombre repetido en el mismo sitio) se muestra junto al campo nombre.

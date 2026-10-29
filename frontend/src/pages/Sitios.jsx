@@ -147,7 +147,7 @@ export default function Sitios() {
     <div className="sitios-pv">
       <CabeceraPagina
         antetitulo="Administración"
-        titulo="Sitios"
+        titulo="Venues"
         subtitulo="Cada hotel o sede tiene sus propios salones, conceptos y precios."
       />
 
@@ -158,7 +158,7 @@ export default function Sitios() {
         </Tarjeta>
       ) : (
         <div className="sitios-cuerpo">
-          <section className="sitios-lista" aria-label="Sitios registrados">
+          <section className="sitios-lista" aria-label="Venues registrados">
             {vista === "error" && (
               <Tarjeta>
                 <AvisoError tipo="servidor" onReintentar={cargarDatos} />
@@ -167,13 +167,13 @@ export default function Sitios() {
 
             {vista === "sesion" && (
               <Tarjeta>
-                <EstadoVacio titulo="Tu sesión expiró" texto="Vuelve a entrar con el aviso de abajo para ver los sitios." />
+                <EstadoVacio titulo="Tu sesión expiró" texto="Vuelve a entrar con el aviso de abajo para ver los venues." />
               </Tarjeta>
             )}
 
             {vista === "carga" && (
               <div className="sitios-grilla" role="status" aria-busy="true">
-                <span className="visually-hidden">Cargando sitios…</span>
+                <span className="visually-hidden">Cargando venues…</span>
                 {[0, 1].map((i) => (
                   <div key={i} className="sitio-tarjeta sitio-tarjeta--cargando" aria-hidden="true">
                     <div className="sitio-tarjeta__cabecera" />
@@ -186,8 +186,8 @@ export default function Sitios() {
             {vista === "vacio" && (
               <Tarjeta>
                 <EstadoVacio
-                  titulo="Aún no tienes sitios"
-                  texto="Crea el primero con el formulario. Si el sitio ya existe, pide a quien lo administra que te lo asigne."
+                  titulo="Aún no tienes venues"
+                  texto="Crea el primero con el formulario. Si el venue ya existe, pide a quien lo administra que te lo asigne."
                   accion={<Boton variante="secundario" onClick={irAlFormulario}>Crear el primero</Boton>}
                 />
               </Tarjeta>
@@ -200,7 +200,7 @@ export default function Sitios() {
                 ))}
                 <button type="button" className="sitios-agregar" onClick={irAlFormulario}>
                   <span className="sitios-agregar__icono"><IconoMas /></span>
-                  <span className="sitios-agregar__titulo">Agregar otro sitio</span>
+                  <span className="sitios-agregar__titulo">Agregar otro venue</span>
                   <span className="sitios-agregar__nota">Una sede nueva arranca sin salones ni precios</span>
                 </button>
               </div>

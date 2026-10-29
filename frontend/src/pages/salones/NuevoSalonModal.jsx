@@ -45,7 +45,7 @@ export default function NuevoSalonModal({
     setErrorGeneral(null);
 
     const locales = {};
-    if (!form.sitio) locales.sitio = "Elige el sitio donde está el salón.";
+    if (!form.sitio) locales.sitio = "Elige el venue donde está el salón.";
     if (!form.nombre.trim()) locales.nombre = "Escribe el nombre del salón.";
     setErrores(locales);
     if (Object.keys(locales).length > 0) return;
@@ -60,7 +60,7 @@ export default function NuevoSalonModal({
         // "nombre": se muestra debajo del nombre, que es lo que hay que cambiar.
         const { non_field_errors, ...porCampo } = err.body;
         const { campos, general } = erroresDesdeApi(porCampo, CAMPOS);
-        if (non_field_errors) campos.nombre = "Ya existe un salón con ese nombre en este sitio.";
+        if (non_field_errors) campos.nombre = "Ya existe un salón con ese nombre en este venue.";
         setErrores(campos);
         setErrorGeneral(general);
       } else if (err.status === 401) {
@@ -84,7 +84,7 @@ export default function NuevoSalonModal({
       <form className="dialogo__form" onSubmit={handleSubmit} noValidate>
         {/* Campo solo pinta <input>: el select usa sus mismas clases, como en ClienteForm. */}
         <div className={["campo", errores.sitio && "campo--error"].filter(Boolean).join(" ")}>
-          <label className="campo__etiqueta" htmlFor={idSitio}>Sitio</label>
+          <label className="campo__etiqueta" htmlFor={idSitio}>Venue</label>
           <select
             id={idSitio}
             name="sitio"
@@ -95,7 +95,7 @@ export default function NuevoSalonModal({
             aria-invalid={errores.sitio ? true : undefined}
             aria-describedby={errores.sitio ? `${idSitio}-error` : undefined}
           >
-            <option value="">{sinSitios ? "No hay sitios" : "Elige un sitio..."}</option>
+            <option value="">{sinSitios ? "No hay venues" : "Elige un venue..."}</option>
             {sitios.map((s) => (
               <option key={s.id} value={s.id}>{s.nombre}</option>
             ))}
@@ -105,7 +105,7 @@ export default function NuevoSalonModal({
           )}
           {sinSitios && (
             <p className="salones-dialogo__ayuda">
-              Todo salón pertenece a un sitio. Primero crea uno en <Link to="/sitios">Sitios</Link>.
+              Todo salón pertenece a un venue. Primero crea uno en <Link to="/sitios">Venues</Link>.
             </p>
           )}
         </div>

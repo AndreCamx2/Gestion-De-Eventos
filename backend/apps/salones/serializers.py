@@ -33,7 +33,7 @@ class SalonSerializer(serializers.ModelSerializer):
 
     def validate_sitio(self, value):
         # Sus cotizaciones, conceptos y montajes son de ese sitio: moverlo los dejaría cruzados.
-        return no_cambia(self, "sitio", value, "El sitio de un salón no se puede cambiar.")
+        return no_cambia(self, "sitio", value, "El venue de un salón no se puede cambiar.")
 
 
 class MontajeSerializer(serializers.ModelSerializer):

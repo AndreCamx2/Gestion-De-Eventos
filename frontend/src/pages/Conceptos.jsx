@@ -68,7 +68,7 @@ export default function Conceptos() {
 
   function obtenerNombreSitio(id) {
     const sitio = sitios.find((s) => s.id === id);
-    return sitio ? sitio.nombre : `Sitio #${id}`;
+    return sitio ? sitio.nombre : `Venue #${id}`;
   }
 
   const conceptosFiltrados = useMemo(() => {
@@ -219,7 +219,7 @@ export default function Conceptos() {
         <Tarjeta>
           <EstadoVacio
             titulo="Ningún concepto coincide"
-            texto="Prueba con otro nombre, otro sitio o muestra también los inactivos."
+            texto="Prueba con otro nombre, otro venue o muestra también los inactivos."
             accion={<Boton variante="secundario" onClick={quitarFiltros}>Quitar filtros</Boton>}
           />
         </Tarjeta>

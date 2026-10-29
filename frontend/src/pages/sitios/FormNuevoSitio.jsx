@@ -35,14 +35,14 @@ export default function FormNuevoSitio({ ciudades, ciudadesFallaron, onReintenta
 
   async function handleSubmit(event) {
     event.preventDefault();
-    // "Crear sitio" no usa disabled mientras guarda (usa aria-disabled) para no
+    // "Crear venue" no usa disabled mientras guarda (usa aria-disabled) para no
     // perder el foco: si vence la sesión, el foco vuelve ahí al entrar de nuevo.
     if (enviando) return;
     setExito(null);
     setErrorGeneral(null);
 
     const locales = {};
-    if (!form.nombre.trim()) locales.nombre = "Escribe el nombre del sitio.";
+    if (!form.nombre.trim()) locales.nombre = "Escribe el nombre del venue.";
     if (!ciudadElegida) locales.ciudad = "Elige una ciudad.";
     setErrores(locales);
     if (Object.keys(locales).length > 0) return;
@@ -61,7 +61,7 @@ export default function FormNuevoSitio({ ciudades, ciudadesFallaron, onReintenta
       } else if (err.status === 401) {
         onSesionVencida();
       } else if (err.status === 403) {
-        setErrorGeneral("No tienes permiso para crear sitios.");
+        setErrorGeneral("No tienes permiso para crear venues.");
       } else {
         setErrorGeneral("No pudimos hablar con el servidor. Inténtalo de nuevo.");
       }
@@ -74,7 +74,7 @@ export default function FormNuevoSitio({ ciudades, ciudadesFallaron, onReintenta
 
   return (
     <form className="sitios-form" aria-labelledby="sitios-form-titulo" noValidate onSubmit={handleSubmit}>
-      <h2 id="sitios-form-titulo" className="sitios-form__titulo">Nuevo sitio</h2>
+      <h2 id="sitios-form-titulo" className="sitios-form__titulo">Nuevo venue</h2>
 
       <Campo
         ref={nombreRef}
@@ -121,9 +121,9 @@ export default function FormNuevoSitio({ ciudades, ciudadesFallaron, onReintenta
       {exito && <p className="sitios-form__exito" role="status">{exito}</p>}
 
       <Boton type="submit" aria-disabled={enviando || undefined} className="sitios-form__crear">
-        {enviando ? "Creando…" : "Crear sitio"}
+        {enviando ? "Creando…" : "Crear venue"}
       </Boton>
-      <p className="sitios-form__nota">Solo los administradores pueden crear sitios.</p>
+      <p className="sitios-form__nota">Solo los administradores pueden crear venues.</p>
     </form>
   );
 }

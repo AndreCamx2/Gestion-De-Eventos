@@ -5,13 +5,13 @@ export function FiltrosCabecera({ sitios, filtroSitio, onFiltroSitio, mostrarIna
   return (
     <>
       <label className="conceptos-sitio">
-        <span className="conceptos-sitio__etiqueta">Sitio</span>
+        <span className="conceptos-sitio__etiqueta">Venue</span>
         <select
           className="conceptos-sitio__control"
           value={filtroSitio}
           onChange={(e) => onFiltroSitio(e.target.value)}
         >
-          <option value="todos">Todos los sitios</option>
+          <option value="todos">Todos los venues</option>
           {sitios.map((s) => (
             <option key={s.id} value={String(s.id)}>
               {s.nombre}

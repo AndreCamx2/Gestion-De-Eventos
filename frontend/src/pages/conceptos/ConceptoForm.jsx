@@ -32,7 +32,7 @@ export default function ConceptoForm({
   return (
     <>
       <div className={clase("sitio")}>
-        <label className="conceptos-campo__etiqueta" htmlFor={id("sitio")}>Sitio</label>
+        <label className="conceptos-campo__etiqueta" htmlFor={id("sitio")}>Venue</label>
         <select
           id={id("sitio")}
           name="sitio"
@@ -43,7 +43,7 @@ export default function ConceptoForm({
           data-foco-inicial
           {...describir("sitio")}
         >
-          <option value="">Selecciona un sitio...</option>
+          <option value="">Selecciona un venue...</option>
           {sitios.map((s) => (
             <option key={s.id} value={String(s.id)}>
               {s.nombre}
@@ -52,7 +52,7 @@ export default function ConceptoForm({
         </select>
         {esEdicion && (
           <p className="conceptos-ayuda">
-            El sitio no se puede cambiar. Si se registró en el sitio equivocado,
+            El venue no se puede cambiar. Si se registró en el venue equivocado,
             desactívalo y crea uno nuevo.
           </p>
         )}

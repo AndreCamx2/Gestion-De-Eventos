@@ -196,7 +196,7 @@ class CrearCotizacionTests(CotizacionBaseTest):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(r.data["items"][0], {})
         self.assertEqual(r.data["items"][1], {"concepto": ["El concepto está inactivo."]})
-        self.assertEqual(r.data["items"][2], {"concepto": ["El concepto no pertenece al sitio del salón."]})
+        self.assertEqual(r.data["items"][2], {"concepto": ["El concepto no pertenece al venue del salón."]})
         self.assertFalse(Cotizacion.objects.exists())
 
     def test_errores_de_campo_en_items_tambien_son_una_lista_por_posicion(self):
