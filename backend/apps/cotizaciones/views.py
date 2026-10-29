@@ -1,5 +1,6 @@
 from django.db import transaction
 from django.db.models import Prefetch
+from decimal import Decimal
 from django.shortcuts import get_object_or_404
 from django.utils.dateparse import parse_date
 from rest_framework import generics, permissions, status
@@ -14,12 +15,10 @@ from apps.usuarios.permissions import EsAdministrador, EsCliente
 from . import estados
 from .models import Cotizacion, GrupoEvento, TipoEvento
 from .serializers import (
-    AceptacionSerializer, BloqueoSerializer, CancelacionSerializer, CotizacionCalendarioSerializer,
-    CotizacionCrearSerializer, CotizacionDetalleSerializer, CotizacionEdicionSerializer, 
-    CotizacionListaSerializer, GrupoEventoConTiposSerializer, MovimientoSerializer,
-    AceptacionSerializer, AnulacionSerializer, BloqueoSerializer, CancelacionSerializer, CotizacionCalendarioSerializer,
-    CotizacionCrearSerializer, CotizacionDetalleSerializer, CotizacionListaSerializer, CotizacionVigenciaSerializer,
-    MiCotizacionDetalleSerializer, MiCotizacionListaSerializer, MovimientoSerializer,
+    _totales, AceptacionSerializer, AnulacionSerializer, BloqueoSerializer, CancelacionSerializer, CotizacionCalendarioSerializer,
+    CotizacionCrearSerializer, CotizacionDetalleSerializer, CotizacionEdicionSerializer,
+    CotizacionListaSerializer, GrupoEventoConTiposSerializer, MiCotizacionDetalleSerializer,
+    MiCotizacionListaSerializer, MovimientoSerializer,
 )
 
 
@@ -333,6 +332,8 @@ class TipoEventoListView(generics.ListAPIView):
             .distinct()
             .prefetch_related(Prefetch("tipos", queryset=tipos_activos))
         )
+
+
 # --- "Mis cotizaciones" del rol cliente (SGDE-126) ----------------------------
 
 def mis_cotizaciones(usuario):
@@ -357,3 +358,146 @@ class MiCotizacionDetalleView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         return mis_cotizaciones(self.request.user)
+
+class ReporteIngresosPorTipoEventoView(generics.GenericAPIView):
+    """Reporte de ingresos por tipo de evento para cotizaciones confirmadas (SGDE-144)."""
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+    def get(self, request, *args, **kwargs):
+        # 1. Filtramos las cotizaciones confirmadas
+        queryset = Cotizacion.objects.filter(estado="confirmado")
+        
+        # 2. Filtramos por el sitio del usuario (SGDE-90)
+        queryset = filtrar_por_sitio(queryset, request.user)
+        
+        # 3. Filtros opcionales por fecha de evento (?desde y ?hasta)
+        desde = _fecha_param(request.query_params, "desde")
+        hasta = _fecha_param(request.query_params, "hasta")
+        if desde:
+            queryset = queryset.filter(fecha_evento__gte=desde)
+        if hasta:
+            queryset = queryset.filter(fecha_evento__lte=hasta)
+
+        # 4. Traemos los tipos de evento, incluso si están inactivos
+        tipos = TipoEvento.objects.select_related("grupo").order_by("grupo__orden", "id")
+
+        # 5. Traemos todas las cotizaciones y sus items para calcular los totales (evita N+1)
+        cotizaciones = list(queryset.prefetch_related("items"))
+
+        resultados = []
+        gran_total = Decimal("0.00")
+        total_eventos = 0
+
+        for tipo in tipos:
+            # Filtramos las cotizaciones de este tipo en memoria
+            cotizaciones_tipo = [c for c in cotizaciones if c.tipo_evento_id == tipo.id]
+            
+            if cotizaciones_tipo:
+                # Sumamos el total de cada cotización
+                ingreso_tipo = sum((_totales(c)["total"] for c in cotizaciones_tipo), Decimal("0.00"))
+                
+                resultados.append({
+                    "tipo_evento_id": tipo.id,
+                    "tipo_evento_nombre": tipo.nombre,
+                    "grupo_evento_nombre": tipo.grupo.nombre,
+                    "cantidad_eventos": len(cotizaciones_tipo),
+                    "ingreso_total": str(ingreso_tipo),
+                })
+                
+                gran_total += ingreso_tipo
+                total_eventos += len(cotizaciones_tipo)
+
+        # 6. Calculamos porcentajes y el promedio
+        for r in resultados:
+            r["porcentaje_ingreso"] = float((Decimal(r["ingreso_total"]) / gran_total * 100).quantize(Decimal("0.01"))) if gran_total > 0 else 0.0
+
+        # Ordenamos de mayor a menor ingreso
+        resultados.sort(key=lambda x: Decimal(x["ingreso_total"]), reverse=True)
+
+        # Ticket promedio global
+        ticket_promedio = (gran_total / total_eventos).quantize(Decimal("0.01")) if total_eventos > 0 else Decimal("0.00")
+
+        return Response({
+            "gran_total": str(gran_total),
+            "total_eventos": total_eventos,
+            "ticket_promedio": str(ticket_promedio),
+            "detalle": resultados
+        })
+
+    class ReporteIngresosPorTipoEventoView(generics.GenericAPIView):
+        """Reporte de ingresos por tipo de evento para cotizaciones confirmadas (SGDE-144)."""
+    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
+
+    def get(self, request, *args, **kwargs):
+        # 1. Filtramos las cotizaciones confirmadas
+        queryset = Cotizacion.objects.filter(estado="confirmado")
+        
+        # 2. Filtramos por el sitio del usuario (SGDE-90)
+        queryset = filtrar_por_sitio(queryset, request.user)
+        
+        # 3. Filtros opcionales por fecha de evento (?desde y ?hasta)
+        desde = _fecha_param(request.query_params, "desde")
+        hasta = _fecha_param(request.query_params, "hasta")
+        if desde:
+            queryset = queryset.filter(fecha_evento__gte=desde)
+        if hasta:
+            queryset = queryset.filter(fecha_evento__lte=hasta)
+
+        # 4. Traemos los tipos de evento, incluso si están inactivos
+        tipos = TipoEvento.objects.select_related("grupo").order_by("grupo__orden", "id")
+
+        # 5. Traemos todas las cotizaciones y sus items para calcular los totales (evita N+1)
+        cotizaciones = list(queryset.prefetch_related("items"))
+
+        resultados = []
+        gran_total = Decimal("0.00")
+        total_eventos = 0
+
+        # Agregamos un "tipo falso" para capturar las que no tienen tipo (Sin clasificar)
+        tipos_a_evaluar = list(tipos) + [None]
+
+        for tipo in tipos_a_evaluar:
+            if tipo is None:
+                cotizaciones_tipo = [c for c in cotizaciones if c.tipo_evento_id is None]
+            else:
+                cotizaciones_tipo = [c for c in cotizaciones if c.tipo_evento_id == tipo.id]
+            
+            if cotizaciones_tipo:
+                ingreso_tipo = sum((_totales(c)["total"] for c in cotizaciones_tipo), Decimal("0.00"))
+                
+                if tipo is None:
+                    nombre_tipo = "Sin clasificar"
+                    grupo_tipo = "Sin clasificar"
+                    tipo_id = None
+                else:
+                    nombre_tipo = tipo.nombre
+                    grupo_tipo = tipo.grupo.nombre
+                    tipo_id = tipo.id
+
+                resultados.append({
+                    "tipo_evento_id": tipo_id,
+                    "tipo_evento_nombre": nombre_tipo,
+                    "grupo_evento_nombre": grupo_tipo,
+                    "cantidad_eventos": len(cotizaciones_tipo),
+                    "ingreso_total": str(ingreso_tipo),
+                })
+                
+                gran_total += ingreso_tipo
+                total_eventos += len(cotizaciones_tipo)
+
+        # 6. Calculamos porcentajes y el promedio
+        for r in resultados:
+            r["porcentaje_ingreso"] = float((Decimal(r["ingreso_total"]) / gran_total * 100).quantize(Decimal("0.01"))) if gran_total > 0 else 0.0
+
+        # Ordenamos de mayor a menor ingreso
+        resultados.sort(key=lambda x: Decimal(x["ingreso_total"]), reverse=True)
+
+        # Ticket promedio global
+        ticket_promedio = (gran_total / total_eventos).quantize(Decimal("0.01")) if total_eventos > 0 else Decimal("0.00")
+
+        return Response({
+            "gran_total": str(gran_total),
+            "total_eventos": total_eventos,
+            "ticket_promedio": str(ticket_promedio),
+            "detalle": resultados
+        })
