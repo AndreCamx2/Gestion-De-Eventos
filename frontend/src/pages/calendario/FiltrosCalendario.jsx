@@ -51,7 +51,7 @@ export default function FiltrosCalendario({
         </Boton>
       </div>
       {sitios.length > 1 && (
-        <Chips etiqueta="Filtrar por sitio" opciones={sitios} valor={filtroSitio} onCambiar={onSitio} />
+        <Chips etiqueta="Filtrar por venue" opciones={sitios} valor={filtroSitio} onCambiar={onSitio} />
       )}
       {salones.length > 1 && (
         <Chips etiqueta="Filtrar por salón" opciones={salones} valor={filtroSalon} onCambiar={onSalon} />

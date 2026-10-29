@@ -106,7 +106,7 @@ class EditarSalonTests(BaseSalonesTests):
     def test_cambiar_el_sitio_da_400_aunque_sea_otro_sitio_propio(self):
         r = self.client.patch(salon_url(self.salon.pk), {"sitio": self.otro_sitio_propio.pk}, format="json")
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.json()["sitio"], ["El sitio de un salón no se puede cambiar."])
+        self.assertEqual(r.json()["sitio"], ["El venue de un salón no se puede cambiar."])
         self.salon.refresh_from_db()
         self.assertEqual(self.salon.sitio, self.sitio)
 

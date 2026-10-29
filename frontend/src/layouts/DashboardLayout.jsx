@@ -18,7 +18,7 @@ const NAV_ITEMS = [
   { to: "/conceptos", label: "Conceptos", roles: ROLES_POR_RUTA["/conceptos"] },
   { to: "/proveedores", label: "Proveedores", roles: ROLES_POR_RUTA["/proveedores"] },
   { to: "/clientes", label: "Clientes", roles: ROLES_POR_RUTA["/clientes"] },
-  { to: "/sitios", label: "Sitios", roles: ROLES_POR_RUTA["/sitios"] },
+  { to: "/sitios", label: "Venues", roles: ROLES_POR_RUTA["/sitios"] },
   { to: "/usuarios", label: "Usuarios", roles: ROLES_POR_RUTA["/usuarios"] },
   { to: "/mis-cotizaciones", label: "Mis cotizaciones", roles: ROLES_POR_RUTA["/mis-cotizaciones"] },
   { to: "/mi-stock", label: "Mi stock", roles: ROLES_POR_RUTA["/mi-stock"] },

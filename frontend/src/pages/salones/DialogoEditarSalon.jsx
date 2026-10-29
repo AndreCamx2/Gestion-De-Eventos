@@ -51,7 +51,7 @@ export default function DialogoEditarSalon({ salon, sitio, onGuardado, onCerrar,
         // "Nombre único por sitio" llega como non_field_errors: va debajo del nombre.
         const { non_field_errors, ...porCampo } = err.body;
         const { campos, general } = erroresDesdeApi(porCampo, CAMPOS);
-        if (non_field_errors) campos.nombre = "Ya existe un salón con ese nombre en este sitio.";
+        if (non_field_errors) campos.nombre = "Ya existe un salón con ese nombre en este venue.";
         setErrores(campos);
         setError(general);
       } else if (err.status === 401) {
@@ -71,7 +71,7 @@ export default function DialogoEditarSalon({ salon, sitio, onGuardado, onCerrar,
       <form className="dialogo__form" onSubmit={guardar} noValidate>
         {sitio && (
           <p className="salones-dialogo__para">
-            En <strong>{sitio}</strong>. El sitio de un salón no se cambia.
+            En <strong>{sitio}</strong>. El venue de un salón no se cambia.
           </p>
         )}
         <Campo

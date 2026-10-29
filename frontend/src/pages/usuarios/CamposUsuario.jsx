@@ -31,9 +31,9 @@ export function SelectorRol({ roles, valor, onCambiar, error, bloqueado, ayuda, 
 export function SelectorSitios({ sitios, elegidos, onAlternar, error, idPrefix }) {
   return (
     <fieldset className="usuarios-campo">
-      <legend className="usuarios-etiqueta">Sitios</legend>
+      <legend className="usuarios-etiqueta">Venues</legend>
       {sitios.length === 0 ? (
-        <p className="usuarios-ayuda">No administras ningún sitio todavía.</p>
+        <p className="usuarios-ayuda">No administras ningún venue todavía.</p>
       ) : (
         <div className="usuarios-sitios">
           {sitios.map((s) => (
@@ -49,7 +49,7 @@ export function SelectorSitios({ sitios, elegidos, onAlternar, error, idPrefix }
           ))}
         </div>
       )}
-      <p className="usuarios-ayuda">Un proveedor puede no tener sitios; un administrador solo ve los datos de sus sitios.</p>
+      <p className="usuarios-ayuda">Un proveedor puede no tener venues; un administrador solo ve los datos de sus venues.</p>
       {error && <p className="campo__error">{error}</p>}
     </fieldset>
   );

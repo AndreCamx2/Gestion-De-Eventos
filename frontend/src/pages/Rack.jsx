@@ -121,7 +121,7 @@ export default function Rack() {
         </div>
 
         {sitiosConSalones.length > 1 && (
-          <div className="rack__sitios" role="group" aria-label="Filtrar por sitio">
+          <div className="rack__sitios" role="group" aria-label="Filtrar por venue">
             {[{ id: "todos", nombre: "Todos" }, ...sitiosConSalones].map((sitio) => (
               <button
                 key={sitio.id}

@@ -211,7 +211,7 @@ export function useSalones() {
   }
 
   function etiquetaSalon(s) {
-    return variosSitios ? `${s.nombre} · ${nombreSitio.get(s.sitio) ?? "Sitio"}` : s.nombre;
+    return variosSitios ? `${s.nombre} · ${nombreSitio.get(s.sitio) ?? "Venue"}` : s.nombre;
   }
 
   // Lo común de las ventanas de Dialogo; "Entrar de nuevo" devuelve el foco al botón que se le pasa.

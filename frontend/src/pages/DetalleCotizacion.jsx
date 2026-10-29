@@ -197,7 +197,7 @@ export default function DetalleCotizacion() {
       <Tarjeta>
         <EstadoVacio
           titulo="No encontramos esta cotización"
-          texto="Puede que no exista o que sea de un sitio que no administras."
+          texto="Puede que no exista o que sea de un venue que no administras."
           accion={<Boton as={Link} to="/cotizaciones" variante="secundario">Ver cotizaciones</Boton>}
         />
       </Tarjeta>
