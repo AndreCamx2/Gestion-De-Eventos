@@ -52,7 +52,7 @@ class BaseClientesTests(APITestCase):
     def ids_del_listado(self, url=LISTA):
         respuesta = self.client.get(url)
         self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
-        return [c["id"] for c in respuesta.json()]
+        return [c["id"] for c in respuesta.json()["results"]]
 
 
 class MatrizDetalleClienteTests(BaseClientesTests):

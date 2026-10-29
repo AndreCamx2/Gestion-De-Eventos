@@ -12,6 +12,8 @@ from apps.sitios.acceso import CampoDeSitio
 from apps.sitios.models import Sitio
 
 from .estados import fecha_corta, registrar
+from .models import Cotizacion, CotizacionItem, GrupoEvento, MovimientoCotizacion, TipoEvento
+from .services import redondear, totales_cotizacion, totales_linea
 from .models import Cotizacion, CotizacionItem, MovimientoCotizacion
 from .services import garantia_minima, redondear, totales_cotizacion, totales_linea
 
@@ -52,6 +54,11 @@ def validar_validez_oferta(validez, fecha_evento):
         return "La validez de la oferta no puede ser posterior a la fecha del evento."
     return None
 
+def validar_tipo_evento_activo(tipo):
+    """Un tipo inactivo, o de un grupo inactivo, no se puede elegir (SGDE-142)."""
+    if not tipo.activo or not tipo.grupo.activo:
+        raise serializers.ValidationError("El tipo de evento está inactivo.")
+    return tipo
 
 # --- Entrada: crear cotización ---------------------------------------------
 
@@ -88,10 +95,12 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
     # El salón define el sitio de la cotización: solo uno de los sitios del usuario.
     salon = CampoDeSitio(queryset=Salon.objects.all())
     items = CotizacionItemEntradaSerializer(many=True)
+        # SGDE-142: obligatorio al crear (en la base es null solo por las cotizaciones viejas).
+    tipo_evento = serializers.PrimaryKeyRelatedField(queryset=TipoEvento.objects.select_related("grupo"))
 
     class Meta:
         model = Cotizacion
-        fields = ["cliente", "salon", "montaje", "fecha_evento", "cantidad_personas", "validez_oferta", "items"]
+        fields = ["cliente", "salon", "montaje", "tipo_evento", "fecha_evento", "cantidad_personas", "validez_oferta", "items"]
         extra_kwargs = {"cantidad_personas": {"min_value": 1}}
 
     def validate_fecha_evento(self, value):
@@ -103,6 +112,9 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
         if not value.activo:
             raise serializers.ValidationError("El cliente está dado de baja.")
         return value
+    
+    def validate_tipo_evento(self, value):
+        return validar_tipo_evento_activo(value)
 
     def validate_items(self, value):
         if not value:
@@ -255,10 +267,39 @@ class SalonResumenSerializer(serializers.ModelSerializer):
 
 
 class MontajeResumenSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = Montaje
         fields = ["id", "nombre"]
 
+class GrupoEventoResumenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GrupoEvento
+        fields = ["id", "nombre"]
+
+
+class TipoEventoResumenSerializer(serializers.ModelSerializer):
+    grupo = GrupoEventoResumenSerializer(read_only=True)
+
+    class Meta:
+        model = TipoEvento
+        fields = ["id", "nombre", "grupo"]
+
+
+class TipoEventoSimpleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TipoEvento
+        fields = ["id", "nombre"]
+
+
+class GrupoEventoConTiposSerializer(serializers.ModelSerializer):
+    """GET /api/tipos-evento/: cada grupo con sus tipos. La vista ya trae solo los activos."""
+
+    tipos = TipoEventoSimpleSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = GrupoEvento
+        fields = ["id", "nombre", "orden", "tipos"]
 
 class CotizacionItemDetalleSerializer(serializers.ModelSerializer):
     concepto_nombre = serializers.CharField(source="concepto.nombre", read_only=True)
@@ -336,16 +377,24 @@ class CotizacionDetalleSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, s
     # Solo la aceptación (SGDE-20) confirma, y en el mismo save registra la garantía:
     # esa fecha es la de confirmación. Lo confirmado a mano en /admin/ queda en null.
     confirmado_en = serializers.DateTimeField(source="garantia_registrada_en", read_only=True)
+    
+    # SGDE-142: tipo y grupo de evento
+    tipo_evento = TipoEventoResumenSerializer(read_only=True)
+    grupo_evento = serializers.SerializerMethodField()
 
     class Meta:
         model = Cotizacion
         fields = [
             "id", "estado", "vencida", "sitio", "cliente", "salon", "montaje", "aforo",
+            "tipo_evento", "grupo_evento",
             "fecha_evento", "cantidad_personas", "validez_oferta", "bloqueo_hasta", "creado_en",
             "creado_por", "confirmado_en", "items", "subtotal", "impuestos", "total", "garantia",
             "garantia_minima", *CAMPOS_CANCELACION,
         ]
         read_only_fields = fields
+
+    def get_grupo_evento(self, obj):
+        return GrupoEventoResumenSerializer(obj.tipo_evento.grupo).data if obj.tipo_evento else None
 
     def get_aforo(self, obj):
         return (
@@ -383,15 +432,23 @@ class CotizacionListaSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, ser
     garantia = serializers.SerializerMethodField()
     # Misma regla que en el detalle: la fecha de la aceptación es la de confirmación.
     confirmado_en = serializers.DateTimeField(source="garantia_registrada_en", read_only=True)
+    
+    # SGDE-142: tipo y grupo de evento
+    tipo_evento = TipoEventoResumenSerializer(read_only=True)
+    grupo_evento = serializers.SerializerMethodField()
 
     class Meta:
         model = Cotizacion
         fields = [
             "id", "estado", "vencida", "cliente_nombre", "salon_nombre", "montaje_nombre",
+            "tipo_evento", "grupo_evento",
             "fecha_evento", "cantidad_personas", "validez_oferta", "bloqueo_hasta",
             "creado_en", "confirmado_en", "total", "garantia", *CAMPOS_CANCELACION,
         ]
         read_only_fields = fields
+
+    def get_grupo_evento(self, obj):
+        return GrupoEventoResumenSerializer(obj.tipo_evento.grupo).data if obj.tipo_evento else None
 
     def get_total(self, obj):
         return str(_totales(obj)["total"])
@@ -400,15 +457,22 @@ class CotizacionListaSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, ser
         return garantia_de(obj)
 
 
-# --- Entrada: cambiar la vigencia (SGDE-19) ----------------------------------
+# --- Entrada: editar la cotización (SGDE-19 y SGDE-142) ----------------------
 
-class CotizacionVigenciaSerializer(serializers.ModelSerializer):
-    """Solo cambia validez_oferta; cualquier otro campo enviado es un error 400."""
+class CotizacionEdicionSerializer(serializers.ModelSerializer):
+    """Cambia validez_oferta y/o tipo_evento; cualquier otro campo enviado es un error 400."""
+
+    tipo_evento = serializers.PrimaryKeyRelatedField(
+        queryset=TipoEvento.objects.select_related("grupo"), required=False
+    )
 
     class Meta:
         model = Cotizacion
-        fields = ["validez_oferta"]
-        extra_kwargs = {"validez_oferta": {"required": True, "allow_null": False}}
+        fields = ["validez_oferta", "tipo_evento"]
+        extra_kwargs = {"validez_oferta": {"required": False, "allow_null": False}}
+
+    def validate_tipo_evento(self, value):
+        return validar_tipo_evento_activo(value)
 
     def validate(self, attrs):
         no_permitidos = set(self.initial_data) - set(self.fields)
@@ -416,11 +480,15 @@ class CotizacionVigenciaSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {campo: ["Este campo no se puede modificar."] for campo in sorted(no_permitidos)}
             )
-        error = validar_validez_oferta(attrs["validez_oferta"], self.instance.fecha_evento)
-        if error:
-            raise serializers.ValidationError({"validez_oferta": [error]})
+        
+        # Si no envían ni validez ni tipo, no lanzamos error aquí; 
+        # dejamos que la vista evalúe si la cotización está en estado válido (409) o no.
+        if "validez_oferta" in attrs:
+            error = validar_validez_oferta(attrs["validez_oferta"], self.instance.fecha_evento)
+            if error:
+                raise serializers.ValidationError({"validez_oferta": [error]})
+                
         return attrs
-
 
 # --- Entrada: aceptación y garantía (SGDE-20) --------------------------------
 

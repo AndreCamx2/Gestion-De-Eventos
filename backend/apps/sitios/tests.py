@@ -18,6 +18,7 @@ from apps.clientes.models import Cliente
 from apps.cotizaciones.models import Cotizacion, CotizacionItem
 from apps.salones.models import Montaje, Salon, SalonMontaje
 from apps.usuarios.models import Rol, Usuario
+from apps.cotizaciones.models import GrupoEvento, TipoEvento
 
 from .models import Ciudad, Sitio
 
@@ -34,7 +35,8 @@ def crear_usuario(username, codigo_rol="administrador", sitios=(), superusuario=
 
 
 def ids(respuesta):
-    return {fila["id"] for fila in respuesta.json()}
+    datos = respuesta.json()
+    return {fila["id"] for fila in (datos["results"] if isinstance(datos, dict) else datos)}
 
 
 class MultiSitioBaseTest(APITestCase):
@@ -45,6 +47,8 @@ class MultiSitioBaseTest(APITestCase):
         cls.cliente = Cliente.objects.create(tipo="natural", nombre="Ana Pérez", identificacion="1047000111")
         cls.a = cls.crear_sitio("Hotel A")
         cls.b = cls.crear_sitio("Finca B")
+        cls.grupo_evento = GrupoEvento.objects.create(nombre="Test", orden=1)
+        cls.tipo_evento = TipoEvento.objects.create(nombre="Test Tipo", grupo=cls.grupo_evento)
 
         cls.admin_a = crear_usuario("admin_a@test.com", sitios=[cls.a["sitio"]])
         cls.admin_b = crear_usuario("admin_b@test.com", sitios=[cls.b["sitio"]])
@@ -85,10 +89,10 @@ class MultiSitioBaseTest(APITestCase):
     def payload_cotizacion(self, salon, concepto):
         return {
             "cliente": self.cliente.pk, "salon": salon.pk, "montaje": self.montaje.pk,
+            "tipo_evento": self.tipo_evento.pk, 
             "fecha_evento": str(timezone.localdate() + timedelta(days=40)), "cantidad_personas": 10,
             "items": [{"concepto": concepto.pk, "cantidad": 1}],
         }
-
     def listas(self, d):
         """(url, ids esperados de un sitio) para cada lista filtrada por sitio."""
         return [
@@ -123,7 +127,7 @@ class ListasPorSitioTests(MultiSitioBaseTest):
             with self.subTest(url=url):
                 r = self.client.get(url)
                 self.assertEqual(r.status_code, status.HTTP_200_OK)
-                self.assertEqual(r.json(), [])
+                self.assertEqual(ids(r), set())
         self.assertEqual(
             self.client.get(f"/api/conceptos/{self.a['concepto'].pk}/").status_code, status.HTTP_404_NOT_FOUND
         )
@@ -230,7 +234,7 @@ class DetallesDeOtroSitioTests(MultiSitioBaseTest):
         )
         r = self.client.get("/api/cotizaciones/", {"salon": self.b["salon"].pk})
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual(r.json(), [])
+        self.assertEqual(ids(r), set())
 
     def test_historial_de_un_concepto_inexistente_da_404(self):
         self.assertEqual(self.client.get("/api/conceptos/999999/historial/").status_code, status.HTTP_404_NOT_FOUND)
@@ -337,7 +341,7 @@ class ClientesCompartidosTests(MultiSitioBaseTest):
                 r = self.client.get(url)
                 self.assertEqual(r.status_code, status.HTTP_200_OK)
                 self.assertEqual(self.cotizaciones_del_cliente(r), {propio["cotizacion"].pk})
-                lista = self.client.get("/api/clientes/").json()
+                lista = self.client.get("/api/clientes/").json()["results"]
                 fila = next(c for c in lista if c["id"] == self.cliente.pk)
                 self.assertEqual({c["id"] for c in fila["cotizaciones"]}, {propio["cotizacion"].pk})
 
@@ -365,7 +369,7 @@ class UsuariosPorSitioTests(MultiSitioBaseTest):
     def usernames(self):
         r = self.client.get("/api/usuarios/")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        return {u["username"] for u in r.json()}
+        return {u["username"] for u in r.json()["results"]}
 
     def test_administrador_ve_a_si_mismo_a_sus_companeros_y_a_los_sin_sitios(self):
         self.client.force_authenticate(user=self.admin_a)
@@ -402,7 +406,7 @@ class UsuariosPorSitioTests(MultiSitioBaseTest):
 
         # La lista con ?incluir_inactivos tampoco los muestra.
         r = self.client.get("/api/usuarios/?incluir_inactivos=true")
-        self.assertFalse({"super@test.com", "super_a@test.com"} & {u["username"] for u in r.json()})
+        self.assertFalse({"super@test.com", "super_a@test.com"} & {u["username"] for u in r.json()["results"]})
 
     def test_superusuario_ve_a_todos(self):
         self.client.force_authenticate(user=self.superusuario)
