@@ -23,17 +23,15 @@ from apps.clientes.views import (
 )
 from apps.cotizaciones.views import (
     CotizacionCalendarioView, CotizacionListCreateView, CotizacionDetailView, CotizacionAceptacionView,
-    CotizacionBloqueoView, CotizacionCancelacionView, CotizacionMovimientosView,TipoEventoListView,
+    CotizacionBloqueoView, CotizacionCancelacionView, CotizacionMovimientosView, TipoEventoListView,
     CotizacionBloqueoView, CotizacionCancelacionView, CotizacionMovimientosView,
     CotizacionAnulacionView, CotizacionEdicionView, MisCotizacionesView, MiCotizacionDetalleView,
+    ReporteIngresosPorTipoEventoView,
 )
-
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/token/', LoginView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', RenovarTokenView.as_view(), name='token_refresh'),
-    # Logout (SGDE-92): {"refresh": ...} → lista negra. Público como /token/: sirve
-    # aunque el access ya haya vencido.
     path('api/token/logout/', TokenBlacklistView.as_view(), name='token_logout'),
     path('api/registro/', RegistroPublicoView.as_view(), name='registro_publico'),
     path('api/clave/recuperar/', SolicitarRecuperacionView.as_view(), name='clave_recuperar'),
@@ -81,4 +79,5 @@ urlpatterns = [
     path('api/calendario/', CotizacionCalendarioView.as_view(), name='calendario_cotizaciones'),
     path('api/tipos-evento/', TipoEventoListView.as_view(), name='tipo_evento_list'),
     path('api/tipos-evento/', TipoEventoListView.as_view(), name='tipos_evento'),
+    path('api/reportes/ingresos-por-tipo-evento/', ReporteIngresosPorTipoEventoView.as_view(), name='reporte_ingresos_por_tipo_evento'),
 ]

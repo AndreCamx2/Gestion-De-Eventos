@@ -99,14 +99,19 @@ class CotizacionBaseTest(APITestCase):
         datos.update(cambios)
         return datos
 
-    def crear_en_bd(self, fecha_evento=None, validez_oferta=None, estado="cotizado"):
+    def crear_en_bd(self, fecha_evento=None, validez_oferta=None, estado="cotizado", tipo_evento="defecto"):
         """Crea una cotización directo en la base (sin pasar por las validaciones del API)."""
+        if tipo_evento == "defecto":
+            tipo_evento = self.tipo_evento
+
         cotizacion = Cotizacion.objects.create(
             sitio=self.sitio, cliente=self.cliente, usuario=self.admin, salon=self.salon,
             montaje=self.montaje, estado=estado, cantidad_personas=50,
+            tipo_evento=tipo_evento, 
             fecha_evento=fecha_evento or hoy() + timedelta(days=30),
             validez_oferta=validez_oferta or hoy() + timedelta(days=5),
         )
+        
         CotizacionItem.objects.create(
             cotizacion=cotizacion, concepto=self.almuerzo, cantidad=50,
             precio_unitario=self.almuerzo.precio, impuesto_pct=self.almuerzo.impuesto_pct,
@@ -1484,3 +1489,54 @@ class MisCotizacionesTests(CotizacionBaseTest):
         self.assertEqual(self.client.get(detalle(self.mia.pk)).status_code, status.HTTP_403_FORBIDDEN)
         r = self.client.post(f"{detalle(self.mia.pk)}aceptacion/", {"tipo": "efectivo", "monto": "1000000"}, format="json")
         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class ReporteIngresosPorTipoEventoTests(CotizacionBaseTest):
+    """Tests para el endpoint de ingresos por tipo de evento (SGDE-144)."""
+
+    def setUp(self):
+        super().setUp()
+        self.url = "/api/reportes/ingresos-por-tipo-evento/"
+        
+        # Creamos algunos tipos extra para probar
+        self.tipo_boda = TipoEvento.objects.create(nombre="Boda", grupo=self.grupo_evento)
+
+    def test_solo_administradores_pueden_ver_el_reporte(self):
+        self.client.force_authenticate(user=self.cliente_user)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_reporte_agrupa_por_tipo_y_calcula_totales(self):
+        self.client.force_authenticate(user=self.admin)
+        
+        # 1. Cotización confirmada del tipo "Boda" (Día 10)
+        self.crear_en_bd(estado="confirmado", tipo_evento=self.tipo_boda, fecha_evento=hoy() + timedelta(days=10))
+        
+        # 2. Cotización confirmada del tipo "Tipo Test" (Día 11)
+        self.crear_en_bd(estado="confirmado", tipo_evento=self.tipo_evento, fecha_evento=hoy() + timedelta(days=11))
+        
+        # 3. Cotización confirmada SIN tipo (Día 12)
+        self.crear_en_bd(estado="confirmado", tipo_evento=None, fecha_evento=hoy() + timedelta(days=12))
+        
+        # 4. Una cotizada normal (NO debe salir) (Día 13)
+        self.crear_en_bd(estado="cotizado", tipo_evento=self.tipo_boda, fecha_evento=hoy() + timedelta(days=13))
+
+        # Obtenemos la respuesta
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        data = r.json()
+
+        # Validamos los totales globales (deben ser 3 confirmadas)
+        self.assertEqual(data["total_eventos"], 3)
+        
+        # Validamos la agrupación
+        detalle = {d["tipo_evento_id"]: d for d in data["detalle"]}
+        
+        # Verificamos que estén los 3 grupos y no la cotizada
+        self.assertIn(self.tipo_boda.pk, detalle)
+        self.assertIn(self.tipo_evento.pk, detalle)
+        self.assertIn(None, detalle) # El id del "Sin clasificar" es None
+
+        # Verificamos los montos exactos para el tipo Boda
+        self.assertEqual(detalle[self.tipo_boda.pk]["cantidad_eventos"], 1)
+        self.assertEqual(detalle[None]["tipo_evento_nombre"], "Sin clasificar")
