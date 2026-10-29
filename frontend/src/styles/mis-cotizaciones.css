@@ -1,0 +1,174 @@
+/* "Mis cotizaciones" del rol cliente (SGDE-127 y SGDE-131). Solo variables de tokens.css. */
+.mis-cotizaciones {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+}
+
+/* Pestañas Próximos / Realizados */
+.mis-cot-pestanas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-2);
+}
+
+.mis-cot-pestana {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--espacio-2);
+    min-height: var(--alto-tocable);
+    padding: 0 var(--espacio-4);
+    font: inherit;
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-semi);
+    color: var(--color-texto-suave);
+    background: var(--color-superficie);
+    border: var(--borde);
+    border-radius: var(--radio-pildora);
+    cursor: pointer;
+}
+
+.mis-cot-pestana[aria-pressed="true"] {
+    color: var(--color-sobre-oscuro);
+    background: var(--color-tinta);
+    border-color: var(--color-tinta);
+}
+
+.mis-cot-pestana:focus-visible {
+    outline: 2px solid var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+.mis-cot-pestana__cuenta {
+    font-weight: var(--peso-extra);
+}
+
+/* Lista: una tarjeta por cotización, toda la tarjeta es el enlace al detalle */
+.mis-cot-lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mis-cot-fila {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    align-items: center;
+    gap: var(--espacio-5);
+    padding: var(--espacio-4) var(--espacio-5);
+    color: inherit;
+    text-decoration: none;
+    background: var(--color-superficie);
+    border: var(--borde);
+    border-radius: var(--radio-tarjeta);
+}
+
+.mis-cot-fila:hover {
+    border-color: var(--color-linea-fuerte);
+}
+
+.mis-cot-fila:focus-visible {
+    outline: 2px solid var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+.mis-cot-fila__principal,
+.mis-cot-fila__fecha,
+.mis-cot-fila__total {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.mis-cot-fila__numero,
+.mis-cot-fila__etiqueta {
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-semi);
+    color: var(--color-texto-suave);
+}
+
+.mis-cot-fila__salon {
+    font-size: var(--texto-cuerpo);
+    font-weight: var(--peso-extra);
+    overflow-wrap: anywhere;
+}
+
+.mis-cot-fila__detalle {
+    font-size: var(--texto-etiqueta);
+    color: var(--color-texto-suave);
+}
+
+.mis-cot-fila__fecha,
+.mis-cot-fila__total {
+    font-weight: var(--peso-negrita);
+    font-variant-numeric: tabular-nums;
+}
+
+.mis-cot-fila__total {
+    text-align: right;
+}
+
+@media (max-width: 640px) {
+    .mis-cot-fila {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--espacio-3);
+        padding: var(--espacio-4);
+    }
+
+    .mis-cot-fila__principal {
+        grid-column: 1 / -1;
+    }
+
+    .mis-cot-fila__estado {
+        grid-column: 1 / -1;
+        justify-self: start;
+    }
+}
+
+/* Detalle */
+.mis-cot-volver {
+    align-self: flex-start;
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-semi);
+    color: var(--color-texto-suave);
+    text-decoration: none;
+}
+
+.mis-cot-volver:hover {
+    color: var(--color-texto);
+    text-decoration: underline;
+}
+
+.mis-cot-aviso {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--espacio-2);
+    padding: var(--espacio-4) var(--espacio-5);
+    border-radius: var(--radio-tarjeta);
+    border: var(--borde);
+    background: var(--color-superficie);
+}
+
+.mis-cot-aviso--cotizado { background: var(--estado-cotizado-fondo); }
+.mis-cot-aviso--vencida { background: var(--estado-vencida-fondo); }
+.mis-cot-aviso--bloqueado { background: var(--estado-bloqueado-fondo); }
+.mis-cot-aviso--confirmado { background: var(--estado-confirmado-fondo); }
+.mis-cot-aviso--cancelado { background: var(--estado-cancelado-fondo); }
+
+.mis-cot-aviso__texto {
+    margin: 0;
+    font-size: var(--texto-cuerpo);
+    font-weight: var(--peso-medio);
+    color: var(--color-texto);
+}
+
+/* La hoja de la cotización dentro del panel: sin desbordar en el teléfono */
+.mis-cot-hoja {
+    min-width: 0;
+    overflow-x: auto;
+}

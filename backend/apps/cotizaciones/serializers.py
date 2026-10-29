@@ -12,8 +12,10 @@ from apps.sitios.acceso import CampoDeSitio
 from apps.sitios.models import Sitio
 
 from .estados import fecha_corta, registrar
-from .models import Cotizacion, CotizacionItem, MovimientoCotizacion
+from .models import Cotizacion, CotizacionItem, GrupoEvento, MovimientoCotizacion, TipoEvento
 from .services import redondear, totales_cotizacion, totales_linea
+from .models import Cotizacion, CotizacionItem, MovimientoCotizacion
+from .services import garantia_minima, redondear, totales_cotizacion, totales_linea
 
 DIAS_VIGENCIA_POR_DEFECTO = 15
 
@@ -52,6 +54,11 @@ def validar_validez_oferta(validez, fecha_evento):
         return "La validez de la oferta no puede ser posterior a la fecha del evento."
     return None
 
+def validar_tipo_evento_activo(tipo):
+    """Un tipo inactivo, o de un grupo inactivo, no se puede elegir (SGDE-142)."""
+    if not tipo.activo or not tipo.grupo.activo:
+        raise serializers.ValidationError("El tipo de evento está inactivo.")
+    return tipo
 
 # --- Entrada: crear cotización ---------------------------------------------
 
@@ -88,10 +95,12 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
     # El salón define el sitio de la cotización: solo uno de los sitios del usuario.
     salon = CampoDeSitio(queryset=Salon.objects.all())
     items = CotizacionItemEntradaSerializer(many=True)
+        # SGDE-142: obligatorio al crear (en la base es null solo por las cotizaciones viejas).
+    tipo_evento = serializers.PrimaryKeyRelatedField(queryset=TipoEvento.objects.select_related("grupo"))
 
     class Meta:
         model = Cotizacion
-        fields = ["cliente", "salon", "montaje", "fecha_evento", "cantidad_personas", "validez_oferta", "items"]
+        fields = ["cliente", "salon", "montaje", "tipo_evento", "fecha_evento", "cantidad_personas", "validez_oferta", "items"]
         extra_kwargs = {"cantidad_personas": {"min_value": 1}}
 
     def validate_fecha_evento(self, value):
@@ -103,6 +112,9 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
         if not value.activo:
             raise serializers.ValidationError("El cliente está dado de baja.")
         return value
+    
+    def validate_tipo_evento(self, value):
+        return validar_tipo_evento_activo(value)
 
     def validate_items(self, value):
         if not value:
@@ -144,7 +156,7 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
             if not concepto.activo:
                 errores_items.append({"concepto": ["El concepto está inactivo."]})
             elif concepto.sitio_id != salon.sitio_id:
-                errores_items.append({"concepto": ["El concepto no pertenece al sitio del salón."]})
+                errores_items.append({"concepto": ["El concepto no pertenece al venue del salón."]})
             else:
                 errores_items.append({})
         if any(errores_items):
@@ -177,6 +189,62 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
         )
         return cotizacion
 
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        """Edición de una cotización cotizada (PUT .../edicion/): reemplaza datos e items.
+
+        Los conceptos que ya estaban conservan el precio e impuesto con que se cotizaron
+        (como test_cambiar_precio_del_concepto_no_cambia_la_cotizacion); los nuevos toman
+        el precio actual del concepto. Deja un movimiento "editada" con lo que cambió.
+        """
+        items = validated_data.pop("items")
+        cambios = _cambios_de_edicion(instance, validated_data, items)
+        previos = {item.concepto_id: item for item in instance.items.all()}
+
+        for campo, valor in validated_data.items():
+            setattr(instance, campo, valor)
+        instance.sitio = instance.salon.sitio
+        instance.save()
+
+        instance.items.all().delete()
+        nuevos = []
+        for item in items:
+            concepto = item["concepto"]
+            previo = previos.get(concepto.pk)
+            nuevos.append(CotizacionItem(
+                cotizacion=instance,
+                concepto=concepto,
+                cantidad=item["cantidad"],
+                precio_unitario=previo.precio_unitario if previo else concepto.precio,
+                impuesto_pct=previo.impuesto_pct if previo else concepto.impuesto_pct,
+            ))
+        CotizacionItem.objects.bulk_create(nuevos)
+        registrar(instance, "editada", self.context["request"].user, cambios or "Sin cambios.")
+        return instance
+
+
+def _cambios_de_edicion(cotizacion, datos, items):
+    """Texto corto de lo que cambia una edición, para su movimiento."""
+    cambios = []
+    if datos["cliente"].pk != cotizacion.cliente_id:
+        cambios.append(f"cliente: {datos['cliente'].nombre}")
+    if datos["salon"].pk != cotizacion.salon_id or datos["montaje"].pk != cotizacion.montaje_id:
+        cambios.append(f"salón: {datos['salon'].nombre} · {datos['montaje'].nombre}")
+    if datos["fecha_evento"] != cotizacion.fecha_evento:
+        cambios.append(f"fecha: {fecha_corta(cotizacion.fecha_evento)} → {fecha_corta(datos['fecha_evento'])}")
+    if datos["cantidad_personas"] != cotizacion.cantidad_personas:
+        cambios.append(f"personas: {cotizacion.cantidad_personas} → {datos['cantidad_personas']}")
+    if datos["validez_oferta"] != cotizacion.validez_oferta:
+        cambios.append(f"vigencia: {fecha_corta(cotizacion.validez_oferta)} → {fecha_corta(datos['validez_oferta'])}")
+    antes = sorted((i.concepto_id, i.cantidad) for i in cotizacion.items.all())
+    despues = sorted((i["concepto"].pk, i["cantidad"]) for i in items)
+    if antes != despues:
+        cambios.append(f"conceptos: {len(despues)}")
+    if not cambios:
+        return ""
+    texto = "; ".join(cambios)
+    return f"{texto[0].upper()}{texto[1:]}."
+
 
 # --- Salida: detalle y listado ---------------------------------------------
 
@@ -199,10 +267,39 @@ class SalonResumenSerializer(serializers.ModelSerializer):
 
 
 class MontajeResumenSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = Montaje
         fields = ["id", "nombre"]
 
+class GrupoEventoResumenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GrupoEvento
+        fields = ["id", "nombre"]
+
+
+class TipoEventoResumenSerializer(serializers.ModelSerializer):
+    grupo = GrupoEventoResumenSerializer(read_only=True)
+
+    class Meta:
+        model = TipoEvento
+        fields = ["id", "nombre", "grupo"]
+
+
+class TipoEventoSimpleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TipoEvento
+        fields = ["id", "nombre"]
+
+
+class GrupoEventoConTiposSerializer(serializers.ModelSerializer):
+    """GET /api/tipos-evento/: cada grupo con sus tipos. La vista ya trae solo los activos."""
+
+    tipos = TipoEventoSimpleSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = GrupoEvento
+        fields = ["id", "nombre", "orden", "tipos"]
 
 class CotizacionItemDetalleSerializer(serializers.ModelSerializer):
     concepto_nombre = serializers.CharField(source="concepto.nombre", read_only=True)
@@ -276,19 +373,28 @@ class CotizacionDetalleSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, s
     impuestos = serializers.SerializerMethodField()
     total = serializers.SerializerMethodField()
     garantia = serializers.SerializerMethodField()
+    garantia_minima = serializers.SerializerMethodField()
     # Solo la aceptación (SGDE-20) confirma, y en el mismo save registra la garantía:
     # esa fecha es la de confirmación. Lo confirmado a mano en /admin/ queda en null.
     confirmado_en = serializers.DateTimeField(source="garantia_registrada_en", read_only=True)
+    
+    # SGDE-142: tipo y grupo de evento
+    tipo_evento = TipoEventoResumenSerializer(read_only=True)
+    grupo_evento = serializers.SerializerMethodField()
 
     class Meta:
         model = Cotizacion
         fields = [
             "id", "estado", "vencida", "sitio", "cliente", "salon", "montaje", "aforo",
+            "tipo_evento", "grupo_evento",
             "fecha_evento", "cantidad_personas", "validez_oferta", "bloqueo_hasta", "creado_en",
             "creado_por", "confirmado_en", "items", "subtotal", "impuestos", "total", "garantia",
-            *CAMPOS_CANCELACION,
+            "garantia_minima", *CAMPOS_CANCELACION,
         ]
         read_only_fields = fields
+
+    def get_grupo_evento(self, obj):
+        return GrupoEventoResumenSerializer(obj.tipo_evento.grupo).data if obj.tipo_evento else None
 
     def get_aforo(self, obj):
         return (
@@ -309,6 +415,13 @@ class CotizacionDetalleSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, s
     def get_garantia(self, obj):
         return garantia_de(obj)
 
+    def get_garantia_minima(self, obj):
+        """Lo mínimo que hay que recibir para confirmar hoy; null si ya no se puede aceptar."""
+        if obj.estado not in ("cotizado", "bloqueado"):
+            return None
+        minima = garantia_minima(_totales(obj)["total"], obj.fecha_evento, timezone.localdate())
+        return {"porcentaje": f"{minima['porcentaje']:g}", "monto": str(minima["monto"])}
+
 
 class CotizacionListaSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, serializers.ModelSerializer):
     cliente_nombre = serializers.CharField(source="cliente.nombre", read_only=True)
@@ -319,15 +432,23 @@ class CotizacionListaSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, ser
     garantia = serializers.SerializerMethodField()
     # Misma regla que en el detalle: la fecha de la aceptación es la de confirmación.
     confirmado_en = serializers.DateTimeField(source="garantia_registrada_en", read_only=True)
+    
+    # SGDE-142: tipo y grupo de evento
+    tipo_evento = TipoEventoResumenSerializer(read_only=True)
+    grupo_evento = serializers.SerializerMethodField()
 
     class Meta:
         model = Cotizacion
         fields = [
             "id", "estado", "vencida", "cliente_nombre", "salon_nombre", "montaje_nombre",
+            "tipo_evento", "grupo_evento",
             "fecha_evento", "cantidad_personas", "validez_oferta", "bloqueo_hasta",
             "creado_en", "confirmado_en", "total", "garantia", *CAMPOS_CANCELACION,
         ]
         read_only_fields = fields
+
+    def get_grupo_evento(self, obj):
+        return GrupoEventoResumenSerializer(obj.tipo_evento.grupo).data if obj.tipo_evento else None
 
     def get_total(self, obj):
         return str(_totales(obj)["total"])
@@ -336,15 +457,22 @@ class CotizacionListaSerializer(EstadoEfectivoMixin, CancelacionSalidaMixin, ser
         return garantia_de(obj)
 
 
-# --- Entrada: cambiar la vigencia (SGDE-19) ----------------------------------
+# --- Entrada: editar la cotización (SGDE-19 y SGDE-142) ----------------------
 
-class CotizacionVigenciaSerializer(serializers.ModelSerializer):
-    """Solo cambia validez_oferta; cualquier otro campo enviado es un error 400."""
+class CotizacionEdicionSerializer(serializers.ModelSerializer):
+    """Cambia validez_oferta y/o tipo_evento; cualquier otro campo enviado es un error 400."""
+
+    tipo_evento = serializers.PrimaryKeyRelatedField(
+        queryset=TipoEvento.objects.select_related("grupo"), required=False
+    )
 
     class Meta:
         model = Cotizacion
-        fields = ["validez_oferta"]
-        extra_kwargs = {"validez_oferta": {"required": True, "allow_null": False}}
+        fields = ["validez_oferta", "tipo_evento"]
+        extra_kwargs = {"validez_oferta": {"required": False, "allow_null": False}}
+
+    def validate_tipo_evento(self, value):
+        return validar_tipo_evento_activo(value)
 
     def validate(self, attrs):
         no_permitidos = set(self.initial_data) - set(self.fields)
@@ -352,11 +480,15 @@ class CotizacionVigenciaSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {campo: ["Este campo no se puede modificar."] for campo in sorted(no_permitidos)}
             )
-        error = validar_validez_oferta(attrs["validez_oferta"], self.instance.fecha_evento)
-        if error:
-            raise serializers.ValidationError({"validez_oferta": [error]})
+        
+        # Si no envían ni validez ni tipo, no lanzamos error aquí; 
+        # dejamos que la vista evalúe si la cotización está en estado válido (409) o no.
+        if "validez_oferta" in attrs:
+            error = validar_validez_oferta(attrs["validez_oferta"], self.instance.fecha_evento)
+            if error:
+                raise serializers.ValidationError({"validez_oferta": [error]})
+                
         return attrs
-
 
 # --- Entrada: aceptación y garantía (SGDE-20) --------------------------------
 
@@ -394,6 +526,14 @@ class CancelacionSerializer(serializers.Serializer):
     )
 
 
+# --- Entrada: anulación de una cotización no confirmada ---------------------
+
+class AnulacionSerializer(serializers.Serializer):
+    motivo = serializers.CharField(
+        error_messages={"blank": "Escribe el motivo de la anulación.", "required": "Escribe el motivo de la anulación."},
+    )
+
+
 # --- Salida: movimientos (SGDE-62) ------------------------------------------
 
 class MovimientoSerializer(serializers.ModelSerializer):
@@ -406,3 +546,35 @@ class MovimientoSerializer(serializers.ModelSerializer):
 
     def get_usuario(self, obj):
         return obj.usuario.username if obj.usuario else "sistema"
+
+
+# --- Salida: "Mis cotizaciones" del rol cliente (SGDE-126) ------------------
+# Los mismos datos que ve el administrador, menos los internos: quién creó la
+# cotización, quién registró la garantía o la cancelación, y la garantía mínima
+# (es una ayuda para quien registra la aceptación).
+
+CAMPOS_INTERNOS = ("creado_por", "cancelado_por", "garantia_minima")
+
+
+def sin_datos_internos(data):
+    for campo in CAMPOS_INTERNOS:
+        data.pop(campo, None)
+    if data.get("garantia"):
+        data["garantia"] = {k: v for k, v in data["garantia"].items() if k != "registrada_por"}
+    return data
+
+
+class MiCotizacionListaSerializer(CotizacionListaSerializer):
+    sitio_nombre = serializers.CharField(source="sitio.nombre", read_only=True)
+
+    class Meta(CotizacionListaSerializer.Meta):
+        fields = [*CotizacionListaSerializer.Meta.fields, "sitio_nombre"]
+        read_only_fields = fields
+
+    def to_representation(self, instance):
+        return sin_datos_internos(super().to_representation(instance))
+
+
+class MiCotizacionDetalleSerializer(CotizacionDetalleSerializer):
+    def to_representation(self, instance):
+        return sin_datos_internos(super().to_representation(instance))

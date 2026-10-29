@@ -209,6 +209,16 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# Límite de intentos por IP en las vistas públicas de acceso (SGDE-112).
+# Formato de DRF: "<número>/<second|minute|hour|day>". Se cambian por variable de
+# entorno, por ejemplo THROTTLE_LOGIN=10/min en backend/.env.
+# Las pruebas que entran al login muchas veces suben la tasa solo para ellas con
+# @sin_limite_de_intentos (apps/core/pruebas.py).
+TASA_LOGIN = os.getenv("THROTTLE_LOGIN", "5/min")
+TASA_RENOVAR_TOKEN = os.getenv("THROTTLE_RENOVAR_TOKEN", "30/min")
+TASA_REGISTRO = os.getenv("THROTTLE_REGISTRO", "10/hour")
+TASA_CAMBIAR_CREDENCIALES = os.getenv("THROTTLE_CAMBIAR_CREDENCIALES", "10/hour")
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -217,12 +227,21 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "EXCEPTION_HANDLER": "apps.core.exceptions.custom_exception_handler",
-    # Proxies delante del backend (Render pone 1). Los límites de intentos identifican
-    # al cliente por su IP: sin esto, DRF usa TODA la cabecera X-Forwarded-For, que la
-    # escribe el propio cliente, y cambiándola en cada petición el límite no frena a
-    # nadie. Con 1, toma la última dirección, la que agrega Render. En local, sin
-    # proxy: NUM_PROXIES=0 en backend/.env.
-    "NUM_PROXIES": int(os.getenv("NUM_PROXIES", "1")),
+    # Cuántos proxies hay delante de Django; con esto DRF sabe qué IP de
+    # X-Forwarded-For es la del cliente. Sin fijarlo, DRF usa el encabezado
+    # COMPLETO como "IP", y quien lo cambie en cada petición se salta todos
+    # los límites de intentos (SGDE-112). En local (runserver) no hay proxy: 0.
+    # En Render hay uno delante: 1.
+    "NUM_PROXIES": int(os.getenv("NUM_PROXIES", "0" if DEBUG else "1")),
+    "DEFAULT_THROTTLE_RATES": {
+        "recuperar_clave": "5/hour",
+        "restablecer_clave": "20/hour",
+        # SGDE-112: login, renovación del token y registro público, por IP.
+        "login": TASA_LOGIN,
+        "renovar_token": TASA_RENOVAR_TOKEN,
+        "registro": TASA_REGISTRO,
+        "cambiar_credenciales": TASA_CAMBIAR_CREDENCIALES,
+    },
 }
 
 # Duración de los tokens JWT (SGDE-86). Sin esto, simplejwt usa 5 minutos para
@@ -248,6 +267,30 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "TOKEN_REFRESH_SERIALIZER": "apps.usuarios.tokens.RenovarTokenConTopeSerializer",
 }
+
+# A dónde apuntan los enlaces de los correos. En producción sin la variable queda
+# vacío (nunca localhost) y el chequeo sgde.W002 lo avisa al arrancar.
+FRONTEND_URL = (os.getenv("FRONTEND_URL") or ("http://localhost:5173" if DEBUG else "")).rstrip("/")
+
+# Correo (SGDE-96). En local, sin EMAIL_BACKEND, los correos salen en la consola.
+# En producción (DEBUG=False) sin EMAIL_BACKEND no se envía nada y queda un error
+# en el log, sin el contenido (el enlace de recuperar lleva un token): nunca la
+# consola. El chequeo sgde.W001 lo avisa al arrancar (apps/usuarios/checks.py).
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND") or (
+    "django.core.mail.backends.console.EmailBackend" if DEBUG else "apps.usuarios.correos.CorreoSinConfigurar"
+)
+# Enviar los correos fuera de la petición, para que el tiempo de respuesta no
+# revele qué correos están registrados. Las pruebas lo apagan con @correos_en_linea.
+CORREOS_EN_SEGUNDO_PLANO = os.getenv("CORREOS_EN_SEGUNDO_PLANO", "True").lower() in ("true", "1")
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = entero_positivo_entorno("EMAIL_PORT", 587)
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("true", "1")
+EMAIL_TIMEOUT = 10
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "SGDE <no-responder@sgde.local>")
+
+PASSWORD_RESET_TIMEOUT = 60 * entero_positivo_entorno("RECUPERAR_CLAVE_MINUTOS", 60)
 
 # Sin esto, Django no imprime los errores 500 en los logs de Render
 # (DEBUG=False los manda a un handler de email que no está configurado).

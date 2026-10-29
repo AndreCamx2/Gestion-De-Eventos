@@ -1,0 +1,56 @@
+/* Leyenda de estados — maqueta Calendario. Solo variables de tokens.css. */
+.leyenda-estados {
+    display: flex;
+    flex-wrap: wrap; /* en teléfono baja a varias líneas */
+    gap: var(--espacio-2) var(--espacio-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.leyenda-estados__item {
+    /* Cada variante cambia estas dos */
+    --muestra-fondo: var(--color-campo);
+    --muestra-borde: var(--color-texto-tenue);
+
+    display: inline-flex;
+    align-items: center;
+    gap: var(--espacio-2);
+    color: var(--color-texto-suave);
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-negrita);
+}
+
+.leyenda-estados__muestra {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid var(--muestra-borde);
+    border-radius: 4px;
+    background: var(--muestra-fondo);
+}
+
+.leyenda-estados__item--disponible {
+    --muestra-fondo: var(--estado-disponible-fondo);
+    --muestra-borde: var(--estado-disponible-punto);
+}
+
+.leyenda-estados__item--cotizado {
+    --muestra-fondo: var(--estado-cotizado-fondo);
+    --muestra-borde: var(--estado-cotizado-punto);
+}
+
+.leyenda-estados__item--bloqueado {
+    --muestra-fondo: var(--estado-bloqueado-fondo);
+    --muestra-borde: var(--estado-bloqueado-punto);
+}
+
+.leyenda-estados__item--confirmado {
+    --muestra-fondo: var(--estado-confirmado-fondo);
+    --muestra-borde: var(--estado-confirmado-punto);
+}
+
+.leyenda-estados__item--vencida {
+    --muestra-fondo: var(--estado-vencida-fondo);
+    --muestra-borde: var(--estado-vencida-punto);
+}

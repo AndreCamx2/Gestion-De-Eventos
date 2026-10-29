@@ -106,7 +106,7 @@ class EditarSalonTests(BaseSalonesTests):
     def test_cambiar_el_sitio_da_400_aunque_sea_otro_sitio_propio(self):
         r = self.client.patch(salon_url(self.salon.pk), {"sitio": self.otro_sitio_propio.pk}, format="json")
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.json()["sitio"], ["El sitio de un salón no se puede cambiar."])
+        self.assertEqual(r.json()["sitio"], ["El venue de un salón no se puede cambiar."])
         self.salon.refresh_from_db()
         self.assertEqual(self.salon.sitio, self.sitio)
 
@@ -305,10 +305,15 @@ class BajaDeSalonTests(BaseSalonesTests):
         self.assertTrue(self.salon.activo)
 
     def test_un_salon_inactivo_no_se_puede_cotizar(self):
+        from apps.cotizaciones.models import GrupoEvento, TipoEvento
+        grupo = GrupoEvento.objects.create(nombre="Test", orden=1)
+        tipo = TipoEvento.objects.create(nombre="Test Tipo", grupo=grupo)
+
         concepto = Concepto.objects.create(sitio=self.sitio, nombre="Almuerzo", precio=Decimal("1000"))
         self.baja()
         r = self.client.post("/api/cotizaciones/", {
             "cliente": self.cliente.pk, "salon": self.salon.pk, "montaje": self.auditorio.pk,
+            "tipo_evento": tipo.pk,  # <--- Línea nueva
             "fecha_evento": str(timezone.localdate() + timedelta(days=30)), "cantidad_personas": 10,
             "items": [{"concepto": concepto.pk, "cantidad": 1}],
         }, format="json")

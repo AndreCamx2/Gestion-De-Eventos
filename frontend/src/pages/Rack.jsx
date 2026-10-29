@@ -1,147 +1,182 @@
-import { useState, useEffect } from "react";
-import { getRackDisponibilidad } from "../api/rack";
-import "../styles/salones.css";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { obtenerCalendario } from "../api/calendario";
+import { listarSalones } from "../api/salones";
+import DialogoDiaSalon from "../components/bloqueo/DialogoDiaSalon";
+import SesionVencida from "../components/SesionVencida";
+import {
+  AvisoError, Boton, CabeceraPagina, Esqueleto, EstadoVacio, LeyendaEstados, Tarjeta,
+} from "../components/ui";
+import { fechaISO, hoyLocal, mesCorto, sumarDias } from "../utils/inicioCifras";
+import { sitiosDeSalones } from "../utils/sitiosDeSalones";
+import RackRejilla from "./rack/RackRejilla";
+import { DIAS_POR_PAGINA, armarRejilla, rangoDeDias } from "./rack/rack";
+import "../styles/rack.css";
 
-const ESTADOS_MAP = {
-  disponible: {
-    label: "Disponible",
-    colorClass: "badge--disponible",
-    colorHex: "#2e7d32",
-  },
-  cotizado: {
-    label: "Cotizado / Bloqueado",
-    colorClass: "badge--reservado",
-    colorHex: "#d97706",
-  },
-  confirmado: {
-    label: "Confirmado",
-    colorClass: "badge--confirmado",
-    colorHex: "#dc2626",
-  },
-};
+// Rack de salones (SGDE-69): ocupación por día de cada salón, con bloqueo y
+// liberación desde el panel del día. Las reglas de la rejilla están en pages/rack/rack.js.
+const ESTADOS_LEYENDA = ["disponible", "cotizado", "bloqueado", "confirmado"];
+
+function textoRango(dias) {
+  const [primero, ultimo] = [dias[0], dias.at(-1)];
+  return `${primero.getDate()} ${mesCorto(primero)} – ${ultimo.getDate()} ${mesCorto(ultimo)} ${ultimo.getFullYear()}`;
+}
 
 export default function Rack() {
-  const [rackData, setRackData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const hoy = useMemo(() => hoyLocal(), []);
+  const [inicio, setInicio] = useState(hoy);
+  // Lo último que llegó del API, junto con el rango al que corresponde.
+  const [datos, setDatos] = useState(null); // { dias, salones, cotizaciones }
+  const [cargando, setCargando] = useState(true);
+  // Error al cargar: null | "sesion" (401) | "permiso" (403) | "servidor".
+  const [errorCarga, setErrorCarga] = useState(null);
+  const [sesionVencida, setSesionVencida] = useState(false);
+  const [filtroSitio, setFiltroSitio] = useState("todos");
+  const [panel, setPanel] = useState(null); // { salonId, fecha: "AAAA-MM-DD" }
 
-  const hoyStr = new Date().toISOString().split("T")[0];
-  const [fechaInicio, setFechaInicio] = useState(hoyStr);
-  const [filtroSalon, setFiltroSalon] = useState("Todos");
+  const pedidoRef = useRef(0); // una respuesta vieja no pisa a la nueva
+  const abridorRef = useRef(null); // celda que abrió el panel, para devolverle el foco
+  const sesionRef = useRef(null);
+
+  async function cargar(desde) {
+    const pedido = ++pedidoRef.current;
+    const dias = rangoDeDias(desde);
+    setCargando(true);
+    setErrorCarga(null);
+    try {
+      const [salones, cotizaciones] = await Promise.all([
+        listarSalones(),
+        obtenerCalendario({ desde: fechaISO(dias[0]), hasta: fechaISO(dias.at(-1)) }),
+      ]);
+      if (pedido !== pedidoRef.current) return;
+      setDatos({ dias, salones, cotizaciones });
+    } catch (err) {
+      if (pedido !== pedidoRef.current) return;
+      if (err.status === 401) {
+        setErrorCarga("sesion");
+        setSesionVencida(true);
+      } else {
+        setErrorCarga(err.status === 403 ? "permiso" : "servidor");
+      }
+    } finally {
+      if (pedido === pedidoRef.current) setCargando(false);
+    }
+  }
 
   useEffect(() => {
-    setLoading(true);
-    getRackDisponibilidad({ fechaInicio, salonId: filtroSalon })
-      .then((data) => {
-        const lista = Array.isArray(data) ? data : data.results || [];
-        setRackData(lista);
-        setError(null);
-      })
-      .catch((err) => {
-        console.error("Error al cargar disponibilidad:", err);
-        setError("No se pudo cargar la disponibilidad desde el servidor.");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [fechaInicio, filtroSalon]);
+    cargar(inicio);
+  }, [inicio]);
+
+  // El foco vuelve a la celda en un efecto, cuando el panel ya se quitó (ERR-017).
+  useEffect(() => {
+    if (panel === null && abridorRef.current?.isConnected) {
+      abridorRef.current.focus();
+      abridorRef.current = null;
+    }
+  }, [panel]);
+
+  // Los chips de sitio salen de los salones (sitio_nombre, SGDE-104).
+  const sitiosConSalones = useMemo(() => sitiosDeSalones(datos?.salones ?? []), [datos]);
+  const salonesVisibles = useMemo(
+    () => (datos?.salones ?? []).filter((s) => filtroSitio === "todos" || s.sitio === filtroSitio),
+    [datos, filtroSitio],
+  );
+  const rejilla = useMemo(
+    () => (datos ? armarRejilla(datos.salones, datos.cotizaciones, datos.dias) : {}),
+    [datos],
+  );
+
+  const salonPanel = panel && datos?.salones.find((s) => s.id === panel.salonId);
+  const celdaPanel = salonPanel && rejilla[panel.salonId]?.[panel.fecha];
+
+  function abrirPanel(salon, dia, boton) {
+    abridorRef.current = boton;
+    setPanel({ salonId: salon.id, fecha: fechaISO(dia) });
+  }
+
+  function alVolverAEntrar() {
+    setSesionVencida(false);
+    if (errorCarga === "sesion") cargar(inicio);
+  }
+
+  const dias = rangoDeDias(inicio);
+  const sinDatos = !datos;
 
   return (
-    <div className="salones" style={{ padding: "20px" }}>
-      <h2>Rack de Disponibilidad y Bloqueos (RF-04 / RF-07)</h2>
+    <div className="rack">
+      <CabeceraPagina antetitulo="Disponibilidad" titulo="Rack de salones" />
 
-      <div
-        style={{
-          display: "flex",
-          gap: "20px",
-          marginBottom: "20px",
-          background: "#f8f9fa",
-          padding: "12px 16px",
-          borderRadius: "8px",
-          alignItems: "center",
-          border: "1px solid #e9ecef",
-        }}
-      >
-        <span>
-          <strong>Estado de Ocupación:</strong>
-        </span>
-        <span style={{ color: "#2e7d32", fontWeight: "600" }}>
-          ● Verde: Disponible
-        </span>
-        <span style={{ color: "#d97706", fontWeight: "600" }}>
-          ● Amarillo: Cotizado / Bloqueado
-        </span>
-        <span style={{ color: "#dc2626", fontWeight: "600" }}>
-          ● Rojo: Confirmado
-        </span>
+      <div className="rack__controles">
+        <div className="rack__navegacion" role="group" aria-label="Cambiar de fechas">
+          <Boton variante="secundario" onClick={() => setInicio(sumarDias(inicio, -DIAS_POR_PAGINA))}>
+            ← Anterior
+          </Boton>
+          <Boton variante="secundario" onClick={() => setInicio(hoy)} disabled={fechaISO(inicio) === fechaISO(hoy)}>
+            Hoy
+          </Boton>
+          <Boton variante="secundario" onClick={() => setInicio(sumarDias(inicio, DIAS_POR_PAGINA))}>
+            Siguiente →
+          </Boton>
+          <p className="rack__rango" aria-live="polite">{textoRango(dias)}</p>
+        </div>
+
+        {sitiosConSalones.length > 1 && (
+          <div className="rack__sitios" role="group" aria-label="Filtrar por venue">
+            {[{ id: "todos", nombre: "Todos" }, ...sitiosConSalones].map((sitio) => (
+              <button
+                key={sitio.id}
+                type="button"
+                className="rack__sitio"
+                aria-pressed={filtroSitio === sitio.id}
+                onClick={() => setFiltroSitio(sitio.id)}
+              >
+                {sitio.nombre}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="toolbar" style={{ marginBottom: "20px" }}>
-        <div className="toolbar__filters">
-          <label className="filter">
-            <span>Fecha desde:</span>
-            <input
-              type="date"
-              value={fechaInicio}
-              onChange={(e) => setFechaInicio(e.target.value)}
-              className="search-input"
-            />
-          </label>
-        </div>
-      </div>
+      <Tarjeta className="rack__tarjeta" aria-busy={cargando}>
+        {errorCarga === "sesion" ? (
+          <EstadoVacio titulo="Tu sesión expiró" texto="Vuelve a entrar con el aviso de abajo para ver el rack." />
+        ) : errorCarga ? (
+          <AvisoError tipo={errorCarga} onReintentar={() => cargar(inicio)} />
+        ) : sinDatos ? (
+          <Esqueleto filas={4} avatar={false} columnas={5} etiqueta="Cargando el rack…" />
+        ) : datos.salones.length === 0 ? (
+          <EstadoVacio
+            titulo="Aún no hay salones"
+            texto="Crea un salón y habilita sus montajes para ver aquí su ocupación."
+            accion={<Boton as={Link} to="/salones" variante="oscuro">Ir a Salones</Boton>}
+          />
+        ) : (
+          <RackRejilla
+            salones={salonesVisibles}
+            dias={datos.dias}
+            rejilla={rejilla}
+            hoy={hoy}
+            onAbrir={abrirPanel}
+          />
+        )}
+        <LeyendaEstados estados={ESTADOS_LEYENDA} className="rack__leyenda" />
+      </Tarjeta>
 
-      {loading ? (
-        <p className="salones-empty">
-          Cargando disponibilidad desde el servidor...
-        </p>
-      ) : error ? (
-        <p className="salones-empty" style={{ color: "#d9534f" }}>
-          {error}
-        </p>
-      ) : rackData.length === 0 ? (
-        <p className="salones-empty">
-          No hay registros de disponibilidad para la fecha seleccionada.
-        </p>
-      ) : (
-        <div className="table-wrap">
-          <table className="cotizaciones-table">
-            <thead>
-              <tr>
-                <th>Salón</th>
-                <th>Fecha</th>
-                <th>Horario</th>
-                <th>Estado</th>
-                <th>Evento / Cliente</th>
-                <th>Vigencia Bloqueo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rackData.map((item) => {
-                const estadoClave = (item.estado || "disponible").toLowerCase();
-                const badgeInfo =
-                  ESTADOS_MAP[estadoClave] || ESTADOS_MAP.disponible;
-
-                return (
-                  <tr key={item.id || `${item.salon_nombre}-${item.fecha}`}>
-                    <td className="cell-strong">
-                      {item.salon_nombre || item.salon}
-                    </td>
-                    <td>{item.fecha}</td>
-                    <td>{item.horario || "Todo el día"}</td>
-                    <td>
-                      <span className={`badge ${badgeInfo.colorClass}`}>
-                        {badgeInfo.label}
-                      </span>
-                    </td>
-                    <td>{item.evento_nombre || item.cliente || "—"}</td>
-                    <td>{item.vigencia_hasta || "—"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+      {celdaPanel && (
+        <DialogoDiaSalon
+          salon={salonPanel}
+          dia={datos.dias.find((d) => fechaISO(d) === panel.fecha)}
+          esPasado={panel.fecha < fechaISO(hoy)}
+          cotizaciones={celdaPanel.cotizaciones}
+          onCambio={() => cargar(inicio)}
+          onCerrar={() => setPanel(null)}
+          onSesionVencida={() => setSesionVencida(true)}
+          sesionVencida={sesionVencida}
+          onEntrarDeNuevo={(boton) => sesionRef.current?.abrir({ focoAlVolver: boton })}
+        />
       )}
+
+      <SesionVencida ref={sesionRef} visible={sesionVencida} onReingreso={alVolverAEntrar} />
     </div>
   );
 }

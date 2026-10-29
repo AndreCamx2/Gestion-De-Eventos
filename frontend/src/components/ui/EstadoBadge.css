@@ -1,0 +1,64 @@
+/* Etiqueta de estado — guía Piedra viva, sección 2. Solo variables de tokens.css. */
+.estado-badge {
+    /* Neutro por defecto (estado desconocido); cada variante cambia estas tres */
+    --badge-fondo: var(--color-campo);
+    --badge-texto: var(--color-texto-suave);
+    --badge-punto: var(--color-texto-tenue);
+
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: var(--radio-pildora);
+    background: var(--badge-fondo);
+    color: var(--badge-texto);
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-negrita);
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.estado-badge__punto {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: var(--radio-pildora);
+    background: var(--badge-punto);
+}
+
+.estado-badge--cotizado {
+    --badge-fondo: var(--estado-cotizado-fondo);
+    --badge-texto: var(--estado-cotizado-texto);
+    --badge-punto: var(--estado-cotizado-punto);
+}
+
+.estado-badge--bloqueado {
+    --badge-fondo: var(--estado-bloqueado-fondo);
+    --badge-texto: var(--estado-bloqueado-texto);
+    --badge-punto: var(--estado-bloqueado-punto);
+}
+
+.estado-badge--confirmado {
+    --badge-fondo: var(--estado-confirmado-fondo);
+    --badge-texto: var(--estado-confirmado-texto);
+    --badge-punto: var(--estado-confirmado-punto);
+}
+
+.estado-badge--vencida {
+    --badge-fondo: var(--estado-vencida-fondo);
+    --badge-texto: var(--estado-vencida-texto);
+    --badge-punto: var(--estado-vencida-punto);
+}
+
+.estado-badge--cancelado {
+    --badge-fondo: var(--estado-cancelado-fondo);
+    --badge-texto: var(--estado-cancelado-texto);
+    --badge-punto: var(--estado-cancelado-punto);
+}
+
+.estado-badge--disponible {
+    --badge-fondo: var(--estado-disponible-fondo);
+    --badge-texto: var(--estado-disponible-texto);
+    --badge-punto: var(--estado-disponible-punto);
+}

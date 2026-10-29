@@ -36,10 +36,12 @@ rectangle "SGDE" {
   package "Ciclo de la cotización" {
     usecase "Consultar disponibilidad\n(calendario y rack)" as UC_DISPO
     usecase "Generar cotización" as UC_COTIZAR
+    usecase "Editar cotización" as UC_EDITAR
     usecase "Extender vigencia" as UC_VIGENCIA
     usecase "Bloquear o liberar salón" as UC_BLOQUEO
     usecase "Registrar garantía\ny confirmar evento" as UC_CONFIRMAR
     usecase "Cancelar evento" as UC_CANCELAR
+    usecase "Anular cotización" as UC_ANULAR
     usecase "Imprimir cotización (PDF)" as UC_PDF
     usecase "Consultar histórico\ny movimientos" as UC_HISTORICO
     usecase "Liberar bloqueos vencidos" as UC_LIBERAR_AUTO
@@ -51,6 +53,8 @@ rectangle "SGDE" {
     usecase "Registrarse como cliente" as UC_REG
   }
   usecase "Actualizar mi stock" as UC_MISTOCK
+  usecase "Consultar mis cotizaciones" as UC_MISCOT
+  usecase "Gestionar mi perfil\n(datos, correo y contraseña)" as UC_PERFIL
 }
 
 actor "Usuario" as US
@@ -68,22 +72,27 @@ AD --> UC_PROVEEDORES
 AD --> UC_COMPARAR
 AD --> UC_DISPO
 AD --> UC_COTIZAR
+AD --> UC_EDITAR
 AD --> UC_VIGENCIA
 AD --> UC_BLOQUEO
 AD --> UC_CONFIRMAR
 AD --> UC_CANCELAR
+AD --> UC_ANULAR
 AD --> UC_PDF
 AD --> UC_HISTORICO
 
 UC_LOGIN <-- US
 UC_LOGOUT <-- US
 UC_MISTOCK <-- PR
+UC_PERFIL <-- PR
+UC_PERFIL <-- CL
+UC_MISCOT <-- CL
 UC_CLAVE <-- VI
 UC_REG <-- VI
 UC_LIBERAR_AUTO <-- SIS
 US <|-- PR
 US <|-- CL
 
-note "El Administrador también es un Usuario:\ninicia y cierra sesión como los demás.\nEn la beta, el Cliente solo se registra,\nentra y ve su inicio." as N1
+note "El Administrador también es un Usuario:\ninicia y cierra sesión como los demás.\nEl Cliente consulta sus cotizaciones\n(por construir, SGDE-126) y gestiona su perfil.\nNo crea ni cambia cotizaciones." as N1
 N1 .. CL
 @enduml

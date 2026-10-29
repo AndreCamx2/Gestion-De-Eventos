@@ -1,9 +1,10 @@
 import { apiFetch } from "./client";
+import { todasLasPaginas } from "./listas";
 
 
 
 export async function listarConceptos() {
-    return apiFetch("/conceptos/", { method: "GET" });
+    return todasLasPaginas("/conceptos/");
 }
 
 export async function crearConcepto(datos) {
@@ -28,9 +29,9 @@ export async function cambiarEstadoConcepto(id, activo) {
 
 
 export async function historialConcepto(id) {
-    return apiFetch(`/conceptos/${id}/historial/`, { method: "GET" });
+    return todasLasPaginas(`/conceptos/${id}/historial/`);
 }
 
 export async function listarSitios() {
-    return apiFetch("/sitios/", { method: "GET" });
+    return todasLasPaginas("/sitios/");
 }

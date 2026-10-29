@@ -1,0 +1,93 @@
+/* Aviso de sesión vencida (401) — maqueta CasosLimite. Solo variables de tokens.css. */
+.aviso-sesion {
+    position: fixed;
+    right: var(--espacio-4);
+    bottom: var(--espacio-4);
+    left: var(--espacio-4);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-3);
+    width: auto;
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 14px var(--espacio-4);
+    border-radius: 16px;
+    background: var(--color-texto);
+    color: var(--color-sobre-oscuro);
+    box-shadow: var(--sombra-flotante);
+    /* Entra subiendo un poco; solo transform y opacity (guía, sección 7) */
+    animation: aviso-sesion-entrada var(--duracion-menu) var(--curva-salida);
+}
+
+/* Alto del aviso en teléfono (texto en tres líneas) más su margen inferior */
+.aviso-sesion__espacio {
+    height: 120px;
+}
+
+.aviso-sesion__icono {
+    flex-shrink: 0;
+}
+
+.aviso-sesion__texto {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-negrita);
+}
+
+.aviso-sesion__boton {
+    flex-shrink: 0;
+    min-height: var(--alto-tocable);
+    padding: 0 14px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--color-fondo);
+    color: var(--color-texto);
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-extra);
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform var(--duracion-presion) var(--curva-salida);
+}
+
+.aviso-sesion__boton:active {
+    transform: scale(0.97);
+}
+
+/* Sobre fondo oscuro el contorno tinta casi no se ve: se usa uno claro */
+.aviso-sesion__boton:focus-visible {
+    outline-color: var(--color-fondo);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .aviso-sesion__boton:hover {
+        background: var(--color-superficie);
+    }
+}
+
+@keyframes aviso-sesion-entrada {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .aviso-sesion {
+        animation: none;
+    }
+
+    .aviso-sesion__boton {
+        transition: none;
+    }
+
+    .aviso-sesion__boton:active {
+        transform: none;
+    }
+}

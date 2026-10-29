@@ -1,5 +1,5 @@
 @startuml CU08_CancelarEvento
-title CU-08 · Cancelar evento (SGDE-22, SGDE-61, SGDE-68)
+title CU-08 · Cancelar evento o anular cotización (SGDE-22, SGDE-61, SGDE-68)
 skinparam backgroundColor white
 skinparam ActivityBackgroundColor #F2F2F2
 skinparam ActivityBorderColor black
@@ -15,24 +15,43 @@ skinparam note {
 
 |Administrador|
 start
-:Abre un evento confirmado
-y elige "Cancelar evento";
-:Escribe la penalización (%) y el motivo;
-:La pantalla muestra en vivo
-cuánto se retiene;
-|Sistema|
-if (¿Está confirmado?) then (no)
-  :Responde 409
-  "Solo se puede cancelar un evento confirmado";
-  stop
-else (sí)
-  :Estado **cancelado**, con penalización,
-  motivo, quién y cuándo;
-  :Registra el movimiento "cancelada";
-  :La fecha del salón queda libre;
+:Abre una cotización;
+if (¿Está confirmada?) then (sí)
+  :Elige "Cancelar evento";
+  :Escribe la penalización (%) y el motivo;
+  :La pantalla muestra en vivo
+  cuánto se retiene;
+  |Sistema|
+  if (¿Sigue confirmada?) then (no)
+    :Responde 409
+    "Solo se puede cancelar un evento confirmado";
+    stop
+  else (sí)
+    :Estado **cancelado**, con penalización,
+    motivo, quién y cuándo;
+    :Registra el movimiento "cancelada";
+    :La fecha del salón queda libre;
+  endif
+  |Administrador|
+  :Ve el panel "Cotización cancelada"
+  con el monto retenido;
+else (no: cotizada o bloqueada)
+  :Elige "Anular cotización";
+  :Escribe el motivo;
+  |Sistema|
+  if (¿Sigue cotizada o bloqueada?) then (no)
+    :Responde 409
+    "Solo se puede anular una cotización
+    cotizada o bloqueada";
+    stop
+  else (sí)
+    :Estado **cancelado**, sin penalización,
+    con motivo, quién y cuándo;
+    :Si estaba bloqueada, suelta la fecha;
+    :Registra el movimiento "anulada";
+  endif
+  |Administrador|
+  :Ve el panel "Cotización anulada";
 endif
-|Administrador|
-:Ve el panel "Cotización cancelada"
-con el monto retenido;
 stop
 @enduml

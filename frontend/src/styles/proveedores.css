@@ -1,158 +1,529 @@
-    .proveedores-container {
-        padding: 24px;
-        max-width: 1200px;
-        margin: 0 auto;
-        font-family: system-ui, -apple-system, sans-serif;
+/* Proveedores y stock — maqueta Proveedores.dc.html y guía Piedra viva. Solo variables de tokens.css. */
+.proveedores-pv {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-6);
+}
+
+.proveedores-pv .cabecera-pagina__acciones {
+    align-items: center;
+}
+
+/* ===== Tarjetas de proveedor ===== */
+
+.proveedores-tarjetas {
+    display: grid;
+    /* min(): en pantallas de menos de 240 px la columna no se desborda */
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.proveedor-tarjeta {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    height: 100%;
+    padding: 18px;
+    border: 2px solid var(--color-linea);
+    border-radius: 18px;
+    background: var(--color-superficie);
+    color: var(--color-texto);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform var(--duracion-presion) var(--curva-salida);
+}
+
+.proveedor-tarjeta:active {
+    transform: scale(0.97);
+}
+
+.proveedor-tarjeta:focus-visible {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+/* Elegida: tinta suave con borde tinta (contraste del texto ≥ 4.5:1, guía sección 8) */
+.proveedor-tarjeta[aria-pressed="true"] {
+    border-color: var(--color-tinta);
+    background: var(--color-tinta-suave);
+}
+
+.proveedor-tarjeta__fila {
+    display: flex;
+    align-items: center;
+    gap: var(--espacio-3);
+    min-width: 0;
+}
+
+.proveedor-tarjeta__iniciales {
+    display: flex;
+    flex: 0 0 40px;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    border-radius: var(--radio-control);
+    background: var(--color-campo);
+    color: var(--color-tinta);
+    font-weight: var(--peso-extra);
+}
+
+.proveedor-tarjeta[aria-pressed="true"] .proveedor-tarjeta__iniciales {
+    background: var(--color-superficie);
+}
+
+.proveedor-tarjeta__textos {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.proveedor-tarjeta__nombre {
+    overflow: hidden;
+    font-size: 16px;
+    font-weight: var(--peso-extra);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.proveedor-tarjeta__ident {
+    font-size: var(--texto-pequeno);
+    color: var(--color-texto-suave);
+    overflow-wrap: anywhere;
+}
+
+.proveedor-tarjeta__pie {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-negrita);
+}
+
+.proveedor-tarjeta__contacto {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.proveedor-tarjeta__conteo {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .proveedor-tarjeta[aria-pressed="false"]:hover {
+        background: var(--color-superficie-2);
+        border-color: var(--color-linea-fuerte);
+    }
+}
+
+/* ===== Stock del proveedor elegido ===== */
+
+/* Al bajar hasta la tabla en teléfono, deja un respiro arriba */
+.proveedores-stock-ancla {
+    scroll-margin-top: var(--espacio-4);
+}
+
+.proveedores-stock {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-3);
+    min-width: 0;
+}
+
+.proveedores-stock__cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+}
+
+.proveedores-stock__titulo {
+    margin: 0;
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-seccion);
+    overflow-wrap: anywhere;
+}
+
+.proveedores-stock__total {
+    margin: 0;
+    font-size: var(--texto-navegacion);
+    color: var(--color-texto-suave);
+}
+
+.proveedores-stock__total strong {
+    margin-left: 6px;
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-mantequilla-texto);
+}
+
+.proveedores-tabla {
+    /* En teléfono la tabla se desplaza dentro de TablaContenedor */
+    min-width: 640px;
+    font-variant-numeric: tabular-nums;
+}
+
+.proveedores-tabla .proveedores-tabla__num {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.proveedores-tabla__elemento,
+.proveedores-tabla__fuerte {
+    font-weight: var(--peso-extra);
+}
+
+.proveedores-guardado {
+    align-self: flex-start;
+    margin: 0;
+    padding: var(--espacio-2) var(--espacio-4);
+    border-radius: var(--radio-pildora);
+    background: var(--estado-confirmado-fondo);
+    color: var(--estado-confirmado-texto);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-negrita);
+}
+
+.proveedores-guardado:empty {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+
+.proveedores-dialogo__aviso {
+    margin: 0;
+    padding: var(--espacio-3) var(--espacio-4);
+    border-radius: var(--radio-control);
+    background: var(--estado-vencida-fondo);
+    color: var(--estado-vencida-texto);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-semi);
+}
+
+.proveedores-stock__buscar {
+    max-width: 360px;
+}
+
+.proveedores-tabla__nombre {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espacio-2);
+}
+
+.proveedores-tabla__cantidad {
+    font-size: 18px;
+    font-weight: var(--peso-extra);
+}
+
+.proveedores-tabla__suave {
+    color: var(--color-texto-suave);
+    white-space: nowrap;
+}
+
+.proveedores-tabla .proveedores-tabla__acciones {
+    text-align: right;
+}
+
+/* "Editar" de cada fila: más bajo que un botón normal, pero tocable */
+.proveedores-tabla__editar {
+    min-height: var(--alto-tocable);
+    padding: 0 var(--espacio-4);
+    font-size: var(--texto-etiqueta);
+}
+
+/* ===== Selector de vista (SGDE-71) ===== */
+
+.proveedores-vistas {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-self: flex-start;
+    gap: 6px;
+    max-width: 100%;
+    padding: 6px;
+    border: var(--borde);
+    border-radius: var(--radio-tarjeta);
+    background: var(--color-superficie);
+}
+
+.proveedores-vistas__opcion {
+    min-height: var(--alto-tocable);
+    padding: 0 var(--espacio-4);
+    border: 0;
+    border-radius: var(--radio-control);
+    background: transparent;
+    color: var(--color-texto-suave);
+    font: inherit;
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-extra);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform var(--duracion-presion) var(--curva-salida);
+}
+
+.proveedores-vistas__opcion[aria-pressed="true"] {
+    background: var(--color-tinta);
+    color: var(--color-sobre-oscuro);
+}
+
+.proveedores-vistas__opcion:active {
+    transform: scale(0.97);
+}
+
+.proveedores-vistas__opcion:focus-visible {
+    outline: var(--foco);
+    outline-offset: var(--foco-separacion);
+}
+
+/* ===== Comparar precios (SGDE-71) ===== */
+
+.comparar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+}
+
+.comparar__buscar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--espacio-3) var(--espacio-5);
+}
+
+.comparar__buscar .campo {
+    flex: 0 1 420px;
+    min-width: 0;
+}
+
+.comparar__estado {
+    margin: 0 0 var(--espacio-3);
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-semi);
+    color: var(--color-texto-suave);
+}
+
+.comparar__estado:empty {
+    display: none;
+}
+
+.comparar__lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-5);
+}
+
+/* Mientras llega la búsqueda nueva, lo anterior se queda pero se atenúa */
+.comparar__lista--cargando {
+    opacity: 0.6;
+}
+
+.comparar-bloque {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-4);
+}
+
+.comparar-bloque__cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--espacio-2) var(--espacio-5);
+}
+
+.comparar-bloque__elemento {
+    margin: 0;
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-seccion);
+    overflow-wrap: anywhere;
+}
+
+.comparar-bloque__mejor,
+.comparar-bloque__sin-precio {
+    margin: 0;
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-negrita);
+    color: var(--color-texto-suave);
+}
+
+.comparar-bloque__mejor strong {
+    margin-left: 6px;
+    font-size: var(--texto-seccion);
+    font-weight: var(--peso-extra);
+    font-variant-numeric: tabular-nums;
+    color: var(--estado-confirmado-texto);
+}
+
+.comparar-tabla {
+    /* En teléfono la tabla se desplaza dentro de TablaContenedor */
+    min-width: 560px;
+    font-variant-numeric: tabular-nums;
+}
+
+.comparar-tabla .comparar-tabla__num {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.comparar-tabla .comparar-tabla__proveedor {
+    font-weight: var(--peso-extra);
+    text-align: left;
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: var(--texto-cuerpo);
+    color: var(--color-texto);
+    /* TablaContenedor pone nowrap a todo th: el nombre sí se parte */
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.comparar-tabla__valor {
+    font-weight: var(--peso-extra);
+}
+
+.comparar-tabla__contacto {
+    color: var(--color-texto-suave);
+    overflow-wrap: anywhere;
+}
+
+.comparar-tabla__fila--mejor {
+    background: var(--estado-confirmado-fondo);
+}
+
+.comparar-tabla__fila--agotada :is(th, td) {
+    opacity: 0.6;
+}
+
+.comparar-etiqueta {
+    display: inline-block;
+    margin-left: var(--espacio-2);
+    padding: 2px var(--espacio-2);
+    border-radius: var(--radio-pildora);
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-extra);
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.comparar-etiqueta--mejor {
+    background: var(--estado-confirmado-fondo);
+    color: var(--estado-confirmado-texto);
+    border: 1px solid var(--estado-confirmado-punto);
+}
+
+.comparar-etiqueta--agotado {
+    margin-left: 0;
+    background: var(--estado-cancelado-fondo);
+    color: var(--estado-cancelado-texto);
+}
+
+/* Teléfono: cada oferta es una tarjeta (proveedor arriba; disponible y valor en
+   una línea; contacto abajo), para que precio y contacto se vean sin desplazar */
+@media (max-width: 600px) {
+    .comparar-tabla {
+        min-width: 0;
     }
 
-    .toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
-    }
-
-    .toolbar h2 {
-        font-size: 1.5rem;
-        color: #1a202c;
-        margin: 0;
-    }
-
-    /* Estilos de Botones */
-    .btn {
-        padding: 10px 18px;
-        border-radius: 6px;
-        font-weight: 600;
-        cursor: pointer;
-        border: none;
-        transition: background-color 0.2s ease;
-    }
-
-    .btn--primary {
-        background-color: #2563eb;
-        color: #ffffff;
-    }
-
-    .btn--primary:hover {
-        background-color: #1d4ed8;
-    }
-
-    .btn-danger {
-        background-color: #fee2e2;
-        color: #dc2626;
-        border: 1px solid #fca5a5;
-        padding: 6px 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 0.875rem;
-    }
-
-    .btn-danger:hover {
-        background-color: #fecaca;
-    }
-
-    .proveedores-table {
-        width: 100%;
-        border-collapse: collapse;
-        background-color: #ffffff;
-        border-radius: 8px;
+    .comparar-tabla thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
         overflow: hidden;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        clip: rect(0 0 0 0);
     }
 
-    .proveedores-table th,
-    .proveedores-table td {
-        padding: 14px 16px;
-        text-align: left;
-        border-bottom: 1px solid #e2e8f0;
-    }
-
-    .proveedores-table th {
-        background-color: #f8fafc;
-        color: #64748b;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .cell-strong {
-        font-weight: 600;
-        color: #0f172a;
-    }
-
-    .table-empty {
-        text-align: center;
-        color: #64748b;
-        padding: 30px;
-    }
-
-    .state-info {
-        color: #3b82f6;
-        font-weight: 500;
-    }
-
-    .state-error {
-        color: #ef4444;
-        font-weight: 500;
-    }
-
-    /* Modal Emergente */
-    .modal-backdrop {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background-color: rgba(15, 23, 42, 0.5);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
-    }
-
-    .modal-content {
-        background-color: #ffffff;
-        padding: 28px;
-        border-radius: 10px;
-        width: 100%;
-        max-width: 480px;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-    }
-
-    .modal-content h3 {
-        margin-top: 0;
-        margin-bottom: 20px;
-        color: #0f172a;
-    }
-
-    .modal-content label {
+    .comparar-tabla tbody {
         display: block;
-        margin-bottom: 14px;
-        font-size: 0.9rem;
-        color: #334155;
     }
 
-    .modal-content input {
-        width: 100%;
-        padding: 8px 12px;
-        margin-top: 6px;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-        box-sizing: border-box;
+    .comparar-tabla tbody tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: var(--espacio-2) var(--espacio-3);
+        padding: var(--espacio-4);
+        border-bottom: var(--borde);
     }
 
-    .modal-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-        margin-top: 24px;
+    .comparar-tabla tbody tr:last-child {
+        border-bottom: 0;
     }
 
-    .form-error {
-        color: #dc2626;
-        background-color: #fef2f2;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 0.875rem;
-        margin-bottom: 16px;
+    .comparar-tabla tbody :is(th, td) {
+        display: block;
+        padding: 0;
+        border: 0;
+        text-align: left;
     }
+
+    .comparar-tabla .comparar-tabla__proveedor,
+    .comparar-tabla .comparar-tabla__contacto {
+        grid-column: 1 / -1;
+    }
+
+    .comparar-tabla td.comparar-tabla__cantidad {
+        text-align: left;
+    }
+
+    .comparar-tabla td.comparar-tabla__valor {
+        text-align: right;
+    }
+
+    /* Solo visual: el lector de pantalla ya oye el encabezado de la columna
+       (el texto alternativo vacío, "/ \"\"", lo deja fuera; el primero es respaldo) */
+    .comparar-tabla tbody td::before {
+        content: attr(data-etiqueta);
+        content: attr(data-etiqueta) / "";
+        display: block;
+        font-size: var(--texto-pequeno);
+        font-weight: var(--peso-negrita);
+        color: var(--color-texto-tenue);
+    }
+}
+
+/* ===== Ventanas ===== */
+
+.proveedores-dialogo__para {
+    margin: 0;
+    color: var(--color-texto-suave);
+}
+
+.proveedores-dialogo__para strong {
+    color: var(--color-texto);
+}
+
+.proveedores-dialogo__par {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--espacio-3);
+}
+
+@media (max-width: 420px) {
+    .proveedores-dialogo__par {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .proveedor-tarjeta,
+    .proveedores-vistas__opcion {
+        transition: none;
+    }
+
+    .proveedor-tarjeta:active,
+    .proveedores-vistas__opcion:active {
+        transform: none;
+    }
+}

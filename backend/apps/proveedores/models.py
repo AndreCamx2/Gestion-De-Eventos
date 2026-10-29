@@ -34,3 +34,28 @@ class StockElemento(models.Model):
 
     def __str__(self):
         return f"{self.nombre_elemento} - {self.proveedor.nombre}"
+
+class HistorialStockElemento(models.Model):
+    """Un cambio de cantidad o valor de un elemento de stock (SGDE-134).
+
+    Guarda los dos campos antes y después, aunque solo cambie uno.
+    """
+
+    elemento = models.ForeignKey(StockElemento, on_delete=models.CASCADE, related_name="historial")
+    cantidad_anterior = models.PositiveIntegerField()
+    cantidad_nueva = models.PositiveIntegerField()
+    valor_anterior = models.DecimalField(max_digits=12, decimal_places=2)
+    valor_nuevo = models.DecimalField(max_digits=12, decimal_places=2)
+    modificado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="cambios_stock"
+    )
+    fecha_modificacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-fecha_modificacion", "-id"]
+
+    def __str__(self):
+        return (
+            f"{self.elemento_id}: {self.cantidad_anterior} x {self.valor_anterior}"
+            f" -> {self.cantidad_nueva} x {self.valor_nuevo}"
+        )

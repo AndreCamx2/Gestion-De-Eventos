@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SGDE · Piedra viva · Cotizaciones</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F2F0}
+a{color:#B4562F}a:hover{color:#8F3F1F}
+.btn{transition:transform 160ms cubic-bezier(0.23,1,0.32,1),filter 160ms ease}
+.btn:active{transform:scale(0.97)}
+.field:focus-within{border-color:#2F4A6D;box-shadow:0 0 0 4px rgba(238,138,99,0.18)}
+@media (hover:hover) and (pointer:fine){.btn:hover{filter:brightness(1.08)}.nav:hover{background:#F1EFEB;color:#1D232B}.row:hover{background:#F7F6F3}}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}.btn:active{transform:none}}
+.tab{transition:color 160ms ease}@media (hover:hover) and (pointer:fine){.tab[aria-current="false"]:hover{color:#1D232B !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; align-content: flex-start; background: #F3F2F0; color: #1D232B; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;">
+
+  <header style="flex: 1 1 100%; background: #FFFFFF; border-bottom: 1px solid #E4E2DE;">
+    <div style="max-width: 1320px; margin: 0 auto; padding: 0 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px; min-height: 68px;">
+      <a href="Inicio.dc.html" style="display: flex; align-items: center; gap: 10px; color: #1D232B; text-decoration: none;"><span style="position: relative; width: 34px; height: 34px; border-radius: 10px; background: #1D232B; color: #F3F2F0; display: flex; align-items: center; justify-content: center; font-weight: 800;">S<span style="position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 5px; background: #EE8A63; box-shadow: 0 0 0 2px #FFFFFF;"></span></span><span style="font-weight: 700;">SGDE</span></a>
+      <nav aria-label="Principal" style="display: flex; flex-wrap: wrap; gap: 2px; flex: 1; align-self: stretch;"><a class="tab" href="Inicio.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Inicio</a><a class="tab" href="Cotizaciones.dc.html" aria-current="page" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid #EE8A63; color: #1D232B; font-weight: 700; font-size: 14px; text-decoration: none;">Cotizaciones</a><a class="tab" href="Calendario.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Calendario</a><a class="tab" href="Salones.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Salones</a><a class="tab" href="Conceptos.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Conceptos</a><a class="tab" href="Proveedores.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Proveedores</a><a class="tab" href="Clientes.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Clientes</a><a class="tab" href="Sitios.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Sitios</a><a class="tab" href="Usuarios.dc.html" aria-current="false" style="display: flex; align-items: center; min-height: 44px; padding: 0 11px; border-bottom: 3px solid transparent; color: #5D6673; font-weight: 600; font-size: 14px; text-decoration: none;">Usuarios</a></nav>
+      <a href="Main.dc.html" title="Cerrar sesión" style="width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; text-decoration: none;"><span style="width: 36px; height: 36px; border-radius: 18px; background: #FCE5D9; color: #B4562F; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;">AF</span></a>
+    </div>
+  </header>
+
+  <main style="flex: 1 1 100%; max-width: 1320px; margin: 0 auto; min-width: 0; padding: 32px 40px 56px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px;">
+    <header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px;">
+      <div>
+        <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #B4562F;">Operación</div>
+        <h1 style="margin: 8px 0 0; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 48px; line-height: 1; letter-spacing: -0.035em;">Cotizaciones</h1>
+        <p style="margin: 10px 0 0; color: #5D6673; font-size: 16px;">Todo lo que se ha ofrecido, en qué estado está y cuánto vale.</p>
+      </div>
+      <a class="btn" href="NuevaCotizacion.dc.html" style="display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 20px; border-radius: 14px; background: #2F4A6D; color: #FFFFFF; font-weight: 800; font-size: 15px; text-decoration: none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nueva cotización</a>
+    </header>
+
+    <section aria-label="Resumen" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; border-radius: 18px; overflow: hidden; background: #E4E2DE; border: 1px solid #E4E2DE;">
+      <div style="background: #FFFFFF; padding: 18px 20px;"><div style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #5D6673;">Valor vigente</div><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 30px; margin-top: 6px; font-variant-numeric: tabular-nums;">$ 184,6 M</div></div>
+      <div style="background: #FFFFFF; padding: 18px 20px;"><div style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #5D6673;">Tasa de cierre</div><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 30px; margin-top: 6px; color: #1F8A55;">62%</div></div>
+      <div style="background: #FFFFFF; padding: 18px 20px;"><div style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #5D6673;">Ticket promedio</div><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 30px; margin-top: 6px; font-variant-numeric: tabular-nums;">$ 15,4 M</div></div>
+      <div style="background: #FFFFFF; padding: 18px 20px;"><div style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #5D6673;">Vencen en 7 días</div><div style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 30px; margin-top: 6px; color: #A86B00;">4</div></div>
+    </section>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+      <div role="tablist" aria-label="Filtrar por estado" style="display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E4E2DE;">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="6">
+          <button class="btn" type="button" role="tab" aria-selected="{{ t.selected }}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border: 0; border-radius: 11px; background: {{ t.bg }}; color: {{ t.fg }}; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer;">{{ t.label }}<span style="font-size: 12px; opacity: 0.8;">{{ t.count }}</span></button>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <label class="field" style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border-radius: 12px; background: #FFFFFF; border: 1.5px solid #D6D3CD; color: #6E7581; min-width: 240px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input aria-label="Buscar cotización" placeholder="Cliente o número" style="background: transparent; border: 0; outline: 0; color: #1D232B; font: inherit; font-size: 14px; width: 100%;">
+        </label>
+        <label class="field" style="display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; border-radius: 12px; background: #FFFFFF; border: 1.5px solid #D6D3CD; font-size: 13px; color: #5D6673; font-weight: 700;">Evento desde<input type="date" value="2026-10-01" style="background: transparent; border: 0; outline: 0; color: #1D232B; font: inherit; font-size: 14px; color-scheme: dark;"></label>
+        <label class="field" style="display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; border-radius: 12px; background: #FFFFFF; border: 1.5px solid #D6D3CD; font-size: 13px; color: #5D6673; font-weight: 700;">hasta<input type="date" value="2026-11-30" style="background: transparent; border: 0; outline: 0; color: #1D232B; font: inherit; font-size: 14px; color-scheme: dark;"></label>
+      </div>
+    </div>
+
+    <section style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E4E2DE; overflow-x: auto;">
+      <table style="width: 100%; min-width: 1040px; border-collapse: collapse; font-size: 14px;">
+        <thead>
+          <tr style="text-align: left; color: #6E7581; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;">
+            <th scope="col" style="padding: 16px 20px; font-weight: 800;">N.º</th>
+            <th scope="col" style="padding: 16px 12px; font-weight: 800;">Cliente</th>
+            <th scope="col" style="padding: 16px 12px; font-weight: 800;">Salón y montaje</th>
+            <th scope="col" style="padding: 16px 12px; font-weight: 800;">Evento</th>
+            <th scope="col" style="padding: 16px 12px; font-weight: 800; text-align: right;">Personas</th>
+            <th scope="col" style="padding: 16px 12px; font-weight: 800;">Vigencia</th>
+            <th scope="col" style="padding: 16px 12px; font-weight: 800; text-align: right;">Total</th>
+            <th scope="col" style="padding: 16px 12px; font-weight: 800;">Estado</th>
+            <th scope="col" style="padding: 16px 20px;"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Abrir</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
+            <tr class="row" style="border-top: 1px solid #E4E2DE;">
+              <td style="padding: 16px 20px; font-weight: 800; color: #5D6673; font-variant-numeric: tabular-nums;">{{ r.num }}</td>
+              <td style="padding: 16px 12px; font-weight: 800; max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ r.cliente }}</td>
+              <td style="padding: 16px 12px; color: #5D6673;">{{ r.salon }}</td>
+              <td style="padding: 16px 12px; white-space: nowrap;">{{ r.fecha }}</td>
+              <td style="padding: 16px 12px; text-align: right; font-variant-numeric: tabular-nums;">{{ r.personas }}</td>
+              <td style="padding: 16px 12px; white-space: nowrap;"><span style="display: block;">{{ r.vigencia }}</span><span style="display: block; font-size: 12px; font-weight: 800; color: {{ r.vigColor }};">{{ r.vigNota }}</span></td>
+              <td style="padding: 16px 12px; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap;">{{ r.total }}</td>
+              <td style="padding: 16px 12px;"><span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; background: {{ r.bg }}; color: {{ r.fg }}; font-size: 12px; font-weight: 800; white-space: nowrap;"><span style="width: 6px; height: 6px; border-radius: 3px; background: {{ r.dot }};"></span>{{ r.estado }}</span></td>
+              <td style="padding: 8px 16px; text-align: right;"><a class="btn" href="DetalleCotizacion.dc.html" aria-label="Abrir cotización" style="display: inline-flex; width: 44px; height: 44px; border-radius: 12px; align-items: center; justify-content: center; color: #5D6673;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a></td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-top: 1px solid #E4E2DE; font-size: 13px; color: #5D6673;">
+        <span>Mostrando 8 de 48</span>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn" type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; background: #F1EFEB; border: 1px solid #D6D3CD; color: #1D232B; font: inherit; font-weight: 700; cursor: pointer;">Anterior</button>
+          <button class="btn" type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; background: #F1EFEB; border: 1px solid #D6D3CD; color: #1D232B; font: inherit; font-weight: 700; cursor: pointer;">Siguiente</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const estilos = {
+      Cotizado: { bg: 'rgba(240,180,41,0.16)', fg: '#9A6700', dot: '#F0B429' },
+      Confirmado: { bg: 'rgba(52,168,106,0.14)', fg: '#1F6E44', dot: '#34A86A' },
+      Bloqueado: { bg: 'rgba(111,131,217,0.18)', fg: '#3A4C99', dot: '#6F83D9' },
+      Vencida: { bg: 'rgba(238,138,99,0.16)', fg: '#B4562F', dot: '#EE8A63' },
+      Cancelado: { bg: 'rgba(93,102,115,0.18)', fg: '#5D6673', dot: '#6E7581' }
+    };
+    const datos = [
+      ['#049', 'Inversiones Caribe S.A.S.', 'Heredia · Auditorio', '20 nov 2026', '80', '13 oct', 'vence en 3 días', '#9A6700', '$ 10.733.000', 'Cotizado'],
+      ['#048', 'Boda Méndez Ríos', 'Bolívar · Cóctel', '17 oct 2026', '320', '12 oct', 'vence en 2 días', '#9A6700', '$ 48.920.000', 'Cotizado'],
+      ['#047', 'Inversiones Caribe S.A.S.', 'Heredia · Auditorio', '14 oct 2026', '80', '—', 'garantía recibida', '#1F6E44', '$ 10.733.000', 'Confirmado'],
+      ['#046', 'Congreso Médico de la Costa', 'Bolívar · Auditorio', '22 oct 2026', '280', '15 oct', 'bloqueado hasta el 15', '#3A4C99', '$ 61.400.000', 'Bloqueado'],
+      ['#045', 'Ana Pérez', 'Getsemaní · Imperial', '25 oct 2026', '20', '13 oct', 'vence en 3 días', '#9A6700', '$ 4.180.500', 'Cotizado'],
+      ['#044', 'Grupo Ferretero Andino', 'Heredia · Imperial', '28 oct 2026', '36', '8 oct', 'venció hace 2 días', '#B4562F', '$ 7.940.000', 'Vencida'],
+      ['#043', 'Fundación Mar Adentro', 'Heredia · Espina de pescado', '31 oct 2026', '64', '—', 'garantía recibida', '#1F6E44', '$ 12.310.000', 'Confirmado'],
+      ['#042', 'Colegio San Pedro Claver', 'Bolívar · Escuela', '6 nov 2026', '150', '20 oct', 'vence en 10 días', '#5D6673', '$ 21.050.000', 'Cotizado']    ];
+    const rows = datos.map((d) => Object.assign({
+      num: d[0], cliente: d[1], salon: d[2], fecha: d[3], personas: d[4],
+      vigencia: d[5], vigNota: d[6], vigColor: d[7], total: d[8], estado: d[9]
+    }, estilos[d[9]]));
+    const tabsData = [['Todas', 48], ['Cotizadas', 12], ['Vencidas', 4], ['Bloqueadas', 3], ['Confirmadas', 24], ['Canceladas', 5]];
+    const tabs = tabsData.map((t, i) => ({
+      label: t[0], count: t[1], selected: i === 0 ? 'true' : 'false',
+      bg: i === 0 ? '#2F4A6D' : 'transparent', fg: i === 0 ? '#FFFFFF' : '#5D6673'
+    }));
+    return { rows, tabs };
+  }
+}
+</script>
+</body>
+</html>

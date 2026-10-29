@@ -1,0 +1,45 @@
+@startuml SGDE-126_Consultar_mis_cotizaciones
+!pragma layout smetana
+left to right direction
+skinparam backgroundColor white
+skinparam usecase {
+  BackgroundColor #F2F2F2
+  BorderColor black
+  FontSize 12
+}
+skinparam rectangle {
+  BorderColor black
+  FontSize 13
+  FontStyle bold
+}
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+  FontSize 11
+}
+skinparam ArrowColor black
+skinparam actorStyle awesome
+title SGDE-126 · Consultar mis cotizaciones (por construir)
+
+actor "Cliente" as CL
+
+rectangle "SGDE" {
+  usecase "Ver mis cotizaciones" as UC1
+  usecase "Filtrar por estado" as UC2
+  usecase "Ver detalle de una cotización" as UC3
+  usecase "Descargar PDF" as UC4
+}
+
+CL --> UC1
+CL --> UC3
+CL --> UC4
+UC2 ..> UC1 : <<extend>>
+
+note right of UC1
+  Solo ve sus propias cotizaciones:
+  salón, fecha, total y estado.
+  Solo lectura: no crea ni cambia
+  cotizaciones. Nunca ve las
+  observaciones internas.
+end note
+@enduml

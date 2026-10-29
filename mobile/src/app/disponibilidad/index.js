@@ -53,7 +53,7 @@ function Salones() {
         </View>
       }
       ListEmptyComponent={
-        error ? null : <Vacio titulo="No hay salones" texto="Tus sitios todavía no tienen salones activos." />
+        error ? null : <Vacio titulo="No hay salones" texto="Tus venues todavía no tienen salones activos." />
       }
       renderItem={({ item }) => (
         <Tarjeta

@@ -1,0 +1,40 @@
+/* Cancelar un evento confirmado (SGDE-68): botón del lateral y su ventana. */
+
+.dc-cancelar__abrir {
+    width: 100%;
+}
+
+.dc-cancelar__aviso {
+    margin: 0;
+    padding: var(--espacio-3) var(--espacio-4);
+    background: var(--estado-vencida-fondo);
+    border: 1px solid var(--color-peligro-borde);
+    border-radius: var(--radio-control);
+    color: var(--estado-vencida-texto);
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-negrita);
+    line-height: var(--interlineado-cuerpo);
+}
+
+.dc-cancelar__pct {
+    max-width: 160px;
+}
+
+.dc-cancelar__retenido {
+    margin: 0;
+    font-size: var(--texto-etiqueta);
+    line-height: var(--interlineado-cuerpo);
+    color: var(--color-texto-suave);
+}
+
+.dc-cancelar__retenido strong {
+    color: var(--color-texto);
+}
+
+.dc-cancelar__motivo {
+    min-height: 88px;
+    padding-block: var(--espacio-3);
+    resize: vertical;
+    font-family: inherit;
+    line-height: var(--interlineado-cuerpo);
+}

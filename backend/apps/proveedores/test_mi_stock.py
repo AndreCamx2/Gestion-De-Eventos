@@ -113,7 +113,11 @@ class MiStockAccesoTests(APITestCase):
     """Quién entra a Mi stock. El 403 trae un `codigo` para que la pantalla decida
     por él y no por el texto del mensaje."""
 
-    URLS = [(MI_STOCK, ["get", "post"]), (mi_stock_url(1), ["get", "patch"])]
+    URLS = [
+        (MI_STOCK, ["get", "post"]),
+        (mi_stock_url(1), ["get", "patch"]),
+        (f"{mi_stock_url(1)}historial/", ["get"]),
+    ]
 
     @classmethod
     def setUpTestData(cls):

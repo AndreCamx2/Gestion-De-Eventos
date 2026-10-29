@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>SGDE · Piedra viva · Login</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F3F2F0}
+a{color:#2F4A6D}a:hover{color:#1C3150}
+.btn{transition:transform 160ms cubic-bezier(0.23,1,0.32,1),background-color 160ms ease}
+.btn:active{transform:scale(0.97)}
+.field{transition:border-color 160ms ease,box-shadow 160ms ease}
+.field:focus-within{border-color:#2F4A6D;box-shadow:0 0 0 4px rgba(47,74,109,0.14)}
+@media (hover:hover) and (pointer:fine){.btn-primary:hover{background:#243B58 !important}}
+@media (prefers-reduced-motion:reduce){.btn,.field{transition:none}.btn:active{transform:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F3F2F0; color: #1D232B; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; display: flex; flex-direction: column; padding: 32px 40px; box-sizing: border-box; overflow: hidden;">
+  <header style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="position: relative; width: 36px; height: 36px; border-radius: 10px; background: #1D232B; color: #F3F2F0; display: flex; align-items: center; justify-content: center; font-weight: 800;">S<span style="position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 5px; background: #EE8A63; box-shadow: 0 0 0 2px #F3F2F0;"></span></div>
+      <span style="font-weight: 700; font-size: 16px;">SGDE</span>
+    </div>
+    <a href="#" style="font-size: 14px; font-weight: 600; text-decoration: none;">¿Necesitas ayuda?</a>
+  </header>
+
+  <div style="flex: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 64px; padding: 40px 0;">
+    <div style="flex: 1 1 380px; max-width: 500px; min-width: 0;">
+      <p style="margin: 0; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #B4562F; background: #FCE5D9; padding: 6px 12px; border-radius: 999px;"><span style="width: 6px; height: 6px; border-radius: 3px; background: #EE8A63;"></span>Hotel Demo Cartagena</p>
+      <h1 style="margin: 16px 0 0; font-weight: 800; font-size: 56px; line-height: 1.06; letter-spacing: -0.04em;">Todo el evento, en <span style="background: linear-gradient(transparent 62%, #FBCDB6 62%, #FBCDB6 92%, transparent 92%); padding: 0 4px;">una sola vista</span>.</h1>
+      <ul style="margin: 28px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px; font-size: 16px; color: #3E4652;">
+        <li style="display: flex; gap: 12px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 9px; background: #E4EAF2; color: #2F4A6D; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800;">1</span>Cotiza con aforo y precios al día</li>
+        <li style="display: flex; gap: 12px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 9px; background: #FCE5D9; color: #B4562F; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800;">2</span>Ve qué salón está libre cada día</li>
+        <li style="display: flex; gap: 12px; align-items: center;"><span style="width: 30px; height: 30px; border-radius: 9px; background: #FBEFC8; color: #8A6400; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800;">3</span>Confirma con la garantía del cliente</li>
+      </ul>
+    </div>
+
+    <div style="position: relative; flex: 1 1 360px; max-width: 400px; min-width: 0;">
+      <span aria-hidden="true" style="position: absolute; top: -48px; right: -56px; width: 180px; height: 180px; border-radius: 90px; background: #FBD9C8;"></span>
+      <span aria-hidden="true" style="position: absolute; bottom: -40px; left: -48px; width: 120px; height: 120px; border-radius: 60px; background: #F8E7B0;"></span>
+      <span aria-hidden="true" style="position: absolute; bottom: 64px; right: -28px; width: 44px; height: 44px; border-radius: 22px; background: #CFDAEA;"></span>
+      <form style="position: relative; padding: 36px; border-radius: 22px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(29,35,43,0.06), 0 28px 56px -28px rgba(29,35,43,0.25); display: flex; flex-direction: column; gap: 18px;">
+        <div>
+          <h2 style="margin: 0; font-weight: 700; font-size: 24px; letter-spacing: -0.02em;">Inicia sesión</h2>
+          <p style="margin: 6px 0 0; font-size: 14px; color: #5D6673;">Qué bueno verte de nuevo.</p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label for="v-mail" style="font-size: 13px; font-weight: 600; color: #5D6673;">Correo</label>
+          <div class="field" style="display: flex; align-items: center; height: 48px; padding: 0 14px; border-radius: 10px; background: #FFFFFF; border: 1px solid #D3D8DF;"><input id="v-mail" type="email" value="andres@sgde.co" style="flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 15px; color: #1D232B;"></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between;"><label for="v-pass" style="font-size: 13px; font-weight: 600; color: #5D6673;">Contraseña</label><a href="#" style="font-size: 13px; font-weight: 600; text-decoration: none;">¿La olvidaste?</a></div>
+          <div class="field" style="display: flex; align-items: center; height: 48px; padding: 0 14px; border-radius: 10px; background: #FFFFFF; border: 1px solid #D3D8DF;"><input id="v-pass" type="password" value="contrasena-demo" style="flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 15px; color: #1D232B;"></div>
+        </div>
+        <a class="btn btn-primary" href="Inicio.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; height: 50px; border-radius: 10px; background: #2F4A6D; color: #FFFFFF; font-weight: 700; font-size: 15px; text-decoration: none;">Entrar<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F6B396" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <div style="height: 1px; background: #E6E9ED;"></div>
+        <p style="margin: 0; font-size: 14px; color: #5D6673;">¿Cliente nuevo? <a href="Registro.dc.html" style="font-weight: 700; color: #B4562F;">Crea tu cuenta</a></p>
+      </form>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

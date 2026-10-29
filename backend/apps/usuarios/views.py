@@ -1,9 +1,24 @@
 from django.db import transaction
 from django.db.models import Q
-from rest_framework import filters, generics, permissions
-from .serializers import RolSerializer, UsuarioRegistroSerializer, UsuarioMeSerializer, UsuarioAdminSerializer
+from rest_framework import filters, generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from .serializers import (
+    RestablecerClaveSerializer, RolSerializer, SolicitarRecuperacionSerializer, UsuarioRegistroSerializer,
+    UsuarioMeSerializer, UsuarioAdminSerializer,
+)
+from .correos import en_segundo_plano
+from .limites import ConLimiteDeIntentos
+from .recuperacion import cambiar_clave, solicitar_recuperacion, usuario_del_enlace
+from .validators import validar_password_candidata
 from .models import Rol, Usuario
-from .permissions import EsAdministrador
+from .perfil import (
+    CambioContrasenaSerializer, CambioCorreoSerializer, actualizar_perfil, cambiar_correo, datos_perfil,
+)
+from .permissions import EsAdministrador, EsClienteOProveedor, TienePerfilVinculado
 from .services import validar_cambio_usuario
 from apps.core.pagination import PaginaEstandar
 
@@ -100,3 +115,103 @@ class MeView(generics.RetrieveAPIView):
 
     def get_object(self):
         return Usuario.objects.select_related("rol", "proveedor").prefetch_related("sitios").get(pk=self.request.user.pk)
+
+
+MSG_SOLICITUD_RECIBIDA = "Si ese correo está registrado, te llegará un enlace para crear una contraseña nueva."
+MSG_ENLACE_INVALIDO = "El enlace no es válido o ya venció. Pide uno nuevo."
+MSG_CLAVE_ACTUALIZADA = "Tu contraseña quedó actualizada. Ya puedes iniciar sesión."
+
+
+class SolicitarRecuperacionView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "recuperar_clave"
+
+    def post(self, request):
+        serializer = SolicitarRecuperacionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        # Fuera de la petición (SGDE-96): buscar el correo y enviarlo tarda distinto si
+        # existe, y ese tiempo revelaría qué correos están registrados.
+        en_segundo_plano(solicitar_recuperacion, serializer.validated_data["email"])
+        return Response({"detail": MSG_SOLICITUD_RECIBIDA})
+
+
+class RestablecerClaveView(APIView):
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "restablecer_clave"
+
+    def post(self, request):
+        serializer = RestablecerClaveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        datos = serializer.validated_data
+
+        usuario = usuario_del_enlace(datos["uid"], datos["token"])
+        if usuario is None:
+            return Response({"detail": MSG_ENLACE_INVALIDO}, status=status.HTTP_400_BAD_REQUEST)
+
+        validar_password_candidata(
+            datos["password"], username=usuario.username, email=usuario.email,
+            first_name=usuario.first_name, last_name=usuario.last_name,
+        )
+        cambiar_clave(usuario, datos["password"])
+        return Response({"detail": MSG_CLAVE_ACTUALIZADA})
+
+
+# --- Login y renovación con límite de intentos por IP (SGDE-112) ---------------
+# Mismas vistas de simplejwt (y los serializers de SIMPLE_JWT), con un tope por IP
+# para frenar la fuerza bruta. Las tasas están en DEFAULT_THROTTLE_RATES (settings.py).
+
+class LoginView(ConLimiteDeIntentos, TokenObtainPairView):
+    """POST /api/token/ → {access, refresh}. Pasado el límite responde 429."""
+
+    throttle_scope = "login"
+
+
+class RenovarTokenView(ConLimiteDeIntentos, TokenRefreshView):
+    """POST /api/token/refresh/ → {access, refresh}. Pasado el límite responde 429."""
+
+    throttle_scope = "renovar_token"
+
+
+def _usuario_con_perfil(usuario):
+    return Usuario.objects.select_related("rol", "cliente__empresa", "proveedor").get(pk=usuario.pk)
+
+
+class MiPerfilView(APIView):
+    permission_classes = [permissions.IsAuthenticated, TienePerfilVinculado]
+
+    def get(self, request):
+        return Response(datos_perfil(_usuario_con_perfil(request.user)))
+
+    def patch(self, request):
+        usuario = _usuario_con_perfil(request.user)
+        actualizar_perfil(usuario, request.data)
+        return Response(datos_perfil(usuario))
+
+
+class CambiarCorreoView(ConLimiteDeIntentos, APIView):
+    permission_classes = [permissions.IsAuthenticated, EsClienteOProveedor]
+    throttle_scope = "cambiar_credenciales"
+
+    def post(self, request):
+        usuario = _usuario_con_perfil(request.user)
+        serializer = CambioCorreoSerializer(data=request.data, context={"usuario": usuario})
+        serializer.is_valid(raise_exception=True)
+        acceso = cambiar_correo(usuario, serializer.validated_data["correo_nuevo"])
+        return Response({"detail": "Correo actualizado.", **acceso})
+
+
+class CambiarContrasenaView(ConLimiteDeIntentos, APIView):
+    permission_classes = [permissions.IsAuthenticated, EsClienteOProveedor]
+    throttle_scope = "cambiar_credenciales"
+
+    def post(self, request):
+        usuario = _usuario_con_perfil(request.user)
+        serializer = CambioContrasenaSerializer(data=request.data, context={"usuario": usuario})
+        serializer.is_valid(raise_exception=True)
+        cambiar_clave(usuario, serializer.validated_data["password_nueva"])
+        refresh = RefreshToken.for_user(usuario)
+        return Response({"detail": "Contraseña cambiada.", "access": str(refresh.access_token), "refresh": str(refresh)})

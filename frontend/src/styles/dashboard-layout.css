@@ -1,0 +1,273 @@
+/* SGDE — Layout del panel: barra superior + contenedor de contenido
+   Guía Piedra viva, sección 5. Solo usa variables de tokens.css. */
+
+/* ---- Barra superior ---- */
+.barra-superior {
+    position: relative;
+    z-index: 20; /* encima del contenido, debajo de los modales (100 y 1000) */
+    background: var(--color-superficie);
+    border-bottom: var(--borde);
+}
+
+.barra-superior__interior {
+    max-width: var(--ancho-contenido);
+    margin: 0 auto;
+    padding: 0 var(--espacio-8);
+    min-height: var(--alto-barra);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "logo pestanas perfil";
+    align-items: center;
+    column-gap: var(--espacio-6);
+}
+
+/* Logo: cuadro oscuro con la "S" y un punto mandarina */
+.barra-superior__logo {
+    grid-area: logo;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: var(--alto-tocable);
+    color: var(--color-texto);
+    font-weight: var(--peso-negrita);
+}
+
+.barra-superior__marca {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--color-texto);
+    color: var(--color-fondo);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--peso-extra);
+}
+
+.barra-superior__marca::after {
+    content: "";
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radio-pildora);
+    background: var(--color-mandarina);
+    box-shadow: 0 0 0 2px var(--color-superficie);
+}
+
+/* ---- Pestañas ---- */
+.barra-superior__pestanas {
+    grid-area: pestanas;
+    position: relative; /* referencia para calcular el desplazamiento de la pestaña activa */
+    align-self: stretch;
+    display: flex;
+    gap: 2px;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.barra-superior__pestanas::-webkit-scrollbar {
+    display: none;
+}
+
+.barra-superior__pestana {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    min-height: var(--alto-tocable);
+    padding: 0 11px;
+    border-top: 3px solid transparent; /* compensa el borde inferior para centrar el texto */
+    border-bottom: 3px solid transparent;
+    color: var(--color-texto-suave);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-semi);
+    white-space: nowrap;
+}
+
+/* NavLink pone aria-current="page" en la pestaña de la ruta activa */
+.barra-superior__pestana[aria-current="page"] {
+    color: var(--color-texto);
+    font-weight: var(--peso-negrita);
+    border-bottom-color: var(--color-mandarina);
+}
+
+/* El contenedor de pestañas recorta lo que sobresale: el foco va por dentro */
+.barra-superior__pestana:focus-visible {
+    outline-offset: -2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .barra-superior__pestana:hover {
+        color: var(--color-texto);
+    }
+}
+
+/* ---- Perfil ---- */
+.perfil {
+    grid-area: perfil;
+    position: relative;
+    justify-self: end;
+}
+
+.perfil__boton {
+    width: var(--alto-tocable);
+    height: var(--alto-tocable);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radio-pildora);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.perfil__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radio-pildora);
+    background: var(--color-durazno);
+    color: var(--color-mandarina-texto);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-negrita);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .perfil__boton:hover .perfil__avatar,
+    .perfil__boton[aria-expanded="true"] .perfil__avatar {
+        box-shadow: 0 0 0 2px var(--color-linea-fuerte);
+    }
+}
+
+.perfil__menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + var(--espacio-2));
+    width: 240px;
+    max-width: calc(100vw - var(--espacio-8));
+    padding: var(--espacio-2);
+    background: var(--color-superficie);
+    border: var(--borde);
+    border-radius: var(--radio-control);
+    box-shadow: var(--sombra-flotante);
+    transform-origin: top right;
+    animation: perfil-menu-entrada var(--duracion-menu) var(--curva-salida);
+}
+
+/* Aparece desde su botón: escala 0,96 y opacidad (guía, tabla de movimiento) */
+@keyframes perfil-menu-entrada {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+}
+
+.perfil__encabezado {
+    padding: var(--espacio-2) var(--espacio-3) var(--espacio-3);
+}
+
+.perfil__nombre {
+    font-size: var(--texto-cuerpo);
+    font-weight: var(--peso-negrita);
+    overflow-wrap: anywhere;
+}
+
+.perfil__rol {
+    margin-top: 2px;
+    font-size: var(--texto-etiqueta);
+    color: var(--color-texto-suave);
+    text-transform: capitalize;
+}
+
+.perfil__divisor {
+    margin: 0 0 var(--espacio-1);
+    border-top: var(--borde);
+}
+
+.perfil__opcion {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: var(--alto-tocable);
+    padding: 0 var(--espacio-3);
+    border: 0;
+    border-radius: var(--espacio-2);
+    background: none;
+    color: var(--color-peligro);
+    font-size: var(--texto-navegacion);
+    font-weight: var(--peso-semi);
+    text-align: left;
+}
+
+.perfil__opcion:focus-visible {
+    outline-offset: -2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .perfil__opcion:hover {
+        background: var(--color-superficie-2);
+    }
+}
+
+/* ---- Contenido ---- */
+.panel__contenido {
+    max-width: var(--ancho-contenido);
+    min-width: 0;
+    margin: 0 auto;
+    padding: var(--espacio-8) var(--espacio-10) var(--espacio-10);
+}
+
+/* ---- Teléfono y tabletas pequeñas ----
+   Logo y avatar arriba; las pestañas en una fila propia que se desplaza en
+   horizontal, para que la página nunca tenga scroll lateral. */
+@media (max-width: 900px) {
+    .barra-superior__interior {
+        padding: 0 var(--espacio-4);
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "logo perfil"
+            "pestanas pestanas";
+        grid-template-rows: 60px auto;
+        min-height: 0;
+    }
+
+    .barra-superior__pestanas {
+        margin: 0 calc(-1 * var(--espacio-4));
+        padding: 0 var(--espacio-4);
+    }
+
+    .panel__contenido {
+        padding: var(--espacio-6) var(--espacio-4) var(--espacio-8);
+    }
+}
+
+/* ---- Teléfono con barra inferior (SGDE-102) ----
+   La navegación pasa a la barra de abajo (barra-inferior.css): arriba quedan solo
+   el logo y el avatar, y el contenido deja espacio para que la barra no lo tape. */
+@media (max-width: 640px) {
+    .panel--barra-inferior .barra-superior__interior {
+        grid-template-areas: "logo perfil";
+        grid-template-rows: 60px;
+    }
+
+    .panel--barra-inferior .barra-superior__pestanas {
+        display: none;
+    }
+
+    /* Alto de la barra + su margen inferior + un respiro, más la zona segura del teléfono */
+    .panel--barra-inferior .panel__contenido {
+        padding-bottom: calc(
+            var(--alto-barra-inferior) + var(--espacio-4) + var(--espacio-8) + env(safe-area-inset-bottom)
+        );
+    }
+
+    /* El aviso de sesión vencida (fijo abajo) sube para quedar encima de la barra */
+    .panel--barra-inferior .aviso-sesion {
+        bottom: calc(var(--alto-barra-inferior) + var(--espacio-4) + var(--espacio-3) + env(safe-area-inset-bottom));
+    }
+}

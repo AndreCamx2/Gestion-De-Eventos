@@ -17,7 +17,7 @@ from apps.salones.models import Montaje, Salon, SalonMontaje
 from apps.sitios.models import Ciudad, Sitio
 from apps.usuarios.models import Rol, Usuario
 
-from .models import Cotizacion, CotizacionItem, MovimientoCotizacion
+from .models import Cotizacion, CotizacionItem, GrupoEvento, MovimientoCotizacion, TipoEvento
 from .services import totales_linea
 
 PASSWORD = "Clave-Segura-123"
@@ -79,12 +79,15 @@ class CotizacionBaseTest(APITestCase):
         cls.de_otro_sitio = Concepto.objects.create(
             sitio=cls.otro_sitio, nombre="Almuerzo finca", precio=Decimal("30000.00")
         )
+        cls.grupo_evento = GrupoEvento.objects.create(nombre="Grupo Test", orden=1)
+        cls.tipo_evento = TipoEvento.objects.create(nombre="Tipo Test", grupo=cls.grupo_evento)
 
     def payload(self, **cambios):
         datos = {
             "cliente": self.cliente.pk,
             "salon": self.salon.pk,
             "montaje": self.montaje.pk,
+            "tipo_evento": self.tipo_evento.pk,
             "fecha_evento": str(hoy() + timedelta(days=40)),
             "cantidad_personas": 80,
             "validez_oferta": str(hoy() + timedelta(days=10)),
@@ -96,14 +99,19 @@ class CotizacionBaseTest(APITestCase):
         datos.update(cambios)
         return datos
 
-    def crear_en_bd(self, fecha_evento=None, validez_oferta=None, estado="cotizado"):
+    def crear_en_bd(self, fecha_evento=None, validez_oferta=None, estado="cotizado", tipo_evento="defecto"):
         """Crea una cotización directo en la base (sin pasar por las validaciones del API)."""
+        if tipo_evento == "defecto":
+            tipo_evento = self.tipo_evento
+
         cotizacion = Cotizacion.objects.create(
             sitio=self.sitio, cliente=self.cliente, usuario=self.admin, salon=self.salon,
             montaje=self.montaje, estado=estado, cantidad_personas=50,
+            tipo_evento=tipo_evento, 
             fecha_evento=fecha_evento or hoy() + timedelta(days=30),
             validez_oferta=validez_oferta or hoy() + timedelta(days=5),
         )
+        
         CotizacionItem.objects.create(
             cotizacion=cotizacion, concepto=self.almuerzo, cantidad=50,
             precio_unitario=self.almuerzo.precio, impuesto_pct=self.almuerzo.impuesto_pct,
@@ -196,7 +204,7 @@ class CrearCotizacionTests(CotizacionBaseTest):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(r.data["items"][0], {})
         self.assertEqual(r.data["items"][1], {"concepto": ["El concepto está inactivo."]})
-        self.assertEqual(r.data["items"][2], {"concepto": ["El concepto no pertenece al sitio del salón."]})
+        self.assertEqual(r.data["items"][2], {"concepto": ["El concepto no pertenece al venue del salón."]})
         self.assertFalse(Cotizacion.objects.exists())
 
     def test_errores_de_campo_en_items_tambien_son_una_lista_por_posicion(self):
@@ -462,11 +470,53 @@ class AceptacionTests(CotizacionBaseTest):
         cot.refresh_from_db()
         self.assertEqual(cot.estado, "cotizado")
 
+    # Garantía mínima (2026-10-27). crear_en_bd: 50 almuerzos de 45.000 + 8% = total 2.430.000.
+
+    def test_con_5_dias_o_mas_basta_el_30_por_ciento(self):
+        for dias in (5, 30):
+            cot = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=dias), validez_oferta=hoy())
+            with self.subTest(dias=dias):
+                r = self.client.post(aceptacion(cot.pk), {"tipo": "efectivo", "monto": "728999.99"}, format="json")
+                self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(r.data["monto"], ["La garantía mínima es $ 729.000 (30% del total)."])
+                r = self.client.post(aceptacion(cot.pk), {"tipo": "efectivo", "monto": "729000"}, format="json")
+                self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+
+    def test_con_menos_de_5_dias_se_paga_el_100_por_ciento(self):
+        for dias in (0, 4):
+            cot = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=dias), validez_oferta=hoy())
+            with self.subTest(dias=dias):
+                r = self.client.post(aceptacion(cot.pk), {"tipo": "efectivo", "monto": "2429999"}, format="json")
+                self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(r.data["monto"], ["La garantía mínima es $ 2.430.000 (100% del total)."])
+                cot.refresh_from_db()
+                self.assertEqual(cot.estado, "cotizado")
+                r = self.client.post(aceptacion(cot.pk), {"tipo": "efectivo", "monto": "2430000"}, format="json")
+                self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
+
+    def test_no_puede_superar_el_total(self):
+        cot = self.crear_en_bd()
+        r = self.client.post(aceptacion(cot.pk), {"tipo": "efectivo", "monto": "2430000.01"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.data["monto"], ["La garantía no puede superar el total ($ 2.430.000)."])
+
+    def test_el_detalle_trae_la_garantia_minima_mientras_se_puede_aceptar(self):
+        cot = self.crear_en_bd()
+        self.assertEqual(
+            self.client.get(detalle(cot.pk)).data["garantia_minima"], {"porcentaje": "30", "monto": "729000.00"}
+        )
+        pronto = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=3), validez_oferta=hoy())
+        self.assertEqual(
+            self.client.get(detalle(pronto.pk)).data["garantia_minima"], {"porcentaje": "100", "monto": "2430000.00"}
+        )
+        self.client.post(aceptacion(cot.pk), {"tipo": "efectivo", "monto": "729000"}, format="json")
+        self.assertIsNone(self.client.get(detalle(cot.pk)).data["garantia_minima"])
+
     def test_salon_ya_confirmado_esa_fecha_409(self):
         fecha = hoy() + timedelta(days=30)
         primera = self.crear_en_bd(fecha_evento=fecha)
         segunda = self.crear_en_bd(fecha_evento=fecha)
-        datos = {"tipo": "tarjeta", "monto": "200000"}
+        datos = {"tipo": "tarjeta", "monto": "1000000"}
         self.assertEqual(self.client.post(aceptacion(primera.pk), datos, format="json").status_code, 200)
 
         r = self.client.post(aceptacion(segunda.pk), datos, format="json")
@@ -615,13 +665,13 @@ class ListadoCamposSGDE89Tests(CotizacionBaseTest):
 
     def test_confirmado_en_y_garantia_despues_de_la_aceptacion(self):
         cot = self.crear_en_bd()
-        r = self.client.post(aceptacion(cot.pk), {"tipo": "efectivo", "monto": "350000"}, format="json")
+        r = self.client.post(aceptacion(cot.pk), {"tipo": "efectivo", "monto": "800000"}, format="json")
         self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
 
         fila = self.fila(cot)
         self.assertIsNotNone(fila["confirmado_en"])
         self.assertEqual(fila["confirmado_en"], r.data["confirmado_en"])
-        self.assertEqual((fila["garantia"]["tipo"], fila["garantia"]["monto"]), ("efectivo", "350000.00"))
+        self.assertEqual((fila["garantia"]["tipo"], fila["garantia"]["monto"]), ("efectivo", "800000.00"))
         # Mismo formato que el detalle: una sola función arma la garantía.
         self.assertEqual(fila["garantia"], r.data["garantia"])
 
@@ -648,7 +698,7 @@ class DetalleCamposSGDE89Tests(CotizacionBaseTest):
         self.assertIn("bloqueo_hasta", data)
         self.assertIsNone(data["confirmado_en"])
 
-        self.client.post(aceptacion(cot.pk), {"tipo": "tarjeta", "monto": "1000"}, format="json")
+        self.client.post(aceptacion(cot.pk), {"tipo": "tarjeta", "monto": "1000000"}, format="json")
         data = self.client.get(detalle(cot.pk)).data
         self.assertIsNotNone(data["confirmado_en"])
         self.assertEqual(data["confirmado_en"], data["garantia"]["registrada_en"])
@@ -818,7 +868,7 @@ class AceptarConBloqueoTests(CotizacionBaseTest):
 
     def setUp(self):
         self.client.force_authenticate(user=self.admin)
-        self.datos = {"tipo": "transferencia", "monto": "500000"}
+        self.datos = {"tipo": "transferencia", "monto": "1000000"}
 
     def bloqueada(self, fecha_evento=None, validez_oferta=None):
         cot = self.crear_en_bd(estado="bloqueado", fecha_evento=fecha_evento, validez_oferta=validez_oferta)
@@ -862,7 +912,7 @@ class CancelacionTests(CotizacionBaseTest):
 
     def confirmada(self):
         cot = self.crear_en_bd(fecha_evento=self.fecha)
-        r = self.client.post(aceptacion(cot.pk), {"tipo": "transferencia", "monto": "500000"}, format="json")
+        r = self.client.post(aceptacion(cot.pk), {"tipo": "transferencia", "monto": "1000000"}, format="json")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         return cot
 
@@ -947,7 +997,7 @@ class CancelacionTests(CotizacionBaseTest):
     def test_despues_de_cancelar_otra_cotizacion_puede_confirmarse_ese_dia(self):
         cot = self.confirmada()
         otra = self.crear_en_bd(fecha_evento=self.fecha)
-        datos = {"tipo": "efectivo", "monto": "100"}
+        datos = {"tipo": "efectivo", "monto": "1000000"}
         self.assertEqual(self.client.post(aceptacion(otra.pk), datos, format="json").status_code,
                          status.HTTP_409_CONFLICT)
         self.client.post(cancelacion(cot.pk), self.datos, format="json")
@@ -985,7 +1035,7 @@ class MovimientosTests(CotizacionBaseTest):
 
         # Otro administrador confirma y cancela: el movimiento lleva su usuario, no el del creador.
         self.client.force_authenticate(user=self.otro_admin)
-        datos = {"tipo": "efectivo", "monto": "100"}
+        datos = {"tipo": "efectivo", "monto": "2000000"}
         self.assertEqual(self.client.post(aceptacion(pk), datos, format="json").status_code, 200)
         cancelar = {"penalizacion_pct": "10", "motivo": "Lluvia"}
         self.assertEqual(self.client.post(cancelacion(pk), cancelar, format="json").status_code, 200)
@@ -1230,3 +1280,263 @@ class GetNoEscribeSGDE118Tests(CotizacionBaseTest):
         self.vencida.refresh_from_db()
         self.assertEqual(self.vencida.estado, "cotizado")
         self.assertIsNone(self.vencida.bloqueo_hasta)
+
+def anulacion(pk):
+    return f"{detalle(pk)}anulacion/"
+
+
+def edicion(pk):
+    return f"{detalle(pk)}edicion/"
+
+
+class AnulacionTests(CotizacionBaseTest):
+    """Anular una cotización que no se confirmó: queda cancelada, sin penalización."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+
+    def test_anula_una_cotizada_sin_penalizacion_y_deja_movimiento(self):
+        cot = self.crear_en_bd()
+        r = self.client.post(anulacion(cot.pk), {"motivo": "El cliente eligió otra fecha."}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["estado"], "cancelado")
+        self.assertIsNone(r.data["penalizacion_pct"])
+        self.assertIsNone(r.data["monto_retenido"])
+        self.assertEqual(r.data["motivo_cancelacion"], "El cliente eligió otra fecha.")
+        self.assertEqual(r.data["cancelado_por"], "admin@test.com")
+        ultimo = self.client.get(movimientos(cot.pk)).data[-1]
+        self.assertEqual((ultimo["tipo"], ultimo["detalle"]), ("anulada", "Motivo: El cliente eligió otra fecha."))
+
+    def test_anula_una_vencida_y_una_bloqueada_que_suelta_su_fecha(self):
+        vencida = self.crear_en_bd(validez_oferta=hoy() - timedelta(days=1))
+        self.assertEqual(self.client.post(anulacion(vencida.pk), {"motivo": "No respondió."}, format="json").status_code, 200)
+
+        bloqueada = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=20))
+        self.assertEqual(self.client.post(bloqueo(bloqueada.pk), {"bloqueo_hasta": en(2)}, format="json").status_code, 200)
+        r = self.client.post(anulacion(bloqueada.pk), {"motivo": "Desistió."}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertIsNone(r.data["bloqueo_hasta"])
+
+        # La fecha quedó libre: otra cotización del mismo salón y día se puede bloquear.
+        otra = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=20))
+        self.assertEqual(self.client.post(bloqueo(otra.pk), {"bloqueo_hasta": en(2)}, format="json").status_code, 200)
+
+    def test_confirmada_o_cancelada_da_409(self):
+        for estado in ("confirmado", "cancelado"):
+            cot = self.crear_en_bd(estado=estado, fecha_evento=hoy() + timedelta(days=60 + len(estado)))
+            with self.subTest(estado=estado):
+                r = self.client.post(anulacion(cot.pk), {"motivo": "x"}, format="json")
+                self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+
+    def test_sin_motivo_400_y_otros_roles_403(self):
+        cot = self.crear_en_bd()
+        r = self.client.post(anulacion(cot.pk), {"motivo": ""}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("motivo", r.data)
+        self.client.force_authenticate(user=self.cliente_user)
+        self.assertEqual(self.client.post(anulacion(cot.pk), {"motivo": "x"}, format="json").status_code, 403)
+        cot.refresh_from_db()
+        self.assertEqual(cot.estado, "cotizado")
+
+
+class EdicionTests(CotizacionBaseTest):
+    """Editar una cotización cotizada con el mismo cuerpo que crear."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+        r = self.client.post(LISTA, self.payload(), format="json")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.pk = r.data["id"]
+
+    def test_cambia_fecha_personas_y_conceptos(self):
+        nueva_fecha = str(hoy() + timedelta(days=45))
+        datos = self.payload(
+            fecha_evento=nueva_fecha, cantidad_personas=100,
+            items=[{"concepto": self.almuerzo.pk, "cantidad": 100}],
+        )
+        r = self.client.put(edicion(self.pk), datos, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual((r.data["fecha_evento"], r.data["cantidad_personas"]), (nueva_fecha, 100))
+        self.assertEqual([(i["concepto"], i["cantidad"]) for i in r.data["items"]], [(self.almuerzo.pk, 100)])
+        self.assertEqual(r.data["total"], "4860000.00")  # 100 × 45.000 + 8 %
+
+        ultimo = self.client.get(movimientos(self.pk)).data[-1]
+        self.assertEqual(ultimo["tipo"], "editada")
+        self.assertIn("personas: 80 → 100", ultimo["detalle"])
+        self.assertIn("conceptos: 1", ultimo["detalle"])
+
+    def test_los_conceptos_que_ya_estaban_conservan_su_precio(self):
+        Concepto.objects.filter(pk=self.almuerzo.pk).update(precio=Decimal("99999.00"))
+        Concepto.objects.filter(pk=self.video_beam.pk).update(precio=Decimal("1.00"))
+        # El almuerzo ya estaba: conserva 45.000. El video beam se quita y vuelve: también estaba.
+        r = self.client.put(edicion(self.pk), self.payload(), format="json")
+        precios = {i["concepto"]: i["precio_unitario"] for i in r.data["items"]}
+        self.assertEqual(precios, {self.almuerzo.pk: "45000.00", self.video_beam.pk: "250000.00"})
+
+        nuevo = Concepto.objects.create(sitio=self.sitio, nombre="Coctel", precio=Decimal("12000.00"))
+        datos = self.payload(items=[{"concepto": nuevo.pk, "cantidad": 2}])
+        r = self.client.put(edicion(self.pk), datos, format="json")
+        self.assertEqual(r.data["items"][0]["precio_unitario"], "12000.00")
+
+    def test_valida_igual_que_crear(self):
+        r = self.client.put(edicion(self.pk), self.payload(cantidad_personas=500, items=[]), format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("items", r.data)
+        r = self.client.put(edicion(self.pk), self.payload(cantidad_personas=500), format="json")
+        self.assertIn("cantidad_personas", r.data)
+        self.assertEqual(Cotizacion.objects.get(pk=self.pk).cantidad_personas, 80)
+
+    def test_bloqueada_confirmada_o_cancelada_da_409(self):
+        self.assertEqual(self.client.post(bloqueo(self.pk), {"bloqueo_hasta": en(2)}, format="json").status_code, 200)
+        r = self.client.put(edicion(self.pk), self.payload(cantidad_personas=90), format="json")
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+        for estado in ("confirmado", "cancelado"):
+            cot = self.crear_en_bd(estado=estado, fecha_evento=hoy() + timedelta(days=70 + len(estado)))
+            with self.subTest(estado=estado):
+                self.assertEqual(self.client.put(edicion(cot.pk), self.payload(), format="json").status_code, 409)
+
+    def test_una_vencida_se_edita_y_vuelve_a_quedar_vigente(self):
+        Cotizacion.objects.filter(pk=self.pk).update(validez_oferta=hoy() - timedelta(days=1))
+        datos = self.payload()
+        del datos["validez_oferta"]
+        r = self.client.put(edicion(self.pk), datos, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertFalse(r.data["vencida"])
+        self.assertEqual(r.data["validez_oferta"], str(hoy() + timedelta(days=15)))
+
+    def test_inexistente_404(self):
+        self.assertEqual(self.client.put(edicion(999999), self.payload(), format="json").status_code, 404)
+
+
+class FormatoGarantiaEnMovimientoTests(CotizacionBaseTest):
+    def test_el_monto_va_en_pesos(self):
+        self.client.force_authenticate(user=self.admin)
+        cot = self.crear_en_bd()
+        self.client.post(aceptacion(cot.pk), {"tipo": "transferencia", "monto": "1000000"}, format="json")
+        self.assertEqual(
+            self.client.get(movimientos(cot.pk)).data[-1]["detalle"], "Garantía: transferencia, $ 1.000.000."
+        )
+
+
+MIS_COTIZACIONES = "/api/mis-cotizaciones/"
+
+
+class MisCotizacionesTests(CotizacionBaseTest):
+    """SGDE-126: el cliente ve solo sus cotizaciones, sin datos internos y sin poder cambiarlas."""
+
+    def setUp(self):
+        Cliente.objects.filter(pk=self.cliente.pk).update(usuario=self.cliente_user)
+        self.otro_cliente = Cliente.objects.create(
+            tipo="natural", nombre="Luis Gómez", identificacion="1047000222", correo="luis@test.com"
+        )
+        self.mia = self.crear_en_bd()
+        self.ajena = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=31))
+        Cotizacion.objects.filter(pk=self.ajena.pk).update(cliente=self.otro_cliente)
+        self.client.force_authenticate(user=self.cliente_user)
+
+    def test_sin_token_401_y_otros_roles_403_con_codigo(self):
+        self.client.force_authenticate(user=None)
+        self.assertEqual(self.client.get(MIS_COTIZACIONES).status_code, status.HTTP_401_UNAUTHORIZED)
+        for usuario in (self.admin, self.proveedor_user):
+            self.client.force_authenticate(user=usuario)
+            with self.subTest(rol=usuario.rol.codigo):
+                r = self.client.get(MIS_COTIZACIONES)
+                self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+                self.assertEqual(r.data["codigo"], "no_es_cliente")
+
+    def test_cliente_sin_vincular_403(self):
+        self.client.force_authenticate(user=crear_usuario("nuevo@test.com", "cliente"))
+        r = self.client.get(MIS_COTIZACIONES)
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(r.data["codigo"], "cliente_sin_vincular")
+
+    def test_la_lista_trae_solo_las_suyas(self):
+        r = self.client.get(MIS_COTIZACIONES)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual([c["id"] for c in r.data], [self.mia.pk])
+        self.assertEqual(r.data[0]["sitio_nombre"], "Hotel Caribe")
+        self.assertEqual(r.data[0]["total"], "2430000.00")
+
+    def test_el_detalle_de_una_ajena_da_404(self):
+        self.assertEqual(self.client.get(f"{MIS_COTIZACIONES}{self.ajena.pk}/").status_code, status.HTTP_404_NOT_FOUND)
+        r = self.client.get(f"{MIS_COTIZACIONES}{self.mia.pk}/")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(r.data["items"]), 1)
+        self.assertEqual(r.data["cliente"]["nombre"], "Ana Pérez")
+
+    def test_no_trae_datos_internos(self):
+        self.client.force_authenticate(user=self.admin)
+        self.client.post(f"{detalle(self.mia.pk)}aceptacion/", {"tipo": "efectivo", "monto": "1000000"}, format="json")
+        self.client.force_authenticate(user=self.cliente_user)
+
+        fila = self.client.get(MIS_COTIZACIONES).data[0]
+        datos = self.client.get(f"{MIS_COTIZACIONES}{self.mia.pk}/").data
+        for respuesta in (fila, datos):
+            with self.subTest(respuesta="lista" if respuesta is fila else "detalle"):
+                for campo in ("creado_por", "cancelado_por", "garantia_minima"):
+                    self.assertNotIn(campo, respuesta)
+                self.assertEqual(respuesta["garantia"]["monto"], "1000000.00")
+                self.assertNotIn("registrada_por", respuesta["garantia"])
+
+    def test_es_solo_lectura(self):
+        url = f"{MIS_COTIZACIONES}{self.mia.pk}/"
+        self.assertEqual(self.client.post(MIS_COTIZACIONES, self.payload(), format="json").status_code,
+                         status.HTTP_405_METHOD_NOT_ALLOWED)
+        for metodo in (self.client.patch, self.client.put, self.client.delete):
+            with self.subTest(metodo=metodo.__name__):
+                self.assertEqual(metodo(url, {}, format="json").status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        # Las rutas del administrador siguen cerradas para el cliente.
+        self.assertEqual(self.client.get(detalle(self.mia.pk)).status_code, status.HTTP_403_FORBIDDEN)
+        r = self.client.post(f"{detalle(self.mia.pk)}aceptacion/", {"tipo": "efectivo", "monto": "1000000"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class ReporteIngresosPorTipoEventoTests(CotizacionBaseTest):
+    """Tests para el endpoint de ingresos por tipo de evento (SGDE-144)."""
+
+    def setUp(self):
+        super().setUp()
+        self.url = "/api/reportes/ingresos-por-tipo-evento/"
+        
+        # Creamos algunos tipos extra para probar
+        self.tipo_boda = TipoEvento.objects.create(nombre="Boda", grupo=self.grupo_evento)
+
+    def test_solo_administradores_pueden_ver_el_reporte(self):
+        self.client.force_authenticate(user=self.cliente_user)
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_reporte_agrupa_por_tipo_y_calcula_totales(self):
+        self.client.force_authenticate(user=self.admin)
+        
+        # 1. Cotización confirmada del tipo "Boda" (Día 10)
+        self.crear_en_bd(estado="confirmado", tipo_evento=self.tipo_boda, fecha_evento=hoy() + timedelta(days=10))
+        
+        # 2. Cotización confirmada del tipo "Tipo Test" (Día 11)
+        self.crear_en_bd(estado="confirmado", tipo_evento=self.tipo_evento, fecha_evento=hoy() + timedelta(days=11))
+        
+        # 3. Cotización confirmada SIN tipo (Día 12)
+        self.crear_en_bd(estado="confirmado", tipo_evento=None, fecha_evento=hoy() + timedelta(days=12))
+        
+        # 4. Una cotizada normal (NO debe salir) (Día 13)
+        self.crear_en_bd(estado="cotizado", tipo_evento=self.tipo_boda, fecha_evento=hoy() + timedelta(days=13))
+
+        # Obtenemos la respuesta
+        r = self.client.get(self.url)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        data = r.json()
+
+        # Validamos los totales globales (deben ser 3 confirmadas)
+        self.assertEqual(data["total_eventos"], 3)
+        
+        # Validamos la agrupación
+        detalle = {d["tipo_evento_id"]: d for d in data["detalle"]}
+        
+        # Verificamos que estén los 3 grupos y no la cotizada
+        self.assertIn(self.tipo_boda.pk, detalle)
+        self.assertIn(self.tipo_evento.pk, detalle)
+        self.assertIn(None, detalle) # El id del "Sin clasificar" es None
+
+        # Verificamos los montos exactos para el tipo Boda
+        self.assertEqual(detalle[self.tipo_boda.pk]["cantidad_eventos"], 1)
+        self.assertEqual(detalle[None]["tipo_evento_nombre"], "Sin clasificar")

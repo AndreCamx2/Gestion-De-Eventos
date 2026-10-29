@@ -1,0 +1,58 @@
+@startuml SGDE-132_Gestionar_mi_perfil
+!pragma layout smetana
+left to right direction
+skinparam backgroundColor white
+skinparam usecase {
+  BackgroundColor #F2F2F2
+  BorderColor black
+  FontSize 12
+}
+skinparam rectangle {
+  BorderColor black
+  FontSize 13
+  FontStyle bold
+}
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+  FontSize 11
+}
+skinparam ArrowColor black
+skinparam actorStyle awesome
+title SGDE-132 · Gestionar mi perfil (SGDE-133)
+
+actor "Cliente" as CL
+actor "Proveedor" as PR
+
+rectangle "SGDE" as SISTEMA {
+  usecase "Ver mis datos" as UC1
+  usecase "Cambiar mi teléfono" as UC2
+  usecase "Cambiar el contacto\ndel proveedor" as UC3
+  usecase "Cambiar mi correo\nde acceso" as UC4
+  usecase "Cambiar mi contraseña" as UC5
+  usecase "Confirmar con la\ncontraseña actual" as UC6
+  usecase "Cerrar las demás sesiones" as UC7
+}
+
+CL --> UC1
+CL --> UC2
+CL --> UC4
+CL --> UC5
+PR --> UC1
+PR --> UC3
+PR --> UC4
+PR --> UC5
+UC4 ..> UC6 : <<include>>
+UC5 ..> UC6 : <<include>>
+UC5 ..> UC7 : <<include>>
+
+note bottom of SISTEMA
+  **Ver mis datos:** solo los suyos, sin observaciones internas.
+  El Administrador recibe 403. Sin vincular: 403 con su código,
+  pero puede cambiar correo y contraseña.
+  **Correo:** en minúsculas y que nadie más lo use. Si el usuario
+  era el correo, también cambia el usuario con que entra.
+  **Contraseña:** límite de intentos por usuario. La sesión
+  actual recibe tokens nuevos.
+end note
+@enduml

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Cotizacion, CotizacionItem, MovimientoCotizacion
+from .models import Cotizacion, CotizacionItem, GrupoEvento, MovimientoCotizacion, TipoEvento
 
 
 class CotizacionItemInline(admin.TabularInline):
@@ -31,4 +31,22 @@ class CotizacionAdmin(admin.ModelAdmin):
     ]
 
 
+class TipoEventoInline(admin.TabularInline):
+    model = TipoEvento
+    extra = 1
+
+
+class GrupoEventoAdmin(admin.ModelAdmin):
+    # SGDE-142: el cliente agrega, ordena o desactiva grupos y tipos sin programar.
+    list_display = ["nombre", "orden", "activo"]
+    inlines = [TipoEventoInline]
+
+
+class TipoEventoAdmin(admin.ModelAdmin):
+    list_display = ["nombre", "grupo", "activo"]
+    list_filter = ["grupo", "activo"]
+
+
 admin.site.register(Cotizacion, CotizacionAdmin)
+admin.site.register(GrupoEvento, GrupoEventoAdmin)
+admin.site.register(TipoEvento, TipoEventoAdmin)

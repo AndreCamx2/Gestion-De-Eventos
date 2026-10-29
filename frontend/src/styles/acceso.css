@@ -1,0 +1,609 @@
+/* Login y Registro — guía Piedra viva (maquetas Main.dc.html y Registro.dc.html).
+   Solo variables de tokens.css: ningún color en hex. */
+
+/* ---------- Piezas compartidas ---------- */
+
+.acceso-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: var(--peso-negrita);
+    font-size: 16px;
+    color: var(--color-texto);
+    text-decoration: none;
+}
+
+.acceso-logo__marca {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--color-texto);
+    color: var(--color-fondo);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--peso-extra);
+}
+
+/* Punto mandarina del logo */
+.acceso-logo__marca::after {
+    content: "";
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    background: var(--color-mandarina);
+    box-shadow: 0 0 0 2px var(--color-fondo);
+}
+
+.acceso-obligatorio {
+    color: var(--color-mandarina-texto);
+}
+
+.acceso-enviar {
+    width: 100%;
+    min-height: 50px;
+}
+
+/* El spinner reutiliza .btn__spinner (main.css), oculto por defecto;
+   aquí se muestra siempre que está en el DOM. */
+.boton .acceso-spinner {
+    display: inline-block;
+}
+
+.acceso-divisor {
+    height: 1px;
+    background: var(--color-linea);
+}
+
+.acceso-pie {
+    margin: 0;
+    font-size: 14px;
+    color: var(--color-texto-suave);
+    text-align: center;
+}
+
+.acceso-enlace {
+    display: inline-block;
+    padding: 12px 2px;
+    margin: -12px 0;
+    font-weight: var(--peso-negrita);
+    color: var(--color-mandarina-texto);
+    text-decoration: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .acceso-enlace:hover {
+        text-decoration: underline;
+    }
+}
+
+.acceso-aviso {
+    padding: 12px 16px;
+    border-radius: var(--radio-control);
+    font-size: 14px;
+    font-weight: var(--peso-semi);
+}
+
+.acceso-aviso--exito {
+    background: var(--estado-confirmado-fondo);
+    color: var(--estado-confirmado-texto);
+}
+
+.acceso-aviso--error {
+    background: var(--estado-vencida-fondo);
+    color: var(--color-peligro);
+}
+
+.acceso-enlace--pequeno {
+    font-size: 13px;
+}
+
+.acceso-clave__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espacio-3);
+}
+
+/* Contraseña con botón "Ver / Ocultar" dentro del campo */
+.acceso-clave {
+    position: relative;
+}
+
+.acceso-clave .acceso-clave__input {
+    padding-right: 84px;
+}
+
+.acceso-clave__ver {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    transform: translateY(-50%);
+    min-width: var(--alto-tocable);
+    /* 44 px tocables (el campo mide 46 px, así que cabe dentro) */
+    min-height: var(--alto-tocable);
+    padding: 0 var(--espacio-3);
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: var(--peso-negrita);
+    color: var(--color-tinta);
+    cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .acceso-clave__ver:hover {
+        background: var(--color-tinta-suave);
+    }
+}
+
+/* Círculos suaves de fondo (decorativos) */
+.acceso-circulo {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* ---------- Login ---------- */
+
+.acceso {
+    min-height: 100vh;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    padding: 32px 40px;
+    background: var(--color-fondo);
+    color: var(--color-texto);
+    overflow: hidden;
+}
+
+.acceso__cabecera {
+    display: flex;
+    align-items: center;
+}
+
+.acceso__cuerpo {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 64px;
+    padding: 40px 0;
+}
+
+.acceso-presentacion {
+    flex: 1 1 380px;
+    max-width: 500px;
+    min-width: 0;
+}
+
+.acceso-pildora {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: var(--radio-pildora);
+    background: var(--color-durazno);
+    color: var(--color-mandarina-texto);
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-negrita);
+}
+
+.acceso-pildora__punto {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--color-mandarina);
+}
+
+.acceso-presentacion__titular {
+    margin: 16px 0 0;
+    font-weight: var(--peso-extra);
+    font-size: 56px;
+    line-height: 1.06;
+    letter-spacing: -0.04em;
+}
+
+/* Subrayado tipo resaltador */
+.acceso-resaltado {
+    padding: 0 4px;
+    background: linear-gradient(transparent 62%, var(--color-durazno) 62%, var(--color-durazno) 92%, transparent 92%);
+}
+
+.acceso-pasos {
+    margin: 28px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    font-size: 16px;
+    color: var(--color-texto-suave);
+}
+
+.acceso-pasos__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.acceso-pasos__numero {
+    flex: 0 0 30px;
+    height: 30px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: var(--peso-extra);
+}
+
+.acceso-pasos__numero--tinta {
+    background: var(--color-tinta-suave);
+    color: var(--color-tinta);
+}
+
+.acceso-pasos__numero--durazno {
+    background: var(--color-durazno);
+    color: var(--color-mandarina-texto);
+}
+
+.acceso-pasos__numero--mantequilla {
+    background: var(--estado-cotizado-fondo);
+    color: var(--color-mantequilla-texto);
+}
+
+.acceso-tarjeta-envoltura {
+    position: relative;
+    flex: 1 1 360px;
+    max-width: 400px;
+    min-width: 0;
+}
+
+.acceso-circulo--grande {
+    top: -48px;
+    right: -56px;
+    width: 180px;
+    height: 180px;
+    background: var(--color-durazno);
+}
+
+.acceso-circulo--mediano {
+    bottom: -40px;
+    left: -48px;
+    width: 120px;
+    height: 120px;
+    background: var(--estado-cotizado-fondo);
+}
+
+.acceso-circulo--pequeno {
+    bottom: 64px;
+    right: -28px;
+    width: 44px;
+    height: 44px;
+    background: var(--color-tinta-suave);
+}
+
+.acceso-tarjeta {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 36px;
+    border-radius: var(--radio-tarjeta-grande);
+    background: var(--color-superficie);
+    box-shadow: var(--sombra-flotante);
+}
+
+.acceso-tarjeta__titulo {
+    margin: 0;
+    font-size: 24px;
+    font-weight: var(--peso-negrita);
+    letter-spacing: var(--tracking-seccion);
+}
+
+.acceso-tarjeta__subtitulo {
+    margin: 6px 0 0;
+    font-size: 14px;
+    color: var(--color-texto-suave);
+}
+
+/* ---------- Registro ---------- */
+
+.registro {
+    min-height: 100vh;
+    display: flex;
+    flex-wrap: wrap;
+    background: var(--color-fondo);
+    color: var(--color-texto);
+}
+
+.registro-panel {
+    position: relative;
+    overflow: hidden;
+    flex: 1 1 400px;
+    max-width: 440px;
+    box-sizing: border-box;
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+    background: linear-gradient(160deg, var(--color-tinta-suave) 0%, var(--color-fondo) 55%, var(--color-durazno) 100%);
+}
+
+.acceso-circulo--panel-grande {
+    right: -70px;
+    bottom: -70px;
+    width: 260px;
+    height: 260px;
+    background: var(--color-durazno);
+}
+
+.acceso-circulo--panel-pequeno {
+    right: 150px;
+    bottom: 120px;
+    width: 70px;
+    height: 70px;
+    background: var(--estado-cotizado-fondo);
+}
+
+.registro-panel .acceso-logo {
+    position: relative;
+    align-self: flex-start;
+    min-height: var(--alto-tocable);
+}
+
+.registro-panel__titular {
+    position: relative;
+    margin: 0;
+    font-weight: var(--peso-extra);
+    font-size: 52px;
+    line-height: 1.04;
+    letter-spacing: -0.04em;
+}
+
+.registro-pasos {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.registro-pasos__item {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.registro-pasos__numero {
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: 18px;
+    border: 2px solid var(--color-superficie);
+    background: var(--color-superficie);
+    color: var(--color-texto);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--peso-extra);
+    font-size: 15px;
+    box-sizing: border-box;
+}
+
+.registro-pasos__numero--activo {
+    background: var(--color-texto);
+    border-color: var(--color-texto);
+    color: var(--color-superficie);
+}
+
+.registro-pasos__titulo {
+    display: block;
+    font-weight: var(--peso-extra);
+    font-size: 16px;
+}
+
+.registro-pasos__texto {
+    display: block;
+    margin-top: 2px;
+    font-size: 14px;
+    color: var(--color-texto-suave);
+}
+
+.registro-cuerpo {
+    flex: 999 1 520px;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 56px 40px;
+    box-sizing: border-box;
+}
+
+.registro-formulario {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.registro-formulario__titulo {
+    margin: 0;
+    font-size: 40px;
+    font-weight: var(--peso-extra);
+    line-height: 1.1;
+    letter-spacing: var(--tracking-titulo);
+}
+
+.registro-formulario__subtitulo {
+    margin: 8px 0 0;
+    font-size: 15px;
+    color: var(--color-texto-suave);
+}
+
+.registro-tipo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.registro-tipo .campo__etiqueta {
+    margin: 0;
+}
+
+.registro-tipo__opciones {
+    display: flex;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 14px;
+    border: 1px solid var(--color-linea);
+    background: var(--color-superficie);
+}
+
+.registro-tipo__opcion {
+    flex: 1;
+    min-height: var(--alto-tocable);
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: var(--peso-negrita);
+    color: var(--color-texto-suave);
+    cursor: pointer;
+}
+
+.registro-tipo__opcion.is-active {
+    background: var(--color-tinta);
+    color: var(--color-sobre-oscuro);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .registro-tipo__opcion:not(.is-active):hover {
+        color: var(--color-texto);
+        background: var(--color-superficie-2);
+    }
+}
+
+.registro-campos {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.registro-rejilla {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.registro-rejilla__completo {
+    grid-column: 1 / -1;
+}
+
+.registro-consentimiento {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.registro-consentimiento__fila {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--color-texto-suave);
+    cursor: pointer;
+}
+
+.registro-consentimiento__fila input {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    accent-color: var(--color-tinta);
+}
+
+.registro-consentimiento--error .registro-consentimiento__fila input {
+    outline: 1.5px solid var(--color-peligro);
+    outline-offset: 2px;
+}
+
+/* ---------- Teléfono y pantallas medianas ---------- */
+
+@media (max-width: 900px) {
+    .acceso {
+        padding: 20px 16px;
+    }
+
+    .acceso__cuerpo {
+        align-content: flex-start;
+        gap: 32px;
+        padding: 24px 0;
+    }
+
+    .acceso-presentacion__titular {
+        font-size: 36px;
+    }
+
+    /* En pantallas pequeñas los pasos sobran: el formulario va primero a la vista */
+    .acceso-pasos {
+        display: none;
+    }
+
+    .acceso-circulo--grande,
+    .acceso-circulo--mediano,
+    .acceso-circulo--pequeno {
+        display: none;
+    }
+
+    .acceso-tarjeta {
+        padding: 24px;
+    }
+
+    .registro-panel {
+        flex-basis: 100%;
+        max-width: none;
+        padding: 20px 16px;
+        gap: 16px;
+    }
+
+    .registro-panel__titular {
+        font-size: 28px;
+    }
+
+    .registro-pasos,
+    .acceso-circulo--panel-grande,
+    .acceso-circulo--panel-pequeno {
+        display: none;
+    }
+
+    .registro-cuerpo {
+        padding: 24px 16px 40px;
+    }
+
+    .registro-formulario__titulo {
+        font-size: 30px;
+    }
+}
+
+@media (max-width: 560px) {
+    .registro-rejilla {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .registro-tipo__opcion {
+        font-size: 14px;
+    }
+}

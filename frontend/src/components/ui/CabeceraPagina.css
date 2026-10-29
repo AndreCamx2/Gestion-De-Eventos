@@ -1,0 +1,43 @@
+/* Cabecera de pantalla — guía Piedra viva, secciones 3 y 5. Solo variables de tokens.css. */
+.cabecera-pagina {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--espacio-5);
+}
+
+.cabecera-pagina__textos {
+    min-width: 0;
+}
+
+.cabecera-pagina__antetitulo {
+    margin: 0;
+    font-size: var(--texto-antetitulo);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-antetitulo);
+    text-transform: uppercase;
+    color: var(--color-mandarina-texto);
+}
+
+.cabecera-pagina__titulo {
+    margin: var(--espacio-2) 0 0;
+    /* 48 px en escritorio; baja hasta 32 px en teléfono para no partir palabras */
+    font-size: clamp(32px, 20px + 3.5vw, var(--texto-titulo));
+    font-weight: var(--peso-extra);
+    line-height: 1;
+    letter-spacing: var(--tracking-titulo);
+    overflow-wrap: anywhere;
+}
+
+.cabecera-pagina__subtitulo {
+    margin: 10px 0 0;
+    font-size: var(--texto-subtitulo);
+    color: var(--color-texto-suave);
+}
+
+.cabecera-pagina__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-3);
+}

@@ -1,0 +1,172 @@
+/* SGDE — Barra de navegación inferior en el teléfono (SGDE-102)
+   Maqueta: docs/diseno/piedra-viva/maquetas/Movil.dc.html. Solo usa variables de tokens.css.
+   Fuera del teléfono no se muestra: en pantallas anchas siguen las pestañas de arriba. */
+
+.barra-inferior {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .barra-inferior {
+        position: fixed;
+        right: var(--espacio-3);
+        bottom: max(var(--espacio-4), env(safe-area-inset-bottom));
+        left: var(--espacio-3);
+        z-index: 20; /* como la barra superior: encima del contenido, debajo de los modales */
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(0, 1fr);
+        align-items: center;
+        padding: var(--espacio-2);
+        border: var(--borde);
+        border-radius: var(--radio-barra-inferior);
+        background: var(--color-superficie);
+        box-shadow: var(--sombra-flotante);
+    }
+
+    /* Inicio, Cotizar, Agenda y "Más": ícono arriba, texto corto abajo */
+    .barra-inferior__pieza {
+        width: 100%;
+        min-width: 0;
+        height: var(--alto-pieza-barra);
+        padding: 0;
+        border: 0;
+        border-radius: 16px;
+        background: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        color: var(--color-texto-suave);
+        font-family: inherit;
+        font-size: var(--texto-pequeno);
+        font-weight: var(--peso-negrita);
+        line-height: 1.2;
+        white-space: nowrap;
+        transition: color var(--duracion-presion) ease;
+    }
+
+    .barra-inferior__pieza span {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* NavLink pone aria-current="page"; "Más" usa la clase cuando la pantalla está en su menú */
+    .barra-inferior__pieza[aria-current="page"],
+    .barra-inferior__pieza--activa {
+        color: var(--color-texto);
+        font-weight: var(--peso-extra);
+    }
+
+    .barra-inferior__pieza:focus-visible,
+    .barra-inferior__nueva:focus-visible {
+        outline: var(--foco);
+        outline-offset: calc(-1 * var(--foco-separacion));
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .barra-inferior__pieza:hover {
+            color: var(--color-texto);
+        }
+    }
+
+    /* Botón "+" del centro: nueva cotización */
+    .barra-inferior__nueva {
+        justify-self: center;
+        width: 56px;
+        height: 56px;
+        border-radius: 18px;
+        background: var(--color-tinta);
+        color: var(--color-sobre-oscuro);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--sombra-boton-nuevo);
+        transition: transform var(--duracion-presion) var(--curva-salida);
+    }
+
+    .barra-inferior__nueva:active {
+        transform: scale(0.97);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .barra-inferior__nueva:hover {
+            background: var(--color-tinta-hover);
+        }
+    }
+
+    /* ---- Menú "Más" ---- */
+    .barra-inferior__mas {
+        position: relative;
+        min-width: 0;
+    }
+
+    .barra-inferior__menu {
+        position: absolute;
+        right: 0;
+        bottom: calc(100% + var(--espacio-4));
+        width: 220px;
+        max-width: calc(100vw - var(--espacio-8));
+        max-height: 60vh;
+        overflow-y: auto;
+        margin: 0;
+        padding: var(--espacio-2);
+        list-style: none;
+        background: var(--color-superficie);
+        border: var(--borde);
+        border-radius: var(--radio-control);
+        box-shadow: var(--sombra-flotante);
+        transform-origin: bottom right;
+        animation: barra-inferior-menu-entrada var(--duracion-menu) var(--curva-salida);
+    }
+
+    .barra-inferior__opcion {
+        display: flex;
+        align-items: center;
+        min-height: var(--alto-tocable);
+        padding: 0 var(--espacio-3);
+        border-radius: var(--espacio-2);
+        color: var(--color-texto);
+        font-size: var(--texto-navegacion);
+        font-weight: var(--peso-semi);
+        text-decoration: none;
+    }
+
+    .barra-inferior__opcion[aria-current="page"] {
+        font-weight: var(--peso-extra);
+        box-shadow: inset 3px 0 0 var(--color-mandarina);
+    }
+
+    .barra-inferior__opcion:focus-visible {
+        outline: var(--foco);
+        outline-offset: calc(-1 * var(--foco-separacion));
+    }
+
+    .barra-inferior__opcion:focus-visible,
+    .barra-inferior__opcion:hover {
+        background: var(--color-superficie-2);
+    }
+}
+
+/* Aparece desde su botón: escala 0,96 y opacidad, como el menú del perfil */
+@keyframes barra-inferior-menu-entrada {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .barra-inferior__pieza,
+    .barra-inferior__nueva,
+    .barra-inferior__menu {
+        transition: none;
+        animation: none;
+    }
+
+    .barra-inferior__nueva:active {
+        transform: none;
+    }
+}
