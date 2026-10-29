@@ -140,6 +140,7 @@ function Contenido({ d, hoy, recienEditada }) {
               principal={[c.salon?.nombre, c.montaje?.nombre].filter(Boolean).join(" · ")}
               secundario={textoAforo(c)}
             />
+            <Dato etiqueta="Tipo de evento" principal={c.tipo_evento?.nombre || "Sin clasificar"} />
             <Dato etiqueta="Evento" principal={fechaDelEvento(c.fecha_evento)} secundario={textoCreacion(c)} />
           </div>
           <DetalleConceptos cotizacion={c} />

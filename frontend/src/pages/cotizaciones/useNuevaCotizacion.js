@@ -3,6 +3,7 @@ import { buscarClientes } from "../../api/clientes";
 import { listarConceptos } from "../../api/conceptos";
 import { obtenerCalendario } from "../../api/calendario";
 import { crearCotizacion, editarCotizacion, getCotizacion } from "../../api/cotizaciones";
+import { listarTiposEvento } from "../../api/tiposEvento";
 import { listarMontajes, listarSalonMontajes, listarSalones } from "../../api/salones";
 import {
   ERRORES_VACIOS,
@@ -29,7 +30,7 @@ import {
   vigenciaPorDefecto,
 } from "./nuevaCotizacion";
 
-const CATALOGOS_VACIOS = { salones: [], conceptos: [] };
+const CATALOGOS_VACIOS = { salones: [], conceptos: [], tiposEvento: [] };
 
 // idEditar: el id de una cotización guardada para editarla (PUT .../edicion/); sin él,
 // el formulario arma una nueva. Solo se edita una cotizada: otra da errorCarga "noEditable".
@@ -62,17 +63,19 @@ export function useNuevaCotizacion(idEditar = null) {
     setCargando(true);
     setErrorCarga(null);
     try {
-      const [salones, montajes, salonMontajes, conceptos, cotizacion] = await Promise.all([
+      const [salones, montajes, salonMontajes, conceptos, tiposEvento, cotizacion] = await Promise.all([
         listarSalones(),
         listarMontajes(),
         listarSalonMontajes(),
         listarConceptos(),
+        listarTiposEvento(),
         idEditar != null ? getCotizacion(idEditar) : null,
       ]);
       const listaConceptos = comoLista(conceptos);
       setCatalogos({
         salones: salonesConMontajes(comoLista(salones), comoLista(montajes), comoLista(salonMontajes)),
         conceptos: listaConceptos,
+        tiposEvento: comoLista(tiposEvento),
       });
       if (cotizacion) {
         setOriginal(cotizacion);
@@ -301,6 +304,7 @@ export function useNuevaCotizacion(idEditar = null) {
     errorClientes,
     form,
     salones: catalogos.salones,
+    tiposEvento: catalogos.tiposEvento,
     salon,
     montaje,
     aforo,

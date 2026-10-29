@@ -132,6 +132,32 @@ export default function SeccionEvento({ c }) {
 
       <SelectorMontaje c={c} />
 
+      <div className={["campo", c.errores.campos.tipo_evento && "campo--error"].filter(Boolean).join(" ")}>
+        <label className="campo__etiqueta" htmlFor="nc-tipo-evento">Tipo de evento</label>
+        <select
+          id="nc-tipo-evento"
+          className="campo__input"
+          name="tipo_evento"
+          value={c.form.tipo_evento}
+          onChange={c.cambiarCampo}
+          required
+          aria-invalid={c.errores.campos.tipo_evento ? true : undefined}
+          aria-describedby={c.errores.campos.tipo_evento ? "nc-tipo-evento-error" : undefined}
+        >
+          <option value="">Selecciona un tipo de evento</option>
+          {c.tiposEvento.map((grupo) => (
+            <optgroup key={grupo.id} label={grupo.nombre}>
+              {grupo.tipos.map((tipo) => (
+                <option key={tipo.id} value={String(tipo.id)}>{tipo.nombre}</option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+        {c.errores.campos.tipo_evento && (
+          <p id="nc-tipo-evento-error" className="campo__error">{c.errores.campos.tipo_evento}</p>
+        )}
+      </div>
+
       <div className="nc-evento-fila">
         <ContadorPersonas c={c} />
         <Campo

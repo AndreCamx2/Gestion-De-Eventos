@@ -8,6 +8,7 @@ export const CAMPOS_COTIZACION = [
   "cliente",
   "salon",
   "montaje",
+  "tipo_evento",
   "fecha_evento",
   "cantidad_personas",
   "validez_oferta",
@@ -17,6 +18,7 @@ export const FORM_VACIO = {
   cliente: null,
   salon: null,
   montaje: null,
+  tipo_evento: "",
   fecha_evento: "",
   cantidad_personas: "",
   validez_oferta: "",
@@ -164,6 +166,7 @@ export function validarCotizacion(form, lineas, aforo) {
   if (!form.cliente) campos.cliente = "Elige el cliente de la cotización.";
   if (!form.salon) campos.salon = "Elige el salón.";
   else if (!form.montaje) campos.montaje = "Elige el montaje.";
+  if (!form.tipo_evento) campos.tipo_evento = "Elige el tipo de evento.";
 
   if (!form.fecha_evento) campos.fecha_evento = "La fecha del evento es obligatoria.";
   else if (form.fecha_evento < hoy) campos.fecha_evento = "La fecha del evento no puede ser pasada.";
@@ -197,6 +200,7 @@ export function payloadCotizacion(form, lineas) {
     cliente: form.cliente.id,
     salon: form.salon,
     montaje: form.montaje,
+    tipo_evento: Number(form.tipo_evento),
     fecha_evento: form.fecha_evento,
     cantidad_personas: Number(form.cantidad_personas),
     items: lineas.map((linea) => ({ concepto: linea.concepto.id, cantidad: Number(linea.cantidad) })),
@@ -274,6 +278,7 @@ export function formDesdeCotizacion(cotizacion, hoy = hoyISO()) {
     cliente: cotizacion.cliente,
     salon: cotizacion.salon?.id ?? null,
     montaje: cotizacion.montaje?.id ?? null,
+    tipo_evento: cotizacion.tipo_evento?.id != null ? String(cotizacion.tipo_evento.id) : "",
     fecha_evento: cotizacion.fecha_evento,
     cantidad_personas: String(cotizacion.cantidad_personas),
     validez_oferta: cotizacion.validez_oferta && cotizacion.validez_oferta >= hoy ? cotizacion.validez_oferta : "",
