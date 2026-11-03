@@ -1,0 +1,181 @@
+/* "¿Qué eventos generan más ingresos?" (SGDE-145). Solo variables de tokens.css:
+   así sigue el tema de la aplicación, también si se agrega un modo oscuro. */
+
+.ingresos-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-3) var(--espacio-6);
+    align-items: flex-end;
+}
+
+.ingresos-filtro {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.ingresos-filtro__etiqueta {
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-extra);
+    letter-spacing: var(--tracking-tabla);
+    text-transform: uppercase;
+    color: var(--color-texto-tenue);
+}
+
+.ingresos-filtros .cotizaciones-campos {
+    flex-basis: 100%;
+}
+
+.cotizaciones-cifras.ingresos-cifras {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ingresos-grafico {
+    padding: var(--espacio-6);
+}
+
+.ingresos-lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.ingresos-fila {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacio-2);
+}
+
+.ingresos-fila__cabeza {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--espacio-4);
+}
+
+.ingresos-fila__nombre {
+    display: flex;
+    align-items: baseline;
+    gap: var(--espacio-3);
+    min-width: 0;
+    margin: 0;
+    font-size: var(--texto-subtitulo);
+    font-weight: var(--peso-negrita);
+    color: var(--color-texto);
+}
+
+.ingresos-fila__puesto {
+    flex-shrink: 0;
+    min-width: 1.5em;
+    font-size: var(--texto-etiqueta);
+    font-weight: var(--peso-extra);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-texto-tenue);
+}
+
+.ingresos-fila__grupo {
+    display: block;
+    margin-top: 2px;
+    font-size: var(--texto-pequeno);
+    font-weight: var(--peso-medio);
+    color: var(--color-texto-suave);
+}
+
+.ingresos-fila__monto {
+    flex-shrink: 0;
+    margin: 0;
+    font-size: var(--texto-subtitulo);
+    font-weight: var(--peso-extra);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-texto);
+}
+
+.ingresos-fila__pista {
+    height: 14px;
+    overflow: hidden;
+    background: var(--color-superficie-2);
+    border-radius: var(--radio-pildora);
+}
+
+.ingresos-fila__barra {
+    display: block;
+    height: 100%;
+    background: var(--color-tinta);
+    border-radius: var(--radio-pildora);
+    transition: width 400ms var(--curva-salida);
+}
+
+.ingresos-fila:first-child .ingresos-fila__barra {
+    background: var(--color-mandarina);
+}
+
+.ingresos-fila__barra--sin,
+.ingresos-fila:first-child .ingresos-fila__barra--sin {
+    background: var(--estado-cancelado-punto);
+}
+
+.ingresos-fila__datos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacio-1) var(--espacio-6);
+    margin: 0;
+    font-size: var(--texto-etiqueta);
+}
+
+.ingresos-fila__datos div {
+    display: flex;
+    gap: 6px;
+}
+
+.ingresos-fila__datos dt {
+    color: var(--color-texto-tenue);
+}
+
+.ingresos-fila__datos dd {
+    margin: 0;
+    font-weight: var(--peso-semi);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-texto);
+}
+
+@media (max-width: 860px) {
+    .cotizaciones-cifras.ingresos-cifras {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ingresos-cifras .cotizaciones-cifra {
+        border-left: 0;
+    }
+
+    .ingresos-cifras .cotizaciones-cifra + .cotizaciones-cifra {
+        border-top: var(--borde);
+    }
+
+    .ingresos-grafico {
+        padding: var(--espacio-4);
+    }
+
+    .ingresos-fila__cabeza {
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .ingresos-fila__monto {
+        padding-left: calc(1.5em + var(--espacio-3));
+    }
+
+    .ingresos-fila__datos {
+        flex-direction: column;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ingresos-fila__barra {
+        transition: none;
+    }
+}
