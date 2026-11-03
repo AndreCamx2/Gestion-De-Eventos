@@ -11,6 +11,7 @@ import NuevaCotizacion from "./pages/NuevaCotizacion";
 import DetalleCotizacion from "./pages/DetalleCotizacion";
 import ImprimirCotizacion from "./pages/ImprimirCotizacion";
 import Historico from "./pages/Historico";
+import Ingresos from "./pages/Ingresos";
 import Salones from "./pages/Salones";
 import Sitios from "./pages/Sitios";
 import Usuarios from "./pages/Usuarios";
@@ -143,6 +144,7 @@ export default function App() {
               <Route path="/conceptos" element={<Conceptos />} />
               <Route path="/proveedores" element={<Proveedores />} />
               <Route path="/rack" element={<Rack />} />
+              <Route path="/ingresos" element={<Ingresos />} />
               <Route path="/calendario" element={<Calendario />} />
               <Route path="/mis-cotizaciones" element={<MisCotizaciones />} />
               <Route path="/mis-cotizaciones/:id" element={<MiCotizacion />} />
