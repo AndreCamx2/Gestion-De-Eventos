@@ -158,20 +158,9 @@ export function payloadElemento(form, idProveedor) {
   };
 }
 
-// El elemento repetido en el mismo proveedor (UniqueConstraint de dos campos)
-// llega en non_field_errors (SGDE-ERROR-011): se muestra junto a "Elemento".
+// El elemento repetido llega en nombre_elemento (SGDE-135), junto a "Elemento".
 export function erroresElemento(body) {
-  const { non_field_errors, ...resto } = body ?? {};
-  const generales = [].concat(non_field_errors ?? []);
-  const esDuplicado = (msg) => /únic|unique/i.test(String(msg));
-  const otros = generales.filter((msg) => !esDuplicado(msg));
-
-  const { campos, general } = erroresDesdeApiComun(
-    otros.length ? { ...resto, non_field_errors: otros } : resto,
-    CAMPOS_ELEMENTO,
-  );
-  if (generales.some(esDuplicado)) campos.nombre_elemento = "Este proveedor ya tiene un elemento con ese nombre.";
-  return { campos, general };
+  return erroresDesdeApiComun(body, CAMPOS_ELEMENTO);
 }
 
 // ===== Usuario de acceso (SGDE-30 y 72) =====

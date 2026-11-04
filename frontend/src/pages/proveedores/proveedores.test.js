@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   cambiosStock,
+  erroresElemento,
   estaAgotado,
   filtrarStock,
   quedaAgotado,
@@ -89,5 +90,15 @@ describe("Usuario de acceso del proveedor (SGDE-72)", () => {
   it("ofrece los usuarios libres y el que ya tiene el proveedor, por nombre", () => {
     expect(usuariosLibres(usuarios, proveedores, proveedores[0]).map((u) => u.username)).toEqual(["mobiliario", "sonido"]);
     expect(usuariosLibres(usuarios, proveedores, proveedores[1]).map((u) => u.username)).toEqual(["mobiliario"]);
+  });
+});
+
+describe("Errores del API al crear un elemento (SGDE-135)", () => {
+  it("muestra el nombre repetido junto al campo Elemento", () => {
+    const { campos, general } = erroresElemento({
+      nombre_elemento: ["Este proveedor ya tiene un elemento con ese nombre."],
+    });
+    expect(campos.nombre_elemento).toBe("Este proveedor ya tiene un elemento con ese nombre.");
+    expect(general).toBeFalsy();
   });
 });

@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.functions import Lower
 
 
 class Proveedor(models.Model):
@@ -29,7 +30,8 @@ class StockElemento(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["proveedor", "nombre_elemento"], name="uq_proveedor_elemento")
+            # Sin importar mayúsculas: "Silla Tiffany" y "silla tiffany" son el mismo (SGDE-135).
+            models.UniqueConstraint("proveedor", Lower("nombre_elemento"), name="uq_proveedor_elemento")
         ]
 
     def __str__(self):

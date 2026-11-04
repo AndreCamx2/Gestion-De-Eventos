@@ -34,12 +34,17 @@ class ProveedorSerializer(serializers.ModelSerializer):
 
 
 class StockElementoSerializer(serializers.ModelSerializer):
+    mensaje_repetido = "Este proveedor ya tiene un elemento con ese nombre."
+
     class Meta:
         model = StockElemento
         fields = ["id", "proveedor", "nombre_elemento", "cantidad", "valor", "actualizado_en"]
         read_only_fields = ["actualizado_en"]
         # Un valor negativo no tiene sentido (SGDE-98); la cantidad ya es PositiveIntegerField.
         extra_kwargs = {"valor": {"min_value": 0}}
+
+    def proveedor_del_elemento(self, attrs):
+        return attrs["proveedor"]
 
     def validate(self, attrs):
         # Al editar solo cambian cantidad y valor (SGDE-98): otro elemento o proveedor
@@ -52,6 +57,12 @@ class StockElementoSerializer(serializers.ModelSerializer):
             }
             if errores:
                 raise serializers.ValidationError(errores)
+        # DRF no revisa solo un UniqueConstraint con Lower(), y los espacios de los
+        # extremos ya los quita CharField (SGDE-135).
+        elif self.proveedor_del_elemento(attrs).stock.filter(
+            nombre_elemento__iexact=attrs["nombre_elemento"]
+        ).exists():
+            raise serializers.ValidationError({"nombre_elemento": [self.mensaje_repetido]})
         return attrs
 
 
@@ -59,17 +70,13 @@ class MiStockSerializer(StockElementoSerializer):
     """Stock del proveedor que llama ("Mi stock", SGDE-30). El proveedor lo pone la
     vista (context["proveedor"]): si llega en el cuerpo, se ignora."""
 
+    mensaje_repetido = "Ya tienes un elemento con este nombre: edítalo."
+
     class Meta(StockElementoSerializer.Meta):
         read_only_fields = ["proveedor", "actualizado_en"]
-        # Sin proveedor en el cuerpo, DRF no puede revisar la unicidad (proveedor,
-        # nombre_elemento): la revisa validate_nombre_elemento.
-        validators = []
 
-    def validate_nombre_elemento(self, nombre):
-        proveedor = self.context["proveedor"]
-        if self.instance is None and proveedor.stock.filter(nombre_elemento=nombre).exists():
-            raise serializers.ValidationError("Ya tienes un elemento con este nombre: edítalo.")
-        return nombre
+    def proveedor_del_elemento(self, attrs):
+        return self.context["proveedor"]
 
 
 class HistorialStockElementoSerializer(serializers.ModelSerializer):
