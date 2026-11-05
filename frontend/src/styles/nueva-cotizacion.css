@@ -323,6 +323,7 @@
 .nc-montajes__opciones {
     display: flex;
     flex-wrap: wrap;
+    align-items: flex-start;
     gap: var(--espacio-2);
 }
 
@@ -349,6 +350,25 @@
     border-color: var(--color-texto);
     color: var(--color-fondo);
     font-weight: var(--peso-extra);
+}
+
+/* Con foto la opción pasa de píldora a tarjeta; si la foto no carga, vuelve a píldora. */
+.nc-montaje:has(.nc-montaje__foto) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--espacio-2);
+    width: 180px;
+    max-width: 100%;
+    padding: var(--espacio-2);
+    border-radius: 12px;
+}
+
+.nc-montaje__foto {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 8px;
 }
 
 /* Personas y fechas */

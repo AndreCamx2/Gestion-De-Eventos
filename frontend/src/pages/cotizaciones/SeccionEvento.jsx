@@ -1,4 +1,5 @@
 import { Campo } from "../../components/ui";
+import FotoMontaje from "./FotoMontaje";
 import { hoyISO, medidasSalon } from "./nuevaCotizacion";
 import TituloPaso from "./TituloPaso";
 
@@ -50,6 +51,7 @@ function SelectorMontaje({ c }) {
               checked={c.form.montaje === m.id}
               onChange={() => c.elegirMontaje(m.id)}
             />
+            <FotoMontaje key={c.salon.id} montaje={m} />
             {m.nombre} · {m.aforo}
           </label>
         ))}
