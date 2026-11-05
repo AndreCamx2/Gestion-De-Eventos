@@ -57,15 +57,23 @@ export function medidasSalon(salon) {
   return `${decimal.format(Number(salon.ancho))} × ${decimal.format(Number(salon.altura))} m`;
 }
 
+// Fotos de un montaje, de la mejor a la peor: la de ese salón y la general del tipo,
+// que vive en public/montajes/<codigo>.jpg.
+export function fotosMontaje({ foto_url, codigo }) {
+  return [foto_url, codigo && `/montajes/${codigo}.jpg`].filter(Boolean);
+}
+
 export function salonesConMontajes(salones, montajes, salonMontajes) {
-  const nombres = new Map(montajes.map((m) => [m.id, m.nombre]));
+  const catalogo = new Map(montajes.map((m) => [m.id, m]));
   return salones.map((salon) => {
     const habilitados = salonMontajes
       .filter((sm) => sm.salon === salon.id)
       .map((sm) => ({
         id: sm.montaje,
-        nombre: nombres.get(sm.montaje) ?? `Montaje ${sm.montaje}`,
+        nombre: catalogo.get(sm.montaje)?.nombre ?? `Montaje ${sm.montaje}`,
+        codigo: catalogo.get(sm.montaje)?.codigo,
         aforo: sm.aforo,
+        foto_url: sm.foto_url,
       }))
       .sort((a, b) => b.aforo - a.aforo);
     return {
