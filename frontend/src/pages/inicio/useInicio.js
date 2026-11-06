@@ -52,12 +52,15 @@ export function useInicio() {
 
   const cargarUsuario = () => ejecutar(getUsuarioActual, setUsuario, setSesionVencida);
   const cargarCotizaciones = () => ejecutar(listarCotizaciones, setCotizaciones, setSesionVencida);
-  const cargarCalendario = () =>
-    ejecutar(
-      () => obtenerCalendario({ desde: fechaISO(hoy), hasta: fechaISO(sumarDias(hoy, DIAS_VENTANA - 1)) }),
-      setCalendario,
-      setSesionVencida,
-    );
+  const cargarCalendario = useCallback(
+    () =>
+      ejecutar(
+        () => obtenerCalendario({ desde: fechaISO(hoy), hasta: fechaISO(sumarDias(hoy, DIAS_VENTANA - 1)) }),
+        setCalendario,
+        setSesionVencida,
+      ),
+    [hoy],
+  );
   const cargarSalones = () => ejecutar(listarSalones, setSalones, setSesionVencida);
   const cargarStock = useCallback(() => ejecutar(listarMiStock, setStock, setSesionVencida), []);
 
@@ -72,7 +75,7 @@ export function useInicio() {
     cargarCotizaciones();
     cargarCalendario();
     cargarSalones();
-  }, [esAdmin]);
+  }, [esAdmin, cargarCalendario]);
 
   useEffect(() => {
     if (!esProveedor) return;

@@ -173,6 +173,8 @@ function Contenido({ d, hoy, recienEditada }) {
 export default function DetalleCotizacion() {
   const { id } = useParams();
   const d = useDetalleCotizacion(idDeRuta(id));
+  // Hoy se toma al cargar la cotización, igual que en la lista.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const hoy = useMemo(() => hoyLocal(), [d.cotizacion]);
   const c = d.cotizacion;
   // Viene de "Guardar cambios" en /cotizaciones/<id>/editar. Se lee una vez y se quita

@@ -37,6 +37,9 @@ export function useSalones() {
 
   useEffect(() => {
     cargarDatos();
+    // Solo al abrir: cargarDatos cambia en cada render y tenerla en la lista pediría
+    // los datos sin parar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Al cerrar un diálogo el foco vuelve a quien lo abrió. Si ese botón ya no

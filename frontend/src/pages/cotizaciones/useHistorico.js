@@ -72,6 +72,8 @@ export function useHistorico() {
     cargar();
   }, [cargar]);
 
+  // Hoy se toma al cargar los eventos: el resumen usa la misma fecha que los datos.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const hoy = useMemo(() => hoyLocal(), [eventos]);
   const resumen = useMemo(() => resumenHistorico(eventos, hoy), [eventos, hoy]);
 
