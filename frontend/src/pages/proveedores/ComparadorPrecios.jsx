@@ -48,6 +48,8 @@ export default function ComparadorPrecios({ sesionVencida, onSesionVencida }) {
   useEffect(() => {
     const espera = setTimeout(() => buscar(texto), ESPERA_MS);
     return () => clearTimeout(espera);
+    // Solo busca al cambiar el texto: buscar cambia en cada render y reiniciaría la espera.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [texto]);
 
   // Al volver a entrar después de un 401, se repite la última búsqueda.
@@ -55,6 +57,8 @@ export default function ComparadorPrecios({ sesionVencida, onSesionVencida }) {
     if (sesionVencida || !pendienteRef.current) return;
     pendienteRef.current = false;
     buscar(texto);
+    // Solo al volver a entrar: con buscar o texto en la lista correría en cada render o tecla.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sesionVencida]);
 
   let vista = "lista";

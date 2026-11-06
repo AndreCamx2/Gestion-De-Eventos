@@ -43,6 +43,7 @@ export default function HistorialPrecios({ conceptoId, version, sesionVencida, o
     };
     // onSesionVencida no va en la lista: cambia en cada render de Conceptos.jsx y
     // repetiría la petición sin necesidad.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conceptoId, version, reintento]);
 
   // Al volver a entrar, si el historial falló por la sesión, se pide otra vez.

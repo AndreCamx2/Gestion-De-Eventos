@@ -119,6 +119,7 @@ export default function Cotizaciones() {
 
   // Hoy se toma al cargar la lista: así las notas de vigencia y la tasa del mes
   // se calculan con la misma fecha que los datos.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const hoy = useMemo(() => hoyLocal(), [todas, cotizaciones]);
   const cifras = useMemo(() => resumen(todas, hoy), [todas, hoy]);
   const conteos = useMemo(() => conteosPorEstado(cotizaciones), [cotizaciones]);

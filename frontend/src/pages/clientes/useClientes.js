@@ -55,6 +55,9 @@ export function useClientes() {
 
   useEffect(() => {
     cargarDatos();
+    // Se carga al abrir y al cambiar el filtro: cargarDatos cambia en cada render y
+    // tenerla en la lista pediría los datos sin parar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mostrarInactivos]);
 
   const { tablaRef, panelRef, tituloPanelRef, guardarRef, focoPendienteRef } = useFocoPanel(panel);

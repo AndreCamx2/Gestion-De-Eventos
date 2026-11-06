@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useCallback, useState, useEffect, useMemo, useRef } from "react";
 import { listarConceptos, listarSitios } from "../api/conceptos";
 import SesionVencida from "../components/SesionVencida";
 import {
@@ -66,10 +66,13 @@ export default function Conceptos() {
     }
   }
 
-  function obtenerNombreSitio(id) {
-    const sitio = sitios.find((s) => s.id === id);
-    return sitio ? sitio.nombre : `Venue #${id}`;
-  }
+  const obtenerNombreSitio = useCallback(
+    (id) => {
+      const sitio = sitios.find((s) => s.id === id);
+      return sitio ? sitio.nombre : `Venue #${id}`;
+    },
+    [sitios],
+  );
 
   const conceptosFiltrados = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
@@ -84,7 +87,7 @@ export default function Conceptos() {
             "es",
           ) || a.nombre.localeCompare(b.nombre, "es"),
       );
-  }, [conceptos, sitios, filtroSitio, busqueda, mostrarInactivos]);
+  }, [conceptos, obtenerNombreSitio, filtroSitio, busqueda, mostrarInactivos]);
 
   const seleccionado =
     conceptosFiltrados.find((c) => c.id === seleccionId) ?? conceptosFiltrados[0] ?? null;

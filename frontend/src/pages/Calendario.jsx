@@ -112,7 +112,7 @@ export default function Calendario() {
     setFiltroSitio("todos");
     setFiltroSalon(url.salon);
     salonPorRevisarRef.current = true;
-  }, [location.search]);
+  }, [location.search, hoy, mesActual]);
 
   // URL recién leída, con los salones ya cargados: un ?salon que no es de un salón
   // visible se ignora; si lo es, se elige también su sitio. Después la URL queda
@@ -124,6 +124,9 @@ export default function Calendario() {
     if (salon) setFiltroSitio(salon.sitio);
     else setFiltroSalon("todos");
     escribirUrl(mes, salon ? salon.id : "todos");
+    // Solo revisa cuando llegan los datos: escribirUrl cambia en cada render y un cambio
+    // de mes no debe repetir esta revisión.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datos, filtroSalon]);
 
   // El foco vuelve a "Gestionar" en un efecto, cuando el diálogo ya se quitó (ERR-017).
