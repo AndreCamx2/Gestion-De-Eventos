@@ -4,6 +4,7 @@ import { ROLES_POR_RUTA } from "../routes/rutasPorRol";
 import BarraInferior from "./BarraInferior";
 import { piezasBarraInferior } from "./piezasBarraInferior";
 import "../styles/dashboard-layout.css";
+import logoVenue from "../assets/marca/venue-logo.svg";
 
 // Única fuente de las pestañas de la barra superior.
 // El orden sigue la maqueta de Piedra viva.
@@ -92,9 +93,8 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
     <div className={`panel${piezasBarra.hayBarra ? " panel--barra-inferior" : ""}`}>
       <header className="barra-superior">
         <div className="barra-superior__interior">
-          <Link to="/inicio" className="barra-superior__logo" aria-label="SGDE, ir al inicio">
-            <span className="barra-superior__marca" aria-hidden="true">S</span>
-            <span aria-hidden="true">SGDE</span>
+          <Link to="/inicio" className="barra-superior__logo" aria-label="Venue, ir al inicio">
+            <img src={logoVenue} alt="" className="barra-superior__logo-img" width="148" height="30" />
           </Link>
 
           <nav className="barra-superior__pestanas" aria-label="Principal" ref={pestanasRef}>

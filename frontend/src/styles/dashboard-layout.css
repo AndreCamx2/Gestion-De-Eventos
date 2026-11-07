@@ -21,7 +21,6 @@
     column-gap: var(--espacio-6);
 }
 
-/* Logo: cuadro oscuro con la "S" y un punto mandarina */
 .barra-superior__logo {
     grid-area: logo;
     display: flex;
@@ -32,29 +31,10 @@
     font-weight: var(--peso-negrita);
 }
 
-.barra-superior__marca {
-    position: relative;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    background: var(--color-texto);
-    color: var(--color-fondo);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: var(--peso-extra);
-}
-
-.barra-superior__marca::after {
-    content: "";
-    position: absolute;
-    top: -3px;
-    right: -3px;
-    width: 10px;
-    height: 10px;
-    border-radius: var(--radio-pildora);
-    background: var(--color-mandarina);
-    box-shadow: 0 0 0 2px var(--color-superficie);
+.barra-superior__logo-img {
+    display: block;
+    height: 30px;
+    width: auto;
 }
 
 /* ---- Pestañas ---- */
