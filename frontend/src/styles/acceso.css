@@ -13,30 +13,10 @@
     text-decoration: none;
 }
 
-.acceso-logo__marca {
-    position: relative;
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: var(--color-texto);
-    color: var(--color-fondo);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: var(--peso-extra);
-}
-
-/* Punto mandarina del logo */
-.acceso-logo__marca::after {
-    content: "";
-    position: absolute;
-    top: -3px;
-    right: -3px;
-    width: 10px;
-    height: 10px;
-    border-radius: 5px;
-    background: var(--color-mandarina);
-    box-shadow: 0 0 0 2px var(--color-fondo);
+.acceso-logo__img {
+    display: block;
+    height: 32px;
+    width: auto;
 }
 
 .acceso-obligatorio {
@@ -182,6 +162,13 @@
     flex: 1 1 380px;
     max-width: 500px;
     min-width: 0;
+}
+
+.acceso-presentacion__logo {
+    display: block;
+    height: 64px;
+    width: auto;
+    margin-bottom: 22px;
 }
 
 .acceso-pildora {
@@ -543,6 +530,9 @@
 /* ---------- Teléfono y pantallas medianas ---------- */
 
 @media (max-width: 900px) {
+        .acceso-presentacion__logo {
+        display: none;
+    }
     .acceso {
         padding: 20px 16px;
     }

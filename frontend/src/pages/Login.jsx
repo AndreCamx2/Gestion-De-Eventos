@@ -4,6 +4,7 @@ import { login } from "../api/auth";
 import { Boton, Campo } from "../components/ui";
 import { recuperarClaveActiva } from "../utils/recuperarClave";
 import "../styles/acceso.css";
+import logoVenue from "../assets/marca/venue-logo.svg";
 
 // Pasos que se muestran junto al formulario (maqueta Main.dc.html).
 const PASOS = [
@@ -133,13 +134,13 @@ export default function Login({ onLoginSuccess }) {
     <div className="acceso">
       <header className="acceso__cabecera">
         <span className="acceso-logo">
-          <span className="acceso-logo__marca" aria-hidden="true">S</span>
-          SGDE
+          <img src={logoVenue} alt="Venue" className="acceso-logo__img" width="157" height="32" />
         </span>
       </header>
 
       <main className="acceso__cuerpo">
         <section className="acceso-presentacion">
+          <img src={logoVenue} alt="" className="acceso-presentacion__logo" width="315" height="64" />
           <p className="acceso-pildora">
             <span className="acceso-pildora__punto" aria-hidden="true" />
             Gestión de eventos y salones · Cartagena

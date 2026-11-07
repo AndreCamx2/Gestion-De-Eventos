@@ -10,6 +10,7 @@ import {
 } from "../utils/validacionesRegistro";
 import { ACCOUNT_TYPES, INITIAL_FORM, validarCampo } from "./registro/camposRegistro";
 import "../styles/acceso.css";
+import logoVenue from "../assets/marca/venue-logo.svg";
 
 // Pasos del panel izquierdo (maqueta Registro.dc.html).
 const PASOS = [
@@ -164,8 +165,7 @@ export default function Registrar() {
         <span className="acceso-circulo acceso-circulo--panel-pequeno" aria-hidden="true" />
 
         <Link to="/login" className="acceso-logo">
-          <span className="acceso-logo__marca" aria-hidden="true">S</span>
-          SGDE
+          <img src={logoVenue} alt="Venue" className="acceso-logo__img" width="157" height="32" />
         </Link>
 
         <p className="registro-panel__titular">Tu próximo evento empieza aquí.</p>

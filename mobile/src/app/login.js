@@ -44,7 +44,7 @@ export default function Login() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={[estilos.contenido, { flexGrow: 1, justifyContent: "center" }]} keyboardShouldPersistTaps="handled">
           <View style={{ gap: 6, marginBottom: 8 }}>
-            <Text style={estilos.antetitulo}>SGDE</Text>
+            <Text style={estilos.antetitulo}>Venue</Text>
             <Text style={estilos.titulo} accessibilityRole="header">
               Inicia sesión
             </Text>

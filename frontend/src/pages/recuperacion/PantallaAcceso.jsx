@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import "../../styles/acceso.css";
+import logoVenue from "../../assets/marca/venue-logo.svg";
 
 export default function PantallaAcceso({ titulo, subtitulo, children, onSubmit }) {
   const Contenedor = onSubmit ? "form" : "div";
@@ -8,8 +9,7 @@ export default function PantallaAcceso({ titulo, subtitulo, children, onSubmit }
     <div className="acceso">
       <header className="acceso__cabecera">
         <Link to="/login" className="acceso-logo">
-          <span className="acceso-logo__marca" aria-hidden="true">S</span>
-          SGDE
+          <img src={logoVenue} alt="Venue" className="acceso-logo__img" width="157" height="32" />
         </Link>
       </header>
 
