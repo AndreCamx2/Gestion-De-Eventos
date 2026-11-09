@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { anularCotizacion } from "../../api/cotizaciones";
 import { textoError } from "../../utils/erroresApi";
+import { errorMotivo as revisarMotivo } from "./cancelacion";
 
 // Estado de la ventana "Anular cotización": descarta una cotizada o bloqueada que el
 // cliente no tomó. Mismo contrato que useCancelacion (SGDE-68):
@@ -55,8 +56,9 @@ export function useAnulacion({ cotizacion, onAnulada, onRecargar, onSesionVencid
     evento.preventDefault();
     if (guardando) return;
     setError(null);
-    if (!motivo.trim()) {
-      setErrorMotivo("Escribe el motivo de la anulación.");
+    const invalido = revisarMotivo(motivo, "de la anulación");
+    if (invalido) {
+      setErrorMotivo(invalido);
       return;
     }
 

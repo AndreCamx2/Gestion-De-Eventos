@@ -447,6 +447,20 @@
     height: 100%;
     border-radius: 4px;
     transition: width 240ms var(--curva-salida);
+    /* Se vuelve a montar al cambiar día, montaje o personas: se llena desde cero. */
+    animation: nc-llenar 420ms var(--curva-salida);
+}
+
+@keyframes nc-llenar {
+    from {
+        width: 0;
+    }
+}
+
+@keyframes nc-aparecer {
+    from {
+        opacity: 0;
+    }
 }
 
 .nc-medidor__barra--ok {
@@ -511,6 +525,12 @@
     border-radius: 14px;
     font-size: var(--texto-navegacion);
     font-weight: var(--peso-semi);
+    animation: nc-aparecer 240ms var(--curva-salida);
+}
+
+.nc-disponibilidad--cargando {
+    background: var(--color-campo);
+    color: var(--color-texto-tenue);
 }
 
 .nc-disponibilidad--error {
@@ -994,6 +1014,11 @@
     .nc-cantidad__boton,
     .nc-medidor__barra {
         transition: none;
+    }
+
+    .nc-medidor__barra,
+    .nc-disponibilidad {
+        animation: none;
     }
 
     .nc-salon:active,

@@ -104,9 +104,24 @@ export function estadoAforo(personas, aforo) {
   };
 }
 
-export function ajustarPersonas(actual, delta) {
-  const base = Number(actual) || 0;
-  return String(Math.max(1, base + delta));
+// Los botones − y + saltan a la decena anterior o siguiente: 5 → 10 → 20 y 15 → 10.
+// Antes sumaban 10 sin más (5 → 15 → 25), y en QA parecía que concatenaba un "1".
+export function ajustarPersonas(actual, direccion, paso = PASO_PERSONAS) {
+  const base = cantidadValida(actual);
+  const siguiente = direccion > 0
+    ? Math.floor(base / paso) * paso + paso
+    : Math.ceil(base / paso) * paso - paso;
+  return String(Math.min(MAX_ENTERO, Math.max(1, siguiente)));
+}
+
+// Personas y cantidades son enteros: lo que se escribe o pega queda solo con dígitos
+// ("4.5" no entra como decimal, QA) y sin ceros a la izquierda.
+export const MAX_ENTERO = 99999;
+
+export function soloEntero(texto) {
+  const digitos = String(texto ?? "").replace(/\D/g, "").replace(/^0+(?=\d)/, "");
+  if (!digitos) return "";
+  return String(Math.min(MAX_ENTERO, Number(digitos)));
 }
 
 export function cantidadValida(valor) {
@@ -115,7 +130,7 @@ export function cantidadValida(valor) {
 }
 
 export function ajustarCantidad(actual, delta) {
-  return String(Math.max(1, cantidadValida(actual) + delta));
+  return String(Math.min(MAX_ENTERO, Math.max(1, cantidadValida(actual) + delta)));
 }
 
 const aCentavos = (valor) => Math.round(Number(valor || 0) * 100);
@@ -322,6 +337,8 @@ export function ocupacionDelDia(eventos, idPropio = null) {
 
 export function avisoOcupacion(ocupacion) {
   if (!ocupacion) return null;
+  // Mientras llega la respuesta del día nuevo no se deja el aviso del día anterior.
+  if (ocupacion.cargando) return { tono: "cargando", texto: "Revisando la disponibilidad del salón ese día…" };
   if (ocupacion.confirmada) {
     return {
       tono: "error",
