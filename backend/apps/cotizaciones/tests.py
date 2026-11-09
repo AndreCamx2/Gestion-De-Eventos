@@ -979,6 +979,8 @@ class CancelacionTests(CotizacionBaseTest):
             ({"motivo": "X"}, "penalizacion_pct"),
             ({"penalizacion_pct": "10", "motivo": "   "}, "motivo"),
             ({"penalizacion_pct": "10"}, "motivo"),
+            ({"penalizacion_pct": "10", "motivo": "12345"}, "motivo"),
+            ({"penalizacion_pct": "10", "motivo": "4.5 - 20%"}, "motivo"),
         ):
             with self.subTest(datos=datos):
                 r = self.client.post(cancelacion(cot.pk), datos, format="json")
@@ -1328,6 +1330,19 @@ class AnulacionTests(CotizacionBaseTest):
                 r = self.client.post(anulacion(cot.pk), {"motivo": "x"}, format="json")
                 self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
 
+    def test_motivo_solo_con_numeros_o_simbolos_da_400(self):
+        cot = self.crear_en_bd()
+        for motivo in ("123", "4.5", "  2026-11-08 ", "!!!"):
+            with self.subTest(motivo=motivo):
+                r = self.client.post(anulacion(cot.pk), {"motivo": motivo}, format="json")
+                self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertIn("motivo", r.data)
+        cot.refresh_from_db()
+        self.assertEqual(cot.estado, "cotizado")
+        # Con palabras (aunque lleve números) sí pasa.
+        r = self.client.post(anulacion(cot.pk), {"motivo": "Cambió a 2 salones"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+
     def test_sin_motivo_400_y_otros_roles_403(self):
         cot = self.crear_en_bd()
         r = self.client.post(anulacion(cot.pk), {"motivo": ""}, format="json")
@@ -1540,3 +1555,84 @@ class ReporteIngresosPorTipoEventoTests(CotizacionBaseTest):
         # Verificamos los montos exactos para el tipo Boda
         self.assertEqual(detalle[self.tipo_boda.pk]["cantidad_eventos"], 1)
         self.assertEqual(detalle[None]["tipo_evento_nombre"], "Sin clasificar")
+
+def aplazamiento(pk):
+    return f"{detalle(pk)}aplazamiento/"
+
+
+class AplazamientoTests(CotizacionBaseTest):
+    """Aplazar la fecha de una cotización bloqueada o de un evento confirmado (hallazgo de QA)."""
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.admin)
+        self.fecha = hoy() + timedelta(days=30)
+
+    def aplazar(self, cot, dias, motivo="El cliente movió el congreso."):
+        datos = {"fecha_evento": str(hoy() + timedelta(days=dias)), "motivo": motivo}
+        return self.client.post(aplazamiento(cot.pk), datos, format="json")
+
+    def test_aplaza_un_confirmado_y_deja_movimiento(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha, estado="confirmado")
+        r = self.aplazar(cot, 45)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["estado"], "confirmado")
+        self.assertEqual(r.data["fecha_evento"], str(hoy() + timedelta(days=45)))
+        ultimo = self.client.get(movimientos(cot.pk)).data[-1]
+        self.assertEqual(ultimo["tipo"], "aplazada")
+        self.assertIn("Motivo: El cliente movió el congreso.", ultimo["detalle"])
+
+        # El día viejo quedó libre: otra cotización se puede bloquear ahí.
+        otra = self.crear_en_bd(fecha_evento=self.fecha)
+        self.assertEqual(self.client.post(bloqueo(otra.pk), {"bloqueo_hasta": en(2)}, format="json").status_code, 200)
+
+    def test_aplaza_una_bloqueada_y_conserva_el_bloqueo(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        self.assertEqual(self.client.post(bloqueo(cot.pk), {"bloqueo_hasta": en(3)}, format="json").status_code, 200)
+        r = self.aplazar(cot, 60)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["estado"], "bloqueado")
+        self.assertIsNotNone(r.data["bloqueo_hasta"])
+
+    def test_bloqueo_que_pasa_de_la_fecha_nueva_da_400(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha)
+        self.assertEqual(self.client.post(bloqueo(cot.pk), {"bloqueo_hasta": en(10)}, format="json").status_code, 200)
+        r = self.aplazar(cot, 5)
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("fecha_evento", r.data)
+
+    def test_la_vigencia_no_queda_despues_del_evento(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha, validez_oferta=hoy() + timedelta(days=20), estado="confirmado")
+        r = self.aplazar(cot, 10)
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["validez_oferta"], str(hoy() + timedelta(days=10)))
+
+    def test_fecha_ocupada_da_409(self):
+        destino = hoy() + timedelta(days=50)
+        self.crear_en_bd(fecha_evento=destino, estado="confirmado")
+        cot = self.crear_en_bd(fecha_evento=self.fecha, estado="confirmado")
+        r = self.aplazar(cot, 50)
+        self.assertEqual(r.status_code, status.HTTP_409_CONFLICT)
+
+        bloqueada = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=55))
+        self.assertEqual(self.client.post(bloqueo(bloqueada.pk), {"bloqueo_hasta": en(2)}, format="json").status_code, 200)
+        self.assertEqual(self.aplazar(cot, 55).status_code, status.HTTP_409_CONFLICT)
+        cot.refresh_from_db()
+        self.assertEqual(cot.fecha_evento, self.fecha)
+
+    def test_fecha_pasada_igual_o_motivo_invalido_da_400(self):
+        cot = self.crear_en_bd(fecha_evento=self.fecha, estado="confirmado")
+        for dias, motivo, campo in ((-1, "Lluvia", "fecha_evento"), (30, "Lluvia", "fecha_evento"),
+                                    (40, "", "motivo"), (40, "2026", "motivo")):
+            with self.subTest(dias=dias, motivo=motivo):
+                r = self.aplazar(cot, dias, motivo)
+                self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertIn(campo, r.data)
+
+    def test_cotizada_o_cancelada_da_409_y_otros_roles_403(self):
+        for estado in ("cotizado", "cancelado"):
+            cot = self.crear_en_bd(fecha_evento=self.fecha, estado=estado)
+            with self.subTest(estado=estado):
+                self.assertEqual(self.aplazar(cot, 40).status_code, status.HTTP_409_CONFLICT)
+        cot = self.crear_en_bd(fecha_evento=self.fecha + timedelta(days=1), estado="confirmado")
+        self.client.force_authenticate(user=self.cliente_user)
+        self.assertEqual(self.aplazar(cot, 40).status_code, status.HTTP_403_FORBIDDEN)

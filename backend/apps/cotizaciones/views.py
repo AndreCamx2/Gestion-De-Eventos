@@ -15,7 +15,7 @@ from apps.usuarios.permissions import EsAdministrador, EsCliente
 from . import estados
 from .models import Cotizacion, GrupoEvento, TipoEvento
 from .serializers import (
-    _totales, AceptacionSerializer, AnulacionSerializer, BloqueoSerializer, CancelacionSerializer, CotizacionCalendarioSerializer,
+    _totales, AceptacionSerializer, AnulacionSerializer, AplazamientoSerializer, BloqueoSerializer, CancelacionSerializer, CotizacionCalendarioSerializer,
     CotizacionCrearSerializer, CotizacionDetalleSerializer, CotizacionEdicionSerializer,
     CotizacionListaSerializer, GrupoEventoConTiposSerializer, MiCotizacionDetalleSerializer,
     MiCotizacionListaSerializer, MovimientoSerializer,
@@ -279,6 +279,16 @@ class CotizacionAnulacionView(AccionSobreCotizacionView):
 
     def ejecutar(self, cotizacion, datos):
         estados.anular(cotizacion, datos["motivo"], self.request.user)
+
+
+class CotizacionAplazamientoView(AccionSobreCotizacionView):
+    """Mueve a otra fecha libre una cotización bloqueada o un evento confirmado."""
+
+    def post(self, request, *args, **kwargs):
+        return self.accion(self.validar(AplazamientoSerializer))
+
+    def ejecutar(self, cotizacion, datos):
+        estados.aplazar(cotizacion, datos["fecha_evento"], datos["motivo"], self.request.user)
 
 
 class CotizacionEdicionView(generics.GenericAPIView):

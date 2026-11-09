@@ -258,3 +258,47 @@ def cancelar(cotizacion, penalizacion_pct, motivo, usuario):
         "estado", "penalizacion_pct", "motivo_cancelacion", "cancelado_en", "cancelado_por",
     ])
     registrar(cotizacion, "cancelada", usuario, f"Penalización {penalizacion_pct} %. Motivo: {motivo}")
+
+
+def aplazar(cotizacion, fecha_nueva, motivo, usuario):
+    """Mueve el evento de una bloqueada o confirmada a otra fecha (hallazgo de QA).
+
+    Una cotizada se cambia con "Editar" (PUT .../edicion/). Aquí el salón, montaje,
+    conceptos y garantía siguen iguales; solo cambia el día, y la fecha nueva debe
+    estar libre igual que al bloquear o confirmar. Una bloqueada conserva su
+    bloqueo_hasta, que no puede quedar después del día nuevo. La vigencia de la oferta
+    no puede pasar del día del evento: si quedaba después, baja a la fecha nueva.
+    """
+    if cotizacion.estado not in ("bloqueado", "confirmado"):
+        if cotizacion.estado == "cotizado":
+            raise Conflicto("Una cotización cotizada se cambia con Editar, no con Aplazar.")
+        raise Conflicto(f"No se puede aplazar: la cotización está {en_femenino(cotizacion.estado)}.")
+    exigir_salon_activo(cotizacion)
+
+    if fecha_nueva < timezone.localdate():
+        raise ValidationError({"fecha_evento": ["La fecha nueva no puede ser pasada."]})
+    if fecha_nueva == cotizacion.fecha_evento:
+        raise ValidationError({"fecha_evento": ["Elige una fecha distinta a la actual."]})
+    if cotizacion.estado == "bloqueado" and timezone.localtime(cotizacion.bloqueo_hasta).date() > fecha_nueva:
+        raise ValidationError({"fecha_evento": [
+            f"El bloqueo dura hasta el {fecha_hora(cotizacion.bloqueo_hasta)}: "
+            "la fecha nueva no puede ser anterior. Libera el bloqueo o elige otra fecha."
+        ]})
+
+    anterior = cotizacion.fecha_evento
+    cotizacion.fecha_evento = fecha_nueva
+    _exigir_fecha_libre(cotizacion, timezone.now())
+    campos = ["fecha_evento"]
+    if cotizacion.validez_oferta and cotizacion.validez_oferta > fecha_nueva:
+        cotizacion.validez_oferta = fecha_nueva
+        campos.append("validez_oferta")
+    try:
+        # Savepoint: si aun así choca con uq_salon_fecha_confirmado, 409 y no el 400 genérico.
+        with transaction.atomic():
+            cotizacion.save(update_fields=campos)
+    except IntegrityError:
+        raise Conflicto("El salón ya está confirmado para esa fecha.")
+    registrar(
+        cotizacion, "aplazada", usuario,
+        f"Fecha: {fecha_corta(anterior)} → {fecha_corta(fecha_nueva)}. Motivo: {motivo}",
+    )

@@ -25,7 +25,7 @@ from apps.cotizaciones.views import (
     CotizacionCalendarioView, CotizacionListCreateView, CotizacionDetailView, CotizacionAceptacionView,
     CotizacionBloqueoView, CotizacionCancelacionView, CotizacionMovimientosView, TipoEventoListView,
     CotizacionBloqueoView, CotizacionCancelacionView, CotizacionMovimientosView,
-    CotizacionAnulacionView, CotizacionEdicionView, MisCotizacionesView, MiCotizacionDetalleView,
+    CotizacionAnulacionView, CotizacionAplazamientoView, CotizacionEdicionView, MisCotizacionesView, MiCotizacionDetalleView,
     ReporteIngresosPorTipoEventoView,
 )
 urlpatterns = [
@@ -74,6 +74,7 @@ urlpatterns = [
     path('api/cotizaciones/<int:pk>/bloqueo/', CotizacionBloqueoView.as_view(), name='cotizacion_bloqueo'),
     path('api/cotizaciones/<int:pk>/cancelacion/', CotizacionCancelacionView.as_view(), name='cotizacion_cancelacion'),
     path('api/cotizaciones/<int:pk>/anulacion/', CotizacionAnulacionView.as_view(), name='cotizacion_anulacion'),
+    path('api/cotizaciones/<int:pk>/aplazamiento/', CotizacionAplazamientoView.as_view(), name='cotizacion_aplazamiento'),
     path('api/cotizaciones/<int:pk>/edicion/', CotizacionEdicionView.as_view(), name='cotizacion_edicion'),
     path('api/cotizaciones/<int:pk>/movimientos/', CotizacionMovimientosView.as_view(), name='cotizacion_movimientos'),
     path('api/calendario/', CotizacionCalendarioView.as_view(), name='calendario_cotizaciones'),
