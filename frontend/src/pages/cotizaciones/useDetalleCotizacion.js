@@ -10,6 +10,7 @@ import {
   validarVigencia,
 } from "./detalleCotizacion";
 import { useAnulacion } from "./useAnulacion";
+import { useAplazamiento } from "./useAplazamiento";
 import { useCancelacion } from "./useCancelacion";
 
 export function useDetalleCotizacion(id) {
@@ -101,6 +102,17 @@ export function useDetalleCotizacion(id) {
     },
     onRecargar: () => Promise.all([cargar(), cargarMovimientos()]),
     onSesionVencida: () => setSesionVencida("anulacion"),
+  });
+
+  const aplazamiento = useAplazamiento({
+    cotizacion,
+    onAplazada: (aplazada) => {
+      setCotizacion(aplazada);
+      setNuevaVigencia(aplazada.validez_oferta ?? "");
+      cargarMovimientos();
+    },
+    onRecargar: () => Promise.all([cargar(), cargarMovimientos()]),
+    onSesionVencida: () => setSesionVencida("aplazamiento"),
   });
 
   // Para las acciones que viven en su propio panel (bloquear y liberar): ponen el
@@ -221,6 +233,7 @@ export function useDetalleCotizacion(id) {
     cargarMovimientos,
     cancelacion,
     anulacion,
+    aplazamiento,
     reemplazar,
     // Un 401 en un panel: se avisa y, al volver a entrar, la persona repite la acción.
     avisarSesionVencida: () => setSesionVencida("panel"),

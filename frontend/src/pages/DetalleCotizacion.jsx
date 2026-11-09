@@ -5,6 +5,8 @@ import SesionVencida from "../components/SesionVencida";
 import { hoyLocal } from "../utils/inicioCifras";
 import DetalleConceptos from "./cotizaciones/DetalleConceptos";
 import DialogoAnularCotizacion from "./cotizaciones/DialogoAnularCotizacion";
+import DialogoAplazarFecha from "./cotizaciones/DialogoAplazarFecha";
+import { puedeAplazar } from "./cotizaciones/aplazamiento";
 import DialogoCancelarEvento from "./cotizaciones/DialogoCancelarEvento";
 import MovimientosCotizacion from "./cotizaciones/MovimientosCotizacion";
 import PanelAceptacion from "./cotizaciones/PanelAceptacion";
@@ -129,6 +131,11 @@ function Contenido({ d, hoy, recienEditada }) {
       {recienEditada && (
         <p className="dc-guardado" role="status">Los cambios de la cotización quedaron guardados.</p>
       )}
+      {d.aplazamiento.recienAplazada && d.aplazamiento.recienAplazada !== c.fecha_evento && (
+        <p className="dc-guardado" role="status">
+          El evento pasó del {fechaCorta(d.aplazamiento.recienAplazada)} al {fechaCorta(c.fecha_evento)}.
+        </p>
+      )}
       <Progreso cotizacion={c} hoy={hoy} />
 
       <div className="dc-layout">
@@ -250,6 +257,14 @@ export default function DetalleCotizacion() {
                   Editar
                 </Boton>
               )}
+              {puedeAplazar(c, hoy) && (
+                <Boton ref={d.aplazamiento.botonRef} variante="secundario" onClick={d.aplazamiento.abrir}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 7h16M8 3v4M16 3v4M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM10 14h7M14 11l3 3-3 3" />
+                  </svg>
+                  Aplazar fecha
+                </Boton>
+              )}
               <Boton
                 as={Link}
                 to={`/cotizaciones/${c.id}/imprimir`}
@@ -269,6 +284,7 @@ export default function DetalleCotizacion() {
 
       {c && d.cancelacion.abierta && <DialogoCancelarEvento d={d} />}
       {c && d.anulacion.abierta && <DialogoAnularCotizacion d={d} />}
+      {c && d.aplazamiento.abierta && <DialogoAplazarFecha d={d} />}
 
       <SesionVencida ref={d.sesionRef} visible={d.sesionVencida} onReingreso={d.alVolverAEntrar} />
     </div>

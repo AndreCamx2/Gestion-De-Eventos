@@ -70,6 +70,7 @@ export const ETIQUETAS_MOVIMIENTO = {
   cancelada: "Cancelada",
   editada: "Editada",
   anulada: "Anulada",
+  aplazada: "Fecha aplazada",
 };
 
 export function etiquetaMovimiento(tipo) {

@@ -76,6 +76,15 @@ export function anularCotizacion(id, motivo) {
     });
 }
 
+// Mueve a otra fecha una cotización bloqueada o un evento confirmado. 400 { fecha_evento }
+// o { motivo } si no sirven; 409 si el salón está ocupado ese día o el estado no lo permite.
+export function aplazarCotizacion(id, { fechaEvento, motivo }) {
+    return apiFetch(`/cotizaciones/${id}/aplazamiento/`, {
+        method: "POST",
+        body: JSON.stringify({ fecha_evento: fechaEvento, motivo }),
+    });
+}
+
 // PUT con el mismo cuerpo que crearCotizacion: reemplaza datos y conceptos de una
 // cotización cotizada. Los conceptos que ya estaban conservan su precio. 409 si no
 // está cotizada (una bloqueada se libera primero); 400 con los mismos campos que crear.
