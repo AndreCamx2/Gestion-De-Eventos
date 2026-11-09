@@ -12,6 +12,7 @@ import {
   ajustarCantidad,
   ajustarPersonas,
   avisoOcupacion,
+  soloEntero,
   cantidadInicial,
   comoLista,
   esPorPersona,
@@ -132,6 +133,7 @@ export function useNuevaCotizacion(idEditar = null) {
       return;
     }
     const dia = form.fecha_evento;
+    setOcupacion({ cargando: true });
     obtenerCalendario({ desde: dia, hasta: dia, salon: form.salon })
       .then((eventos) => {
         if (peticion === ocupacionRef.current) setOcupacion(ocupacionDelDia(comoLista(eventos), idEditar));
@@ -176,7 +178,8 @@ export function useNuevaCotizacion(idEditar = null) {
   }
 
   function cambiarCampo(evento) {
-    const { name, value } = evento.target;
+    const { name } = evento.target;
+    const value = name === "cantidad_personas" ? soloEntero(evento.target.value) : evento.target.value;
     limpiarError(name);
     setForm((prev) => ({ ...prev, [name]: value }));
     if (name === "cantidad_personas") setLineas((prev) => seguirPersonas(prev, value));
@@ -212,7 +215,7 @@ export function useNuevaCotizacion(idEditar = null) {
 
   function cambiarPersonas(delta) {
     limpiarError("cantidad_personas");
-    const nuevas = ajustarPersonas(form.cantidad_personas, delta * PASO_PERSONAS);
+    const nuevas = ajustarPersonas(form.cantidad_personas, delta, PASO_PERSONAS);
     setForm((prev) => ({ ...prev, cantidad_personas: nuevas }));
     setLineas((prev) => seguirPersonas(prev, nuevas));
   }
@@ -229,7 +232,8 @@ export function useNuevaCotizacion(idEditar = null) {
   }
 
   function cambiarCantidad(indice, valor) {
-    setLineas((prev) => prev.map((l, i) => (i === indice ? { ...l, cantidad: valor, sigue: false } : l)));
+    const cantidad = soloEntero(valor);
+    setLineas((prev) => prev.map((l, i) => (i === indice ? { ...l, cantidad, sigue: false } : l)));
     setErrores((prev) => ({ ...prev, lineas: prev.lineas.map((e, i) => (i === indice ? null : e)) }));
   }
 

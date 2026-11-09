@@ -105,3 +105,59 @@ describe("Acciones del detalle de una cotización", () => {
     expect(screen.queryByRole("button", { name: "Bloquear fecha" })).not.toBeInTheDocument();
   });
 });
+
+describe("Aplazar la fecha de una bloqueada o confirmada", () => {
+  const CONFIRMADA = {
+    ...COTIZADA,
+    estado: "confirmado",
+    garantia: { tipo: "efectivo", monto: "100.00", registrada_en: "2026-10-05T10:00:00-05:00", registrada_por: "admin" },
+  };
+
+  it("una cotizada no ofrece Aplazar (se cambia con Editar)", async () => {
+    abrirDetalle({ "GET /cotizaciones/7/": [200, COTIZADA] });
+    await screen.findByRole("link", { name: "Editar" });
+    expect(screen.queryByRole("button", { name: "Aplazar fecha" })).not.toBeInTheDocument();
+  });
+
+  it("aplaza una confirmada con fecha y motivo, y avisa el cambio", async () => {
+    const { usuario, llamadas } = abrirDetalle({
+      "GET /cotizaciones/7/": [200, CONFIRMADA],
+      "POST /cotizaciones/7/aplazamiento/": [200, { ...CONFIRMADA, fecha_evento: "2099-12-20" }],
+    });
+    await usuario.click(await screen.findByRole("button", { name: "Aplazar fecha" }));
+    const ventana = screen.getByRole("dialog", { name: "Aplazar fecha del evento" });
+
+    await usuario.type(within(ventana).getByLabelText("Motivo"), "12345");
+    await usuario.click(within(ventana).getByRole("button", { name: "Aplazar fecha" }));
+    expect(within(ventana).getByText("Elige la fecha nueva del evento.")).toBeInTheDocument();
+    expect(within(ventana).getByText(/con palabras/)).toBeInTheDocument();
+    expect(llamadas.some((l) => l.ruta === "/cotizaciones/7/aplazamiento/")).toBe(false);
+
+    await usuario.type(within(ventana).getByLabelText("Fecha nueva"), "2099-12-20");
+    await usuario.clear(within(ventana).getByLabelText("Motivo"));
+    await usuario.type(within(ventana).getByLabelText("Motivo"), "El cliente movió el congreso");
+    await usuario.click(within(ventana).getByRole("button", { name: "Aplazar fecha" }));
+
+    expect(await screen.findByText(/El evento pasó del/)).toBeInTheDocument();
+    expect(llamadas.find((l) => l.ruta === "/cotizaciones/7/aplazamiento/").cuerpo).toEqual({
+      fecha_evento: "2099-12-20",
+      motivo: "El cliente movió el congreso",
+    });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("si el salón está ocupado ese día muestra el conflicto del API", async () => {
+    const { usuario } = abrirDetalle({
+      "GET /cotizaciones/7/": [200, CONFIRMADA],
+      "POST /cotizaciones/7/aplazamiento/": [409, { detail: "El salón ya está confirmado para esa fecha." }],
+    });
+    await usuario.click(await screen.findByRole("button", { name: "Aplazar fecha" }));
+    const ventana = screen.getByRole("dialog", { name: "Aplazar fecha del evento" });
+    await usuario.type(within(ventana).getByLabelText("Fecha nueva"), "2099-12-20");
+    await usuario.type(within(ventana).getByLabelText("Motivo"), "Cambio de agenda");
+    await usuario.click(within(ventana).getByRole("button", { name: "Aplazar fecha" }));
+    expect(await within(ventana).findByText("El salón ya está confirmado para esa fecha.")).toBeInTheDocument();
+    // Ya no se puede reintentar desde la ventana: solo cerrarla y recargar.
+    expect(within(ventana).queryByRole("button", { name: "Aplazar fecha" })).not.toBeInTheDocument();
+  });
+});

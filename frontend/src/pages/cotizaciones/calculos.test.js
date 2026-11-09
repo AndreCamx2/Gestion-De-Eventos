@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parsearMonto, puedeAceptar } from "./detalleCotizacion";
-import { estadoAforo, totalesCotizacion, totalesLinea } from "./nuevaCotizacion";
+import { ajustarPersonas, avisoOcupacion, estadoAforo, soloEntero, totalesCotizacion, totalesLinea } from "./nuevaCotizacion";
 
 const linea = (cantidad, precio, impuesto_pct) => ({ cantidad, concepto: { precio, impuesto_pct } });
 
@@ -47,5 +47,31 @@ describe("Monto de la garantía", () => {
     expect(puedeAceptar({ estado: "cotizado", vencida: true })).toBe(false);
     expect(puedeAceptar({ estado: "bloqueado", vencida: false })).toBe(true);
     expect(puedeAceptar({ estado: "confirmado", vencida: false })).toBe(false);
+  });
+});
+
+describe("Personas y cantidades enteras (hallazgos de QA)", () => {
+  it("− y + saltan a la decena anterior o siguiente, sin bajar de 1", () => {
+    expect(ajustarPersonas("", 1)).toBe("10");
+    expect(ajustarPersonas("5", 1)).toBe("10");
+    expect(ajustarPersonas("10", 1)).toBe("20");
+    expect(ajustarPersonas("15", -1)).toBe("10");
+    expect(ajustarPersonas("10", -1)).toBe("1");
+    expect(ajustarPersonas("1", -1)).toBe("1");
+  });
+
+  it("deja solo dígitos: no entran decimales, signos ni ceros a la izquierda", () => {
+    expect(soloEntero("4.5")).toBe("45");
+    expect(soloEntero("4.")).toBe("4");
+    expect(soloEntero("-3")).toBe("3");
+    expect(soloEntero("1e3")).toBe("13");
+    expect(soloEntero("007")).toBe("7");
+    expect(soloEntero("0")).toBe("0");
+    expect(soloEntero("abc")).toBe("");
+    expect(soloEntero("1234567")).toBe("99999");
+  });
+
+  it("mientras carga el día nuevo no muestra la disponibilidad del anterior", () => {
+    expect(avisoOcupacion({ cargando: true })).toMatchObject({ tono: "cargando" });
   });
 });

@@ -30,6 +30,16 @@ export function montoRetenido(total, pct) {
   return Math.round((centavos * centesimas) / 10000) / 100;
 }
 
+// Un motivo debe explicar algo: solo números o símbolos ("12345", "4.5") no vale (QA).
+// Devuelve el texto del error o null. Igual que validar_motivo del API.
+// deQue: "de la anulación", "del aplazamiento"…
+export function errorMotivo(texto, deQue) {
+  const limpio = String(texto ?? "").trim();
+  if (!limpio) return `Escribe el motivo ${deQue}.`;
+  if (!/\p{L}/u.test(limpio)) return `Describe el motivo ${deQue} con palabras, no solo números o símbolos.`;
+  return null;
+}
+
 export function validarCancelacion(form) {
   const campos = {};
   const pct = parsearPorcentaje(form.penalizacion);
@@ -37,7 +47,8 @@ export function validarCancelacion(form) {
   else if (Number.isNaN(pct)) campos.penalizacion_pct = "Escribe solo números, por ejemplo 20.";
   else if (pct > 100) campos.penalizacion_pct = "La penalización debe estar entre 0 y 100.";
   else if (Math.round(pct * 100) !== pct * 100) campos.penalizacion_pct = "Usa máximo dos decimales.";
-  if (!form.motivo.trim()) campos.motivo = "Escribe el motivo de la cancelación.";
+  const motivo = errorMotivo(form.motivo, "de la cancelación");
+  if (motivo) campos.motivo = motivo;
   return campos;
 }
 

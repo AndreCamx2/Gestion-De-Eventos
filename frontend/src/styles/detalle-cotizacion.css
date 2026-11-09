@@ -693,7 +693,14 @@
 .dc-linea__item--confirmada { --punto: var(--estado-confirmado-punto); }
 .dc-linea__item--cancelada,
 .dc-linea__item--anulada { --punto: var(--estado-cancelado-punto); }
-.dc-linea__item--editada { --punto: var(--estado-cotizado-punto); }
+.dc-linea__item--editada,
+.dc-linea__item--aplazada { --punto: var(--estado-cotizado-punto); }
+
+.dc-aplazar__aviso {
+    margin: 0;
+    color: var(--color-texto-tenue);
+    font-size: var(--texto-navegacion);
+}
 
 .dc-linea__cuerpo {
     min-width: 0;

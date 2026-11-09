@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { montoRetenido, parsearPorcentaje, payloadCancelacion, puedeCancelar, validarCancelacion } from "./cancelacion";
+import { errorMotivo, montoRetenido, parsearPorcentaje, payloadCancelacion, puedeCancelar, validarCancelacion } from "./cancelacion";
 
 describe("Monto retenido al cancelar (debe cuadrar con el backend)", () => {
   it("es total × % ÷ 100", () => {
@@ -38,6 +38,16 @@ describe("Formulario de cancelación", () => {
       "La penalización debe estar entre 0 y 100.",
     );
     expect(validarCancelacion({ penalizacion: "0", motivo: "El cliente desistió" })).toEqual({});
+  });
+
+  it("no acepta un motivo de solo números o símbolos", () => {
+    expect(validarCancelacion({ penalizacion: "10", motivo: "12345" }).motivo).toMatch(/con palabras/);
+    expect(validarCancelacion({ penalizacion: "10", motivo: "4.5 %" }).motivo).toMatch(/con palabras/);
+    expect(errorMotivo("123", "de la anulación")).toBe(
+      "Describe el motivo de la anulación con palabras, no solo números o símbolos.",
+    );
+    expect(errorMotivo("Cambió a 2 salones", "de la anulación")).toBeNull();
+    expect(errorMotivo("Ñoño", "de la anulación")).toBeNull();
   });
 
   it("manda el porcentaje con dos decimales y el motivo sin espacios de más", () => {

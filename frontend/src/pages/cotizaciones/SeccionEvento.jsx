@@ -80,10 +80,10 @@ function ContadorPersonas({ c }) {
         <input
           id="nc-personas"
           name="cantidad_personas"
-          type="number"
-          min="1"
-          step="1"
+          type="text"
           inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="off"
           placeholder="0"
           className="nc-personas__numero"
           value={c.form.cantidad_personas}
@@ -102,7 +102,13 @@ function ContadorPersonas({ c }) {
       </div>
       {c.montaje && (
         <div className="nc-medidor" aria-hidden="true">
-          <div className={`nc-medidor__barra nc-medidor__barra--${tono}`} style={{ width: `${c.aforo.porcentaje}%` }} />
+          {/* La key vuelve a montar la barra al cambiar de día, montaje o personas: se llena
+              de nuevo desde cero para que se note que el dato se recalculó (QA). */}
+          <div
+            key={`${c.form.fecha_evento}|${c.montaje.id}|${c.form.cantidad_personas}`}
+            className={`nc-medidor__barra nc-medidor__barra--${tono}`}
+            style={{ width: `${c.aforo.porcentaje}%` }}
+          />
         </div>
       )}
       <p id="nc-aforo-texto" className={`nc-aforo nc-aforo--${c.montaje ? tono : "neutro"}`}>
@@ -190,7 +196,11 @@ export default function SeccionEvento({ c }) {
       </div>
 
       {c.avisoOcupacion && (
-        <p className={`nc-disponibilidad nc-disponibilidad--${c.avisoOcupacion.tono}`} role="status">
+        <p
+          key={c.avisoOcupacion.tono === "cargando" ? "cargando" : `${c.form.fecha_evento}|${c.form.cantidad_personas}`}
+          className={`nc-disponibilidad nc-disponibilidad--${c.avisoOcupacion.tono}`}
+          role="status"
+        >
           {c.avisoOcupacion.texto}
         </p>
       )}

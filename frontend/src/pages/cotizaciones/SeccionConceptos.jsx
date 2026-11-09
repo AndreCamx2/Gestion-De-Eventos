@@ -15,10 +15,10 @@ function Cantidad({ linea, indice, c }) {
         −
       </button>
       <input
-        type="number"
-        min="1"
-        step="1"
+        type="text"
         inputMode="numeric"
+        pattern="[0-9]*"
+        autoComplete="off"
         className="nc-cantidad__numero"
         aria-label={`Cantidad de ${nombre}`}
         value={linea.cantidad}

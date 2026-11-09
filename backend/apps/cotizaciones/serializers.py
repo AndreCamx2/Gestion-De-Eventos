@@ -1,3 +1,4 @@
+import re
 from datetime import timedelta
 from decimal import Decimal
 
@@ -511,6 +512,19 @@ class BloqueoSerializer(serializers.Serializer):
     bloqueo_hasta = serializers.DateTimeField()
 
 
+# Un motivo tiene que decir algo: "12345" o "...." no explican nada (hallazgo de QA).
+_LETRA = re.compile(r"[^\W\d_]")
+
+
+def validar_motivo(value, de_que):
+    """de_que: "de la anulación", "del aplazamiento"…"""
+    if not _LETRA.search(value):
+        raise serializers.ValidationError(
+            f"Describe el motivo {de_que} con palabras, no solo números o símbolos."
+        )
+    return value
+
+
 # --- Entrada: cancelación (SGDE-61) -----------------------------------------
 
 class CancelacionSerializer(serializers.Serializer):
@@ -525,6 +539,9 @@ class CancelacionSerializer(serializers.Serializer):
         error_messages={"blank": "Escribe el motivo de la cancelación.", "required": "Escribe el motivo de la cancelación."},
     )
 
+    def validate_motivo(self, value):
+        return validar_motivo(value, "de la cancelación")
+
 
 # --- Entrada: anulación de una cotización no confirmada ---------------------
 
@@ -532,6 +549,24 @@ class AnulacionSerializer(serializers.Serializer):
     motivo = serializers.CharField(
         error_messages={"blank": "Escribe el motivo de la anulación.", "required": "Escribe el motivo de la anulación."},
     )
+
+    def validate_motivo(self, value):
+        return validar_motivo(value, "de la anulación")
+
+
+# --- Entrada: aplazar la fecha de una bloqueada o confirmada ----------------
+
+class AplazamientoSerializer(serializers.Serializer):
+    fecha_evento = serializers.DateField(
+        error_messages={"required": "Elige la fecha nueva del evento.", "null": "Elige la fecha nueva del evento.",
+                        "invalid": "La fecha no es válida."},
+    )
+    motivo = serializers.CharField(
+        error_messages={"blank": "Escribe el motivo del aplazamiento.", "required": "Escribe el motivo del aplazamiento."},
+    )
+
+    def validate_motivo(self, value):
+        return validar_motivo(value, "del aplazamiento")
 
 
 # --- Salida: movimientos (SGDE-62) ------------------------------------------
