@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.db.models import Max
 from rest_framework import serializers
+from apps.core.validadores import validar_nombre_cosa
 from apps.cotizaciones.models import Cotizacion
 from apps.sitios.acceso import CampoDeSitio
 from apps.sitios.models import Sitio
@@ -30,6 +31,9 @@ class SalonSerializer(serializers.ModelSerializer):
             campo: {"min_value": Decimal("0"), "error_messages": {"min_value": "No puede ser negativo."}}
             for campo in ("altura", "ancho")
         }
+
+    def validate_nombre(self, value):
+        return validar_nombre_cosa(value)
 
     def validate_sitio(self, value):
         # Sus cotizaciones, conceptos y montajes son de ese sitio: moverlo los dejaría cruzados.

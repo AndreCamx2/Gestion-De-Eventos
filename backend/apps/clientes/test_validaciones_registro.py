@@ -6,7 +6,7 @@ from apps.usuarios.models import Usuario
 
 from .models import Cliente, Empresa
 from .test_registro_publico import URL_REGISTRO, datos_juridico, datos_natural
-from .validadores import (
+from apps.core.validadores import (
     MSG_CEDULA, MSG_NIT, MSG_NIT_DIGITO, MSG_NOMBRE, MSG_RAZON_SOCIAL, MSG_TELEFONO, digito_verificacion_nit,
 )
 

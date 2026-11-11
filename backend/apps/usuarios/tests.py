@@ -134,8 +134,8 @@ class RegistroUsuariosInternosTests(APITestCase):
         cls.rol_proveedor = Rol.objects.get(codigo="proveedor")
 
     def payload(self, rol):
-        return {"username": "nuevo@test.com", "email": "nuevo@test.com",
-                "password": PASSWORD, "rol": rol.id, "sitios": []}
+        return {"username": "nuevo@test.com", "email": "nuevo@test.com", "first_name": "Laura",
+                "last_name": "Gómez", "password": PASSWORD, "rol": rol.id, "sitios": []}
 
     def test_cliente_no_puede_crear_usuarios_ni_fijar_rol(self):
         self.client.force_authenticate(user=self.cliente)
@@ -398,7 +398,7 @@ class ListaUsuariosTests(BaseUsuariosAdminTests):
     def test_post_en_la_lista_crea_usuario_interno(self):
         respuesta = self.client.post("/api/usuarios/", {
             "username": "nuevo@test.com", "email": "nuevo@test.com", "password": PASSWORD,
-            "rol": self.rol_proveedor.id, "sitios": []}, format="json")
+            "first_name": "Laura", "last_name": "Gómez", "rol": self.rol_proveedor.id, "sitios": []}, format="json")
         self.assertEqual(respuesta.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Usuario.objects.get(username="nuevo@test.com").rol, self.rol_proveedor)
         self.assertNotIn("password", respuesta.json())

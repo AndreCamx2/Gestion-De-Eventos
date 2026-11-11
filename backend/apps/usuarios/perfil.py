@@ -2,7 +2,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Q
 from rest_framework import serializers
 
-from apps.clientes.validadores import validar_telefono
+from apps.core.validadores import validar_contacto, validar_telefono
 
 from .models import Usuario
 from .validators import errores_password
@@ -61,6 +61,9 @@ class EdicionProveedorSerializer(serializers.Serializer):
     contacto = serializers.CharField(
         max_length=120, allow_blank=True, required=False, error_messages={"max_length": MSG_CONTACTO_LARGO},
     )
+
+    def validate_contacto(self, valor):
+        return validar_contacto(valor)
 
 
 def actualizar_perfil(usuario, datos):
