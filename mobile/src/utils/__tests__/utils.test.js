@@ -95,6 +95,13 @@ describe("validarStock (SGDE-98)", () => {
     });
   });
 
+  it("el nombre del elemento no puede ser solo números o símbolos", () => {
+    const datos = { cantidad: "1", valor: "100" };
+    expect(validarStock({ ...datos, nombreElemento: "8888" }, { conNombre: true }).errores.nombre_elemento).toMatch(/2 letras/);
+    expect(validarStock({ ...datos, nombreElemento: "!!!" }, { conNombre: true }).errores.nombre_elemento).toMatch(/Solo letras/);
+    expect(validarStock({ ...datos, nombreElemento: "Silla Tiffany x10" }, { conNombre: true }).errores).toEqual({});
+  });
+
   it("rechaza negativos, decimales en la cantidad y nombre vacío", () => {
     const { errores } = validarStock({ nombreElemento: " ", cantidad: "1.5", valor: "-3" }, { conNombre: true });
     expect(Object.keys(errores).sort()).toEqual(["cantidad", "nombre_elemento", "valor"]);
