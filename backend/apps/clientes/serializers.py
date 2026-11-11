@@ -8,8 +8,8 @@ from apps.sitios.models import Ciudad
 from apps.cotizaciones.models import Cotizacion
 from apps.cotizaciones.serializers import EstadoEfectivoMixin
 from .models import Cliente, Empresa
-from .validadores import (
-    validar_cedula, validar_nit, validar_nombre, validar_razon_social, validar_telefono,
+from apps.core.validadores import (
+    validar_cedula, validar_contacto, validar_nit, validar_nombre, validar_razon_social, validar_telefono,
 )
 
 
@@ -74,6 +74,12 @@ class ClienteAdminSerializer(serializers.ModelSerializer):
             tipo = self.instance.tipo
         return tipo
 
+    def validate_nombre(self, value):
+        return validar_nombre(value)
+
+    def validate_telefono(self, value):
+        return validar_telefono(value)
+
     def validate_identificacion(self, value):
         # SGDE-87: el NIT de un jurídico vive en su Empresa. Cliente.identificacion
         # solo es de personas naturales; en un jurídico se guarda null.
@@ -84,6 +90,7 @@ class ClienteAdminSerializer(serializers.ModelSerializer):
         # Vacía se guarda como null, nunca como "": dos "" chocarían con el unique (SGDE-91).
         if not value:
             return None
+        value = validar_cedula(value)
         existente = Cliente.objects.filter(identificacion=value)
         if self.instance:
             existente = existente.exclude(pk=self.instance.pk)
@@ -255,3 +262,12 @@ class EmpresaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empresa
         fields = ["id", "razon_social", "identificacion", "contacto", "correo", "ciudad"]
+
+    def validate_razon_social(self, value):
+        return validar_razon_social(value)
+
+    def validate_identificacion(self, value):
+        return validar_nit(value)
+
+    def validate_contacto(self, value):
+        return validar_contacto(value)

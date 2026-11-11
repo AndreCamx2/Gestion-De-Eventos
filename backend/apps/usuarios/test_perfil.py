@@ -131,6 +131,10 @@ class EditarPerfilTests(PerfilBase):
         r = self.client.patch(URL_PERFIL, {"contacto": "x" * 121}, format="json")
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("contacto", r.data)
+        # Solo números: tiene que ser un teléfono válido (QA).
+        r = self.client.patch(URL_PERFIL, {"contacto": "123"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("contacto", r.data)
         r = self.client.patch(URL_PERFIL, {"telefono": "3001234567"}, format="json")
         self.assertEqual(r.data, {"telefono": [MSG_NO_EDITABLE]})
 

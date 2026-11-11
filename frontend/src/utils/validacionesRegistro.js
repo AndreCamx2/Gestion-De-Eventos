@@ -1,6 +1,9 @@
 const LETRAS = "A-Za-zÁÉÍÓÚÜÑáéíóúüñ";
 const PATRON_NOMBRE = new RegExp(`^[${LETRAS}' -]+$`);
 const PATRON_RAZON_SOCIAL = new RegExp(`^[${LETRAS}0-9.,&' -]+$`);
+const PATRON_NOMBRE_COSA = new RegExp(`^[${LETRAS}0-9 .,&'()/#+-]+$`);
+const PATRON_CONTACTO = new RegExp(`^[${LETRAS}0-9 .()+-]+$`);
+const PATRON_USUARIO = /^[\w.@+-]+$/;
 const SOLO_LETRAS = new RegExp(`[^${LETRAS}]`, "g");
 const PATRON_CEDULA = /^\d{6,10}$/;
 const PATRON_NIT = /^(\d{8,10})(?:-(\d))?$/;
@@ -40,11 +43,66 @@ export function validarNombre(valor) {
   return null;
 }
 
+const contarLetras = (valor) => valor.replace(SOLO_LETRAS, "").length;
+const MSG_SIN_LETRAS = "Debe tener al menos 2 letras: no puede ser solo números o símbolos.";
+
 export function validarRazonSocial(valor) {
   const limpio = quitarEspacios(valor);
   if (!limpio) return "Este campo es obligatorio.";
   if (limpio.length < 3 || !PATRON_RAZON_SOCIAL.test(limpio)) {
     return "Solo letras, números y los signos . , & -";
+  }
+  if (contarLetras(limpio) < 2) return MSG_SIN_LETRAS;
+  return null;
+}
+
+// --- Revisión de QA: las mismas reglas que backend/apps/core/validadores.py ---
+
+// Nombre o apellido de una persona por separado (usuarios, clientes): solo letras.
+// validarNombre, en cambio, es el nombre completo del registro y pide nombre y apellido.
+export function validarNombrePersona(valor) {
+  const limpio = quitarEspacios(valor);
+  if (!limpio) return "Este campo es obligatorio.";
+  if (!PATRON_NOMBRE.test(limpio)) return "Solo letras, sin números ni símbolos.";
+  if (contarLetras(limpio) < 2) return "Escribe un nombre válido.";
+  return null;
+}
+
+// Venues, salones, conceptos, proveedores, elementos de stock: "Salón 2" sí, "123" no.
+export function validarNombreCosa(valor) {
+  const limpio = quitarEspacios(valor);
+  if (!limpio) return "Este campo es obligatorio.";
+  if (!PATRON_NOMBRE_COSA.test(limpio)) return "Solo letras, números y los signos . , - & ' ( ) / # +";
+  if (contarLetras(limpio) < 2) return MSG_SIN_LETRAS;
+  return null;
+}
+
+// Usuario para entrar: puede llevar números, pero con 3 letras o más.
+export function validarUsuario(valor) {
+  const limpio = valor.trim();
+  if (!limpio) return "Escribe el nombre de usuario.";
+  if (!PATRON_USUARIO.test(limpio)) return "Solo letras, números y los signos . @ + - _ (sin espacios).";
+  if (contarLetras(limpio) < 3) return "El usuario debe tener al menos 3 letras (puede llevar números).";
+  return null;
+}
+
+// Opcional. Un proveedor puede ser persona (cédula) o empresa (NIT).
+export function validarIdentificacionProveedor(valor) {
+  const limpio = limpiarDocumento(valor);
+  if (!limpio || PATRON_CEDULA.test(limpio)) return null;
+  if (PATRON_NIT.test(limpio)) return validarNit(limpio);
+  return "Escribe una cédula (6 a 10 dígitos) o un NIT, por ejemplo 900123456-8.";
+}
+
+// Opcional. Solo números: un teléfono válido. Con letras: un nombre (puede llevar el número).
+export function validarContacto(valor) {
+  const limpio = quitarEspacios(valor);
+  if (!limpio) return null;
+  if (contarLetras(limpio) === 0) {
+    return /\d/.test(limpio) ? validarTelefono(limpio) : "Escribe el nombre de una persona o un teléfono.";
+  }
+  if (!PATRON_CONTACTO.test(limpio) || contarLetras(limpio) < 2) {
+    return "Escribe el nombre de una persona o un teléfono.";
   }
   return null;
 }

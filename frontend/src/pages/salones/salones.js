@@ -2,6 +2,8 @@
 // números y medidas, aforo máximo y lo que se envía al editar. Las usan
 // useSalones.js y las piezas de esta carpeta.
 
+import { validarNombreCosa } from "../../utils/validacionesRegistro";
+
 // Minúsculas y sin tildes: así "bolivar" encuentra a "Bolívar".
 export function normalizar(texto) {
   return String(texto ?? "")
@@ -49,6 +51,7 @@ function medidaComoNumero(texto) {
 export function validarSalon(form) {
   const errores = {};
   if (!form.nombre.trim()) errores.nombre = "Escribe el nombre del salón.";
+  else if (validarNombreCosa(form.nombre)) errores.nombre = validarNombreCosa(form.nombre);
   for (const campo of ["ancho", "altura"]) {
     const n = medidaComoNumero(form[campo]);
     if (n !== null && (Number.isNaN(n) || n <= 0)) errores[campo] = "Escribe los metros: un número mayor que 0.";

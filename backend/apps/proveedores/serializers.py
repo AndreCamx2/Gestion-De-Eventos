@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+from apps.core.validadores import validar_contacto, validar_identificacion_proveedor, validar_nombre_cosa
 from .models import HistorialStockElemento, Proveedor, StockElemento
 
 
@@ -16,6 +18,15 @@ class ProveedorSerializer(serializers.ModelSerializer):
         # El UniqueValidator automático no ignora null (varios proveedores sin
         # usuario chocarían entre sí): la unicidad la revisa validate_usuario.
         extra_kwargs = {"usuario": {"validators": []}}
+
+    def validate_nombre(self, value):
+        return validar_nombre_cosa(value)
+
+    def validate_identificacion(self, value):
+        return validar_identificacion_proveedor(value)
+
+    def validate_contacto(self, value):
+        return validar_contacto(value)
 
     def get_usuario_nombre(self, proveedor):
         return proveedor.usuario.username if proveedor.usuario else None
@@ -45,6 +56,12 @@ class StockElementoSerializer(serializers.ModelSerializer):
 
     def proveedor_del_elemento(self, attrs):
         return attrs["proveedor"]
+
+    def validate_nombre_elemento(self, value):
+        # Al editar el nombre no cambia (ver validate): uno viejo que no cumple se deja pasar.
+        if self.instance is not None and value == self.instance.nombre_elemento:
+            return value
+        return validar_nombre_cosa(value)
 
     def validate(self, attrs):
         # Al editar solo cambian cantidad y valor (SGDE-98): otro elemento o proveedor

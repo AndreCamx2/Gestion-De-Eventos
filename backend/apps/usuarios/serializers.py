@@ -1,6 +1,7 @@
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
+from apps.core.validadores import validar_nombre, validar_usuario
 from apps.sitios.acceso import CampoDeSitio
 from apps.sitios.models import Sitio
 from .models import Usuario, Rol
@@ -19,13 +20,34 @@ def campo_sitios():
     return CampoDeSitio(many=True, required=False, queryset=Sitio.objects.all(), campo_sitio="id")
 
 
+def nombre_de_persona_opcional(valor):
+    """Al editar, nombre y apellido pueden quedar vacíos (usuarios viejos sin nombre)."""
+    return validar_nombre(valor) if valor.strip() else ""
+
+
 class UsuarioRegistroSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     sitios = campo_sitios()
+    # Obligatorios al crear: sin ellos la lista mostraba el usuario como nombre (QA).
+    first_name = serializers.CharField(
+        max_length=150, error_messages={"blank": "Escribe el nombre.", "required": "Escribe el nombre."},
+    )
+    last_name = serializers.CharField(
+        max_length=150, error_messages={"blank": "Escribe el apellido.", "required": "Escribe el apellido."},
+    )
 
     class Meta:
         model = Usuario
-        fields = ["id", "username", "email", "password", "rol", "sitios"]
+        fields = ["id", "username", "first_name", "last_name", "email", "password", "rol", "sitios"]
+
+    def validate_username(self, valor):
+        return validar_usuario(valor)
+
+    def validate_first_name(self, valor):
+        return validar_nombre(valor)
+
+    def validate_last_name(self, valor):
+        return validar_nombre(valor)
 
     def validate_rol(self, rol):
         # Defensa en profundidad (SEG-004): aunque la vista ya exige administrador,
@@ -75,6 +97,18 @@ class UsuarioAdminSerializer(serializers.ModelSerializer):
         fields = ["id", "username", "first_name", "last_name", "email", "rol", "rol_codigo",
                   "sitios", "is_active", "last_login", "date_joined"]
         read_only_fields = ["last_login", "date_joined"]
+
+    def validate_username(self, valor):
+        # Un usuario viejo que no cumple la regla se puede editar sin cambiar su usuario.
+        if self.instance is not None and valor == self.instance.username:
+            return valor
+        return validar_usuario(valor)
+
+    def validate_first_name(self, valor):
+        return nombre_de_persona_opcional(valor)
+
+    def validate_last_name(self, valor):
+        return nombre_de_persona_opcional(valor)
 
     def update(self, instance, validated_data):
         actor = self.context["request"].user

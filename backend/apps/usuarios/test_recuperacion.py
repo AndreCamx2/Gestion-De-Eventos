@@ -240,6 +240,7 @@ class BienvenidaTests(APITestCase):
             respuesta = self.client.post(
                 "/api/usuarios/",
                 {"username": "asesor", "email": "asesor@correo.com", "password": PASSWORD,
+                 "first_name": "Pedro", "last_name": "Mejía",
                  "rol": Rol.objects.exclude(codigo__in=["cliente", "administrador"]).first().pk},
                 format="json",
             )

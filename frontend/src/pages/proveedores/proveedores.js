@@ -1,6 +1,7 @@
 // Funciones de la pantalla de Proveedores que no usan estado: iniciales, stock de
 // cada proveedor, totales, fechas, validación, lo que se envía al API y cómo se
 // leen sus errores. Las usan Proveedores.jsx y las piezas de esta carpeta.
+import { validarContacto, validarIdentificacionProveedor, validarNombreCosa } from "../../utils/validacionesRegistro";
 import { erroresDesdeApi as erroresDesdeApiComun } from "../../utils/erroresApi";
 import { mesCorto } from "../../utils/inicioCifras";
 
@@ -86,6 +87,11 @@ const CAMPOS_PROVEEDOR = ["nombre", "identificacion", "contacto"];
 export function validarProveedor(form) {
   const errores = {};
   if (!form.nombre.trim()) errores.nombre = "Escribe el nombre del proveedor.";
+  else if (validarNombreCosa(form.nombre)) errores.nombre = validarNombreCosa(form.nombre);
+  const identificacion = validarIdentificacionProveedor(form.identificacion);
+  if (identificacion) errores.identificacion = identificacion;
+  const contacto = validarContacto(form.contacto);
+  if (contacto) errores.contacto = contacto;
   return errores;
 }
 
@@ -116,6 +122,7 @@ export function validarElemento(form) {
   if (!nombre) errores.nombre_elemento = "Escribe el nombre del elemento.";
   else if (nombre.length > MAX_NOMBRE_ELEMENTO)
     errores.nombre_elemento = `El nombre admite máximo ${MAX_NOMBRE_ELEMENTO} caracteres.`;
+  else if (validarNombreCosa(nombre)) errores.nombre_elemento = validarNombreCosa(nombre);
   return errores;
 }
 

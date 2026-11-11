@@ -1,4 +1,5 @@
 import { erroresDesdeApi } from "../../utils/erroresApi";
+import { validarContacto, validarNit, validarRazonSocial } from "../../utils/validacionesRegistro";
 
 export const EMPRESA_VACIA = { razon_social: "", identificacion: "", contacto: "", correo: "", ciudad: "" };
 
@@ -10,9 +11,11 @@ export function validarEmpresa(form) {
   const errores = {};
   if (!form.razon_social.trim()) errores.razon_social = "Escribe la razón social.";
   else if (form.razon_social.trim().length > 150) errores.razon_social = "Máximo 150 caracteres.";
+  else if (validarRazonSocial(form.razon_social)) errores.razon_social = validarRazonSocial(form.razon_social);
   if (!form.identificacion.trim()) errores.identificacion = "Escribe el NIT de la empresa.";
-  else if (form.identificacion.trim().length > 30) errores.identificacion = "Máximo 30 caracteres.";
+  else if (validarNit(form.identificacion)) errores.identificacion = validarNit(form.identificacion);
   if (form.contacto.trim().length > 120) errores.contacto = "Máximo 120 caracteres.";
+  else if (validarContacto(form.contacto)) errores.contacto = validarContacto(form.contacto);
   if (form.correo.trim() && !CORREO_VALIDO.test(form.correo.trim())) errores.correo = "Escribe un correo válido.";
   return errores;
 }

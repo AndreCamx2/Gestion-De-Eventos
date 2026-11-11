@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+from apps.core.validadores import validar_nombre_cosa
 from .models import Ciudad, Sitio
 
 
@@ -15,3 +17,6 @@ class SitioSerializer(serializers.ModelSerializer):
         model = Sitio
         fields = ["id", "nombre", "ciudad", "ciudad_nombre", "creado_en"]
         read_only_fields = ["creado_en"]
+
+    def validate_nombre(self, value):
+        return validar_nombre_cosa(value)

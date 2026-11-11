@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from apps.core.validadores import validar_nombre_cosa
 from apps.sitios.acceso import CampoDeSitio
 from apps.sitios.models import Sitio
 from .models import Concepto, HistorialPrecioConcepto
@@ -11,6 +12,9 @@ class ConceptoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Concepto
         fields = ["id", "sitio", "nombre", "precio", "impuesto_pct", "activo"]
+
+    def validate_nombre(self, value):
+        return validar_nombre_cosa(value)
 
     def validate_precio(self, value):
         if value < 0:
