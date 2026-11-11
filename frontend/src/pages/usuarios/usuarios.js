@@ -1,4 +1,5 @@
 import { erroresDesdeApi } from "../../utils/erroresApi";
+import { validarNombrePersona, validarUsuario } from "../../utils/validacionesRegistro";
 import { mesCorto } from "../../utils/inicioCifras";
 
 export const ROL_CLIENTE = "cliente";
@@ -66,9 +67,7 @@ export function bloqueoDeBaja(u, yoId) {
   return null;
 }
 
-export const NUEVO_VACIO = { rol: "", username: "", email: "", password: "", sitios: [] };
-
-const USUARIO_VALIDO = /^[\w.@+-]+$/;
+export const NUEVO_VACIO = { rol: "", first_name: "", last_name: "", username: "", email: "", password: "", sitios: [] };
 const CORREO_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function fortaleza(password, { username = "", email = "" } = {}) {
@@ -94,10 +93,12 @@ export function fortaleza(password, { username = "", email = "" } = {}) {
 export function validarNuevo(form) {
   const errores = {};
   if (!form.rol) errores.rol = "Elige el rol.";
-  if (!form.username.trim()) errores.username = "Escribe el nombre de usuario.";
-  else if (!USUARIO_VALIDO.test(form.username.trim())) {
-    errores.username = "Solo letras, números y los signos . @ + - _ (sin espacios).";
-  }
+  const nombre = validarNombrePersona(form.first_name);
+  if (nombre) errores.first_name = form.first_name.trim() ? nombre : "Escribe el nombre.";
+  const apellido = validarNombrePersona(form.last_name);
+  if (apellido) errores.last_name = form.last_name.trim() ? apellido : "Escribe el apellido.";
+  const usuario = validarUsuario(form.username);
+  if (usuario) errores.username = usuario;
   if (!form.email.trim()) errores.email = "Escribe el correo.";
   else if (!CORREO_VALIDO.test(form.email.trim())) errores.email = "Escribe un correo válido.";
   if (fortaleza(form.password, form).nivel < 2) errores.password = fortaleza(form.password, form).texto;
@@ -107,6 +108,8 @@ export function validarNuevo(form) {
 export function payloadNuevo(form) {
   return {
     rol: Number(form.rol),
+    first_name: form.first_name.trim().replace(/\s+/g, " "),
+    last_name: form.last_name.trim().replace(/\s+/g, " "),
     username: form.username.trim(),
     email: form.email.trim(),
     password: form.password,
@@ -128,8 +131,14 @@ export function validarEdicion(form) {
   const errores = {};
   if (!form.rol) errores.rol = "Elige el rol.";
   if (form.email.trim() && !CORREO_VALIDO.test(form.email.trim())) errores.email = "Escribe un correo válido.";
-  if (form.first_name.length > 150) errores.first_name = "Máximo 150 caracteres.";
-  if (form.last_name.length > 150) errores.last_name = "Máximo 150 caracteres.";
+  // Al editar pueden quedar vacíos (usuarios viejos sin nombre); si se escriben, solo letras.
+  for (const campo of ["first_name", "last_name"]) {
+    if (form[campo].length > 150) errores[campo] = "Máximo 150 caracteres.";
+    else if (form[campo].trim()) {
+      const error = validarNombrePersona(form[campo]);
+      if (error) errores[campo] = error;
+    }
+  }
   return errores;
 }
 

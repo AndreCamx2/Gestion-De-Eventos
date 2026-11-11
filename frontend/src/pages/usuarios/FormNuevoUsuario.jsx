@@ -32,6 +32,24 @@ export default function FormNuevoUsuario({ u }) {
         onCambiar={(v) => u.cambiarNuevo("rol", v)}
         error={errores.rol}
       />
+      <div className="usuarios-nuevo__fila">
+        <Campo
+          id="usuario-nuevo-nombre"
+          etiqueta="Nombre"
+          autoComplete="off"
+          value={nuevo.first_name}
+          onChange={(e) => u.cambiarNuevo("first_name", e.target.value)}
+          error={errores.first_name}
+        />
+        <Campo
+          id="usuario-nuevo-apellido"
+          etiqueta="Apellido"
+          autoComplete="off"
+          value={nuevo.last_name}
+          onChange={(e) => u.cambiarNuevo("last_name", e.target.value)}
+          error={errores.last_name}
+        />
+      </div>
       <Campo
         id="usuario-nuevo-username"
         etiqueta="Usuario"

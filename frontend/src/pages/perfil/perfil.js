@@ -1,4 +1,6 @@
-import { validarConfirmacion, validarCorreo, validarPassword, validarTelefono } from "../../utils/validacionesRegistro";
+import {
+  validarConfirmacion, validarContacto, validarCorreo, validarPassword, validarTelefono,
+} from "../../utils/validacionesRegistro";
 
 export const MAX_CONTACTO = 120;
 
@@ -18,7 +20,7 @@ export function validarDato(rol, valor) {
   const limpio = valor.trim();
   if (rol === "cliente") return limpio ? validarTelefono(limpio) : null;
   if (limpio.length > MAX_CONTACTO) return `El contacto admite máximo ${MAX_CONTACTO} caracteres.`;
-  return null;
+  return validarContacto(limpio);
 }
 
 export function validarCambioCorreo(form, correoActual) {

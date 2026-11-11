@@ -1,6 +1,7 @@
 // Funciones de la pantalla de Conceptos que no usan estado: formatos, validación,
 // lo que se envía al API y cómo se leen sus errores. Las usan Conceptos.jsx y las
 // piezas de esta carpeta.
+import { validarNombreCosa } from "../../utils/validacionesRegistro";
 import { erroresDesdeApi as erroresDesdeApiComun } from "../../utils/erroresApi";
 
 export const OPCIONES_IMPUESTO = [
@@ -62,6 +63,7 @@ export function validarForm(form) {
   if (!form.sitio)
     errores.sitio = "Selecciona el venue al que pertenece el concepto.";
   if (!form.nombre.trim()) errores.nombre = "El nombre es obligatorio.";
+  else if (validarNombreCosa(form.nombre)) errores.nombre = validarNombreCosa(form.nombre);
   if (form.precio === "") {
     errores.precio = "El precio es obligatorio.";
   } else if (Number.isNaN(Number(form.precio))) {

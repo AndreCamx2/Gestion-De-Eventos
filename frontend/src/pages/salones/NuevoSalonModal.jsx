@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { crearSalon } from "../../api/salones";
 import { erroresDesdeApi } from "../../utils/erroresApi";
+import { validarNombreCosa } from "../../utils/validacionesRegistro";
 import { Boton, Campo, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 
@@ -47,6 +48,7 @@ export default function NuevoSalonModal({
     const locales = {};
     if (!form.sitio) locales.sitio = "Elige el venue donde está el salón.";
     if (!form.nombre.trim()) locales.nombre = "Escribe el nombre del salón.";
+    else if (validarNombreCosa(form.nombre)) locales.nombre = validarNombreCosa(form.nombre);
     setErrores(locales);
     if (Object.keys(locales).length > 0) return;
 

@@ -5,6 +5,29 @@
 // Antes se llamaba clienteForm.js: en Windows chocaba con ClienteForm.jsx por la
 // mayúscula (SGDE-97).
 import { erroresDesdeApi as erroresDesdeApiComun } from "../../utils/erroresApi";
+import { validarCedula, validarNombrePersona, validarTelefono } from "../../utils/validacionesRegistro";
+
+// Revisión de QA: las mismas reglas que ClienteAdminSerializer. La identificación es
+// obligatoria al crear un natural; el teléfono, opcional.
+export function validarCliente(form, { esCrear }) {
+  const errores = {};
+  const nombre = validarNombrePersona(form.nombre);
+  if (nombre) errores.nombre = form.nombre.trim() ? nombre : "Escribe el nombre del cliente.";
+  if (form.tipo === "natural") {
+    const identificacion = form.identificacion.trim();
+    if (!identificacion && esCrear) {
+      errores.identificacion = "La identificación es obligatoria para personas naturales.";
+    } else if (identificacion) {
+      const error = validarCedula(identificacion);
+      if (error) errores.identificacion = error;
+    }
+  }
+  if (form.telefono?.trim()) {
+    const error = validarTelefono(form.telefono);
+    if (error) errores.telefono = error;
+  }
+  return errores;
+}
 
 export const FORM_VACIO = {
   tipo: "natural",

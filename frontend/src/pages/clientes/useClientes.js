@@ -6,7 +6,7 @@ import {
   actualizarCliente,
   darDeBajaCliente,
 } from "../../api/clientes";
-import { FORM_VACIO, formDesdeCliente, nitDeEmpresa, erroresDesdeApi, payloadEdicion } from "./formularioCliente";
+import { FORM_VACIO, formDesdeCliente, nitDeEmpresa, erroresDesdeApi, payloadEdicion, validarCliente } from "./formularioCliente";
 import { hayDiferencias, normalizar } from "./clientes";
 import { useFocoPanel } from "./useFocoPanel";
 
@@ -213,8 +213,9 @@ export function useClientes() {
     setErrorAccion(null);
     setAviso(null);
 
-    if (esCrear && form.tipo === "natural" && !form.identificacion.trim()) {
-      setErroresCampo({ identificacion: "La identificación es obligatoria para personas naturales." });
+    const locales = validarCliente(form, { esCrear });
+    if (Object.keys(locales).length > 0) {
+      setErroresCampo(locales);
       return;
     }
 

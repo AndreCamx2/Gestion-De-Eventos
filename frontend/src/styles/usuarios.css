@@ -313,6 +313,13 @@
     width: 100%;
 }
 
+/* Nombre y apellido lado a lado; en pantallas angostas, uno debajo del otro. */
+.usuarios-nuevo__fila {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--espacio-4);
+}
+
 .usuarios-campo {
     display: flex;
     flex-direction: column;

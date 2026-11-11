@@ -119,7 +119,8 @@ describe("Aplazar la fecha de una bloqueada o confirmada", () => {
     expect(screen.queryByRole("button", { name: "Aplazar fecha" })).not.toBeInTheDocument();
   });
 
-  it("aplaza una confirmada con fecha y motivo, y avisa el cambio", async () => {
+  // Varios pasos de escritura: con la suite completa en paralelo pasan de los 5 s por defecto.
+  it("aplaza una confirmada con fecha y motivo, y avisa el cambio", { timeout: 15000 }, async () => {
     const { usuario, llamadas } = abrirDetalle({
       "GET /cotizaciones/7/": [200, CONFIRMADA],
       "POST /cotizaciones/7/aplazamiento/": [200, { ...CONFIRMADA, fecha_evento: "2099-12-20" }],
@@ -146,7 +147,7 @@ describe("Aplazar la fecha de una bloqueada o confirmada", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("si el salón está ocupado ese día muestra el conflicto del API", async () => {
+  it("si el salón está ocupado ese día muestra el conflicto del API", { timeout: 15000 }, async () => {
     const { usuario } = abrirDetalle({
       "GET /cotizaciones/7/": [200, CONFIRMADA],
       "POST /cotizaciones/7/aplazamiento/": [409, { detail: "El salón ya está confirmado para esa fecha." }],
@@ -156,7 +157,9 @@ describe("Aplazar la fecha de una bloqueada o confirmada", () => {
     await usuario.type(within(ventana).getByLabelText("Fecha nueva"), "2099-12-20");
     await usuario.type(within(ventana).getByLabelText("Motivo"), "Cambio de agenda");
     await usuario.click(within(ventana).getByRole("button", { name: "Aplazar fecha" }));
-    expect(await within(ventana).findByText("El salón ya está confirmado para esa fecha.")).toBeInTheDocument();
+    expect(
+      await within(ventana).findByText("El salón ya está confirmado para esa fecha.", {}, { timeout: 5000 }),
+    ).toBeInTheDocument();
     // Ya no se puede reintentar desde la ventana: solo cerrarla y recargar.
     expect(within(ventana).queryByRole("button", { name: "Aplazar fecha" })).not.toBeInTheDocument();
   });

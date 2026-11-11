@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { simularApi } from "../test/apiFalsa";
 import Clientes from "./Clientes";
 
-const EMPRESAS = [{ id: 1, razon_social: "Hotel Caribe S.A.S.", identificacion: "900111222-3" }];
+const EMPRESAS = [{ id: 1, razon_social: "Hotel Caribe S.A.S.", identificacion: "900111222-1" }];
 
 const CLIENTES = [
   {
@@ -36,7 +36,7 @@ describe("Clientes", () => {
 
     const fila = (await screen.findByText("Hotel Caribe")).closest("tr");
     expect(screen.getByText("María Fernanda Ríos")).toBeInTheDocument();
-    expect(within(fila).getByText("900111222-3")).toBeInTheDocument();
+    expect(within(fila).getByText("900111222-1")).toBeInTheDocument();
   });
 
   it("con la respuesta paginada (SGDE-116), muestra los clientes de todas las páginas", async () => {
@@ -67,7 +67,7 @@ describe("Clientes", () => {
       "GET /empresas/": [200, EMPRESAS],
       "GET /ciudades/": [200, [{ id: 1, codigo: "CTG", nombre: "Cartagena" }]],
       "POST /empresas/": ({ cuerpo }) =>
-        cuerpo.identificacion === "900111222-3"
+        cuerpo.identificacion === "900111222-1"
           ? [400, { identificacion: ["Ya existe empresa con este identificacion."] }]
           : [201, { id: 2, ...cuerpo }],
     });
@@ -80,12 +80,12 @@ describe("Clientes", () => {
 
     const ventana = await screen.findByRole("dialog", { name: "Nueva empresa" });
     await usuario.type(within(ventana).getByLabelText("Razón social"), "Eventos del Mar S.A.S.");
-    await usuario.type(within(ventana).getByLabelText("NIT"), "900111222-3");
+    await usuario.type(within(ventana).getByLabelText("NIT"), "900111222-1");
     await usuario.click(within(ventana).getByRole("button", { name: "Crear empresa" }));
     expect(await within(ventana).findByText(/ya existe una empresa con ese nit/i)).toBeInTheDocument();
 
     await usuario.clear(within(ventana).getByLabelText("NIT"));
-    await usuario.type(within(ventana).getByLabelText("NIT"), "901555666-1");
+    await usuario.type(within(ventana).getByLabelText("NIT"), "901555666-5");
     await usuario.click(within(ventana).getByRole("button", { name: "Crear empresa" }));
 
     expect(await screen.findByText(/creada y asignada/i)).toBeInTheDocument();

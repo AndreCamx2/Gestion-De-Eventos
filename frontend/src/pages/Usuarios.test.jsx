@@ -63,6 +63,8 @@ describe("Usuarios", () => {
     const usuario = abrirUsuarios();
     await screen.findByText("Laura Gómez");
 
+    await usuario.type(screen.getByLabelText("Nombre"), "Camilo");
+    await usuario.type(screen.getByLabelText("Apellido"), "Rueda");
     await usuario.type(screen.getByLabelText("Usuario"), "sonido.cartagena");
     await usuario.type(screen.getByLabelText("Correo"), "sonido@sgde.co");
     await usuario.click(screen.getByRole("checkbox", { name: "Hotel Caribe" }));
@@ -71,7 +73,24 @@ describe("Usuarios", () => {
 
     expect(await screen.findByText(/Usuario "sonido.cartagena" creado/)).toBeInTheDocument();
     const post = llamadas.find((l) => l.metodo === "POST");
-    expect(post.cuerpo).toMatchObject({ username: "sonido.cartagena", rol: 2, sitios: [7] });
+    expect(post.cuerpo).toMatchObject({
+      username: "sonido.cartagena", first_name: "Camilo", last_name: "Rueda", rol: 2, sitios: [7],
+    });
+  });
+
+  it("no crea el usuario si el nombre o el usuario son solo números (QA)", async () => {
+    const llamadas = simularApi(rutasBase({}));
+    const usuario = abrirUsuarios();
+    await screen.findByText("Laura Gómez");
+
+    await usuario.type(screen.getByLabelText("Nombre"), "12312312");
+    await usuario.type(screen.getByLabelText("Usuario"), "12312312");
+    await usuario.click(screen.getByRole("button", { name: "Crear usuario" }));
+
+    expect(screen.getByText("Solo letras, sin números ni símbolos.")).toBeInTheDocument();
+    expect(screen.getByText("Escribe el apellido.")).toBeInTheDocument();
+    expect(screen.getByText("El usuario debe tener al menos 3 letras (puede llevar números).")).toBeInTheDocument();
+    expect(llamadas.some((l) => l.metodo === "POST")).toBe(false);
   });
 
   it("muestra el error del servidor al dar de baja al último administrador", async () => {

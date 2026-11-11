@@ -2,6 +2,7 @@ import { useState } from "react";
 import { crearSitio } from "../../api/sitios";
 import { Boton, Campo } from "../../components/ui";
 import { erroresDesdeApi } from "../../utils/erroresApi";
+import { validarNombreCosa } from "../../utils/validacionesRegistro";
 
 // Formulario "Nuevo sitio" (maqueta Sitios.dc.html). No es una ventana modal:
 // ante un 401 basta la barra de SesionVencida y lo escrito se queda aquí.
@@ -43,6 +44,7 @@ export default function FormNuevoSitio({ ciudades, ciudadesFallaron, onReintenta
 
     const locales = {};
     if (!form.nombre.trim()) locales.nombre = "Escribe el nombre del venue.";
+    else if (validarNombreCosa(form.nombre)) locales.nombre = validarNombreCosa(form.nombre);
     if (!ciudadElegida) locales.ciudad = "Elige una ciudad.";
     setErrores(locales);
     if (Object.keys(locales).length > 0) return;
