@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from apps.clientes.validadores import validar_documento, validar_razon_social
 from .models import HistorialStockElemento, Proveedor, StockElemento
 
 
@@ -17,6 +18,12 @@ class ProveedorSerializer(serializers.ModelSerializer):
         # usuario chocarían entre sí): la unicidad la revisa validate_usuario.
         extra_kwargs = {"usuario": {"validators": []}}
 
+    def validate_nombre(self, value):
+        return validar_razon_social(value)
+
+    def validate_identificacion(self, value):
+        return validar_documento(value)
+
     def get_usuario_nombre(self, proveedor):
         return proveedor.usuario.username if proveedor.usuario else None
 
@@ -33,13 +40,28 @@ class ProveedorSerializer(serializers.ModelSerializer):
         return usuario
 
 
+CANTIDAD_MAXIMA = 1_000_000
+
+
+def nombre_repetido(proveedor, nombre):
+    return proveedor.stock.filter(nombre_elemento__iexact=nombre).exists()
+
+
 class StockElementoSerializer(serializers.ModelSerializer):
     class Meta:
         model = StockElemento
         fields = ["id", "proveedor", "nombre_elemento", "cantidad", "valor", "actualizado_en"]
         read_only_fields = ["actualizado_en"]
         # Un valor negativo no tiene sentido (SGDE-98); la cantidad ya es PositiveIntegerField.
-        extra_kwargs = {"valor": {"min_value": 0}}
+        extra_kwargs = {
+            "valor": {"min_value": 0},
+            "cantidad": {
+                "max_value": CANTIDAD_MAXIMA,
+                "error_messages": {"max_value": "La cantidad no puede pasar de 1.000.000."},
+            },
+        }
+        # (proveedor, nombre) se revisa sin distinguir mayúsculas en validate().
+        validators = []
 
     def validate(self, attrs):
         # Al editar solo cambian cantidad y valor (SGDE-98): otro elemento o proveedor
@@ -52,6 +74,10 @@ class StockElementoSerializer(serializers.ModelSerializer):
             }
             if errores:
                 raise serializers.ValidationError(errores)
+        proveedor = attrs.get("proveedor", getattr(self.instance, "proveedor", None))
+        nombre = attrs.get("nombre_elemento")
+        if self.instance is None and proveedor is not None and nombre and nombre_repetido(proveedor, nombre):
+            raise serializers.ValidationError({"nombre_elemento": ["Este proveedor ya tiene un elemento con este nombre."]})
         return attrs
 
 
@@ -67,7 +93,7 @@ class MiStockSerializer(StockElementoSerializer):
 
     def validate_nombre_elemento(self, nombre):
         proveedor = self.context["proveedor"]
-        if self.instance is None and proveedor.stock.filter(nombre_elemento=nombre).exists():
+        if self.instance is None and nombre_repetido(proveedor, nombre):
             raise serializers.ValidationError("Ya tienes un elemento con este nombre: edítalo.")
         return nombre
 

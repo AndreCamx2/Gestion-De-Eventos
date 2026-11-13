@@ -130,7 +130,7 @@ class EditarSalonTests(BaseSalonesTests):
             with self.subTest(campo=campo):
                 r = self.client.patch(salon_url(self.salon.pk), {campo: "-1.00"}, format="json")
                 self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-                self.assertEqual(r.json()[campo], ["No puede ser negativo."])
+                self.assertEqual(r.json()[campo], ["Debe ser mayor que cero."])
         self.salon.refresh_from_db()
         self.assertEqual((self.salon.ancho, self.salon.altura), (Decimal("10"), Decimal("4")))
 
@@ -138,12 +138,17 @@ class EditarSalonTests(BaseSalonesTests):
         datos = {"sitio": self.sitio.pk, "nombre": "Salón Nuevo", "ancho": "-3", "altura": "4"}
         r = self.client.post("/api/salones/", datos, format="json")
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(r.json()["ancho"], ["No puede ser negativo."])
+        self.assertEqual(r.json()["ancho"], ["Debe ser mayor que cero."])
         self.assertFalse(Salon.objects.filter(nombre="Salón Nuevo").exists())
 
-    def test_medidas_en_cero_o_vacias_se_aceptan(self):
-        r = self.client.patch(salon_url(self.salon.pk), {"ancho": "0", "altura": None}, format="json")
+    def test_medidas_vacias_se_aceptan(self):
+        r = self.client.patch(salon_url(self.salon.pk), {"ancho": None, "altura": None}, format="json")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
+
+    def test_un_salon_no_puede_medir_cero(self):
+        r = self.client.patch(salon_url(self.salon.pk), {"ancho": "0"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(r.data["ancho"], ["Debe ser mayor que cero."])
 
 
 class EditarMontajeHabilitadoTests(BaseSalonesTests):

@@ -8,6 +8,9 @@ from apps.sitios.models import Sitio
 from .models import Salon, Montaje, SalonMontaje
 
 
+AFORO_MAXIMO = 100_000
+
+
 def no_cambia(serializer, campo, valor, mensaje):
     """Al editar, `campo` solo acepta el valor que ya tiene: si cambia, 400 (SGDE-88)."""
     if serializer.instance is not None and valor != getattr(serializer.instance, campo):
@@ -25,11 +28,22 @@ class SalonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Salon
         fields = ["id", "sitio", "sitio_nombre", "nombre", "altura", "ancho", "foto_url", "activo"]
-        # Una medida negativa no tiene sentido (CP-05). Siguen siendo opcionales.
+        # Siguen siendo opcionales, pero si vienen deben ser mayores que cero (CP-05).
         extra_kwargs = {
-            campo: {"min_value": Decimal("0"), "error_messages": {"min_value": "No puede ser negativo."}}
+            campo: {"min_value": Decimal("0.01"), "error_messages": {"min_value": "Debe ser mayor que cero."}}
             for campo in ("altura", "ancho")
         }
+
+    def validate(self, attrs):
+        sitio = attrs.get("sitio", getattr(self.instance, "sitio", None))
+        nombre = attrs.get("nombre")
+        if sitio is not None and nombre:
+            repetido = Salon.objects.filter(sitio=sitio, nombre__iexact=nombre)
+            if self.instance is not None:
+                repetido = repetido.exclude(pk=self.instance.pk)
+            if repetido.exists():
+                raise serializers.ValidationError({"nombre": ["Ya hay un salón con este nombre en el venue."]})
+        return attrs
 
     def validate_sitio(self, value):
         # Sus cotizaciones, conceptos y montajes son de ese sitio: moverlo los dejaría cruzados.
@@ -49,6 +63,15 @@ class SalonMontajeSerializer(serializers.ModelSerializer):
     class Meta:
         model = SalonMontaje
         fields = ["id", "salon", "montaje", "aforo", "foto_url"]
+        extra_kwargs = {
+            "aforo": {
+                "min_value": 1, "max_value": AFORO_MAXIMO,
+                "error_messages": {
+                    "min_value": "El aforo debe ser de al menos 1 persona.",
+                    "max_value": f"El aforo no puede pasar de {AFORO_MAXIMO:,} personas.".replace(",", "."),
+                },
+            },
+        }
 
     def validate_salon(self, value):
         return no_cambia(

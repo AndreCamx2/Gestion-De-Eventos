@@ -15,3 +15,14 @@ class SitioSerializer(serializers.ModelSerializer):
         model = Sitio
         fields = ["id", "nombre", "ciudad", "ciudad_nombre", "creado_en"]
         read_only_fields = ["creado_en"]
+
+    def validate(self, attrs):
+        ciudad = attrs.get("ciudad", getattr(self.instance, "ciudad", None))
+        nombre = attrs.get("nombre")
+        if ciudad is not None and nombre:
+            repetido = Sitio.objects.filter(ciudad=ciudad, nombre__iexact=nombre)
+            if self.instance is not None:
+                repetido = repetido.exclude(pk=self.instance.pk)
+            if repetido.exists():
+                raise serializers.ValidationError({"nombre": ["Ya hay un venue con este nombre en la ciudad."]})
+        return attrs
