@@ -24,28 +24,17 @@ MSG_ROL_CLIENTE = (
 
 
 def _error(campo, mensaje):
-    """Mismo formato que los errores de serializer ({campo: [mensaje]}); en DELETE,
-    donde no hay campo, `detail` va como texto plano."""
     return ValidationError({campo: mensaje if campo == "detail" else [mensaje]})
 
 
 def validar_cambio_usuario(instancia, actor, *, nuevo_rol=None, nuevo_activo=None, campo_baja="is_active"):
-    """Reglas de seguridad al cambiar el rol o dar de baja a un usuario.
-
-    Debe llamarse DENTRO de transaction.atomic(): la comprobación del último
-    administrador bloquea filas (select_for_update) hasta que termine la transacción.
-
-    - nuevo_rol: el Rol que se quiere asignar (None = no cambia).
-    - nuevo_activo: el is_active que se quiere fijar (None = no cambia).
-    - campo_baja: clave del error cuando falla por una baja ("detail" en DELETE).
-    """
+    """Va dentro de transaction.atomic(): la revisión del último administrador bloquea filas."""
     cambia_rol = nuevo_rol is not None and nuevo_rol != instancia.rol
     es_baja = instancia.is_active and nuevo_activo is False
 
     if not (cambia_rol or es_baja):
         return
 
-    # Cada error se asocia al campo que el cliente intentó tocar.
     campo = "rol" if cambia_rol else campo_baja
 
     if instancia.is_superuser:
@@ -66,9 +55,8 @@ def validar_cambio_usuario(instancia, actor, *, nuevo_rol=None, nuevo_activo=Non
         and (es_baja or (cambia_rol and nuevo_rol.codigo != ROL_ADMINISTRADOR))
     )
     if deja_de_ser_admin_activo:
-        # Se bloquean TODOS los administradores activos (incluido este): si dos
-        # peticiones simultáneas intentan quitarse mutuamente, la segunda espera,
-        # vuelve a leer y ve que ya no queda otro administrador.
+        # Se bloquean todos los administradores activos: si dos se quitan a la vez, la
+        # segunda espera y ve que ya no queda otro.
         activos = list(
             Usuario.objects.select_for_update(of=("self",))
             .filter(rol__codigo=ROL_ADMINISTRADOR, is_active=True)

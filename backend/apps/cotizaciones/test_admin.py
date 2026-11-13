@@ -13,8 +13,6 @@ CAMPOS_SOLO_LECTURA = [
 
 
 class AdminCotizacionTests(base.CotizacionBaseTest):
-    """SGDE-119: desde /admin/ no se puede cambiar el estado de una cotización a mano."""
-
     def setUp(self):
         self.model_admin = admin.site._registry[Cotizacion]
         superusuario = base.crear_usuario("super@test.com", "administrador")
@@ -32,7 +30,6 @@ class AdminCotizacionTests(base.CotizacionBaseTest):
                 self.assertIn(campo, solo_lectura)
 
     def test_el_formulario_del_admin_no_acepta_esos_campos(self):
-        
         for obj in (self.cotizacion, None):
             formulario = self.model_admin.get_form(self.request, obj)
             for campo in CAMPOS_SOLO_LECTURA:

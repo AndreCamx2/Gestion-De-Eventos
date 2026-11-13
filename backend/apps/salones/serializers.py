@@ -19,16 +19,12 @@ def no_cambia(serializer, campo, valor, mensaje):
 
 
 class SalonSerializer(serializers.ModelSerializer):
-    # Solo se puede crear en un sitio propio: uno ajeno da 400 (SGDE-90).
     sitio = CampoDeSitio(queryset=Sitio.objects.all(), campo_sitio="id")
-    # Para los chips de Rack y Calendario sin pedir /api/sitios/ (SGDE-104).
-    # El listado ya trae el sitio con select_related: no suma consultas.
     sitio_nombre = serializers.CharField(source="sitio.nombre", read_only=True)
 
     class Meta:
         model = Salon
         fields = ["id", "sitio", "sitio_nombre", "nombre", "altura", "ancho", "foto_url", "activo"]
-        # Siguen siendo opcionales, pero si vienen deben ser mayores que cero (CP-05).
         extra_kwargs = {
             campo: {"min_value": Decimal("0.01"), "error_messages": {"min_value": "Debe ser mayor que cero."}}
             for campo in ("altura", "ancho")
@@ -57,7 +53,6 @@ class MontajeSerializer(serializers.ModelSerializer):
 
 
 class SalonMontajeSerializer(serializers.ModelSerializer):
-    # El salón debe ser de un sitio propio; el montaje es un catálogo compartido.
     salon = CampoDeSitio(queryset=Salon.objects.all(), campo_sitio="sitio")
 
     class Meta:
@@ -84,8 +79,7 @@ class SalonMontajeSerializer(serializers.ModelSerializer):
         )
 
     def validate_aforo(self, value):
-        # Al editar, el aforo no puede quedar por debajo de una cotización activa con
-        # este salón y montaje (definición en CotizacionQuerySet.activas).
+        # No puede quedar por debajo de una cotización activa de este salón y montaje.
         if self.instance is None:
             return value
         maximo = (

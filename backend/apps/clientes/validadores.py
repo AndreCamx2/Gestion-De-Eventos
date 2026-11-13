@@ -82,7 +82,6 @@ def validar_telefono(valor):
 
 
 def validar_documento(valor):
-    """Cédula o NIT, para quien puede tener cualquiera de los dos (un proveedor)."""
     limpio = re.sub(r"[\s.]", "", valor)
     if not limpio:
         return ""

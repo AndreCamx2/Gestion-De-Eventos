@@ -20,11 +20,6 @@ class ConceptoListCreateView(generics.ListCreateAPIView):
 
 
 class ConceptoRetrieveUpdateView(generics.RetrieveUpdateAPIView):
-    """Ver y editar un concepto. Si cambia el precio, guarda quién y cuándo.
-
-    Un concepto de otro sitio da 404: no revela que existe.
-    """
-
     serializer_class = ConceptoSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
@@ -53,6 +48,5 @@ class ConceptoHistorialListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def get_queryset(self):
-        # 404 si el concepto no existe o es de otro sitio (antes devolvía una lista vacía).
         concepto = get_object_or_404(conceptos_del_usuario(self.request.user), pk=self.kwargs["pk"])
         return HistorialPrecioConcepto.objects.filter(concepto=concepto).select_related("modificado_por")

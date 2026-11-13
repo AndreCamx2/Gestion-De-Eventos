@@ -1,9 +1,3 @@
-"""El proveedor administra su propio stock (SGDE-30).
-
-"Mi stock" es la excepción a EsAdministrador: es del rol proveedor (EsProveedor).
-También cubre cómo el administrador vincula el usuario de acceso de un proveedor.
-El 401/403 de /api/proveedores/<id>/ está en ENDPOINTS_ADMIN_DETALLE (apps/usuarios/tests.py).
-"""
 from decimal import Decimal
 
 from rest_framework import status
@@ -110,9 +104,6 @@ class MiStockTests(APITestCase):
 
 
 class MiStockAccesoTests(APITestCase):
-    """Quién entra a Mi stock. El 403 trae un `codigo` para que la pantalla decida
-    por él y no por el texto del mensaje."""
-
     URLS = [
         (MI_STOCK, ["get", "post"]),
         (mi_stock_url(1), ["get", "patch"]),
@@ -162,8 +153,6 @@ class MiStockAccesoTests(APITestCase):
 
 
 class VincularUsuarioTests(APITestCase):
-    """El administrador vincula o desvincula el usuario de acceso de un proveedor."""
-
     @classmethod
     def setUpTestData(cls):
         cls.admin = crear_usuario("admin@test.com", "administrador")
@@ -190,7 +179,6 @@ class VincularUsuarioTests(APITestCase):
         self.assertIsNone(self.proveedor.usuario)
 
     def test_varios_proveedores_sin_usuario_no_chocan(self):
-        # Hay otro proveedor sin usuario: desvincular no debe chocar con él.
         r = self.vincular(self.proveedor, None)
         self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
 

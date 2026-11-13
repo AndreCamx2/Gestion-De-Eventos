@@ -14,23 +14,16 @@ from apps.usuarios.permissions import EsAdministrador
 class RegistroPublicoView(ConLimiteDeIntentos, generics.CreateAPIView):
     serializer_class = RegistroPublicoSerializer
     permission_classes = [permissions.AllowAny]
-    # SGDE-112: tope de cuentas nuevas por IP (DEFAULT_THROTTLE_RATES["registro"]).
     throttle_scope = "registro"
 
     def perform_create(self, serializer):
         cliente = serializer.save()
-        # Después del commit y fuera de la petición: un SMTP lento no demora el registro (SGDE-96).
+        # Fuera de la petición: un SMTP lento no demora el registro.
         transaction.on_commit(lambda: en_segundo_plano(enviar_bienvenida, cliente))
 
 
-# Clientes y empresas son COMPARTIDOS entre sitios (decisión de diseño, SGDE-90):
-# un mismo cliente puede cotizar en varios sitios y el modelo no tiene sitio.
-# Lo que sí es de cada sitio son sus cotizaciones: ClienteAdminSerializer solo
-# muestra las de los sitios del usuario.
+# Clientes y empresas son compartidos: un cliente puede cotizar en varios sitios.
 def _clientes(usuario=None):
-    """Clientes con sus cotizaciones. Con `usuario`, el Prefetch trae solo las de
-    sus sitios (SGDE-116): la base filtra y no se cargan filas de otros sitios.
-    El serializer repite el filtro porque tras un PATCH DRF borra esta caché."""
     cotizaciones = Cotizacion.objects.all()
     if usuario is not None:
         cotizaciones = filtrar_por_sitio(cotizaciones, usuario)
@@ -57,10 +50,6 @@ class ClienteAdminListCreateView(generics.ListCreateAPIView):
 
 
 class ClienteAdminRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
-    """Detalle de un cliente. Incluye inactivos para poder verlos y reactivarlos.
-
-    DELETE es lógico: marca activo=False y desactiva su Usuario (no borra la fila).
-    """
     serializer_class = ClienteAdminSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 

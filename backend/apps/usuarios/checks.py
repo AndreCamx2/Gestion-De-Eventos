@@ -1,13 +1,3 @@
-"""Chequeos de arranque de la configuración de correo (SGDE-96).
-
-Corren con `manage.py check` y antes de `migrate`, que el Dockerfile ejecuta en
-cada arranque: los avisos quedan en los logs de Render. Solo avisan, no impiden
-arrancar: un correo sin configurar no debe tumbar el resto del sistema.
-
-Miran los valores y no DEBUG: durante las pruebas Django pone DEBUG=False y
-avisarían en cada corrida local. Esos valores solo aparecen en producción
-(DEBUG=False al importar settings.py) cuando falta la variable.
-"""
 from django.conf import settings
 from django.core.checks import Tags, Warning, register
 

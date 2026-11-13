@@ -7,8 +7,6 @@ from apps.salones.models import Salon, Montaje
 from apps.catalogo.models import Concepto
 
 class GrupoEvento(models.Model):
-    """Grupo del catálogo de tipos de evento (SGDE-142): Reuniones, Social, etc."""
-
     nombre = models.CharField(max_length=80, unique=True)
     orden = models.PositiveSmallIntegerField(default=0)
     activo = models.BooleanField(default=True)
@@ -23,12 +21,6 @@ class GrupoEvento(models.Model):
 
 
 class TipoEvento(models.Model):
-    """Tipo de evento estandarizado de una cotización (SGDE-142).
-
-    Se administra desde /admin/: el cliente agrega o desactiva tipos sin programar.
-    Desactivar uno no toca las cotizaciones que ya lo usan (PROTECT en Cotizacion).
-    """
-
     nombre = models.CharField(max_length=120)
     grupo = models.ForeignKey(GrupoEvento, on_delete=models.PROTECT, related_name="tipos")
     activo = models.BooleanField(default=True)
@@ -47,14 +39,8 @@ class TipoEvento(models.Model):
 
 class CotizacionQuerySet(models.QuerySet):
     def activas(self):
-        """Las que todavía comprometen el salón: evento de hoy en adelante y, además,
-        bloqueada, confirmada o cotizada no vencida (misma regla que `vencida`).
-
-        Un evento pasado o una cotización vencida no cuentan. Bloquean quitar un
-        montaje habilitado y bajar su aforo (SGDE-88).
-
-        Un bloqueo vencido que todavía no se liberó en la base se trata como cotizado
-        (SGDE-118): cuenta solo si la oferta sigue vigente.
+        """Las que todavía comprometen el salón: evento de hoy en adelante y bloqueada,
+        confirmada o cotizada no vencida. Un bloqueo vencido cuenta como cotizado.
         """
         hoy = timezone.localdate()
         ahora = timezone.now()
@@ -71,7 +57,6 @@ class CotizacionQuerySet(models.QuerySet):
         )
 
     def con_estado_efectivo(self, estado, ahora=None):
-        """Filtra por el estado que ve el API: un bloqueo vencido cuenta como cotizado (SGDE-118)."""
         ahora = ahora or timezone.now()
         vencido = models.Q(estado="bloqueado", bloqueo_hasta__lte=ahora)
         if estado == "cotizado":
@@ -98,8 +83,6 @@ class Cotizacion(models.Model):
     fecha_evento = models.DateField(db_index=True)
     validez_oferta = models.DateField(null=True, blank=True)
     cantidad_personas = models.PositiveIntegerField()
-        # Obligatorio al crear (lo exige el serializer); null solo en las anteriores a SGDE-142,
-    # que se muestran como "Sin clasificar".
     tipo_evento = models.ForeignKey(
         TipoEvento, on_delete=models.PROTECT, related_name="cotizaciones", null=True, blank=True
     )
@@ -113,7 +96,6 @@ class Cotizacion(models.Model):
     )
     penalizacion_pct = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     motivo_cancelacion = models.TextField(blank=True)
-    # Los llena la cancelación (SGDE-61), junto con penalizacion_pct y motivo_cancelacion.
     cancelado_en = models.DateTimeField(null=True, blank=True)
     cancelado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
@@ -125,8 +107,7 @@ class Cotizacion(models.Model):
 
     class Meta:
         constraints = [
-            # Evita sobreventa: no puede haber 2 cotizaciones CONFIRMADAS
-            # para el mismo salón en la misma fecha.
+            # Evita vender dos veces el mismo salón el mismo día.
             models.UniqueConstraint(
                 fields=["salon", "fecha_evento"],
                 condition=models.Q(estado="confirmado"),
@@ -139,7 +120,7 @@ class Cotizacion(models.Model):
 
     @property
     def bloqueo_vencido(self):
-        # SGDE-118: bloqueada, pero su bloqueo_hasta ya pasó y aún no se liberó en la base.
+        # Bloqueada en la base, pero su bloqueo_hasta ya pasó.
         return (
             self.estado == "bloqueado"
             and self.bloqueo_hasta is not None
@@ -160,8 +141,7 @@ class CotizacionItem(models.Model):
     cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name="items")
     concepto = models.ForeignKey(Concepto, on_delete=models.PROTECT, related_name="items")
     cantidad = models.PositiveIntegerField(default=1)
-    # Copias del concepto al momento de cotizar: si luego cambia el concepto,
-    # la cotización no cambia.
+    # Copias al momento de cotizar: si el concepto cambia después, la cotización no.
     precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
     impuesto_pct = models.DecimalField(max_digits=5, decimal_places=2, default=0)
 
@@ -169,13 +149,6 @@ class CotizacionItem(models.Model):
         return f"{self.concepto.nombre} x{self.cantidad}"
 
 class MovimientoCotizacion(models.Model):
-    """Quién hizo cada cambio de una cotización y cuándo (SGDE-62).
-
-    Lo registra cada acción del API dentro de su misma transacción. usuario null
-    significa que lo hizo el sistema (por ejemplo, la liberación de un bloqueo vencido).
-    Lo que se cambie a mano en /admin/ no deja movimiento: queda en el LogEntry (RNF-03).
-    """
-
     TIPO_CHOICES = [
         ("creada", "Creada"),
         ("vigencia", "Vigencia cambiada"),
@@ -188,7 +161,6 @@ class MovimientoCotizacion(models.Model):
         ("anulada", "Anulada"),
     ]
 
-    # CASCADE: el historial es parte de la cotización (el API no las borra).
     cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name="movimientos")
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
     usuario = models.ForeignKey(

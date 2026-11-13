@@ -1,8 +1,3 @@
-"""Editar salones y editar o quitar montajes habilitados (SGDE-88).
-
-El 404 de un id de otro sitio está en apps/sitios/tests.py y el 401/403 por rol
-en ENDPOINTS_ADMIN_DETALLE (apps/usuarios/tests.py).
-"""
 from datetime import timedelta
 from decimal import Decimal
 
@@ -52,7 +47,6 @@ class BaseSalonesTests(APITestCase):
         self.habilitado = SalonMontaje.objects.create(salon=self.salon, montaje=self.auditorio, aforo=100)
 
     def cotizar(self, estado="cotizado", dias_evento=30, dias_validez=10, personas=50, montaje=None):
-        """Cotización del salón; días relativos a hoy (negativos = en el pasado)."""
         hoy = timezone.localdate()
         return Cotizacion.objects.create(
             sitio=self.sitio, cliente=self.cliente, usuario=self.admin, salon=self.salon,
@@ -62,8 +56,6 @@ class BaseSalonesTests(APITestCase):
 
 
 class ListadoSalonesTests(BaseSalonesTests):
-    """SGDE-104: el listado trae sitio_nombre sin sumar consultas."""
-
     def test_cada_salon_trae_el_nombre_de_su_sitio(self):
         Salon.objects.create(sitio=self.otro_sitio_propio, nombre="Salón Luna")
         respuesta = self.client.get("/api/salones/")
@@ -187,7 +179,7 @@ class EditarMontajeHabilitadoTests(BaseSalonesTests):
         self.cotizar(estado="confirmado", dias_evento=-1, dias_validez=-10, personas=95)
         self.cotizar(estado="cotizado", dias_evento=30, dias_validez=-1, personas=90)
         self.cotizar(estado="cancelado", personas=99)
-        self.cotizar(montaje=self.coctel, personas=98)  # Otro montaje del salón: no cuenta.
+        self.cotizar(montaje=self.coctel, personas=98)
         self.assertEqual(self.patch({"aforo": 10}).status_code, status.HTTP_200_OK)
 
 
@@ -219,7 +211,7 @@ class QuitarMontajeHabilitadoTests(BaseSalonesTests):
     def test_el_mensaje_dice_cuantas_son(self):
         self.cotizar(estado="bloqueado")
         self.cotizar(estado="confirmado")
-        self.cotizar(estado="cotizado", dias_evento=0)  # El evento de hoy todavía cuenta.
+        self.cotizar(estado="cotizado", dias_evento=0)
         self.assertIn("3 cotizaciones activas", self.quitar().json()["detail"])
         self.assertSigueHabilitado()
 
@@ -245,8 +237,6 @@ class QuitarMontajeHabilitadoTests(BaseSalonesTests):
 
 
 class BloqueoDelMontajeTests(BaseSalonesTests):
-    """SGDE-100: quitar o editar un montaje habilitado toma el mismo bloqueo que crear una cotización."""
-
     def tablas_bloqueadas(self, peticion):
         with CaptureQueriesContext(connection) as contexto:
             respuesta = peticion()
@@ -269,8 +259,6 @@ class BloqueoDelMontajeTests(BaseSalonesTests):
 
 
 class BajaDeSalonTests(BaseSalonesTests):
-    """SGDE-99: dar de baja (borrado lógico) y reactivar un salón."""
-
     def baja(self, activo=False):
         return self.client.patch(salon_url(self.salon.pk), {"activo": activo}, format="json")
 
@@ -283,7 +271,6 @@ class BajaDeSalonTests(BaseSalonesTests):
         self.assertIs(r.json()["activo"], False)
         self.assertNotIn(self.salon.pk, self.ids_del_listado())
         self.assertIn(self.salon.pk, self.ids_del_listado(incluir_inactivos="true"))
-        # El detalle sí lo muestra, para poder reactivarlo.
         self.assertEqual(self.client.get(salon_url(self.salon.pk)).status_code, status.HTTP_200_OK)
 
     def test_con_cotizaciones_activas_da_409_y_no_cambia(self):
@@ -318,7 +305,7 @@ class BajaDeSalonTests(BaseSalonesTests):
         self.baja()
         r = self.client.post("/api/cotizaciones/", {
             "cliente": self.cliente.pk, "salon": self.salon.pk, "montaje": self.auditorio.pk,
-            "tipo_evento": tipo.pk,  # <--- Línea nueva
+            "tipo_evento": tipo.pk,
             "fecha_evento": str(timezone.localdate() + timedelta(days=30)), "cantidad_personas": 10,
             "items": [{"concepto": concepto.pk, "cantidad": 1}],
         }, format="json")
@@ -335,7 +322,6 @@ class BajaDeSalonTests(BaseSalonesTests):
         self.assertEqual([c["id"] for c in historial], [vieja.pk])
 
     def test_una_cotizada_vencida_no_revive_en_un_salon_inactivo(self):
-        # Dar de baja solo mira las activas: la vencida no se puede extender, bloquear ni confirmar.
         vencida = self.cotizar(estado="cotizado", dias_validez=-1)
         self.baja()
         url = f"/api/cotizaciones/{vencida.pk}/"

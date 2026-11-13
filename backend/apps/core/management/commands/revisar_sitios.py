@@ -1,14 +1,3 @@
-"""
-Revisa la asignación de sitios antes de desplegar el filtro multi-sitio (SGDE-90).
-
-Uso:  python manage.py revisar_sitios
-
-Es de SOLO LECTURA: no cambia nada. Muestra:
-- administradores activos sin sitios: no verán ningún dato (salvo que sean
-  superusuarios, que ven todo);
-- sitios que ningún administrador activo tiene asignados.
-Los sitios se asignan desde /admin/ → Usuarios → "Información SGDE".
-"""
 from django.core.management.base import BaseCommand
 
 from apps.sitios.models import Sitio

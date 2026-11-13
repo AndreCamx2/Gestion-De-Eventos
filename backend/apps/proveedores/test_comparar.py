@@ -34,7 +34,7 @@ class CompararStockTests(APITestCase):
         cls.prov_c = Proveedor.objects.create(nombre="Proveedor C", contacto="c@test.com")
         stock(cls.prov_a, "Silla Tiffany", 10, "9000.00")
         stock(cls.prov_b, "Silla Tiffany", 5, "8000.00")
-        stock(cls.prov_c, "Silla Tiffany", 0, "5000.00")  # más barata, pero agotada
+        stock(cls.prov_c, "Silla Tiffany", 0, "5000.00")
         stock(cls.prov_a, "Mesa redonda", 3, "20000.00")
 
     def test_sin_token_recibe_401(self):
@@ -53,7 +53,6 @@ class CompararStockTests(APITestCase):
         grupo = datos[0]
         self.assertEqual(grupo["elemento"], "Silla Tiffany")
         self.assertEqual(grupo["mejor_precio"], "8000.00")
-        # Disponibles de menor a mayor precio; el agotado va al final.
         self.assertEqual([o["proveedor"] for o in grupo["ofertas"]],
                          ["Proveedor B", "Proveedor A", "Proveedor C"])
         self.assertEqual([o["es_mejor_precio"] for o in grupo["ofertas"]],
@@ -93,7 +92,6 @@ class CompararStockTests(APITestCase):
             with self.subTest(busqueda=busqueda):
                 datos = self.client.get(URL, {"elemento": busqueda}).json()
                 self.assertEqual([g["elemento"] for g in datos], ["Cámara de humo"])
-        # Y al revés: buscar con tilde encuentra los nombres sin tilde.
         datos = self.client.get(URL, {"elemento": "sílla"}).json()
         self.assertEqual([g["elemento"] for g in datos], ["Silla Tiffany"])
 
@@ -113,7 +111,6 @@ class CompararStockTests(APITestCase):
         datos = self.client.get(URL, {"elemento": "pa"}).json()
         self.assertEqual([g["elemento"] for g in datos], ["Pano", "Paño"])
         self.assertEqual([g["elemento"] for g in self.client.get(URL, {"elemento": "paño"}).json()], ["Paño"])
-        # La diéresis sí se quita.
         self.assertEqual(
             [g["elemento"] for g in self.client.get(URL, {"elemento": "pinguino"}).json()],
             ["Pingüino inflable"],

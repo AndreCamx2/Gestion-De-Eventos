@@ -4,18 +4,13 @@ from .models import HistorialStockElemento, Proveedor, StockElemento
 
 
 class ProveedorSerializer(serializers.ModelSerializer):
-    """El administrador vincula (o desvincula con null) el usuario de acceso del
-    proveedor (SGDE-30). Solo un usuario con rol "proveedor" y uno por proveedor."""
-
-    # SerializerMethodField y no CharField(default=None): en un PATCH parcial DRF
-    # omite los campos que caen en su default y la respuesta llegaría sin la clave.
+    # Con CharField(default=None), un PATCH parcial respondería sin esta clave.
     usuario_nombre = serializers.SerializerMethodField()
 
     class Meta:
         model = Proveedor
         fields = ["id", "nombre", "identificacion", "contacto", "usuario", "usuario_nombre"]
-        # El UniqueValidator automático no ignora null (varios proveedores sin
-        # usuario chocarían entre sí): la unicidad la revisa validate_usuario.
+        # El UniqueValidator no ignora null: lo revisa validate_usuario.
         extra_kwargs = {"usuario": {"validators": []}}
 
     def validate_nombre(self, value):
@@ -52,7 +47,6 @@ class StockElementoSerializer(serializers.ModelSerializer):
         model = StockElemento
         fields = ["id", "proveedor", "nombre_elemento", "cantidad", "valor", "actualizado_en"]
         read_only_fields = ["actualizado_en"]
-        # Un valor negativo no tiene sentido (SGDE-98); la cantidad ya es PositiveIntegerField.
         extra_kwargs = {
             "valor": {"min_value": 0},
             "cantidad": {
@@ -64,8 +58,7 @@ class StockElementoSerializer(serializers.ModelSerializer):
         validators = []
 
     def validate(self, attrs):
-        # Al editar solo cambian cantidad y valor (SGDE-98): otro elemento o proveedor
-        # es otro registro, no una edición.
+        # Al editar solo cambian cantidad y valor: otro nombre es otro elemento.
         if self.instance is not None:
             errores = {
                 campo: ["No se puede cambiar: crea un elemento nuevo."]
@@ -82,13 +75,11 @@ class StockElementoSerializer(serializers.ModelSerializer):
 
 
 class MiStockSerializer(StockElementoSerializer):
-    """Stock del proveedor que llama ("Mi stock", SGDE-30). El proveedor lo pone la
-    vista (context["proveedor"]): si llega en el cuerpo, se ignora."""
+    """El proveedor lo pone la vista: si llega en el cuerpo, se ignora."""
 
     class Meta(StockElementoSerializer.Meta):
         read_only_fields = ["proveedor", "actualizado_en"]
-        # Sin proveedor en el cuerpo, DRF no puede revisar la unicidad (proveedor,
-        # nombre_elemento): la revisa validate_nombre_elemento.
+        # El proveedor no viene en el cuerpo: la unicidad la revisa validate_nombre_elemento.
         validators = []
 
     def validate_nombre_elemento(self, nombre):
