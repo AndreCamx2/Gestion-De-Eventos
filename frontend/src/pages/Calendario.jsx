@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { obtenerCalendario } from "../api/calendario";
 import { listarSalones } from "../api/salones";
@@ -94,12 +94,12 @@ export default function Calendario() {
     cargar(mes);
   }, [mes]);
 
-  function escribirUrl(nuevoMes, nuevoSalon) {
+  const escribirUrl = useCallback((nuevoMes, nuevoSalon) => {
     const search = armarUrl(nuevoMes, nuevoSalon, mesActual);
     if (search === urlRef.current) return;
     urlRef.current = search;
     navigate({ search }, { replace: true });
-  }
+  }, [mesActual, navigate]);
 
   // Navegar a /calendario estando ya aquí (la pestaña, o un enlace con otra URL):
   // se aplica la URL nueva. Las escrituras propias no entran porque urlRef ya la tiene.
@@ -112,7 +112,7 @@ export default function Calendario() {
     setFiltroSitio("todos");
     setFiltroSalon(url.salon);
     salonPorRevisarRef.current = true;
-  }, [location.search]);
+  }, [location.search, mesActual, hoy]);
 
   // URL recién leída, con los salones ya cargados: un ?salon que no es de un salón
   // visible se ignora; si lo es, se elige también su sitio. Después la URL queda
@@ -124,7 +124,7 @@ export default function Calendario() {
     if (salon) setFiltroSitio(salon.sitio);
     else setFiltroSalon("todos");
     escribirUrl(mes, salon ? salon.id : "todos");
-  }, [datos, filtroSalon]);
+  }, [datos, filtroSalon, mes, escribirUrl]);
 
   // El foco vuelve a "Gestionar" en un efecto, cuando el diálogo ya se quitó (ERR-017).
   useEffect(() => {

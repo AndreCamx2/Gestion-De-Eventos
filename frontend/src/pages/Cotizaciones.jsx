@@ -33,6 +33,8 @@ export default function Cotizaciones() {
   const [todas, setTodas] = useState([]);
   const [todasCargadas, setTodasCargadas] = useState(false);
   const [cotizaciones, setCotizaciones] = useState([]);
+  // Fecha con la que se cargó la lista: la vigencia y la tasa del mes usan la misma.
+  const [hoy, setHoy] = useState(hoyLocal);
   const [cargando, setCargando] = useState(true);
   // Errores: null | "permiso" (403) | "servidor" (500 o sin red) | "sesion" (401) | "fechas" (400).
   const [errorCarga, setErrorCarga] = useState(null);
@@ -104,6 +106,7 @@ export default function Cotizaciones() {
     setErrorCifras(tipoCifras);
     setErrorCarga(tipoTabla);
     if (tipoCifras === "sesion" || tipoTabla === "sesion") setSesionVencida(true);
+    setHoy(hoyLocal());
     setCargando(false);
   }, [desde, hasta, grupoEvento, tipoEvento]);
 
@@ -117,9 +120,6 @@ export default function Cotizaciones() {
     if (errorCarga === "sesion" || errorCifras === "sesion") cargarDatos();
   }
 
-  // Hoy se toma al cargar la lista: así las notas de vigencia y la tasa del mes
-  // se calculan con la misma fecha que los datos.
-  const hoy = useMemo(() => hoyLocal(), [todas, cotizaciones]);
   const cifras = useMemo(() => resumen(todas, hoy), [todas, hoy]);
   const conteos = useMemo(() => conteosPorEstado(cotizaciones), [cotizaciones]);
 

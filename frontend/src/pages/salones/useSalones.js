@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { listarSalones, listarMontajes, listarSalonMontajes } from "../../api/salones";
 import { listarSitios } from "../../api/sitios";
 import { formatoNumero, normalizar } from "./salones";
+import { useFuncionEstable } from "../../hooks/useFuncionEstable";
 
 // Estado y acciones de la pantalla de Salones (SGDE-108): la carga de salones,
 // montajes, aforos y sitios, los filtros, el diálogo abierto con el foco de vuelta
@@ -35,9 +36,10 @@ export function useSalones() {
   // Para abrir "Entrar de nuevo" desde dentro de una ventana modal (SGDE-94).
   const sesionRef = useRef(null);
 
+  const cargaInicial = useFuncionEstable(() => cargarDatos());
   useEffect(() => {
-    cargarDatos();
-  }, []);
+    cargaInicial();
+  }, [cargaInicial]);
 
   // Al cerrar un diálogo el foco vuelve a quien lo abrió. Si ese botón ya no
   // existe (p. ej. el "Nuevo salón" del estado vacío), va al de la cabecera.

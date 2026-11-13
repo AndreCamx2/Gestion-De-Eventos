@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { historialConcepto } from "../../api/conceptos";
 import { Esqueleto } from "../../components/ui";
 import { fechaHistorial, formatCOP, variacion } from "./conceptos";
+import { useFuncionEstable } from "../../hooks/useFuncionEstable";
 
 // Historial de precios del concepto elegido, del más reciente al más antiguo.
 // - conceptoId: se pide otra vez cuando cambia el concepto (por id, no por objeto:
@@ -17,6 +18,9 @@ export default function HistorialPrecios({ conceptoId, version, sesionVencida, o
   const [reintento, setReintento] = useState(0);
   const sesionAntesRef = useRef(sesionVencida);
 
+  // onSesionVencida cambia en cada render de Conceptos.jsx: así no repite la petición.
+  const avisarSesionVencida = useFuncionEstable(onSesionVencida);
+
   useEffect(() => {
     let cancelado = false;
     setHistorial([]);
@@ -30,7 +34,7 @@ export default function HistorialPrecios({ conceptoId, version, sesionVencida, o
         if (cancelado) return;
         if (err.status === 401) {
           setError("sesion");
-          onSesionVencida();
+          avisarSesionVencida();
         } else {
           setError("servidor");
         }
@@ -41,9 +45,7 @@ export default function HistorialPrecios({ conceptoId, version, sesionVencida, o
     return () => {
       cancelado = true;
     };
-    // onSesionVencida no va en la lista: cambia en cada render de Conceptos.jsx y
-    // repetiría la petición sin necesidad.
-  }, [conceptoId, version, reintento]);
+  }, [conceptoId, version, reintento, avisarSesionVencida]);
 
   // Al volver a entrar, si el historial falló por la sesión, se pide otra vez.
   useEffect(() => {

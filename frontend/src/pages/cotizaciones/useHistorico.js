@@ -17,6 +17,8 @@ import { comoLista } from "./nuevaCotizacion";
 export function useHistorico() {
   const [filtros, setFiltros] = useState(FILTROS_VACIOS);
   const [eventos, setEventos] = useState([]);
+  // La fecha de los datos: las cifras usan el mismo "hoy" con el que se cargaron.
+  const [hoy, setHoy] = useState(hoyLocal);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [textoError, setTextoError] = useState(null);
@@ -57,6 +59,7 @@ export function useHistorico() {
       const listas = await Promise.all(consultas(filtros).map((consulta) => getCotizaciones(consulta)));
       if (peticion !== peticionRef.current) return;
       setEventos(unirResultados(listas));
+      setHoy(hoyLocal());
     } catch (err) {
       if (peticion !== peticionRef.current) return;
       const tipo = tipoDeError(err);
@@ -72,7 +75,6 @@ export function useHistorico() {
     cargar();
   }, [cargar]);
 
-  const hoy = useMemo(() => hoyLocal(), [eventos]);
   const resumen = useMemo(() => resumenHistorico(eventos, hoy), [eventos, hoy]);
 
   function cambiarFiltro(campo, valor) {

@@ -9,6 +9,7 @@ import {
 import { FORM_VACIO, formDesdeCliente, nitDeEmpresa, erroresDesdeApi, payloadEdicion } from "./formularioCliente";
 import { hayDiferencias, normalizar } from "./clientes";
 import { useFocoPanel } from "./useFocoPanel";
+import { useFuncionEstable } from "../../hooks/useFuncionEstable";
 
 // Estado y acciones de la pantalla de Clientes (SGDE-97): la lista con sus
 // filtros, el panel para crear y editar, la baja, la reactivación, la empresa
@@ -53,9 +54,10 @@ export function useClientes() {
   // Acción que espera a que la persona confirme que descarta sus cambios.
   const accionPendienteRef = useRef(null);
 
+  const recargar = useFuncionEstable(() => cargarDatos());
   useEffect(() => {
-    cargarDatos();
-  }, [mostrarInactivos]);
+    recargar();
+  }, [mostrarInactivos, recargar]);
 
   const { tablaRef, panelRef, tituloPanelRef, guardarRef, focoPendienteRef } = useFocoPanel(panel);
 

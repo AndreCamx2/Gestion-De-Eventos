@@ -73,16 +73,16 @@ export default function Conceptos() {
 
   const conceptosFiltrados = useMemo(() => {
     const texto = busqueda.trim().toLowerCase();
+    const nombres = new Map(sitios.map((s) => [s.id, s.nombre]));
+    const nombreSitio = (id) => nombres.get(id) ?? `Venue #${id}`;
     return conceptos
       .filter((c) => mostrarInactivos || c.activo)
       .filter((c) => filtroSitio === "todos" || String(c.sitio) === filtroSitio)
       .filter((c) => !texto || c.nombre.toLowerCase().includes(texto))
       .sort(
         (a, b) =>
-          obtenerNombreSitio(a.sitio).localeCompare(
-            obtenerNombreSitio(b.sitio),
-            "es",
-          ) || a.nombre.localeCompare(b.nombre, "es"),
+          nombreSitio(a.sitio).localeCompare(nombreSitio(b.sitio), "es") ||
+          a.nombre.localeCompare(b.nombre, "es"),
       );
   }, [conceptos, sitios, filtroSitio, busqueda, mostrarInactivos]);
 

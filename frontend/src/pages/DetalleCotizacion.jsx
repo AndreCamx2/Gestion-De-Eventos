@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { AvisoError, Boton, CabeceraPagina, Esqueleto, EstadoBadge, EstadoVacio, Tarjeta } from "../components/ui";
 import SesionVencida from "../components/SesionVencida";
@@ -173,7 +173,7 @@ function Contenido({ d, hoy, recienEditada }) {
 export default function DetalleCotizacion() {
   const { id } = useParams();
   const d = useDetalleCotizacion(idDeRuta(id));
-  const hoy = useMemo(() => hoyLocal(), [d.cotizacion]);
+  const hoy = hoyLocal();
   const c = d.cotizacion;
   // Viene de "Guardar cambios" en /cotizaciones/<id>/editar. Se lee una vez y se quita
   // del historial (al recargar no vuelve a salir); el aviso se va con la siguiente acción.

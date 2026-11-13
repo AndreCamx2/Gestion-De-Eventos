@@ -50,20 +50,26 @@ export function useInicio() {
   const esAdmin = rol === "administrador";
   const esProveedor = rol === "proveedor";
 
-  const cargarUsuario = () => ejecutar(getUsuarioActual, setUsuario, setSesionVencida);
-  const cargarCotizaciones = () => ejecutar(listarCotizaciones, setCotizaciones, setSesionVencida);
-  const cargarCalendario = () =>
-    ejecutar(
-      () => obtenerCalendario({ desde: fechaISO(hoy), hasta: fechaISO(sumarDias(hoy, DIAS_VENTANA - 1)) }),
-      setCalendario,
-      setSesionVencida,
-    );
-  const cargarSalones = () => ejecutar(listarSalones, setSalones, setSesionVencida);
+  const cargarUsuario = useCallback(() => ejecutar(getUsuarioActual, setUsuario, setSesionVencida), []);
+  const cargarCotizaciones = useCallback(
+    () => ejecutar(listarCotizaciones, setCotizaciones, setSesionVencida),
+    [],
+  );
+  const cargarCalendario = useCallback(
+    () =>
+      ejecutar(
+        () => obtenerCalendario({ desde: fechaISO(hoy), hasta: fechaISO(sumarDias(hoy, DIAS_VENTANA - 1)) }),
+        setCalendario,
+        setSesionVencida,
+      ),
+    [hoy],
+  );
+  const cargarSalones = useCallback(() => ejecutar(listarSalones, setSalones, setSesionVencida), []);
   const cargarStock = useCallback(() => ejecutar(listarMiStock, setStock, setSesionVencida), []);
 
   useEffect(() => {
     cargarUsuario();
-  }, []);
+  }, [cargarUsuario]);
 
   // Solo el administrador pide cotizaciones y calendario: a cliente y proveedor
   // el API les responde 403.
@@ -72,7 +78,7 @@ export function useInicio() {
     cargarCotizaciones();
     cargarCalendario();
     cargarSalones();
-  }, [esAdmin]);
+  }, [esAdmin, cargarCotizaciones, cargarCalendario, cargarSalones]);
 
   useEffect(() => {
     if (!esProveedor) return;

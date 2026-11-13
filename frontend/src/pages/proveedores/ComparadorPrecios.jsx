@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { compararStock } from "../../api/proveedores";
 import { AvisoError, Campo, Esqueleto, EstadoVacio, Tarjeta } from "../../components/ui";
 import OfertasElemento from "./OfertasElemento";
+import { useFuncionEstable } from "../../hooks/useFuncionEstable";
 
 // Espera después de la última tecla antes de pedir al API.
 const ESPERA_MS = 300;
@@ -45,17 +46,20 @@ export default function ComparadorPrecios({ sesionVencida, onSesionVencida }) {
   }
 
   // Cada cambio del texto espera ESPERA_MS; si llega otra tecla, se cancela.
+  const buscarEstable = useFuncionEstable(buscar);
+  const repetirBusqueda = useFuncionEstable(() => buscar(texto));
+
   useEffect(() => {
-    const espera = setTimeout(() => buscar(texto), ESPERA_MS);
+    const espera = setTimeout(() => buscarEstable(texto), ESPERA_MS);
     return () => clearTimeout(espera);
-  }, [texto]);
+  }, [texto, buscarEstable]);
 
   // Al volver a entrar después de un 401, se repite la última búsqueda.
   useEffect(() => {
     if (sesionVencida || !pendienteRef.current) return;
     pendienteRef.current = false;
-    buscar(texto);
-  }, [sesionVencida]);
+    repetirBusqueda();
+  }, [sesionVencida, repetirBusqueda]);
 
   let vista = "lista";
   if (error) vista = "error";
