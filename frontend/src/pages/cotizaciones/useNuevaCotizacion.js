@@ -33,8 +33,6 @@ import {
 
 const CATALOGOS_VACIOS = { salones: [], conceptos: [], tiposEvento: [] };
 
-// idEditar: el id de una cotización guardada para editarla (PUT .../edicion/); sin él,
-// el formulario arma una nueva. Solo se edita una cotizada: otra da errorCarga "noEditable".
 export function useNuevaCotizacion(idEditar = null) {
   const [catalogos, setCatalogos] = useState(CATALOGOS_VACIOS);
   const [cargando, setCargando] = useState(true);
@@ -53,9 +51,7 @@ export function useNuevaCotizacion(idEditar = null) {
   const [errores, setErrores] = useState(ERRORES_VACIOS);
   const [guardando, setGuardando] = useState(false);
   const [guardada, setGuardada] = useState(null);
-  // Al editar: el detalle tal como llegó (número, estado) para la cabecera.
   const [original, setOriginal] = useState(null);
-  // Otras cotizaciones del salón ese día: null mientras no hay salón y fecha.
   const [ocupacion, setOcupacion] = useState(null);
 
   const busquedaRef = useRef(0);

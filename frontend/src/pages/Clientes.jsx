@@ -9,11 +9,8 @@ import PanelCliente from "./clientes/PanelCliente";
 import { useClientes } from "./clientes/useClientes";
 import "../styles/directorio-clientes.css";
 
-// Directorio de clientes. El estado y las acciones están en
-// pages/clientes/useClientes.js y cada parte de la pantalla en pages/clientes/ (SGDE-97).
 export default function Clientes() {
   const c = useClientes();
-  // "Entrar de nuevo" desde una ventana: al volver, el foco va al botón que se le pasa (SGDE-94).
   const entrarDeNuevo = (boton) => c.sesionRef.current?.abrir({ focoAlVolver: boton });
   const crear = () => c.siNoHayCambios(c.abrirCrear);
 

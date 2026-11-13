@@ -1,6 +1,3 @@
-// Funciones de la pantalla de Conceptos que no usan estado: formatos, validación,
-// lo que se envía al API y cómo se leen sus errores. Las usan Conceptos.jsx y las
-// piezas de esta carpeta.
 import { erroresDesdeApi as erroresDesdeApiComun } from "../../utils/erroresApi";
 
 export const OPCIONES_IMPUESTO = [
@@ -39,7 +36,6 @@ export function precioConImpuesto(precio, impuestoPct) {
   return base + (base * Number(impuestoPct || 0)) / 100;
 }
 
-// Precio escrito que se puede mostrar con impuesto: número y no negativo.
 export function precioValido(precio) {
   return precio !== "" && !Number.isNaN(Number(precio)) && Number(precio) >= 0;
 }
@@ -123,7 +119,6 @@ export function erroresDesdeApi(body) {
   return { campos, general };
 }
 
-// Historial de precios.
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const formatoPorcentaje = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 });
 

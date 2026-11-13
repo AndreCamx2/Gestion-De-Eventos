@@ -11,9 +11,6 @@ import "../styles/cotizacion-imprimible.css";
 import "../components/ui/EstadoBadge.css";
 import "../styles/mis-cotizaciones.css";
 
-// Detalle de una cotización para el rol cliente (SGDE-131): aviso según el estado y
-// la misma hoja de la cotización que se imprime. Solo lectura, sin datos internos.
-
 function Volver() {
   return (
     <Link className="mis-cot-volver" to="/mis-cotizaciones">

@@ -4,9 +4,6 @@ import { AvisoError, Boton, Dialogo, cerrarDialogoDe } from "../../components/ui
 import { pesos } from "./nuevaCotizacion";
 import { MAX_MOTIVO, montoRetenido, parsearPorcentaje } from "./cancelacion";
 
-// Ventana "Cancelar evento" de un evento confirmado (SGDE-68). El estado vive en
-// useCancelacion (d.cancelacion); la sesión vencida se avisa dentro (SGDE-94).
-// - d: lo que devuelve useDetalleCotizacion.
 export default function DialogoCancelarEvento({ d }) {
   const c = d.cotizacion;
   const x = d.cancelacion;
@@ -16,7 +13,6 @@ export default function DialogoCancelarEvento({ d }) {
   const errorPct = x.errores.penalizacion_pct;
   const errorMotivo = x.errores.motivo;
 
-  // Con el 409 desaparece "Cancelar evento", que tenía el foco: pasa a "Cerrar".
   useEffect(() => {
     if (x.conflicto) volverRef.current?.focus();
   }, [x.conflicto]);

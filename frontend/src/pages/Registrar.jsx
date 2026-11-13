@@ -11,16 +11,12 @@ import {
 import { ACCOUNT_TYPES, INITIAL_FORM, validarCampo } from "./registro/camposRegistro";
 import "../styles/acceso.css";
 
-// Pasos del panel izquierdo (maqueta Registro.dc.html).
 const PASOS = [
   { numero: 1, titulo: "Crea tu cuenta", texto: "Como persona o como empresa." },
   { numero: 2, titulo: "Recibe tu cotización", texto: "Salón, montaje y servicios con precio final." },
   { numero: 3, titulo: "Confirma con tu garantía", texto: "Y el salón queda reservado para ti." },
 ];
 
-// Traduce los nombres de campo que devuelve el backend (según el error de
-// validación) a los nombres reales del formulario, para poder mostrar el
-// error justo debajo del input correspondiente.
 function mapBackendErrorField(backendField, accountType) {
   const map = {
     identificacion: accountType === "natural" ? "documentId" : "taxId",
@@ -29,7 +25,6 @@ function mapBackendErrorField(backendField, accountType) {
     nombre: accountType === "natural" ? "fullName" : "contactName",
     password: "password",
     telefono: accountType === "natural" ? "phoneNatural" : "phoneEmpresa",
-    // La ciudad no está en el formulario (se envía fija): su error va al aviso general (SGDE-115).
     ciudad: "general",
   };
   return map[backendField] || null;
@@ -251,7 +246,6 @@ export default function Registrar() {
               ))}
             </div>
 
-            {/* Las contraseñas van en su propia fila, separadas de los datos */}
             <div className="registro-rejilla">
               <Campo
                 etiqueta={<Etiqueta texto="Contraseña" />}

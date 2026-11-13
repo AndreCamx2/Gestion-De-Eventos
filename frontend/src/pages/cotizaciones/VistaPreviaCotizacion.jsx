@@ -3,8 +3,6 @@ import { adaptarBorrador } from "./adaptarCotizacion";
 import CotizacionImprimible from "./CotizacionImprimible";
 import "../../styles/cotizacion-imprimible.css";
 
-// Vista previa para el cliente: la misma hoja de "Imprimir o PDF" (SGDE-70) con lo
-// que se lleva armado. Para imprimirla de verdad hay que guardarla primero.
 export default function VistaPreviaCotizacion({ c, onCerrar }) {
   return (
     <Dialogo

@@ -7,7 +7,6 @@ const TEXTO_SIN_PANEL = {
   cliente: "Consulta las propuestas que te ha enviado tu asesor y el estado de tus eventos.",
 };
 
-// El cliente llega a "Mis cotizaciones" (SGDE-127) desde aquí.
 const ACCION_SIN_PANEL = {
   cliente: <Boton as={Link} to="/mis-cotizaciones">Ver mis cotizaciones</Boton>,
 };

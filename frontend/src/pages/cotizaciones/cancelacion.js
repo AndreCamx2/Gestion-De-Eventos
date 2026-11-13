@@ -1,13 +1,9 @@
-// Cancelar un evento confirmado (SGDE-68): reglas y cálculos de la ventana.
-// El API (POST /cotizaciones/<id>/cancelacion/) recibe el porcentaje y calcula el
-// monto retenido; aquí se calcula igual para mostrarlo en vivo antes de guardar.
 import { erroresDesdeApi } from "../../utils/erroresApi";
 
 export const CANCELACION_VACIA = { penalizacion: "", motivo: "" };
 
 const CAMPOS = ["penalizacion_pct", "motivo"];
 
-// Solo un evento confirmado se cancela; el resto da 409 en el API.
 export function puedeCancelar(c) {
   return c?.estado === "confirmado";
 }
@@ -21,7 +17,6 @@ export function parsearPorcentaje(texto) {
 }
 
 // total × pct ÷ 100, redondeado a centavos como el backend (ROUND_HALF_UP).
-// Devuelve null si el porcentaje no sirve todavía.
 export function montoRetenido(total, pct) {
   const base = Number(total);
   if (pct == null || Number.isNaN(pct) || pct < 0 || pct > 100 || !Number.isFinite(base)) return null;
@@ -48,7 +43,6 @@ export function payloadCancelacion(form) {
   return { penalizacionPct: parsearPorcentaje(form.penalizacion).toFixed(2), motivo: form.motivo.trim() };
 }
 
-// 400 del API: los de penalizacion_pct y motivo van bajo su campo; el resto, al final.
 export function erroresCancelacion(body) {
   return erroresDesdeApi(body, CAMPOS);
 }

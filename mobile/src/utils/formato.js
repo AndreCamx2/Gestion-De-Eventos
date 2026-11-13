@@ -7,7 +7,6 @@ export function pesos(valor) {
   return `${signo}$ ${miles}`;
 }
 
-// "12.50" o "12,50" → "12.50" (el API espera punto decimal). Vacío → null.
 export function decimalDelUsuario(texto) {
   const limpio = String(texto ?? "").trim().replace(",", ".");
   return limpio === "" ? null : limpio;

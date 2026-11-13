@@ -45,7 +45,6 @@ export function iniciales(nombre) {
 }
 
 export function descripcionCliente(cliente) {
-  // Al editar, el cliente viene del detalle de la cotización, que no trae el tipo.
   const tipo = cliente.tipo && (cliente.tipo === "juridica" ? "Jurídica" : "Natural");
   return [tipo, cliente.identificacion, cliente.correo].filter(Boolean).join(" · ");
 }
@@ -275,14 +274,11 @@ export function cantidadInicial(concepto, personas) {
   return esPorPersona(concepto) && Number.isInteger(n) && n > 0 ? String(n) : "1";
 }
 
-// Las líneas que siguen a las personas toman la cantidad nueva (si es válida).
 export function seguirPersonas(lineas, personas) {
   const n = Number(personas);
   if (!Number.isInteger(n) || n < 1) return lineas;
   return lineas.map((l) => (l.sigue ? { ...l, cantidad: String(n) } : l));
 }
-
-// --- Editar una cotización guardada ---
 
 // El formulario a partir del detalle (GET /cotizaciones/<id>/). Una vigencia ya pasada
 // queda vacía: el API toma la de por defecto (hoy + 15 días), así se reactiva la oferta.
@@ -311,8 +307,6 @@ export function lineasDesdeCotizacion(cotizacion, conceptos) {
     };
   });
 }
-
-// --- Disponibilidad del salón ese día ---
 
 // Del calendario de ese salón y día: las otras cotizaciones que ocupan la fecha
 // (confirmadas, bloqueadas o cotizadas vigentes). idPropio: la que se está editando.

@@ -2,14 +2,6 @@ import { useState } from "react";
 import { AvisoError, Boton, Campo, EstadoBadge, EstadoVacio, TablaContenedor, Tarjeta } from "../../components/ui";
 import { estaAgotado, fechaActualizado, filtrarStock, pesos, valorTotal, valorTotalElemento } from "./proveedores";
 
-// "Stock de {proveedor}" (maqueta Proveedores.dc.html): valor total arriba y la
-// tabla con Elemento, Cantidad, Valor unitario, Valor total y Actualizado.
-// - proveedor: el seleccionado.
-// - elementos: su stock, ya ordenado; null si /stock/ no cargó.
-// - onReintentar(): vuelve a pedir el stock (si no cargó).
-// - onAgregar(boton): abre "Agregar elemento" (estado vacío).
-// - onEditar(elemento, boton): abre "Editar elemento" de esa fila (SGDE-98).
-// - vacio: { titulo, texto } del estado vacío; "Mi stock" (SGDE-72) le habla al proveedor.
 const formatoCantidad = new Intl.NumberFormat("es-CO");
 
 export default function StockTabla({ proveedor, elementos, onReintentar, onAgregar, onEditar, vacio }) {

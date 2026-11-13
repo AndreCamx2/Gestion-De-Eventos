@@ -17,7 +17,6 @@ import { comoLista } from "./nuevaCotizacion";
 export function useHistorico() {
   const [filtros, setFiltros] = useState(FILTROS_VACIOS);
   const [eventos, setEventos] = useState([]);
-  // La fecha de los datos: las cifras usan el mismo "hoy" con el que se cargaron.
   const [hoy, setHoy] = useState(hoyLocal);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);

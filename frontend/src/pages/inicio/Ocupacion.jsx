@@ -11,7 +11,6 @@ export default function Ocupacion({ rol, calendario, salones, onReintentarSalone
 
   let cuerpo = null;
   if (calendario.fase === "error") {
-    // El aviso con "Reintentar" ya está en la agenda, que usa la misma petición.
     cuerpo = <SinDatos>Sin datos: no se pudo cargar el calendario.</SinDatos>;
   } else if (salones.fase === "error") {
     cuerpo = (

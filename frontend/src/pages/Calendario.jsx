@@ -15,12 +15,8 @@ import {
 } from "./calendario/calendario";
 import "../styles/calendario.css";
 
-// Calendario de disponibilidad (SGDE-45): el mes de todos los salones, con el panel
-// del día y el mismo bloqueo y liberación del Rack. Las reglas están en calendario/calendario.js.
-//
-// URL: ?mes=AAAA-MM y ?salon=<id>. Se leen al entrar (o si se navega a la misma
-// pantalla con otra URL) y se escriben con replace SOLO desde los botones, nunca
-// desde un efecto: así leer y escribir no forman un ciclo ni piden datos dos veces.
+// ?mes y ?salon se escriben solo desde los botones, nunca desde un efecto: así leer
+// y escribir la URL no forman un ciclo.
 const ESTADOS_LEYENDA = ["disponible", "cotizado", "bloqueado", "confirmado"];
 
 function leerUrl(search, mesActual) {
@@ -47,22 +43,20 @@ export default function Calendario() {
   const navigate = useNavigate();
   const [inicial] = useState(() => leerUrl(location.search, mesActual));
 
-  const [mes, setMes] = useState(inicial.mes); // "AAAA-MM"
+  const [mes, setMes] = useState(inicial.mes);
   const [seleccion, setSeleccion] = useState(() => fechaISO(diaPorDefecto(inicial.mes, hoy)));
   const [filtroSitio, setFiltroSitio] = useState("todos");
   const [filtroSalon, setFiltroSalon] = useState(inicial.salon);
-  // Lo último que llegó del API, con el mes al que corresponde.
-  const [datos, setDatos] = useState(null); // { mes, salones, cotizaciones }
+  const [datos, setDatos] = useState(null);
   const [cargando, setCargando] = useState(true);
-  // Error al cargar: null | "sesion" (401) | "permiso" (403) | "servidor".
   const [errorCarga, setErrorCarga] = useState(null);
   const [sesionVencida, setSesionVencida] = useState(false);
-  const [gestionar, setGestionar] = useState(null); // id del salón con el diálogo abierto
+  const [gestionar, setGestionar] = useState(null);
 
   const pedidoRef = useRef(0); // una respuesta vieja no pisa a la nueva
-  const urlRef = useRef(location.search); // la última URL leída o escrita aquí
-  const salonPorRevisarRef = useRef(true); // ?salon llegó por URL y falta validarlo
-  const abridorRef = useRef(null); // botón "Gestionar", para devolverle el foco
+  const urlRef = useRef(location.search);
+  const salonPorRevisarRef = useRef(true);
+  const abridorRef = useRef(null);
   const sesionRef = useRef(null);
 
   async function cargar(mesPedido) {
@@ -101,8 +95,7 @@ export default function Calendario() {
     navigate({ search }, { replace: true });
   }, [mesActual, navigate]);
 
-  // Navegar a /calendario estando ya aquí (la pestaña, o un enlace con otra URL):
-  // se aplica la URL nueva. Las escrituras propias no entran porque urlRef ya la tiene.
+  // Las escrituras propias no entran aquí: urlRef ya las tiene.
   useEffect(() => {
     if (location.search === urlRef.current) return;
     urlRef.current = location.search;
@@ -114,9 +107,7 @@ export default function Calendario() {
     salonPorRevisarRef.current = true;
   }, [location.search, mesActual, hoy]);
 
-  // URL recién leída, con los salones ya cargados: un ?salon que no es de un salón
-  // visible se ignora; si lo es, se elige también su sitio. Después la URL queda
-  // limpia (sin un ?mes mal formado ni un ?salon ignorado), con una sola escritura.
+  // Un ?salon que no es de un salón visible se ignora y la URL queda limpia.
   useEffect(() => {
     if (!datos || !salonPorRevisarRef.current) return;
     salonPorRevisarRef.current = false;
@@ -134,9 +125,7 @@ export default function Calendario() {
     }
   }, [gestionar]);
 
-  // Los chips de sitio salen de los salones (sitio_nombre, SGDE-104).
   const sitiosConSalones = useMemo(() => sitiosDeSalones(datos?.salones ?? []), [datos]);
-  // Por nombre, en el mismo orden que las píldoras.
   const salonesDelSitio = useMemo(
     () => (datos?.salones ?? [])
       .filter((s) => filtroSitio === "todos" || s.sitio === filtroSitio)

@@ -8,7 +8,6 @@ import { ErrorApi, ErrorRed } from "../../api/cliente";
 
 describe("fechas en hora de Colombia", () => {
   it("hoyISO usa la hora de Colombia, no la UTC", () => {
-    // 18 oct 2026, 03:00 UTC = 17 oct, 10:00 p. m. en Colombia.
     expect(hoyISO(Date.parse("2026-10-18T03:00:00Z"))).toBe("2026-10-17");
   });
 

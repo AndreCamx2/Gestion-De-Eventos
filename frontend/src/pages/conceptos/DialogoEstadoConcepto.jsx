@@ -4,11 +4,6 @@ import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 import { Boton, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import { formatCOP } from "./conceptos";
 
-// Ventana para desactivar o reactivar un concepto.
-// - activar: true para reactivar, false para desactivar.
-// - onHecho(): el cambio quedó guardado; Conceptos.jsx la cierra y recarga.
-// - onSesionVencida(), sesionVencida, onEntrarDeNuevo(boton): igual que en
-//   DialogoNuevoConcepto. Al volver a entrar, el foco regresa al botón de confirmar.
 export default function DialogoEstadoConcepto({
   concepto,
   activar,
@@ -33,7 +28,6 @@ export default function DialogoEstadoConcepto({
     } catch (err) {
       setProcesando(false);
       if (err.status === 401) {
-        // La ventana sigue abierta: al volver a entrar, se confirma de nuevo.
         onSesionVencida();
       } else if (err.status === 403) {
         setError(`No tienes permisos suficientes para ${accion} conceptos.`);

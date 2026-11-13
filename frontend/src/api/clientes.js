@@ -6,8 +6,6 @@ export async function listarClientes({ incluirInactivos = false } = {}) {
   return todasLasPaginas(`/clientes/${query}`);
 }
 
-// PATCH: se envía solo lo que el formulario edita. El API valida que la
-// empresa exista si el tipo es jurídica.
 export async function actualizarCliente(id, datos) {
   return apiFetch(`/clientes/${id}/`, {
     method: "PATCH",
@@ -15,12 +13,10 @@ export async function actualizarCliente(id, datos) {
   });
 }
 
-// Baja lógica: el API pone Cliente.activo=False y Usuario.is_active=False.
 export async function darDeBajaCliente(id) {
   return apiFetch(`/clientes/${id}/`, { method: "DELETE" });
 }
 
-// Reactivar (SGDE-95): activo=True en el Cliente y en su Usuario, si tiene.
 export async function reactivarCliente(id) {
   return actualizarCliente(id, { activo: true });
 }
@@ -41,7 +37,6 @@ export async function crearCliente({
 }) {
   const body = { tipo, nombre };
 
-  // En jurídica no se envía identificacion: el NIT vive en la empresa.
   if (tipo === "juridica") {
     body.empresa = empresa;
   } else {

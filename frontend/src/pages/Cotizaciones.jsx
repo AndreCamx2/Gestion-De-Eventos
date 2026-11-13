@@ -24,19 +24,12 @@ import CotizacionesCifras from "./cotizaciones/CotizacionesCifras";
 import CotizacionesTabla from "./cotizaciones/CotizacionesTabla";
 import "../styles/cotizaciones.css";
 
-// Pantalla de Cotizaciones: carga, filtros y qué vista se muestra. Las cifras,
-// la tabla y los formatos viven en pages/cotizaciones/.
 export default function Cotizaciones() {
-  // búsqueda y fechas del evento) solo afectan la tabla.
-  // - todas: lista sin filtro de fechas, para las cifras.
-  // - cotizaciones: lista de la tabla (con el filtro de fechas, si lo hay).
   const [todas, setTodas] = useState([]);
   const [todasCargadas, setTodasCargadas] = useState(false);
   const [cotizaciones, setCotizaciones] = useState([]);
-  // Fecha con la que se cargó la lista: la vigencia y la tasa del mes usan la misma.
   const [hoy, setHoy] = useState(hoyLocal);
   const [cargando, setCargando] = useState(true);
-  // Errores: null | "permiso" (403) | "servidor" (500 o sin red) | "sesion" (401) | "fechas" (400).
   const [errorCarga, setErrorCarga] = useState(null);
   const [errorCifras, setErrorCifras] = useState(null);
   const [sesionVencida, setSesionVencida] = useState(false);
@@ -76,7 +69,6 @@ export default function Cotizaciones() {
     cargarTiposEvento();
   }, [cargarTiposEvento]);
 
-  // una sin filtros para las cifras y otra filtrada para la tabla.
   const cargarDatos = useCallback(async () => {
     const peticion = ++ultimaPeticionRef.current;
     const conFiltrosTabla = Boolean(desde || hasta || grupoEvento || tipoEvento);

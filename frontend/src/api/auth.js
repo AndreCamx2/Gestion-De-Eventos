@@ -1,6 +1,5 @@
 import { apiFetch, API_URL } from "./client";
 
-// Tiempo máximo para avisar al servidor del cierre de sesión (SGDE-92).
 const ESPERA_MAXIMA_LOGOUT_MS = 5000;
 
 export async function login(username, password) {
@@ -20,14 +19,9 @@ export async function getUsuarioActual() {
   return apiFetch("/usuarios/me/", { method: "GET" });
 }
 
-// Cierra la sesión (SGDE-92).
-// 1. Borra los tokens de inmediato: la persona sale al instante, pase lo que pase.
-// 2. Avisa al servidor para que ese refresh deje de servir (lista negra).
-//    - fetch directo y no apiFetch: un error aquí no debe intentar renovar.
-//    - keepalive: el aviso llega aunque la página cambie o se cierre la pestaña.
-//    - Como máximo ESPERA_MAXIMA_LOGOUT_MS; después se abandona.
-// Devuelve una promesa que nunca falla: no hace falta esperarla. Si no hay red,
-// ese refresh sigue sirviendo hasta que vence (límite aceptado).
+// Los tokens se borran primero: salir nunca se queda esperando al servidor.
+// fetch directo para no intentar renovar; keepalive, para que el aviso llegue
+// aunque se cierre la pestaña.
 export function logout() {
   const refresh = sessionStorage.getItem("refresh_token");
   sessionStorage.removeItem("access_token");

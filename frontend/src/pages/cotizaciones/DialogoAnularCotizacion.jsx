@@ -3,15 +3,12 @@ import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 import { AvisoError, Boton, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import { MAX_MOTIVO } from "./cancelacion";
 
-// Ventana "Anular cotización" de una cotizada o bloqueada. El estado vive en
-// useAnulacion (d.anulacion); la sesión vencida se avisa dentro (SGDE-94).
 export default function DialogoAnularCotizacion({ d }) {
   const x = d.anulacion;
   const confirmarRef = useRef(null);
   const volverRef = useRef(null);
   const bloqueada = d.cotizacion.estado === "bloqueado";
 
-  // Con el 409 desaparece "Anular", que tenía el foco: pasa a "Cerrar".
   useEffect(() => {
     if (x.conflicto) volverRef.current?.focus();
   }, [x.conflicto]);

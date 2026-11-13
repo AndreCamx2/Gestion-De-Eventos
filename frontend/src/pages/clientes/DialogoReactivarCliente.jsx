@@ -3,12 +3,6 @@ import { reactivarCliente } from "../../api/clientes";
 import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 import { Boton, Dialogo, cerrarDialogoDe } from "../../components/ui";
 
-// Confirmación "Reactivar cliente" (SGDE-95): PATCH {activo: true}. El API también
-// reactiva su usuario, si tiene, y vuelve a poder iniciar sesión.
-// - cliente: el inactivo que se reactiva.
-// - onReactivado(): el API respondió; Clientes.jsx recarga la lista y la cierra.
-// - onSesionVencida(), sesionVencida, onEntrarDeNuevo(boton): aviso dentro de la
-//   ventana (SGDE-94).
 export default function DialogoReactivarCliente({ cliente, onReactivado, onCerrar, onSesionVencida, sesionVencida, onEntrarDeNuevo }) {
   const [error, setError] = useState(null);
   const [guardando, setGuardando] = useState(false);
@@ -40,7 +34,6 @@ export default function DialogoReactivarCliente({ cliente, onReactivado, onCerra
         {sesionVencida && <AvisoSesionEnVentana onEntrar={() => onEntrarDeNuevo(confirmarRef.current)} />}
         {error && <p className="dialogo__error" role="alert">{error}</p>}
         <div className="dialogo__acciones">
-          {/* "Cancelar" lleva el foco inicial: la opción segura. */}
           <Boton variante="secundario" data-foco-inicial disabled={guardando} onClick={(e) => cerrarDialogoDe(e.currentTarget)}>
             Cancelar
           </Boton>

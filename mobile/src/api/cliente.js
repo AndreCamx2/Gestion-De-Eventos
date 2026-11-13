@@ -1,10 +1,7 @@
 import { CLAVES, borrarTokens, guardar, leer } from "./almacen";
 
-// URL del API: EXPO_PUBLIC_API_URL (mobile/.env.local) o, si no está, producción.
 export const API_URL = (process.env.EXPO_PUBLIC_API_URL || "https://sgde-backend.onrender.com/api").replace(/\/+$/, "");
 
-// Error del API con el código HTTP y el cuerpo, para que cada pantalla decida
-// qué mostrar (400 con errores por campo, 403 con `codigo`, 409 con `detail`...).
 export class ErrorApi extends Error {
   constructor(status, cuerpo) {
     super(cuerpo?.detail || `Error ${status}`);
@@ -16,7 +13,6 @@ export class ErrorApi extends Error {
 // Sin conexión, o el servidor dormido de Render que tardó demasiado.
 export class ErrorRed extends Error {}
 
-// Avisa a la app que la sesión venció y no se pudo renovar (vuelve al login).
 let alVencerSesion = () => {};
 export function alVencer(funcion) {
   alVencerSesion = funcion;
@@ -42,9 +38,8 @@ async function enviar(ruta, opciones, token) {
   }
 }
 
-// Renovación del access (SGDE-86). Si varias peticiones reciben 401 a la vez,
-// todas esperan esta misma promesa: con la rotación de SGDE-92 el refresh sirve
-// UNA sola vez, y dos renovaciones a la vez harían fallar la segunda.
+// Si varias peticiones reciben 401 a la vez, todas esperan esta promesa: el refresh
+// rota y solo sirve una vez.
 let renovacion = null;
 function renovarAcceso() {
   if (!renovacion) {
@@ -67,8 +62,6 @@ function renovarAcceso() {
   return renovacion;
 }
 
-// Llamada al API con el token. Si responde 401, renueva una vez y repite.
-// Con `publica: true` no manda token ni intenta renovar (login, por ejemplo).
 export async function api(ruta, { publica = false, ...opciones } = {}) {
   const token = publica ? null : await leer(CLAVES.access);
   let respuesta = await enviar(ruta, opciones, token);

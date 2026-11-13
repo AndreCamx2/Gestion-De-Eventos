@@ -16,12 +16,6 @@ import ComparadorPrecios from "./proveedores/ComparadorPrecios";
 import "../styles/proveedores.css";
 import "../styles/proveedores-acceso.css";
 
-// Pantalla de Proveedores y stock (SGDE-81 y SGDE-42, maqueta Proveedores.dc.html):
-// tarjetas de proveedor seleccionables y la tabla de stock del elegido, con su
-// cantidad y valor editables (SGDE-98). Con ?vista=comparar, "Comparar precios"
-// entre proveedores por elemento (SGDE-71). Cada pieza vive en pages/proveedores/.
-
-// Tipo de error al cargar: "sesion" (401), "permiso" (403) o "servidor" (500 o sin red).
 function tipoDeError(err) {
   if (err?.status === 401) return "sesion";
   if (err?.status === 403) return "permiso";
@@ -30,26 +24,18 @@ function tipoDeError(err) {
 
 export default function Proveedores() {
   const [proveedores, setProveedores] = useState([]);
-  // Stock de todos los proveedores; null = /stock/ no cargó.
   const [stock, setStock] = useState(null);
   const [cargando, setCargando] = useState(true);
-  // Error al cargar /proveedores/: null | "sesion" | "permiso" | "servidor".
   const [errorCarga, setErrorCarga] = useState(null);
-  // 401: se avisa abajo sin salir de la pantalla (components/SesionVencida.jsx).
   const [sesionVencida, setSesionVencida] = useState(false);
   const [seleccionId, setSeleccionId] = useState(null);
-  // Ventana abierta: null | "proveedor" | "elemento" | "editar" | "acceso".
   const [dialogo, setDialogo] = useState(null);
-  // Elemento del stock que se edita (con dialogo === "editar").
   const [editando, setEditando] = useState(null);
   const [guardado, setGuardado] = useState(false);
-  // ?vista=comparar muestra "Comparar precios" (SGDE-71); sin parámetro, el stock.
   const [parametros, setParametros] = useSearchParams();
   const enComparar = parametros.get("vista") === "comparar";
 
-  // Si la sesión venció mientras se cargaba, al volver a entrar se carga otra vez.
   const recargarAlEntrarRef = useRef(false);
-  // Botón que abrió la ventana: al cerrarla, el foco vuelve ahí.
   const disparadorRef = useRef(null);
   const nuevoRef = useRef(null);
   const stockRef = useRef(null);
@@ -59,10 +45,7 @@ export default function Proveedores() {
     cargarDatos();
   }, []);
 
-  // Al cerrarse una ventana, el foco vuelve al botón que la abrió. Va en un efecto
-  // porque mientras el <dialog> modal sigue montado, lo de afuera está inerte y
-  // focus() no funciona. Si ese botón ya no existe (el del estado vacío), va a
-  // "Nuevo proveedor".
+  // En un efecto: con el <dialog> modal montado, lo de afuera está inerte y focus() no sirve.
   useEffect(() => {
     if (dialogo !== null || !disparadorRef.current) return;
     const disparador = disparadorRef.current;
@@ -70,8 +53,6 @@ export default function Proveedores() {
     (disparador.isConnected ? disparador : nuevoRef.current)?.focus();
   }, [dialogo]);
 
-  // Proveedores y stock van en paralelo. Si solo falla /stock/, las tarjetas se
-  // ven igual y la sección de stock ofrece reintentar.
   async function cargarDatos() {
     setCargando(true);
     setErrorCarga(null);
@@ -107,7 +88,6 @@ export default function Proveedores() {
   function elegir(proveedor) {
     setSeleccionId(proveedor.id);
     setGuardado(false);
-    // En teléfono la tabla queda lejos, debajo de todas las tarjetas: se baja hasta ella.
     if (window.matchMedia("(max-width: 600px)").matches) {
       const suave = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       requestAnimationFrame(() =>
@@ -131,7 +111,6 @@ export default function Proveedores() {
     abrir("editar", boton);
   }
 
-  // La fila se reemplaza en el sitio: no se recarga la pantalla.
   function alEditarStock(actualizado) {
     setStock((prev) => prev.map((e) => (e.id === actualizado.id ? actualizado : e)));
     setGuardado(true);
@@ -144,22 +123,18 @@ export default function Proveedores() {
     cerrarDialogo();
   }
 
-  // Vincular o desvincular el usuario de acceso (SGDE-72): la tarjeta se actualiza en el sitio.
   function alVincularUsuario(actualizado) {
     setProveedores((prev) => prev.map((p) => (p.id === actualizado.id ? actualizado : p)));
     cerrarDialogo();
   }
 
   function alCrearElemento(elemento) {
-    // Si /stock/ no había cargado, se pide completo; si no, se suma a la lista.
     if (stock) setStock((prev) => [...prev, elemento]);
     else cargarStock();
     setGuardado(true);
     cerrarDialogo();
   }
 
-  // "Entrar de nuevo" desde dentro de una ventana abierta (SGDE-94): el login se
-  // abre encima y, al entrar, el foco vuelve a "Guardar" de la ventana.
   function entrarDeNuevoDesdeVentana(boton) {
     sesionRef.current?.abrir({ focoAlVolver: boton });
   }
@@ -178,7 +153,6 @@ export default function Proveedores() {
   else if (proveedores.length === 0 && cargando) vista = "carga";
   else if (proveedores.length === 0) vista = "vacio";
 
-  // Estable: DialogoUsuarioAcceso la usa en un efecto.
   const marcarSesionVencida = useCallback(() => setSesionVencida(true), []);
   const propsSesion = {
     onSesionVencida: marcarSesionVencida,

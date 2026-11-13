@@ -4,20 +4,12 @@ import { AvisoError, Campo, Esqueleto, EstadoVacio, Tarjeta } from "../../compon
 import OfertasElemento from "./OfertasElemento";
 import { useFuncionEstable } from "../../hooks/useFuncionEstable";
 
-// Espera después de la última tecla antes de pedir al API.
 const ESPERA_MS = 300;
 
-// "Comparar precios" en Proveedores (SGDE-71): busca un elemento y muestra, por
-// cada uno, qué proveedor lo tiene más barato. Sin texto, lista todos. El API
-// agrupa sin distinguir mayúsculas, tildes ni espacios de más.
-// - sesionVencida, onSesionVencida(): 401 → aviso de abajo (SesionVencida de
-//   Proveedores.jsx); al volver a entrar se repite la búsqueda.
 export default function ComparadorPrecios({ sesionVencida, onSesionVencida }) {
   const [texto, setTexto] = useState("");
-  // null = aún no llegó la primera respuesta.
   const [grupos, setGrupos] = useState(null);
   const [cargando, setCargando] = useState(true);
-  // null | "permiso" | "servidor"
   const [error, setError] = useState(null);
   const [buscado, setBuscado] = useState("");
   const pedidoRef = useRef(0); 
@@ -54,7 +46,6 @@ export default function ComparadorPrecios({ sesionVencida, onSesionVencida }) {
     return () => clearTimeout(espera);
   }, [texto, buscarEstable]);
 
-  // Al volver a entrar después de un 401, se repite la última búsqueda.
   useEffect(() => {
     if (sesionVencida || !pendienteRef.current) return;
     pendienteRef.current = false;
@@ -79,7 +70,6 @@ export default function ComparadorPrecios({ sesionVencida, onSesionVencida }) {
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
         />
-        {/* Siempre presente para que el lector de pantalla anuncie el resultado. */}
         <p className="comparar__estado" role="status">
           {cargando ? "Buscando…" : vista === "lista" ? `${grupos.length} ${grupos.length === 1 ? "elemento" : "elementos"}` : ""}
         </p>

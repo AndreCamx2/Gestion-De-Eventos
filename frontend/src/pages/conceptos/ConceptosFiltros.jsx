@@ -1,6 +1,4 @@
-// Filtros de la pantalla de Conceptos.
 
-// En la cabecera: sitio y "Mostrar inactivos".
 export function FiltrosCabecera({ sitios, filtroSitio, onFiltroSitio, mostrarInactivos, onMostrarInactivos }) {
   return (
     <>
@@ -31,8 +29,6 @@ export function FiltrosCabecera({ sitios, filtroSitio, onFiltroSitio, mostrarIna
   );
 }
 
-// Búsqueda por nombre, encima de la tabla. `ref` va al campo de texto (para
-// devolverle el foco al quitar los filtros).
 export function BuscarConcepto({ ref, valor, onCambiar }) {
   return (
     <label className="conceptos-buscar">

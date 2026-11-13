@@ -2,12 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { cerrarSesion, haySesionGuardada, iniciarSesion, usuarioActual } from "../api/auth";
 import { alVencer } from "../api/cliente";
 
-// Estado de la sesión para toda la app.
-// estado: "cargando" (revisando si había sesión) | "sin-sesion" | "con-sesion"
-// usuario: lo que devuelve /api/usuarios/me/ (con rol.codigo y proveedor).
 const ContextoSesion = createContext(null);
 
-// Roles que tienen módulo en la app móvil.
 export const RUTA_POR_ROL = {
   administrador: "/disponibilidad",
   proveedor: "/mi-stock",
@@ -23,8 +19,6 @@ export function ProveedorSesion({ children }) {
     setEstado("sin-sesion");
   }, []);
 
-  // Al abrir la app: si hay un refresh guardado, se pide el usuario (si el access
-  // venció, el cliente lo renueva solo). Si falla, se vuelve al login.
   useEffect(() => {
     let vigente = true;
     alVencer(() => {

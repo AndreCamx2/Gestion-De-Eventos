@@ -8,9 +8,6 @@ function diaMes(fecha) {
   return `${dia}/${mes}`;
 }
 
-// Cotizaciones del cliente en su panel (de los sitios del usuario, SGDE-90).
-// Una cotizada con la vigencia pasada se ve como "Vencida" y dice cuándo venció
-// (SGDE-95): el API trae vencida y validez_oferta en cada cotización.
 export default function HistorialCliente({ cotizaciones }) {
   return (
     <section className="directorio-historial" aria-labelledby="directorio-historial-titulo">

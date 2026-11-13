@@ -1,4 +1,3 @@
-// Colores de Piedra viva (frontend/src/styles/tokens.css y docs/diseno/piedra-viva).
 export const colores = {
   fondo: "#F3F2F0",
   superficie: "#FFFFFF",
@@ -19,5 +18,4 @@ export const colores = {
 
 export const espacio = { xs: 4, s: 8, m: 12, l: 16, xl: 24 };
 
-// Zona tocable mínima: 44 px (guía de Piedra viva, sección 4).
 export const TOQUE_MINIMO = 44;

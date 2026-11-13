@@ -4,13 +4,6 @@ import EstadoCliente, { BotonEstadoCliente } from "./EstadoCliente";
 import HistorialCliente from "./HistorialCliente";
 import { iniciales } from "./clientes";
 
-// Panel lateral del directorio para crear y editar un cliente.
-// - panel: null | { modo: "crear" } | { modo: "editar", cliente }. Sin panel, muestra
-//   "Ningún cliente seleccionado".
-// - clienteSeleccionado: el cliente que se edita (null al crear).
-// - panelRef, tituloPanelRef, guardarRef: destinos del foco (useFocoPanel).
-// - onCerrar: la X y "Cancelar" (preguntan antes si hay cambios sin guardar).
-// - onBaja(), onReactivar(evento): abren la confirmación de cada acción.
 export default function PanelCliente({
   panelRef,
   panel,
@@ -95,7 +88,6 @@ export default function PanelCliente({
             {errorAccion && (
               <p className="directorio-aviso directorio-aviso--error" role="alert">Error: {errorAccion}</p>
             )}
-            {/* Siempre presente (aunque vacío) para que el lector de pantalla anuncie el aviso. */}
             <p className="directorio-aviso directorio-aviso--exito" role="status">
               {aviso}
             </p>

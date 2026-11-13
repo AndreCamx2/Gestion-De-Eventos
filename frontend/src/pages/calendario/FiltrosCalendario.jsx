@@ -1,11 +1,5 @@
 import { Boton } from "../../components/ui";
 
-// Controles de la cabecera del Calendario (maqueta): mes anterior y siguiente,
-// "Hoy" y los chips de sitio y de salón (control segmentado con aria-pressed).
-// - Los chips de sitio salen solo si hay salones en más de un sitio (como en el Rack).
-// - Los de salón, si hay más de un salón en el sitio elegido.
-// - filtroSitio y filtroSalon valen "todos" o un id.
-
 function Chips({ etiqueta, opciones, valor, onCambiar }) {
   return (
     <div className="calendario-chips" role="group" aria-label={etiqueta}>

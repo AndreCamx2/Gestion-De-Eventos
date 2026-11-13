@@ -1,6 +1,3 @@
-// Funciones de la pantalla de Proveedores que no usan estado: iniciales, stock de
-// cada proveedor, totales, fechas, validación, lo que se envía al API y cómo se
-// leen sus errores. Las usan Proveedores.jsx y las piezas de esta carpeta.
 import { erroresDesdeApi as erroresDesdeApiComun } from "../../utils/erroresApi";
 import { mesCorto } from "../../utils/inicioCifras";
 import { validarDocumento, validarRazonSocial } from "../../utils/validacionesRegistro";
@@ -16,7 +13,6 @@ export function pesos(valor) {
   return `$ ${(centavos ? formatoCentavos : formatoEntero).format(n)}`;
 }
 
-// Palabras que no cuentan para las iniciales: "Mobiliario El Puerto" → "MP".
 const CONECTORES = new Set(["el", "la", "los", "las", "de", "del", "y", "e"]);
 
 export function iniciales(nombre) {
@@ -48,21 +44,18 @@ export function estaAgotado(elemento) {
   return Number(elemento.cantidad) === 0;
 }
 
-// Elementos de un proveedor, por nombre.
 export function stockDe(stock, idProveedor) {
   return stock
     .filter((e) => e.proveedor === idProveedor)
     .sort((a, b) => a.nombre_elemento.localeCompare(b.nombre_elemento, "es"));
 }
 
-// Cuántos elementos tiene cada proveedor: { [idProveedor]: n }.
 export function conteoPorProveedor(stock) {
   const conteo = {};
   for (const e of stock) conteo[e.proveedor] = (conteo[e.proveedor] ?? 0) + 1;
   return conteo;
 }
 
-// El API manda `valor` como texto ("12000.00"): se pasa a número para multiplicar.
 export function valorTotalElemento(e) {
   return Number(e.cantidad) * Number(e.valor);
 }
@@ -78,8 +71,6 @@ export function fechaActualizado(texto) {
   if (Number.isNaN(f.getTime())) return "—";
   return `${f.getDate()} ${mesCorto(f)} ${f.getFullYear()}`;
 }
-
-// ===== Nuevo proveedor =====
 
 export const PROVEEDOR_VACIO = { nombre: "", identificacion: "", contacto: "" };
 const CAMPOS_PROVEEDOR = ["nombre", "identificacion", "contacto"];
@@ -114,8 +105,6 @@ export function payloadProveedor(form) {
 export function erroresProveedor(body) {
   return erroresDesdeApiComun(body, CAMPOS_PROVEEDOR);
 }
-
-// ===== Agregar elemento =====
 
 export const ELEMENTO_VACIO = { nombre_elemento: "", cantidad: "", valor: "" };
 const CAMPOS_ELEMENTO = ["nombre_elemento", "cantidad", "valor"];
@@ -175,8 +164,6 @@ export function payloadElemento(form, idProveedor) {
   };
 }
 
-// El elemento repetido en el mismo proveedor (UniqueConstraint de dos campos)
-// llega en non_field_errors (SGDE-ERROR-011): se muestra junto a "Elemento".
 export function erroresElemento(body) {
   const { non_field_errors, ...resto } = body ?? {};
   const generales = [].concat(non_field_errors ?? []);
@@ -191,10 +178,6 @@ export function erroresElemento(body) {
   return { campos, general };
 }
 
-// ===== Usuario de acceso (SGDE-30 y 72) =====
-
-// Usuarios con rol proveedor que se pueden vincular a `proveedor`: los que no
-// tienen otro proveedor, más el suyo actual. Por username.
 export function usuariosLibres(usuarios, proveedores, proveedor) {
   const tomados = new Set(
     proveedores.filter((p) => p.id !== proveedor.id && p.usuario != null).map((p) => p.usuario),
@@ -204,12 +187,8 @@ export function usuariosLibres(usuarios, proveedores, proveedor) {
     .sort((a, b) => a.username.localeCompare(b.username, "es"));
 }
 
-// ===== Editar elemento (SGDE-98) =====
-// Solo cantidad y valor: el proveedor y el nombre no cambian (el API da 400).
-
 const CAMPOS_EDICION_STOCK = ["cantidad", "valor"];
 
-// El API manda valor como "12000.00": en el campo se ve "12000".
 export function formDesdeElemento(e) {
   return { cantidad: String(e.cantidad), valor: String(Number(e.valor)) };
 }
@@ -218,7 +197,6 @@ export function validarEdicionStock(form) {
   return validarCantidadYValor(form);
 }
 
-// Lo que cambió, para el PATCH: {} si nada cambió.
 export function cambiosStock(form, elemento) {
   const cambios = {};
   if (Number(form.cantidad) !== elemento.cantidad) cambios.cantidad = Number(form.cantidad);

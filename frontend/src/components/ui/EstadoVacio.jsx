@@ -1,10 +1,5 @@
 import "./EstadoVacio.css";
 
-// Estado vacío (maqueta CasosLimite, "Lista vacía"): ícono, título, texto y una
-// acción opcional, por ejemplo <Boton>Armar la primera</Boton>.
-// - icono: si no se pasa, se usan las tres barras de la maqueta (decorativas).
-// - nivel: etiqueta del título ("h2" por defecto; usa "h3" si va dentro de una sección con h2).
-// No trae caja propia: envuélvelo en Tarjeta o en la caja de la lista.
 function BarrasVacias() {
   return (
     <span className="estado-vacio__barras">

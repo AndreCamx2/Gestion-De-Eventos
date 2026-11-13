@@ -4,14 +4,6 @@ import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 import { Boton, Campo, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import { cambiosStock, erroresEdicionStock, formDesdeElemento, quedaAgotado, validarEdicionStock } from "./proveedores";
 
-// Ventana "Editar elemento" del stock (SGDE-98): cantidad y valor unitario. El
-// proveedor y el nombre del elemento se muestran, pero no se editan.
-// - proveedor, elemento: lo que se edita.
-// - onGuardado(elemento): el API respondió; Proveedores.jsx reemplaza la fila y la cierra.
-// - onSesionVencida(), sesionVencida, onEntrarDeNuevo(boton): igual que en
-//   DialogoNuevoElemento (aviso dentro de la ventana, SGDE-94).
-// - editar(id, cambios): la llamada al API. Por defecto PATCH /stock/<id>/;
-//   "Mi stock" (SGDE-72) pasa editarMiStock.
 export default function DialogoEditarStock({
   proveedor, elemento, onGuardado, onCerrar, onSesionVencida, sesionVencida, onEntrarDeNuevo, editar = editarStock,
 }) {
@@ -34,7 +26,6 @@ export default function DialogoEditarStock({
     setErrores(locales);
     if (Object.keys(locales).length > 0) return;
 
-    // Sin cambios no se llama al API: se cierra como "Cancelar".
     const cambios = cambiosStock(form, elemento);
     if (Object.keys(cambios).length === 0) {
       cerrarDialogoDe(e.currentTarget);

@@ -1,10 +1,6 @@
 import { rolesDeRuta } from "../routes/rutasPorRol";
 import { IconoAgenda, IconoCotizar, IconoInicio } from "./IconosBarraInferior";
 
-// Lógica de la barra inferior del teléfono (SGDE-102), aparte del componente
-// para que el archivo .jsx solo exporte componentes (regla react-refresh de ESLint).
-
-// Pestañas de NAV_ITEMS que tienen lugar propio en la barra, con su texto corto.
 const FIJAS = [
   { to: "/inicio", label: "Inicio", Icono: IconoInicio },
   { to: "/cotizaciones", label: "Cotizar", Icono: IconoCotizar },
@@ -13,8 +9,6 @@ const FIJAS = [
 
 export const RUTA_NUEVA = "/cotizaciones/nueva";
 
-// Arma lo que muestra la barra a partir de las pestañas visibles para el rol.
-// DashboardLayout lo usa para saber si hay barra (y ocultar las pestañas de arriba).
 export function piezasBarraInferior(itemsVisibles, rol) {
   const rutasVisibles = new Set(itemsVisibles.map((item) => item.to));
   const fijas = FIJAS.filter((pieza) => rutasVisibles.has(pieza.to));

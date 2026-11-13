@@ -16,21 +16,16 @@ import DialogoNuevoConcepto from "./conceptos/DialogoNuevoConcepto";
 import DialogoEstadoConcepto from "./conceptos/DialogoEstadoConcepto";
 import "../styles/conceptos.css";
 
-// Pantalla de Conceptos y precios: arma la cabecera con los filtros, la tabla,
-// el panel del concepto elegido y las ventanas. Cada pieza vive en pages/conceptos/.
 export default function Conceptos() {
   const [conceptos, setConceptos] = useState([]);
   const [sitios, setSitios] = useState([]);
   const [cargando, setCargando] = useState(true);
-  // Error al cargar: null | "permiso" (403) | "servidor" (500 o sin red) | "sesion" (401).
   const [errorCarga, setErrorCarga] = useState(null);
-  // 401: se avisa abajo sin salir de la pantalla (components/SesionVencida.jsx).
   const [sesionVencida, setSesionVencida] = useState(false);
   const [filtroSitio, setFiltroSitio] = useState("todos");
   const [busqueda, setBusqueda] = useState("");
   const [mostrarInactivos, setMostrarInactivos] = useState(false);
   const [seleccionId, setSeleccionId] = useState(null);
-  // Ventana abierta: null | { tipo: "nuevo" } | { tipo: "estado", concepto, activar }.
   const [dialogo, setDialogo] = useState(null);
 
   const panelRef = useRef(null);
@@ -99,7 +94,6 @@ export default function Conceptos() {
     }
   }
 
-  // Sitio ya elegido en "Nuevo concepto": el del filtro, o el único que hay.
   function sitioInicial() {
     if (filtroSitio !== "todos") return filtroSitio;
     return sitios.length === 1 ? String(sitios[0].id) : "";
@@ -124,8 +118,6 @@ export default function Conceptos() {
     await cargarDatos();
   }
 
-  // "Entrar de nuevo" desde dentro de una ventana abierta (SGDE-94): el diálogo de
-  // login se abre encima y, al entrar, el foco vuelve al botón de guardar de la ventana.
   function entrarDeNuevoDesdeVentana(boton) {
     sesionRef.current?.abrir({ focoAlVolver: boton });
   }
@@ -133,7 +125,6 @@ export default function Conceptos() {
   function alVolverAEntrar() {
     setSesionVencida(false);
     // Si la sesión venció al cargar, los datos nunca llegaron: se piden otra vez.
-    // El historial se pide solo (HistorialPrecios mira sesionVencida).
     if (errorCarga === "sesion") cargarDatos();
   }
 
@@ -144,8 +135,6 @@ export default function Conceptos() {
     buscarRef.current?.focus();
   }
 
-  // Si ya hay conceptos, la tabla se mantiene mientras se recarga o si la sesión
-  // vence al recargar (no salta ni pierde lo escrito en el panel).
   let vista = "lista";
   if (errorCarga === "permiso" || errorCarga === "servidor") vista = "error";
   else if (conceptos.length === 0 && errorCarga === "sesion") vista = "sesion";

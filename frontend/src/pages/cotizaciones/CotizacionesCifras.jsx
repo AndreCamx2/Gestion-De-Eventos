@@ -1,9 +1,5 @@
 import { millones } from "./cotizaciones";
 
-// Las cuatro cifras de arriba de Cotizaciones.
-// - cifras: lo que devuelve resumen() de cotizaciones.js, o null mientras no hay
-//   datos que mostrar (carga, error o sesión vencida): entonces todo va en "—".
-// - mes: nombre del mes actual ("octubre"), para la nota de la tasa de cierre.
 export default function CotizacionesCifras({ cifras, mes }) {
   const tasa = cifras?.tasa.porcentaje ?? null;
 

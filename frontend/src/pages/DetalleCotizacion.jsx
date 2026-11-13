@@ -97,7 +97,6 @@ function PanelConfirmada({ cotizacion, recien }) {
   );
 }
 
-// recien: se acaba de cancelar desde esta pantalla (SGDE-68); el foco llega al título.
 function PanelCancelada({ cotizacion, recien }) {
   const c = resumenCancelacion(cotizacion);
   if (!c) return null;

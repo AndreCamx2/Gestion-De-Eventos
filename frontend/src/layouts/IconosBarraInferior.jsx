@@ -1,6 +1,3 @@
-// Íconos de la barra inferior del teléfono (SGDE-102), tomados de la maqueta Movil.dc.html.
-// Usan currentColor: el color sale del CSS (tokens.css), nunca de aquí.
-// Son decorativos: el texto visible o el aria-label del enlace dicen qué es cada uno.
 
 function Icono({ children, tamano = 20, grosor = 1.8 }) {
   return (

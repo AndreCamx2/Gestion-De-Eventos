@@ -7,12 +7,6 @@ import { cambiosSalon, formDesdeSalon, validarSalon } from "./salones";
 
 const CAMPOS = ["nombre", "ancho", "altura", "foto_url"];
 
-// "Editar salón" (SGDE-88): nombre, ancho, altura y foto (URL). El sitio se
-// muestra, pero no se cambia: sus cotizaciones, conceptos y montajes son de ese sitio.
-// - salon: el que se edita; sitio: el nombre de su sitio.
-// - onGuardado(salon): el API respondió; Salones.jsx lo reemplaza y la cierra.
-// - onSesionVencida(), sesionVencida, onEntrarDeNuevo(boton): aviso dentro de la
-//   ventana (SGDE-94).
 export default function DialogoEditarSalon({ salon, sitio, onGuardado, onCerrar, onSesionVencida, sesionVencida, onEntrarDeNuevo }) {
   const [form, setForm] = useState(() => formDesdeSalon(salon));
   const [errores, setErrores] = useState({});
@@ -33,7 +27,6 @@ export default function DialogoEditarSalon({ salon, sitio, onGuardado, onCerrar,
     setErrores(locales);
     if (Object.keys(locales).length > 0) return;
 
-    // Sin cambios no se llama al API: se cierra como "Cancelar".
     const cambios = cambiosSalon(form, salon);
     if (Object.keys(cambios).length === 0) {
       cerrarDialogoDe(e.currentTarget);
@@ -48,7 +41,6 @@ export default function DialogoEditarSalon({ salon, sitio, onGuardado, onCerrar,
     } catch (err) {
       setGuardando(false);
       if (err.status === 400 && err.body && typeof err.body === "object") {
-        // "Nombre único por sitio" llega como non_field_errors: va debajo del nombre.
         const { non_field_errors, ...porCampo } = err.body;
         const { campos, general } = erroresDesdeApi(porCampo, CAMPOS);
         if (non_field_errors) campos.nombre = "Ya existe un salón con ese nombre en este venue.";

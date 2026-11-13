@@ -2,13 +2,6 @@ import { fechaHoraColombia } from "../../utils/fechasBloqueo";
 import { fechaISO } from "../../utils/inicioCifras";
 import { ABREVIATURAS, encabezadoDia, esFinDeSemana, etiquetaCelda } from "./rack";
 
-// Rejilla del Rack: filas = salones, columnas = días.
-// - Cada celda es un <button>: Enter y Espacio la abren sin código extra.
-// - El estado se dice con texto ("Conf.", "+2") y en el aria-label, no solo con color.
-// - En teléfono la tabla se desplaza dentro de su contenedor; la columna de
-//   salones queda fija (position: sticky en rack.css).
-// - onAbrir(salon, fecha, boton): Rack.jsx abre el panel del día.
-
 function tituloCelda(celda) {
   const bloqueos = celda.cotizaciones
     .filter((c) => c.estado === "bloqueado" && c.bloqueo_hasta)
