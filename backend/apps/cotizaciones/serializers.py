@@ -13,11 +13,13 @@ from apps.sitios.models import Sitio
 
 from .estados import fecha_corta, registrar
 from .models import Cotizacion, CotizacionItem, GrupoEvento, MovimientoCotizacion, TipoEvento
-from .services import redondear, totales_cotizacion, totales_linea
-from .models import Cotizacion, CotizacionItem, MovimientoCotizacion
 from .services import garantia_minima, redondear, totales_cotizacion, totales_linea
 
 DIAS_VIGENCIA_POR_DEFECTO = 15
+ANIOS_MAXIMOS_DE_ANTICIPACION = 5
+CANTIDAD_MAXIMA_POR_CONCEPTO = 100_000
+CONCEPTOS_MAXIMOS = 100
+LARGO_MAXIMO_MOTIVO = 1000
 
 class EstadoEfectivoMixin:
     # SGDE-118: un bloqueo vencido que aún no se liberó en la base se muestra ya como cotizado.
@@ -85,7 +87,10 @@ class ItemsEntradaListSerializer(serializers.ListSerializer):
 class CotizacionItemEntradaSerializer(serializers.Serializer):
     # Solo conceptos de los sitios del usuario: uno de un sitio ajeno da 400 (SGDE-90).
     concepto = CampoDeSitio(queryset=Concepto.objects.all())
-    cantidad = serializers.IntegerField(min_value=1)
+    cantidad = serializers.IntegerField(
+        min_value=1, max_value=CANTIDAD_MAXIMA_POR_CONCEPTO,
+        error_messages={"max_value": "La cantidad no puede pasar de 100.000."},
+    )
 
     class Meta:
         list_serializer_class = ItemsEntradaListSerializer
@@ -94,8 +99,11 @@ class CotizacionItemEntradaSerializer(serializers.Serializer):
 class CotizacionCrearSerializer(serializers.ModelSerializer):
     # El salón define el sitio de la cotización: solo uno de los sitios del usuario.
     salon = CampoDeSitio(queryset=Salon.objects.all())
-    items = CotizacionItemEntradaSerializer(many=True)
-        # SGDE-142: obligatorio al crear (en la base es null solo por las cotizaciones viejas).
+    items = CotizacionItemEntradaSerializer(
+        many=True, max_length=CONCEPTOS_MAXIMOS,
+        error_messages={"max_length": f"Una cotización admite máximo {CONCEPTOS_MAXIMOS} conceptos."},
+    )
+    # SGDE-142: obligatorio al crear (en la base es null solo por las cotizaciones viejas).
     tipo_evento = serializers.PrimaryKeyRelatedField(queryset=TipoEvento.objects.select_related("grupo"))
 
     class Meta:
@@ -104,8 +112,13 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
         extra_kwargs = {"cantidad_personas": {"min_value": 1}}
 
     def validate_fecha_evento(self, value):
-        if value < timezone.localdate():
+        hoy = timezone.localdate()
+        if value < hoy:
             raise serializers.ValidationError("La fecha del evento no puede ser pasada.")
+        if value > hoy + timedelta(days=365 * ANIOS_MAXIMOS_DE_ANTICIPACION):
+            raise serializers.ValidationError(
+                f"La fecha del evento no puede ser a más de {ANIOS_MAXIMOS_DE_ANTICIPACION} años."
+            )
         return value
 
     def validate_cliente(self, value):
@@ -151,9 +164,14 @@ class CotizacionCrearSerializer(serializers.ModelSerializer):
 
         # Errores por línea, en la misma posición que el request: [{}, {"concepto": [...]}]
         errores_items = []
+        vistos = set()
         for item in attrs["items"]:
             concepto = item["concepto"]
-            if not concepto.activo:
+            repetido = concepto.pk in vistos
+            vistos.add(concepto.pk)
+            if repetido:
+                errores_items.append({"concepto": ["Este concepto ya está en la cotización: suma la cantidad."]})
+            elif not concepto.activo:
                 errores_items.append({"concepto": ["El concepto está inactivo."]})
             elif concepto.sitio_id != salon.sitio_id:
                 errores_items.append({"concepto": ["El concepto no pertenece al venue del salón."]})
@@ -522,7 +540,12 @@ class CancelacionSerializer(serializers.Serializer):
         },
     )
     motivo = serializers.CharField(
-        error_messages={"blank": "Escribe el motivo de la cancelación.", "required": "Escribe el motivo de la cancelación."},
+        max_length=LARGO_MAXIMO_MOTIVO,
+        error_messages={
+            "blank": "Escribe el motivo de la cancelación.",
+            "required": "Escribe el motivo de la cancelación.",
+            "max_length": f"El motivo admite máximo {LARGO_MAXIMO_MOTIVO} caracteres.",
+        },
     )
 
 
@@ -530,7 +553,12 @@ class CancelacionSerializer(serializers.Serializer):
 
 class AnulacionSerializer(serializers.Serializer):
     motivo = serializers.CharField(
-        error_messages={"blank": "Escribe el motivo de la anulación.", "required": "Escribe el motivo de la anulación."},
+        max_length=LARGO_MAXIMO_MOTIVO,
+        error_messages={
+            "blank": "Escribe el motivo de la anulación.",
+            "required": "Escribe el motivo de la anulación.",
+            "max_length": f"El motivo admite máximo {LARGO_MAXIMO_MOTIVO} caracteres.",
+        },
     )
 
 
