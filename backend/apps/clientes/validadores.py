@@ -1,26 +1,31 @@
 import re
+import unicodedata
 
 from rest_framework import serializers
 
 LETRAS = "A-Za-zÁÉÍÓÚÜÑáéíóúüñ"
-PATRON_NOMBRE = re.compile(rf"^[{LETRAS}' -]+$")
-PATRON_RAZON_SOCIAL = re.compile(rf"^[{LETRAS}0-9.,&' -]+$")
-PATRON_CEDULA = re.compile(r"^\d{6,10}$")
-PATRON_NIT = re.compile(r"^(\d{8,10})(?:-(\d))?$")
-PATRON_TELEFONO = re.compile(r"^(3\d{9}|60\d{8})$")
+# Palabras de letras unidas por un solo espacio, guion o apóstrofo: "María-José O'Neill".
+PATRON_NOMBRE = re.compile(rf"^[{LETRAS}]+(?:[' -][{LETRAS}]+)*$")
+PATRON_RAZON_SOCIAL = re.compile(rf"^[{LETRAS}0-9][{LETRAS}0-9.,&' -]*$")
+# [0-9] y no \d: \d también acepta dígitos de otros alfabetos, como "١٢٣".
+PATRON_CEDULA = re.compile(r"^[1-9][0-9]{5,9}$")
+PATRON_NIT = re.compile(r"^([1-9][0-9]{7,9})(?:-([0-9]))?$")
+PATRON_TELEFONO = re.compile(r"^(3[0-9]{9}|60[0-9]{8})$")
 PESOS_NIT = (3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71)
 
 MSG_NOMBRE = "Solo letras, sin números ni símbolos."
 MSG_NOMBRE_CORTO = "Escribe un nombre válido."
 MSG_RAZON_SOCIAL = "La razón social solo admite letras, números y los signos . , & -"
-MSG_CEDULA = "La cédula solo admite números, entre 6 y 10 dígitos."
+MSG_CEDULA = "La cédula solo admite números, entre 6 y 10 dígitos, sin empezar por 0."
 MSG_NIT = "El NIT solo admite números, por ejemplo 900123456-8."
 MSG_NIT_DIGITO = "El dígito de verificación del NIT no es correcto."
 MSG_TELEFONO = "Escribe un celular de 10 dígitos o un fijo que empiece por 60."
+MSG_DOCUMENTO = "Escribe una cédula o un NIT válido, solo con números."
 
 
 def _espacios(valor):
-    return re.sub(r"\s+", " ", valor).strip()
+    # NFC: "José" escrito con la tilde aparte (e + ◌́) queda igual al de un solo carácter.
+    return re.sub(r"\s+", " ", unicodedata.normalize("NFC", valor)).strip()
 
 
 def digito_verificacion_nit(numero):
@@ -73,4 +78,16 @@ def validar_telefono(valor):
         limpio = limpio[2:]
     if not PATRON_TELEFONO.match(limpio):
         raise serializers.ValidationError(MSG_TELEFONO)
+    return limpio
+
+
+def validar_documento(valor):
+    """Cédula o NIT, para quien puede tener cualquiera de los dos (un proveedor)."""
+    limpio = re.sub(r"[\s.]", "", valor)
+    if not limpio:
+        return ""
+    if "-" in limpio:
+        return validar_nit(limpio)
+    if not PATRON_CEDULA.match(limpio):
+        raise serializers.ValidationError(MSG_DOCUMENTO)
     return limpio

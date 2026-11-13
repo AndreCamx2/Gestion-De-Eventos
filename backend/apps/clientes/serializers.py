@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Q
 from rest_framework import serializers
 from rest_framework.utils.serializer_helpers import ReturnDict
 from apps.usuarios.models import Usuario, Rol
@@ -11,6 +12,15 @@ from .models import Cliente, Empresa
 from .validadores import (
     validar_cedula, validar_nit, validar_nombre, validar_razon_social, validar_telefono,
 )
+
+
+def nit_registrado(nit, excepto=None):
+    """El NIT con o sin dígito de verificación es la misma empresa."""
+    numero = nit.split("-")[0]
+    empresas = Empresa.objects.filter(Q(identificacion=numero) | Q(identificacion__startswith=f"{numero}-"))
+    if excepto is not None:
+        empresas = empresas.exclude(pk=excepto.pk)
+    return empresas.exists()
 
 
 class CotizacionResumenSerializer(EstadoEfectivoMixin, serializers.ModelSerializer):
@@ -37,7 +47,19 @@ class ClienteAdminSerializer(serializers.ModelSerializer):
         read_only_fields = ["creado_en"]
         # La unicidad se valida en validate_identificacion, con un mensaje que
         # distingue al cliente inactivo (el validador automático diría solo "duplicado").
-        extra_kwargs = {"identificacion": {"validators": []}}
+        extra_kwargs = {
+            "identificacion": {"validators": []},
+            "observaciones_internas": {"max_length": 2000},
+        }
+
+    def validate_nombre(self, value):
+        return validar_nombre(value)
+
+    def validate_telefono(self, value):
+        return validar_telefono(value)
+
+    def validate_correo(self, value):
+        return value.lower()
 
     def _sitios_permitidos(self):
         """Ids de sitio que puede ver el usuario; None = todos (superusuario).
@@ -84,6 +106,7 @@ class ClienteAdminSerializer(serializers.ModelSerializer):
         # Vacía se guarda como null, nunca como "": dos "" chocarían con el unique (SGDE-91).
         if not value:
             return None
+        value = validar_cedula(value)
         existente = Cliente.objects.filter(identificacion=value)
         if self.instance:
             existente = existente.exclude(pk=self.instance.pk)
@@ -161,14 +184,15 @@ class RegistroPublicoSerializer(serializers.Serializer):
     nombre = serializers.CharField(max_length=150)
     identificacion = serializers.CharField(max_length=30)
     telefono = serializers.CharField(max_length=20, required=False, allow_blank=True)
-    email = serializers.EmailField()
+    # El correo es el usuario de acceso, y Usuario.username admite 150 caracteres.
+    email = serializers.EmailField(max_length=150)
     # Código de la ciudad, ej. "CTG". SGDE-115: un código que no existe da 400 en
     # "ciudad" (antes Ciudad.objects.get() lanzaba DoesNotExist y el API daba 500).
     ciudad = serializers.SlugRelatedField(
         slug_field="codigo", queryset=Ciudad.objects.all(),
         error_messages={"does_not_exist": "La ciudad no es válida.", "invalid": "La ciudad no es válida."},
     )
-    password = serializers.CharField(write_only=True, min_length=8)
+    password = serializers.CharField(write_only=True, min_length=8, max_length=128, trim_whitespace=False)
 
     # Solo si tipo = "juridica"
     razon_social = serializers.CharField(max_length=150, required=False, allow_blank=True)
@@ -187,19 +211,22 @@ class RegistroPublicoSerializer(serializers.Serializer):
     def validate_telefono(self, value):
         return validar_telefono(value)
 
+    def validate_email(self, value):
+        return value.lower()
+
     def validate(self, data):
         # Se juntan todos los errores en una sola respuesta 400, para que el usuario
         # corrija el formulario de una vez.
         errores = {}
         if data["tipo"] == Cliente.JURIDICA and not data.get("razon_social"):
             errores["razon_social"] = "La razón social es obligatoria para clientes jurídicos."
-        if Usuario.objects.filter(username=data["email"]).exists():
+        if Usuario.objects.filter(Q(username__iexact=data["email"]) | Q(email__iexact=data["email"])).exists():
             errores["email"] = "Ya existe una cuenta con este correo."
         # SGDE-115: la identificación repetida se informa en su campo. Antes llegaba
         # al unique de la base y salía el 400 genérico de IntegrityError, sin campo.
         # Natural: Cliente.identificacion. Jurídico: es el NIT, que vive en Empresa.
         if data["tipo"] == Cliente.JURIDICA:
-            if Empresa.objects.filter(identificacion=data["identificacion"]).exists():
+            if nit_registrado(data["identificacion"]):
                 errores["identificacion"] = MSG_NIT_REPETIDO
         elif Cliente.objects.filter(identificacion=data["identificacion"]).exists():
             errores["identificacion"] = MSG_IDENTIFICACION_REPETIDA
@@ -255,3 +282,17 @@ class EmpresaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empresa
         fields = ["id", "razon_social", "identificacion", "contacto", "correo", "ciudad"]
+        # La unicidad se revisa con el NIT ya limpio: "900.123.456" es el mismo que "900123456".
+        extra_kwargs = {"identificacion": {"validators": []}}
+
+    def validate_razon_social(self, value):
+        return validar_razon_social(value)
+
+    def validate_identificacion(self, value):
+        nit = validar_nit(value)
+        if nit_registrado(nit, excepto=self.instance):
+            raise serializers.ValidationError(MSG_NIT_REPETIDO)
+        return nit
+
+    def validate_correo(self, value):
+        return value.lower()
