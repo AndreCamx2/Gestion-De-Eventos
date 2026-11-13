@@ -7,8 +7,6 @@ from apps.usuarios.permissions import EsAdministrador
 
 
 class SitioListCreateView(generics.ListCreateAPIView):
-    """Lista los sitios del usuario (el superusuario, todos) y crea sitios nuevos."""
-
     serializer_class = SitioSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
@@ -25,5 +23,5 @@ class SitioListCreateView(generics.ListCreateAPIView):
 class CiudadListView(generics.ListAPIView):
     queryset = Ciudad.objects.order_by("nombre")
     serializer_class = CiudadSerializer
-    pagination_class = None  # catálogo corto: lista simple
+    pagination_class = None
     permission_classes = [permissions.IsAuthenticated]

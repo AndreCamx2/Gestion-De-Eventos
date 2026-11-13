@@ -13,6 +13,7 @@ import {
   ajustarPersonas,
   avisoOcupacion,
   cantidadInicial,
+  cantidadValida,
   comoLista,
   esPorPersona,
   formDesdeCotizacion,
@@ -32,8 +33,6 @@ import {
 
 const CATALOGOS_VACIOS = { salones: [], conceptos: [], tiposEvento: [] };
 
-// idEditar: el id de una cotización guardada para editarla (PUT .../edicion/); sin él,
-// el formulario arma una nueva. Solo se edita una cotizada: otra da errorCarga "noEditable".
 export function useNuevaCotizacion(idEditar = null) {
   const [catalogos, setCatalogos] = useState(CATALOGOS_VACIOS);
   const [cargando, setCargando] = useState(true);
@@ -52,9 +51,7 @@ export function useNuevaCotizacion(idEditar = null) {
   const [errores, setErrores] = useState(ERRORES_VACIOS);
   const [guardando, setGuardando] = useState(false);
   const [guardada, setGuardada] = useState(null);
-  // Al editar: el detalle tal como llegó (número, estado) para la cabecera.
   const [original, setOriginal] = useState(null);
-  // Otras cotizaciones del salón ese día: null mientras no hay salón y fecha.
   const [ocupacion, setOcupacion] = useState(null);
 
   const busquedaRef = useRef(0);
@@ -220,10 +217,17 @@ export function useNuevaCotizacion(idEditar = null) {
   function agregarConcepto() {
     const concepto = catalogos.conceptos.find((c) => c.id === Number(conceptoElegido));
     if (!concepto) return;
-    setLineas((prev) => [
-      ...prev,
-      { concepto, cantidad: cantidadInicial(concepto, form.cantidad_personas), sigue: esPorPersona(concepto) },
-    ]);
+    const cantidad = cantidadInicial(concepto, form.cantidad_personas);
+    // Un concepto va una sola vez (el API rechaza repetidos): si ya está, se suma a su línea.
+    setLineas((prev) =>
+      prev.some((l) => l.concepto.id === concepto.id)
+        ? prev.map((l) =>
+            l.concepto.id === concepto.id
+              ? { ...l, cantidad: String(cantidadValida(l.cantidad) + cantidadValida(cantidad)), sigue: false }
+              : l,
+          )
+        : [...prev, { concepto, cantidad, sigue: esPorPersona(concepto) }],
+    );
     setConceptoElegido("");
     setErrores((prev) => ({ ...prev, general: null }));
   }

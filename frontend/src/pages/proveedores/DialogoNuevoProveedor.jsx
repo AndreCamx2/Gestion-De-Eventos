@@ -4,12 +4,6 @@ import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 import { Boton, Campo, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import { PROVEEDOR_VACIO, erroresProveedor, payloadProveedor, validarProveedor } from "./proveedores";
 
-// Ventana "Nuevo proveedor": nombre (obligatorio), identificación y contacto.
-// - onCreado(proveedor): se creó; Proveedores.jsx la cierra, agrega la tarjeta y la elige.
-// - onSesionVencida(): 401 aunque apiFetch intentó renovar el token.
-// - sesionVencida / onEntrarDeNuevo(boton): con la sesión vencida, el aviso va
-//   dentro de la ventana, que no se cierra ni pierde lo escrito (SGDE-94). Al volver
-//   a entrar, el foco regresa a "Guardar".
 export default function DialogoNuevoProveedor({ onCreado, onCerrar, onSesionVencida, sesionVencida, onEntrarDeNuevo }) {
   const [form, setForm] = useState(PROVEEDOR_VACIO);
   const [errores, setErrores] = useState({});

@@ -1,19 +1,13 @@
-// Formulario compartido por "Nuevo cliente" y "Editar cliente": mismos campos,
-// misma regla de NIT y misma lectura de errores del API (en formularioCliente.js).
 import { Campo } from "../../components/ui";
 import VerClienteInactivo from "./VerClienteInactivo";
-import { nitDeEmpresa } from "./formularioCliente";
+import { MAX_CORREO, MAX_NOMBRE } from "../../utils/validacionesRegistro";
+import { MAX_FORMA_PAGO, MAX_OBSERVACIONES, nitDeEmpresa } from "./formularioCliente";
 
-// Los <input> usan el componente Campo. Campo solo pinta <input>, así que el
-// <select> y el <textarea> se arman a mano con sus mismas clases (campo,
-// campo__etiqueta, campo__input) para que se vean iguales sin modificar Campo.
-// onVerInactivo(id): si la identificación es de un cliente inactivo, abre ese cliente.
 export default function ClienteForm({ idPrefix, form, errores, empresas, onChange, onNuevaEmpresa, onVerInactivo }) {
   const esJuridica = form.tipo === "juridica";
   const id = (campo) => `${idPrefix}-${campo}`;
   const idError = (campo) => `${id(campo)}-error`;
   const claseCampo = (campo) => ["campo", errores[campo] && "campo--error"].filter(Boolean).join(" ");
-  // Mismos atributos que pone Campo: el lector de pantalla lee el error al enfocar.
   const accesible = (campo, ...otrosIds) => {
     const ids = [errores[campo] && idError(campo), ...otrosIds].filter(Boolean).join(" ");
     return {
@@ -54,6 +48,7 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
         type="text"
         value={form.nombre}
         onChange={onChange}
+        maxLength={MAX_NOMBRE}
         error={errores.nombre}
       />
 
@@ -75,7 +70,6 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
           ))}
         </select>
         {error("empresa")}
-        {/* En jurídica el NIT no se escribe: se lee de la empresa elegida. */}
         {esJuridica && onNuevaEmpresa && (
           <button type="button" className="directorio-form__enlace" onClick={onNuevaEmpresa}>
             + Crear empresa nueva
@@ -100,6 +94,7 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
           type="text"
           value={form.identificacion}
           onChange={onChange}
+          maxLength={13}
           error={errores.identificacion}
         />
       )}
@@ -115,6 +110,7 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
           type="tel"
           value={form.telefono}
           onChange={onChange}
+          maxLength={16}
           error={errores.telefono}
         />
         <Campo
@@ -124,6 +120,7 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
           type="text"
           value={form.forma_pago}
           onChange={onChange}
+          maxLength={MAX_FORMA_PAGO}
           error={errores.forma_pago}
         />
       </div>
@@ -135,6 +132,7 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
         type="email"
         value={form.correo}
         onChange={onChange}
+        maxLength={MAX_CORREO}
         error={errores.correo}
       />
 
@@ -149,6 +147,7 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
           rows="3"
           value={form.observaciones_internas}
           onChange={onChange}
+          maxLength={MAX_OBSERVACIONES}
           {...accesible("observaciones_internas")}
         />
         {error("observaciones_internas")}

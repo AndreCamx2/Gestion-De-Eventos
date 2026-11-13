@@ -4,13 +4,6 @@ import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 import { AvisoError, Boton, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import { textoError } from "../../utils/erroresApi";
 
-// Confirmación "Quitar montaje" (SGDE-88): DELETE /api/salon-montajes/<id>/.
-// Con cotizaciones activas de ese salón y montaje el API da 409, y su mensaje
-// dice cuántas son: se muestra tal cual con AvisoError tipo "conflicto".
-// - salon: el salón; habilitado: { id, nombre, aforo } del montaje.
-// - onQuitado(id): el API respondió; Salones.jsx lo saca de la lista y la cierra.
-// - onSesionVencida(), sesionVencida, onEntrarDeNuevo(boton): aviso dentro de la
-//   ventana (SGDE-94).
 export default function DialogoQuitarMontaje({ salon, habilitado, onQuitado, onCerrar, onSesionVencida, sesionVencida, onEntrarDeNuevo }) {
   const [conflicto, setConflicto] = useState(null);
   const [error, setError] = useState(null);
@@ -18,7 +11,6 @@ export default function DialogoQuitarMontaje({ salon, habilitado, onQuitado, onC
   const confirmarRef = useRef(null);
   const cancelarRef = useRef(null);
 
-  // Con el 409 desaparece "Quitar", que tenía el foco: pasa a "Cerrar".
   useEffect(() => {
     if (conflicto) cancelarRef.current?.focus();
   }, [conflicto]);
@@ -52,7 +44,6 @@ export default function DialogoQuitarMontaje({ salon, habilitado, onQuitado, onC
         {sesionVencida && <AvisoSesionEnVentana onEntrar={() => onEntrarDeNuevo(confirmarRef.current)} />}
         {error && <p className="dialogo__error" role="alert">{error}</p>}
         <div className="dialogo__acciones">
-          {/* "Cancelar" lleva el foco inicial: la opción segura. */}
           <Boton ref={cancelarRef} variante="secundario" data-foco-inicial disabled={guardando} onClick={(e) => cerrarDialogoDe(e.currentTarget)}>
             {conflicto ? "Cerrar" : "Cancelar"}
           </Boton>

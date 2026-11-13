@@ -32,7 +32,6 @@ function textoImpuesto(impuesto) {
   return `${impuesto.nombre} · ${pesos(impuesto.valor)}`;
 }
 
-// Un renglón por tasa, como el desglose del detalle (totalesCotizacion): sin las de 0%.
 function agruparImpuestos(items) {
   const grupos = new Map();
   items.forEach(({ impuesto }) => {
@@ -44,7 +43,6 @@ function agruparImpuestos(items) {
   return [...grupos.entries()].sort((a, b) => b[0] - a[0]).map(([, grupo]) => grupo);
 }
 
-// nivelTitulo: "h1" en la página para imprimir; dentro de una ventana, uno menor.
 export default function CotizacionImprimible({ cotizacion, nivelTitulo: Titulo = "h1" }) {
   const {
     numero, emitidaEn, validaHasta, fechaEvento, personas, tipoEvento,
@@ -52,7 +50,6 @@ export default function CotizacionImprimible({ cotizacion, nivelTitulo: Titulo =
   } = cotizacion;
 
   const resumenImpuestos = agruparImpuestos(items);
-  // Sin número es la vista previa de una cotización que aún no se guarda.
   const titulo = numero ? `Cotización #${String(numero).padStart(3, "0")}` : "Cotización (borrador)";
 
   return (

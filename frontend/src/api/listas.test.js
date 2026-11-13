@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import { simularApi } from "../test/apiFalsa";
 import { MAX_PAGINAS, TAMANO_PAGINA, comoLista, todasLasPaginas } from "./listas";
 
-// Respuesta paginada de DRF: `next` trae una URL (aquí con http://, como puede
-// llegar detrás del proxy de Render) o null en la última página.
 function pagina(results, hayMas) {
   return { count: 999, next: hayMas ? "http://interno/api/x/?page=n" : null, previous: null, results };
 }
@@ -38,7 +36,6 @@ describe("todasLasPaginas (SGDE-116)", () => {
 
     expect((await todasLasPaginas("/clientes/")).map((c) => c.id)).toEqual([10, 11, 20, 21, 30, 31]);
     expect(llamadas.map((l) => paginaPedida(l.search))).toEqual([1, 2, 3]);
-    // Todas las páginas con el mismo tamaño: si no, la 2 no empezaría donde terminó la 1.
     for (const { search } of llamadas) {
       expect(new URLSearchParams(search).get("page_size")).toBe(String(TAMANO_PAGINA));
     }

@@ -3,12 +3,6 @@ import { cancelarCotizacion } from "../../api/cotizaciones";
 import { textoError } from "../../utils/erroresApi";
 import { CANCELACION_VACIA, erroresCancelacion, payloadCancelacion, validarCancelacion } from "./cancelacion";
 
-// Estado de la ventana "Cancelar evento" (SGDE-68). Lo usa useDetalleCotizacion.
-// - onCancelada(cotizacion): el API respondió el detalle ya cancelado.
-// - onRecargar(): tras un 409 la cotización cambió en otro lado; al cerrar se vuelve a pedir.
-// - onSesionVencida(): 401; la ventana muestra el aviso de SGDE-94.
-// El foco: al cerrar sin cancelar vuelve a "Cancelar evento"; al cancelar va al
-// título del panel "Cotización cancelada", que reemplaza al botón.
 export function useCancelacion({ cotizacion, onCancelada, onRecargar, onSesionVencida }) {
   const [abierta, setAbierta] = useState(false);
   const [form, setForm] = useState(CANCELACION_VACIA);

@@ -66,7 +66,6 @@ export function puedeAnular(c) {
   return c.estado === "cotizado" || c.estado === "bloqueado";
 }
 
-// Bloquear: cotizada vigente cuyo evento aún no pasó (el API da 409/400 en otro caso).
 export function puedeBloquear(c, hoy = hoyLocal()) {
   if (c.estado === "bloqueado") return true;
   return c.estado === "cotizado" && !c.vencida && desdeISO(c.fecha_evento) >= hoy;
@@ -116,7 +115,6 @@ export function mensajeVigencia(error) {
 export function resumenCancelacion(c) {
   if (c.estado !== "cancelado") return null;
   return {
-    // Anulada: se descartó sin haberse confirmado (sin garantía ni penalización).
     anulada: !c.garantia && c.penalizacion_pct == null,
     dia: diaCorto(c.cancelado_en),
     por: c.cancelado_por,
@@ -165,15 +163,12 @@ export function porcentajeDelTotal(monto, total) {
   return Math.round((monto / base) * 1000) / 10;
 }
 
-// Garantía mínima (2026-10-27): 30% del total con 5 días o más de anticipación,
-// 100% si el evento es antes. La calcula el backend (garantia_minima del detalle).
 export function textoGarantiaMinima(minima) {
   if (!minima) return null;
   const motivo = minima.porcentaje === "100" ? ": el evento es en menos de 5 días" : "";
   return `Garantía mínima: ${dineroCompleto(Number(minima.monto))} (${minima.porcentaje}% del total${motivo}).`;
 }
 
-// La misma regla del backend, para avisar antes de enviar. `c` es la cotización.
 export function validarAceptacion(form, c) {
   const campos = {};
   if (!form.tipo) campos.tipo = "Elige cómo dejó la garantía el cliente.";

@@ -1,7 +1,5 @@
 import { FILTROS_TIPO } from "./clientes";
 
-// Filtros del directorio: tipo de cliente, búsqueda y "Mostrar inactivos".
-// buscarRef: el campo de búsqueda recibe el foco al quitar los filtros.
 export default function FiltrosClientes({
   filtroTipo,
   onFiltroTipo,

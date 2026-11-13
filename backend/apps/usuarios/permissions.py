@@ -3,12 +3,7 @@ from rest_framework.permissions import BasePermission
 
 
 class EsAdministrador(BasePermission):
-    """
-    Permite el acceso solo a usuarios autenticados con rol "administrador".
-
-    Verifica el rol, no el sitio. El filtro por sitio lo hace cada vista con
-    apps/sitios/acceso.py (SGDE-90).
-    """
+    """Revisa el rol, no el sitio: eso lo hace cada vista con apps/sitios/acceso.py."""
 
     message = "Solo los administradores pueden realizar esta acción."
 
@@ -27,15 +22,6 @@ CODIGO_PROVEEDOR_SIN_VINCULAR = "proveedor_sin_vincular"
 
 
 class EsProveedor(BasePermission):
-    """
-    Permite el acceso solo a usuarios con rol "proveedor" que tienen un Proveedor
-    vinculado (Proveedor.usuario, SGDE-30). Lo usa "Mi stock".
-
-    El 403 responde {"detail": "...", "codigo": "..."} para que el frontend sepa si
-    el usuario no es proveedor o si todavía no lo han vinculado. Va después de
-    IsAuthenticated en permission_classes: sin token, ese da el 401 primero.
-    """
-
     def has_permission(self, request, view):
         usuario = request.user
         if not (usuario and usuario.is_authenticated):
@@ -75,14 +61,6 @@ CODIGO_NO_ES_CLIENTE = "no_es_cliente"
 
 
 class EsCliente(BasePermission):
-    """
-    Permite el acceso solo a usuarios con rol "cliente" que tienen un Cliente
-    vinculado (Cliente.usuario). Lo usa "Mis cotizaciones" (SGDE-126).
-
-    Como EsProveedor, el 403 trae {"detail", "codigo"} para que el frontend sepa
-    si el usuario no es cliente o si todavía no lo han vinculado.
-    """
-
     def has_permission(self, request, view):
         usuario = request.user
         if not (usuario and usuario.is_authenticated):

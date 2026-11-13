@@ -3,11 +3,6 @@ import { estadoMasFuerte } from "../../utils/estadosCotizacion";
 import { numero } from "../../utils/inicioCifras";
 import { diaDeLaSemana, diaYMes, notaCotizacion } from "./calendario";
 
-// Panel del día seleccionado (aside de la maqueta): una tarjeta por salón del filtro,
-// con su estado del día y sus cotizaciones, también las vencidas.
-// - lista: las cotizaciones del día (de los salones del filtro).
-// - onGestionar(salon, boton): abre el DialogoDiaSalon compartido.
-// "Cotizar este día" (maqueta) no está: la pantalla de Nueva cotización aún no existe.
 export default function PanelDia({ dia, salones, lista = [], onGestionar }) {
   return (
     <Tarjeta as="aside" className="calendario-panel" aria-labelledby="calendario-panel-titulo">

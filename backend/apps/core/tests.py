@@ -47,7 +47,6 @@ class SeedDemoTests(TestCase):
         self.assertEqual(Cliente.objects.filter(tipo="natural").count(), 1)
         juridico = Cliente.objects.get(tipo="juridica")
         self.assertIsNotNone(juridico.empresa)
-        # SGDE-30: proveedor_demo entra a Mi stock con el Proveedor Demo y su stock.
         proveedor = Proveedor.objects.get(usuario__username="proveedor_demo")
         self.assertEqual(proveedor.nombre, "Proveedor Demo")
         self.assertEqual(proveedor.stock.count(), 3)
@@ -59,7 +58,6 @@ class SeedDemoTests(TestCase):
         self.assertEqual(conteos(), primero)
 
     def test_juridico_sin_identificacion_y_nit_en_empresa(self):
-        # SGDE-56: el NIT de un jurídico vive en Empresa; Cliente.identificacion queda en null.
         sembrar()
         juridico = Cliente.objects.get(tipo=Cliente.JURIDICA)
         self.assertIsNone(juridico.identificacion)
@@ -75,9 +73,6 @@ class SeedDemoTests(TestCase):
         self.assertEqual(Empresa.objects.count(), 1)
 
     def test_reutiliza_el_juridico_que_ya_tiene_la_empresa_demo(self):
-        # Se busca por tipo + empresa: un jurídico creado antes (con otro nombre) no se duplica.
-        # El jurídico viejo con NIT repetido ya no puede existir: lo limpia la migración
-        # 0007 de clientes y lo impide el constraint (SGDE-91).
         empresa = Empresa.objects.create(
             identificacion=NIT_EMPRESA_DEMO,
             razon_social="Eventos del Caribe S.A.S. (demo)",
@@ -97,7 +92,6 @@ class SeedDemoTests(TestCase):
         self.assertTrue(Usuario.objects.get(username="admin").check_password("clave-de-prueba-9"))
 
     def test_sin_la_variable_admin_recibe_una_contrasena_aleatoria_que_se_muestra_una_vez(self):
-        """SGDE-114: el superusuario ya no tiene una contraseña por defecto escrita en el repo."""
         entorno = {k: v for k, v in __import__("os").environ.items() if k != "SEED_ADMIN_PASSWORD"}
         salida = StringIO()
         with mock.patch.dict("os.environ", entorno, clear=True):

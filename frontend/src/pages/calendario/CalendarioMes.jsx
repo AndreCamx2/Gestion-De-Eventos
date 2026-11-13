@@ -1,14 +1,6 @@
 import { fechaISO } from "../../utils/inicioCifras";
 import { ENCABEZADOS, estadosDelDia, etiquetaDia, nombreEnPildora, pildorasDelDia } from "./calendario";
 
-// Cuadrícula del mes (maqueta Calendario): 7 columnas de lunes a domingo, 42 días.
-// - Cada día es un <button>: Tab llega a él y Enter o Espacio lo seleccionan.
-// - El aria-label dice todo ("20 de noviembre: 2 eventos, confirmado y cotizado");
-//   las píldoras y los puntos son solo visuales (aria-hidden).
-// - En teléfono (calendario.css) las píldoras se cambian por un punto por estado.
-// - porDia: { "AAAA-MM-DD": [cotizaciones] } de los salones del filtro.
-// - onSeleccionar("AAAA-MM-DD").
-
 function Dia({ dia, lista, enMes, esHoy, seleccionado, onSeleccionar }) {
   const { visibles, restantes } = pildorasDelDia(lista);
   const clases = [
@@ -77,7 +69,6 @@ export default function CalendarioMes({ dias, mes, porDia, hoy, seleccion, onSel
   );
 }
 
-// Esqueleto con la forma del mes: 42 casillas con el pulso de Esqueleto (components/ui).
 export function EsqueletoMes() {
   return (
     <div className="calendario-mes calendario-mes--cargando" role="status" aria-busy="true">

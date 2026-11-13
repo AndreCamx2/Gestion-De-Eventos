@@ -1,10 +1,8 @@
-// Datos del formulario de cliente que no son componentes: el formulario vacío,
-// cómo se llena desde un cliente, el NIT de su empresa, la lectura de errores
-// del API y el cuerpo del PATCH. Viven fuera de ClienteForm.jsx porque un .jsx
-// solo exporta componentes (react-refresh, SGDE-55). Los usan ClienteForm.jsx y useClientes.js.
-// Antes se llamaba clienteForm.js: en Windows chocaba con ClienteForm.jsx por la
-// mayúscula (SGDE-97).
 import { erroresDesdeApi as erroresDesdeApiComun } from "../../utils/erroresApi";
+import { validarCedula, validarCorreo, validarNombre, validarTelefono } from "../../utils/validacionesRegistro";
+
+export const MAX_FORMA_PAGO = 50;
+export const MAX_OBSERVACIONES = 2000;
 
 export const FORM_VACIO = {
   tipo: "natural",
@@ -30,8 +28,6 @@ export function formDesdeCliente(c) {
   };
 }
 
-// El NIT de una persona jurídica vive en Empresa.identificacion (igual que en el
-// registro público). Aquí solo se lee de la lista de empresas que ya tiene la pantalla.
 export function nitDeEmpresa(empresas, empresaId) {
   if (!empresaId) return "";
   const emp = empresas.find((e) => e.id === Number(empresaId));
@@ -43,11 +39,7 @@ const CAMPOS = [
   "empresa", "forma_pago", "observaciones_internas",
 ];
 
-// Separa los errores 400 del API usando el clasificador compartido de utils/,
-// con la lista de campos de este formulario.
-// "cliente_inactivo" (SGDE-107) no es un campo: es el id del cliente inactivo que
-// ya tiene esa identificación. Se aparta para que no salga como error general y
-// va en campos.cliente_inactivo, para el botón "Ver el cliente inactivo".
+// "cliente_inactivo" no es un campo: es el id del cliente con esa identificación.
 export function erroresDesdeApi(body) {
   const { cliente_inactivo, ...resto } = body ?? {};
   const { campos, general } = erroresDesdeApiComun(resto, CAMPOS);
@@ -55,9 +47,7 @@ export function erroresDesdeApi(body) {
   return { campos, general };
 }
 
-// Cuerpo del PATCH. En jurídica NO se envía identificacion: el NIT es el de su
-// empresa y el backend deja la del cliente en null (SGDE-87; la base de datos lo
-// exige desde SGDE-91). Al pasar un natural a jurídico, el backend la borra solo.
+// En jurídica no se envía identificación: el NIT es el de su empresa.
 export function payloadEdicion(form) {
   const body = {
     tipo: form.tipo,
@@ -69,9 +59,38 @@ export function payloadEdicion(form) {
     observaciones_internas: form.observaciones_internas,
   };
   if (form.tipo !== "juridica") {
-    // identificacion es única en la BD: vacía se envía null (el backend también
-    // convierte "" en null desde SGDE-91).
+    // null y no "": es única en la base.
     body.identificacion = form.identificacion.trim() || null;
   }
   return body;
+}
+
+// Mismas reglas que ClienteAdminSerializer. La identificación solo es obligatoria al
+// crear un natural: un cliente viejo puede no tenerla.
+export function validarCliente(form, { esCrear }) {
+  const errores = {};
+  const nombre = validarNombre(form.nombre, { conApellido: false });
+  if (nombre) errores.nombre = nombre;
+  if (form.tipo === "natural" && (esCrear || form.identificacion.trim())) {
+    const cedula = validarCedula(form.identificacion);
+    if (cedula) {
+      errores.identificacion = form.identificacion.trim()
+        ? cedula
+        : "La identificación es obligatoria para personas naturales.";
+    }
+  }
+  if (form.tipo === "juridica" && !form.empresa) errores.empresa = "Elige la empresa del cliente.";
+  if (form.telefono.trim()) {
+    const telefono = validarTelefono(form.telefono);
+    if (telefono) errores.telefono = telefono;
+  }
+  if (form.correo.trim()) {
+    const correo = validarCorreo(form.correo);
+    if (correo) errores.correo = correo;
+  }
+  if (form.forma_pago.trim().length > MAX_FORMA_PAGO) errores.forma_pago = `Máximo ${MAX_FORMA_PAGO} caracteres.`;
+  if (form.observaciones_internas.length > MAX_OBSERVACIONES) {
+    errores.observaciones_internas = `Máximo ${MAX_OBSERVACIONES} caracteres.`;
+  }
+  return errores;
 }

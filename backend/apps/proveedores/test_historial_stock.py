@@ -1,9 +1,3 @@
-"""Historial de cambios de cantidad y valor del stock (SGDE-134).
-
-Se registra igual desde /api/stock/<id>/ (administrador) y desde
-/api/mi-stock/<id>/ (proveedor). El 401/403 de /api/stock/<id>/historial/ está
-en ENDPOINTS_ADMIN_DETALLE (apps/usuarios/tests.py).
-"""
 from decimal import Decimal
 
 from rest_framework import status
@@ -48,7 +42,6 @@ class HistorialStockTests(APITestCase):
         self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
         h = HistorialStockElemento.objects.get()
         self.assertEqual((h.valor_anterior, h.valor_nuevo), (Decimal("8000.00"), Decimal("10000.00")))
-        # La cantidad no cambió, pero queda en la fila para leerla completa.
         self.assertEqual((h.cantidad_anterior, h.cantidad_nueva), (50, 50))
         self.assertEqual(h.modificado_por, self.admin)
         self.assertEqual(h.elemento, self.elemento)

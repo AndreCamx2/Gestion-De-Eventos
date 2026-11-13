@@ -1,5 +1,3 @@
-// Selector de vista de Proveedores (SGDE-71): "Stock por proveedor" o "Comparar
-// precios". Botones con aria-pressed, como el filtro de tipo de Clientes.
 const VISTAS = [
   { valor: "stock", etiqueta: "Stock por proveedor" },
   { valor: "comparar", etiqueta: "Comparar precios" },

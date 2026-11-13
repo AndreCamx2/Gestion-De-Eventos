@@ -1,11 +1,6 @@
 import { TablaContenedor } from "../../components/ui";
 import { claseImpuesto, etiquetaImpuesto, formatCOP, precioConImpuesto } from "./conceptos";
 
-// Tabla de conceptos. Al pulsar una fila (o su botón) se elige el concepto que
-// muestra el panel.
-// - seleccionadoId: id del concepto elegido (fila resaltada).
-// - mostrarSitio: con varios sitios y sin filtro, cada fila dice de qué sitio es.
-// - nombreSitio(id): nombre del sitio para mostrar.
 export default function ConceptosTabla({ conceptos, seleccionadoId, mostrarSitio, nombreSitio, onElegir }) {
   return (
     <TablaContenedor etiqueta="Listado de conceptos" className="conceptos-tabla-caja">

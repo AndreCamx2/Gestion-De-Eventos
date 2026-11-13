@@ -18,8 +18,6 @@ def salon_montajes_del_usuario(usuario):
 
 
 class SalonListCreateView(generics.ListCreateAPIView):
-    """Salones de los sitios del usuario: solo activos, salvo ?incluir_inactivos=true (SGDE-99)."""
-
     serializer_class = SalonSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
@@ -31,13 +29,6 @@ class SalonListCreateView(generics.ListCreateAPIView):
 
 
 class SalonDetailView(generics.RetrieveUpdateAPIView):
-    """Ver y editar un salón (nombre, medidas, foto) y darlo de baja o reactivarlo.
-
-    El sitio no cambia. Un salón de otro sitio da 404. El detalle incluye los
-    inactivos, para poder reactivarlos. Sin PUT ni DELETE: la baja es lógica,
-    con PATCH {"activo": false} (SGDE-99).
-    """
-
     serializer_class = SalonSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
     http_method_names = ["get", "patch", "head", "options"]
@@ -46,8 +37,7 @@ class SalonDetailView(generics.RetrieveUpdateAPIView):
         return salones_del_usuario(self.request.user)
 
     def update(self, request, *args, **kwargs):
-        # El Salón bloqueado, como al crear una cotización (SGDE-100): contar las activas
-        # y dar de baja no se cruza con una cotización que se está creando en él.
+        # Mismo bloqueo que al crear una cotización: la baja no se cruza con una en curso.
         with transaction.atomic():
             Salon.objects.select_for_update().get(pk=self.get_object().pk)
             return super().update(request, *args, **kwargs)
@@ -65,7 +55,6 @@ class SalonDetailView(generics.RetrieveUpdateAPIView):
 
 
 class MontajeListCreateView(generics.ListCreateAPIView):
-    # Catálogo compartido por todos los sitios (no tiene sitio).
     queryset = Montaje.objects.all()
     serializer_class = MontajeSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
@@ -84,12 +73,6 @@ def texto_cotizaciones_activas(cantidad):
 
 
 class SalonMontajeDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Ver, editar (aforo y foto) o quitar un montaje habilitado en un salón.
-
-    Quitarlo da 409 si hay cotizaciones activas con ese salón y montaje
-    (CotizacionQuerySet.activas). Uno de otro sitio da 404.
-    """
-
     serializer_class = SalonMontajeSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
     http_method_names = ["get", "patch", "delete", "head", "options"]
@@ -98,9 +81,7 @@ class SalonMontajeDetailView(generics.RetrieveUpdateDestroyAPIView):
         return salon_montajes_del_usuario(self.request.user)
 
     def bloquear_filas(self):
-        """Bloquea el Salón y el montaje habilitado, en el mismo orden que la creación de
-        cotizaciones (SGDE-100): así contar las activas y quitar o editar no se cruza
-        con una cotización que se está creando. Va dentro de transaction.atomic()."""
+        """Mismo orden de bloqueo que al crear una cotización, para no cruzarse con una en curso."""
         habilitado = self.get_object()
         Salon.objects.select_for_update().get(pk=habilitado.salon_id)
         return SalonMontaje.objects.select_for_update().get(pk=habilitado.pk)

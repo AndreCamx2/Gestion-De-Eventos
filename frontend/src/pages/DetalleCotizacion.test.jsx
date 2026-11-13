@@ -86,7 +86,6 @@ describe("Cancelar un evento (SGDE-68)", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Cancelar evento" })).not.toBeInTheDocument();
     expect(llamadas.find((l) => l.metodo === "POST").cuerpo).toEqual({ penalizacion_pct: "20.00", motivo: "El cliente desistió" });
-    // Los movimientos se vuelven a pedir para mostrar la cancelación.
     expect(llamadas.filter((l) => l.ruta === "/cotizaciones/7/movimientos/")).toHaveLength(2);
   });
 
@@ -106,15 +105,12 @@ describe("Cancelar un evento (SGDE-68)", () => {
     await usuario.type(within(ventana).getByLabelText("Motivo"), "Duplicada");
     await usuario.click(within(ventana).getByRole("button", { name: "Cancelar evento" }));
     expect(await within(ventana).findByText("Solo se puede cancelar una cotización confirmada.")).toBeInTheDocument();
-    // La X también se llama "Cerrar": se busca el botón por su texto.
     expect(within(ventana).getByText("Cerrar", { selector: "button" })).toHaveFocus();
   });
 });
 
 describe("Vista imprimible (SGDE-70)", () => {
   it("ofrece la cotización imprimible en la misma pestaña", async () => {
-    // Otra pestaña copiaría la sesión, y la rotación del token (SGDE-92) dejaría
-    // sin sesión a una de las dos al renovar.
     abrirDetalle({ "GET /cotizaciones/7/": [200, BASE] });
     const enlace = await screen.findByRole("link", { name: "Imprimir o PDF" });
 

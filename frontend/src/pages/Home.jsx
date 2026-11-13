@@ -10,8 +10,6 @@ import Saludo from "./inicio/Saludo";
 import { useInicio } from "./inicio/useInicio";
 import "../styles/home.css";
 
-// Inicio (SGDE-77). Las piezas viven en pages/inicio/ (SGDE-103): la carga de
-// datos en useInicio.js y cada bloque en su archivo.
 export default function Home() {
   const {
     hoy,
@@ -77,7 +75,6 @@ export default function Home() {
   );
 }
 
-// Inicio del administrador: saludo con el resumen, agenda y cifras del lateral.
 function InicioAdministrador({
   hoy,
   nombre,

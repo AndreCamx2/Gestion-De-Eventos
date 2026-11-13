@@ -5,11 +5,8 @@ import BarraInferior from "./BarraInferior";
 import { piezasBarraInferior } from "./piezasBarraInferior";
 import "../styles/dashboard-layout.css";
 
-// Única fuente de las pestañas de la barra superior.
-// El orden sigue la maqueta de Piedra viva.
 const NAV_ITEMS = [
-  // Los roles de cada pestaña salen de rutasPorRol.js (SGDE-54), la misma lista que usa
-  // RoleRoute. Es solo experiencia de usuario; la seguridad real es el 403 del API.
+  // Los roles salen de rutasPorRol.js. La seguridad real es el 403 del API.
   { to: "/inicio", label: "Inicio", roles: ROLES_POR_RUTA["/inicio"] },
   { to: "/cotizaciones", label: "Cotizaciones", roles: ROLES_POR_RUTA["/cotizaciones"] },
   { to: "/calendario", label: "Calendario", roles: ROLES_POR_RUTA["/calendario"] },
@@ -41,7 +38,6 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
   const pestanasRef = useRef(null);
   const location = useLocation();
 
-  // Cierra el menú del perfil al hacer clic afuera.
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -52,7 +48,6 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Con el menú abierto, Escape lo cierra y devuelve el foco al avatar.
   useEffect(() => {
     if (!menuOpen) return;
     function handleKeyDown(event) {
@@ -65,9 +60,7 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [menuOpen]);
 
-  // En teléfono las pestañas se desplazan en horizontal: al cambiar de ruta,
-  // se mueve esa fila (sin animación) para que la pestaña activa quede a la vista.
-  // No se usa scrollIntoView porque también movería la página en vertical.
+  // Sin scrollIntoView: también movería la página en vertical.
   useEffect(() => {
     const fila = pestanasRef.current;
     const activa = fila?.querySelector('[aria-current="page"]');
@@ -83,8 +76,6 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
   }, [location.pathname]);
 
   const visibleItems = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(user.role));
-  // En el teléfono, si el rol tiene más de un destino, la navegación pasa a la barra
-  // inferior (SGDE-102) y las pestañas de arriba se ocultan (dashboard-layout.css).
   const piezasBarra = piezasBarraInferior(visibleItems, user.role);
 
   return (
@@ -143,8 +134,6 @@ export default function DashboardLayout({ user = { name: "Usuario", role: "clien
       </header>
 
       <main className="panel__contenido">
-        {/* Aquí se inserta la pantalla activa: Home, Cotizaciones, Salones, etc.
-            Cada pantalla trae su único <h1> (CabeceraPagina o el saludo del Inicio). */}
         <Outlet />
       </main>
 

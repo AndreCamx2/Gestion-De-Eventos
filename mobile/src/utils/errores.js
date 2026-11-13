@@ -7,9 +7,6 @@ const NOMBRES = {
   valor: "Valor",
 };
 
-// Convierte un error del API en { general, campos } para mostrarlo en pantalla.
-// - campos: {campo: "mensaje"} para los 400 con errores por campo.
-// - general: un texto para todo lo demás.
 export function mensajeDeError(error) {
   if (error instanceof ErrorRed) {
     return {
@@ -36,7 +33,6 @@ export function mensajeDeError(error) {
   }
   if (cuerpo.detail) return { general: String(cuerpo.detail), campos: {} };
 
-  // 400 con errores por campo: {"cantidad": ["..."], "non_field_errors": ["..."]}
   const campos = {};
   const generales = [];
   for (const [campo, mensajes] of Object.entries(cuerpo)) {

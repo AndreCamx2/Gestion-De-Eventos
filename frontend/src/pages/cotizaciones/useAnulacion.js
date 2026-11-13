@@ -1,13 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { anularCotizacion } from "../../api/cotizaciones";
 import { textoError } from "../../utils/erroresApi";
+import { MAX_MOTIVO } from "./cancelacion";
 
-// Estado de la ventana "Anular cotización": descarta una cotizada o bloqueada que el
-// cliente no tomó. Mismo contrato que useCancelacion (SGDE-68):
-// - onAnulada(cotizacion): el API respondió el detalle ya cancelado.
-// - onRecargar(): tras un 409 la cotización cambió en otro lado; al cerrar se vuelve a pedir.
-// - onSesionVencida(): 401; la ventana muestra el aviso de SGDE-94.
-// El foco: al cerrar sin anular vuelve al botón; al anular, al título del panel cancelado.
 export function useAnulacion({ cotizacion, onAnulada, onRecargar, onSesionVencida }) {
   const [abierta, setAbierta] = useState(false);
   const [motivo, setMotivo] = useState("");
@@ -57,6 +52,10 @@ export function useAnulacion({ cotizacion, onAnulada, onRecargar, onSesionVencid
     setError(null);
     if (!motivo.trim()) {
       setErrorMotivo("Escribe el motivo de la anulación.");
+      return;
+    }
+    if (motivo.trim().length > MAX_MOTIVO) {
+      setErrorMotivo(`El motivo admite máximo ${MAX_MOTIVO} caracteres.`);
       return;
     }
 

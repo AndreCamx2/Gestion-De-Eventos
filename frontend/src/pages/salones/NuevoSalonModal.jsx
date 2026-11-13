@@ -7,13 +7,6 @@ import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 
 const CAMPOS = ["sitio", "nombre", "ancho", "altura", "foto_url"];
 
-// "Nuevo salón": POST /api/salones/ con sitio, nombre, ancho, altura y foto_url.
-// La foto es una URL (el API guarda URLs, nunca archivos).
-// - sitios: lista de /api/sitios/ para el select.
-// - onCreado(salon): recibe el salón que devolvió el API.
-// - onSesionVencida(): 401 aunque se intentó renovar el token.
-// - sesionVencida / onEntrarDeNuevo(evento): con la sesión vencida se muestra el
-//   aviso dentro de la ventana; la ventana no se cierra y conserva lo escrito.
 export default function NuevoSalonModal({
   sitios,
   onCreado,
@@ -22,7 +15,6 @@ export default function NuevoSalonModal({
   sesionVencida,
   onEntrarDeNuevo,
 }) {
-  // Con un solo sitio no hay nada que elegir: viene marcado.
   const [form, setForm] = useState(() => ({
     sitio: sitios.length === 1 ? String(sitios[0].id) : "",
     nombre: "",
@@ -56,8 +48,6 @@ export default function NuevoSalonModal({
       onCreado(creado);
     } catch (err) {
       if (err.status === 400 && err.body && typeof err.body === "object") {
-        // La regla "nombre único por sitio" llega como non_field_errors, no en
-        // "nombre": se muestra debajo del nombre, que es lo que hay que cambiar.
         const { non_field_errors, ...porCampo } = err.body;
         const { campos, general } = erroresDesdeApi(porCampo, CAMPOS);
         if (non_field_errors) campos.nombre = "Ya existe un salón con ese nombre en este venue.";
@@ -82,7 +72,6 @@ export default function NuevoSalonModal({
   return (
     <Dialogo idTitulo="nuevo-salon-titulo" titulo="Nuevo salón" bloqueado={guardando} onCerrar={onCerrar}>
       <form className="dialogo__form" onSubmit={handleSubmit} noValidate>
-        {/* Campo solo pinta <input>: el select usa sus mismas clases, como en ClienteForm. */}
         <div className={["campo", errores.sitio && "campo--error"].filter(Boolean).join(" ")}>
           <label className="campo__etiqueta" htmlFor={idSitio}>Venue</label>
           <select

@@ -1,8 +1,6 @@
 import { AvisoError } from "../../components/ui";
 
-// Error de un bloque del Inicio. Usa siempre el aspecto "servidor" de AvisoError:
-// el tipo "permiso" trae "Volver al inicio", que no tiene sentido estando aquí.
-// Solo los errores del servidor ofrecen "Reintentar".
+// Siempre "servidor": el de "permiso" trae "Volver al inicio", y ya se está ahí.
 export function AvisoBloque({ error, texto, onReintentar, nivel = "h3" }) {
   if (error === "sesion") {
     return (
@@ -25,8 +23,7 @@ export function AvisoBloque({ error, texto, onReintentar, nivel = "h3" }) {
   return <AvisoError nivel={nivel} texto={texto} onReintentar={onReintentar} />;
 }
 
-// Línea corta para los bloques que dependen de una petición que ya muestra su
-// AvisoError en otra parte (así no se repite el mismo aviso tres veces).
+// Para no repetir el mismo aviso en cada bloque que depende de esa petición.
 export function SinDatos({ children }) {
   return <p className="inicio-cifra__sin-datos">{children}</p>;
 }

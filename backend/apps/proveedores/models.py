@@ -7,7 +7,6 @@ class Proveedor(models.Model):
     identificacion = models.CharField(max_length=30, blank=True, db_index=True)
     contacto = models.CharField(max_length=120, blank=True)
     # Usuario con rol "proveedor" que administra este stock desde "Mi stock" (SGDE-30).
-    # Opcional: el administrador también puede llevar el stock por él.
     usuario = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         null=True,
@@ -36,11 +35,6 @@ class StockElemento(models.Model):
         return f"{self.nombre_elemento} - {self.proveedor.nombre}"
 
 class HistorialStockElemento(models.Model):
-    """Un cambio de cantidad o valor de un elemento de stock (SGDE-134).
-
-    Guarda los dos campos antes y después, aunque solo cambie uno.
-    """
-
     elemento = models.ForeignKey(StockElemento, on_delete=models.CASCADE, related_name="historial")
     cantidad_anterior = models.PositiveIntegerField()
     cantidad_nueva = models.PositiveIntegerField()

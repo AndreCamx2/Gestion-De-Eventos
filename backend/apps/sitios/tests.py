@@ -89,12 +89,11 @@ class MultiSitioBaseTest(APITestCase):
     def payload_cotizacion(self, salon, concepto):
         return {
             "cliente": self.cliente.pk, "salon": salon.pk, "montaje": self.montaje.pk,
-            "tipo_evento": self.tipo_evento.pk, 
+            "tipo_evento": self.tipo_evento.pk,
             "fecha_evento": str(timezone.localdate() + timedelta(days=40)), "cantidad_personas": 10,
             "items": [{"concepto": concepto.pk, "cantidad": 1}],
         }
     def listas(self, d):
-        """(url, ids esperados de un sitio) para cada lista filtrada por sitio."""
         return [
             ("/api/sitios/", {d["sitio"].pk}),
             ("/api/salones/", {d["salon"].pk}),
@@ -147,8 +146,6 @@ class ListasPorSitioTests(MultiSitioBaseTest):
 
 
 class DetallesDeOtroSitioTests(MultiSitioBaseTest):
-    """Un id de otro sitio da 404 (no 403): no se revela que existe."""
-
     def setUp(self):
         self.client.force_authenticate(user=self.admin_a)
 
@@ -180,7 +177,6 @@ class DetallesDeOtroSitioTests(MultiSitioBaseTest):
         self.assertEqual(cotizacion.validez_oferta, timezone.localdate() + timedelta(days=10))
 
     def test_salones_y_montajes_habilitados_de_otro_sitio_dan_404(self):
-        # SGDE-88: detalle, edición y borrado.
         salon, habilitado = self.b["salon"], self.b["salon_montaje"]
         salon_url, habilitado_url = f"/api/salones/{salon.pk}/", f"/api/salon-montajes/{habilitado.pk}/"
         for metodo, url, datos in (
@@ -200,7 +196,6 @@ class DetallesDeOtroSitioTests(MultiSitioBaseTest):
         self.assertEqual(habilitado.aforo, 100)
 
     def test_bloquear_o_liberar_una_cotizacion_de_otro_sitio_da_404(self):
-        # SEG-010: la ruta vieja /api/rack/bloqueos/ sí lo permitía.
         cotizacion = self.b["cotizacion"]
         url = f"/api/cotizaciones/{cotizacion.pk}/bloqueo/"
         hasta = (timezone.now() + timedelta(days=1)).isoformat()
@@ -227,7 +222,6 @@ class DetallesDeOtroSitioTests(MultiSitioBaseTest):
         self.assertEqual(cotizacion.estado, "confirmado")
 
     def test_movimientos_de_otro_sitio_dan_404_y_su_salon_da_lista_vacia(self):
-        # SGDE-62
         self.assertEqual(
             self.client.get(f"/api/cotizaciones/{self.b['cotizacion'].pk}/movimientos/").status_code,
             status.HTTP_404_NOT_FOUND,
@@ -251,8 +245,6 @@ class DetallesDeOtroSitioTests(MultiSitioBaseTest):
 
 
 class CrearEnOtroSitioTests(MultiSitioBaseTest):
-    """Crear o editar apuntando a un sitio, salón o concepto ajeno da 400."""
-
     def setUp(self):
         self.client.force_authenticate(user=self.admin_a)
 
@@ -302,7 +294,6 @@ class CrearEnOtroSitioTests(MultiSitioBaseTest):
             "/api/cotizaciones/", self.payload_cotizacion(self.a["salon"], self.b["concepto"]), format="json"
         )
         self.assert_400_en(r, "items")
-        # Una posición por item, como las demás reglas de la cotización.
         self.assertIn("concepto", r.json()["items"][0])
         self.assertEqual(Cotizacion.objects.count(), antes)
 
@@ -328,8 +319,6 @@ class SitiosTests(MultiSitioBaseTest):
 
 
 class ClientesCompartidosTests(MultiSitioBaseTest):
-    """El cliente es compartido; sus cotizaciones anidadas, no."""
-
     def cotizaciones_del_cliente(self, respuesta):
         return {c["id"] for c in respuesta.json()["cotizaciones"]}
 
@@ -375,14 +364,11 @@ class UsuariosPorSitioTests(MultiSitioBaseTest):
         self.client.force_authenticate(user=self.admin_a)
         self.assertEqual(self.usernames(), {
             "admin_a@test.com", "companero_a@test.com", "ambos@test.com",
-            # Sin sitios: visibles para poder gestionarlos (decisión de SGDE-90).
-            # Los superusuarios no aparecen nunca (ver la prueba siguiente).
             "proveedor_libre@test.com", "sin_sitios@test.com",
         })
         self.assertEqual(self.client.get(f"/api/usuarios/{self.admin_b.pk}/").status_code, status.HTTP_404_NOT_FOUND)
 
     def test_administrador_nunca_ve_ni_toca_a_un_superusuario(self):
-        """Con o sin sitios en común: lista sin superusuarios y su detalle da 404 en GET, PATCH y DELETE."""
         self.client.force_authenticate(user=self.admin_a)
         visibles = self.usernames()
         for superusuario in (self.superusuario, self.super_con_sitio_a):
@@ -404,7 +390,6 @@ class UsuariosPorSitioTests(MultiSitioBaseTest):
                 self.assertEqual(superusuario.rol.codigo, "administrador")
                 self.assertEqual(set(superusuario.sitios.values_list("pk", flat=True)), sitios_antes)
 
-        # La lista con ?incluir_inactivos tampoco los muestra.
         r = self.client.get("/api/usuarios/?incluir_inactivos=true")
         self.assertFalse({"super@test.com", "super_a@test.com"} & {u["username"] for u in r.json()["results"]})
 
@@ -424,7 +409,6 @@ class UsuariosPorSitioTests(MultiSitioBaseTest):
                 self.assertIn("sitios", r.json())
         self.assertFalse(Usuario.objects.filter(username="nuevo@test.com").exists())
 
-        # Ni siquiera a sí mismo: así no se salta el filtro.
         r = self.client.patch(f"/api/usuarios/{self.admin_a.pk}/", {"sitios": [self.b["sitio"].pk]}, format="json")
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(set(self.admin_a.sitios.all()), {self.a["sitio"]})
@@ -445,8 +429,6 @@ class UsuariosPorSitioTests(MultiSitioBaseTest):
 
 
 class RutaDeBloqueosRetiradaTests(MultiSitioBaseTest):
-    """SEG-010: /api/rack/bloqueos/ veía y bloqueaba cotizaciones de otros sitios. Se retiró."""
-
     def test_la_ruta_ya_no_existe_y_no_bloquea_nada(self):
         self.client.force_authenticate(user=self.admin_a)
         url = "/api/rack/bloqueos/"

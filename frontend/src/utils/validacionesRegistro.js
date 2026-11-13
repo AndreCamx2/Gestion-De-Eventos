@@ -1,18 +1,20 @@
 const LETRAS = "A-Za-zÁÉÍÓÚÜÑáéíóúüñ";
-const PATRON_NOMBRE = new RegExp(`^[${LETRAS}' -]+$`);
-const PATRON_RAZON_SOCIAL = new RegExp(`^[${LETRAS}0-9.,&' -]+$`);
+// Las mismas reglas de backend/apps/clientes/validadores.py.
+const PATRON_NOMBRE = new RegExp(`^[${LETRAS}]+(?:[' -][${LETRAS}]+)*$`);
+const PATRON_RAZON_SOCIAL = new RegExp(`^[${LETRAS}0-9][${LETRAS}0-9.,&' -]*$`);
 const SOLO_LETRAS = new RegExp(`[^${LETRAS}]`, "g");
-const PATRON_CEDULA = /^\d{6,10}$/;
-const PATRON_NIT = /^(\d{8,10})(?:-(\d))?$/;
+const PATRON_CEDULA = /^[1-9]\d{5,9}$/;
+const PATRON_NIT = /^([1-9]\d{7,9})(?:-(\d))?$/;
 const PATRON_TELEFONO = /^(3\d{9}|60\d{8})$/;
 const PATRON_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PESOS_NIT = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
 
 export const MAX_NOMBRE = 150;
-export const MAX_CORREO = 254;
+// El correo es el usuario de acceso, y el usuario admite 150 caracteres.
+export const MAX_CORREO = 150;
 export const MAX_PASSWORD = 128;
 
-export const quitarEspacios = (valor) => valor.replace(/\s+/g, " ").trim();
+export const quitarEspacios = (valor) => valor.normalize("NFC").replace(/\s+/g, " ").trim();
 
 export const limpiarDocumento = (valor) => valor.replace(/[\s.]/g, "");
 
@@ -29,20 +31,20 @@ export function digitoVerificacionNit(numero) {
   return resto < 2 ? resto : 11 - resto;
 }
 
-export function validarNombre(valor) {
+export function validarNombre(valor, { conApellido = true } = {}) {
   const limpio = quitarEspacios(valor);
   if (!limpio) return "Este campo es obligatorio.";
+  if (limpio.length > MAX_NOMBRE) return `Máximo ${MAX_NOMBRE} caracteres.`;
   if (!PATRON_NOMBRE.test(limpio)) return "Solo letras, sin números ni símbolos.";
   if (limpio.replace(SOLO_LETRAS, "").length < 2) return "Escribe un nombre válido.";
-  if (limpio.split(" ").filter((parte) => parte.replace(SOLO_LETRAS, "").length > 0).length < 2) {
-    return "Escribe nombre y apellido.";
-  }
+  if (conApellido && limpio.split(" ").length < 2) return "Escribe nombre y apellido.";
   return null;
 }
 
 export function validarRazonSocial(valor) {
   const limpio = quitarEspacios(valor);
   if (!limpio) return "Este campo es obligatorio.";
+  if (limpio.length > MAX_NOMBRE) return `Máximo ${MAX_NOMBRE} caracteres.`;
   if (limpio.length < 3 || !PATRON_RAZON_SOCIAL.test(limpio)) {
     return "Solo letras, números y los signos . , & -";
   }
@@ -52,7 +54,16 @@ export function validarRazonSocial(valor) {
 export function validarCedula(valor) {
   const limpio = limpiarDocumento(valor);
   if (!limpio) return "Este campo es obligatorio.";
-  if (!PATRON_CEDULA.test(limpio)) return "Solo números, entre 6 y 10 dígitos.";
+  if (!PATRON_CEDULA.test(limpio)) return "Solo números, entre 6 y 10 dígitos, sin empezar por 0.";
+  return null;
+}
+
+// Cédula o NIT, para quien puede tener cualquiera de los dos (un proveedor).
+export function validarDocumento(valor) {
+  const limpio = limpiarDocumento(valor);
+  if (!limpio) return "Este campo es obligatorio.";
+  if (limpio.includes("-")) return validarNit(limpio);
+  if (!PATRON_CEDULA.test(limpio)) return "Escribe una cédula o un NIT válido, solo con números.";
   return null;
 }
 

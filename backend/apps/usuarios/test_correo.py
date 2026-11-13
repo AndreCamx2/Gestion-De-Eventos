@@ -1,4 +1,3 @@
-"""Configuración segura del correo y envío fuera de la petición (SGDE-96)."""
 import os
 import subprocess
 import sys
@@ -38,8 +37,6 @@ class CorreoSinConfigurarTests(SimpleTestCase):
 
 
 class ValorPorDefectoTests(SimpleTestCase):
-    """El valor por defecto se calcula al importar settings.py: se revisa en otro proceso."""
-
     def backend_con(self, debug):
         entorno = {k: v for k, v in os.environ.items() if k != "EMAIL_BACKEND"}
         entorno.update(DEBUG=debug, SECRET_KEY="solo-para-la-prueba", DJANGO_SETTINGS_MODULE="config.settings")

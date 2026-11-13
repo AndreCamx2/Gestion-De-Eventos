@@ -4,7 +4,6 @@ import BotonSalir from "../componentes/BotonSalir";
 import { ProveedorSesion } from "../sesion/Sesion";
 import { colores } from "../tema";
 
-// Navegación de la app (Expo Router): cada archivo de src/app/ es una pantalla.
 export default function Layout() {
   return (
     <ProveedorSesion>

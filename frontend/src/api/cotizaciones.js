@@ -16,10 +16,6 @@ export async function getCotizaciones({
     return todasLasPaginas(`/cotizaciones/${query ? `?${query}` : ""}`);
 }
 
-// POST /api/cotizaciones/<id>/bloqueo/ { bloqueo_hasta: ISO con zona } → detalle (SGDE-40).
-// 409 { detail }: no está cotizada, está vencida, el salón está dado de baja, o la
-// fecha ya está confirmada o bloqueada por otra. 400 { bloqueo_hasta: [...] }:
-// en el pasado o después del día del evento.
 export function bloquearCotizacion(id, bloqueoHasta) {
     return apiFetch(`/cotizaciones/${id}/bloqueo/`, {
         method: "POST",
@@ -27,8 +23,6 @@ export function bloquearCotizacion(id, bloqueoHasta) {
     });
 }
 
-// DELETE /api/cotizaciones/<id>/bloqueo/ → detalle, de vuelta en "cotizado".
-// 409 si no está bloqueada.
 export function liberarBloqueo(id) {
     return apiFetch(`/cotizaciones/${id}/bloqueo/`, { method: "DELETE" });
 }
@@ -58,8 +52,6 @@ export function registrarAceptacion(id, { tipo, monto }) {
     });
 }
 
-// Cancela un evento confirmado (SGDE-68). El API recibe el porcentaje (0 a 100) y
-// calcula el monto retenido; responde el detalle ya cancelado o 409 si no estaba confirmado.
 export function cancelarCotizacion(id, { penalizacionPct, motivo }) {
     return apiFetch(`/cotizaciones/${id}/cancelacion/`, {
         method: "POST",
@@ -67,8 +59,6 @@ export function cancelarCotizacion(id, { penalizacionPct, motivo }) {
     });
 }
 
-// Anula una cotización que no se confirmó (cotizada o bloqueada): queda cancelada sin
-// penalización. 409 si ya está confirmada o cancelada; 400 { motivo } si falta el motivo.
 export function anularCotizacion(id, motivo) {
     return apiFetch(`/cotizaciones/${id}/anulacion/`, {
         method: "POST",
@@ -76,9 +66,6 @@ export function anularCotizacion(id, motivo) {
     });
 }
 
-// PUT con el mismo cuerpo que crearCotizacion: reemplaza datos y conceptos de una
-// cotización cotizada. Los conceptos que ya estaban conservan su precio. 409 si no
-// está cotizada (una bloqueada se libera primero); 400 con los mismos campos que crear.
 export function editarCotizacion(id, datos) {
     return apiFetch(`/cotizaciones/${id}/edicion/`, {
         method: "PUT",

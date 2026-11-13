@@ -1,4 +1,3 @@
-"""SGDE-115: el registro público responde 400 en el campo correcto, nunca 500 ni el error genérico."""
 from rest_framework import status
 from rest_framework.test import APITestCase
 

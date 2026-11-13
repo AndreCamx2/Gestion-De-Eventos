@@ -1,11 +1,7 @@
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 
-// Dónde se guardan los tokens JWT.
-// - Celular (Android/iOS): expo-secure-store, cifrado por el sistema. La sesión
-//   sobrevive a cerrar la app hasta que vence el refresh (12 h, SGDE-86).
-// - Navegador (npx expo start --web, solo para probar): SecureStore no existe en
-//   web, así que se usa sessionStorage, igual que el frontend web.
+// En el celular, SecureStore. En web (solo para probar) no existe: sessionStorage.
 const enWeb = Platform.OS === "web";
 
 export const CLAVES = { access: "sgde_access", refresh: "sgde_refresh" };

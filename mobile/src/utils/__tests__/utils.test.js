@@ -8,7 +8,6 @@ import { ErrorApi, ErrorRed } from "../../api/cliente";
 
 describe("fechas en hora de Colombia", () => {
   it("hoyISO usa la hora de Colombia, no la UTC", () => {
-    // 18 oct 2026, 03:00 UTC = 17 oct, 10:00 p. m. en Colombia.
     expect(hoyISO(Date.parse("2026-10-18T03:00:00Z"))).toBe("2026-10-17");
   });
 
@@ -97,6 +96,14 @@ describe("validarStock (SGDE-98)", () => {
 
   it("rechaza negativos, decimales en la cantidad y nombre vacío", () => {
     const { errores } = validarStock({ nombreElemento: " ", cantidad: "1.5", valor: "-3" }, { conNombre: true });
+    expect(Object.keys(errores).sort()).toEqual(["cantidad", "nombre_elemento", "valor"]);
+  });
+
+  it("pone topes al nombre, la cantidad y el valor como el backend", () => {
+    const { errores } = validarStock(
+      { nombreElemento: "a".repeat(121), cantidad: "1000001", valor: "12345678901" },
+      { conNombre: true },
+    );
     expect(Object.keys(errores).sort()).toEqual(["cantidad", "nombre_elemento", "valor"]);
   });
 });

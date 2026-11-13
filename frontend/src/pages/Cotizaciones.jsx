@@ -24,17 +24,12 @@ import CotizacionesCifras from "./cotizaciones/CotizacionesCifras";
 import CotizacionesTabla from "./cotizaciones/CotizacionesTabla";
 import "../styles/cotizaciones.css";
 
-// Pantalla de Cotizaciones: carga, filtros y qué vista se muestra. Las cifras,
-// la tabla y los formatos viven en pages/cotizaciones/.
 export default function Cotizaciones() {
-  // búsqueda y fechas del evento) solo afectan la tabla.
-  // - todas: lista sin filtro de fechas, para las cifras.
-  // - cotizaciones: lista de la tabla (con el filtro de fechas, si lo hay).
   const [todas, setTodas] = useState([]);
   const [todasCargadas, setTodasCargadas] = useState(false);
   const [cotizaciones, setCotizaciones] = useState([]);
+  const [hoy, setHoy] = useState(hoyLocal);
   const [cargando, setCargando] = useState(true);
-  // Errores: null | "permiso" (403) | "servidor" (500 o sin red) | "sesion" (401) | "fechas" (400).
   const [errorCarga, setErrorCarga] = useState(null);
   const [errorCifras, setErrorCifras] = useState(null);
   const [sesionVencida, setSesionVencida] = useState(false);
@@ -74,7 +69,6 @@ export default function Cotizaciones() {
     cargarTiposEvento();
   }, [cargarTiposEvento]);
 
-  // una sin filtros para las cifras y otra filtrada para la tabla.
   const cargarDatos = useCallback(async () => {
     const peticion = ++ultimaPeticionRef.current;
     const conFiltrosTabla = Boolean(desde || hasta || grupoEvento || tipoEvento);
@@ -104,6 +98,7 @@ export default function Cotizaciones() {
     setErrorCifras(tipoCifras);
     setErrorCarga(tipoTabla);
     if (tipoCifras === "sesion" || tipoTabla === "sesion") setSesionVencida(true);
+    setHoy(hoyLocal());
     setCargando(false);
   }, [desde, hasta, grupoEvento, tipoEvento]);
 
@@ -117,9 +112,6 @@ export default function Cotizaciones() {
     if (errorCarga === "sesion" || errorCifras === "sesion") cargarDatos();
   }
 
-  // Hoy se toma al cargar la lista: así las notas de vigencia y la tasa del mes
-  // se calculan con la misma fecha que los datos.
-  const hoy = useMemo(() => hoyLocal(), [todas, cotizaciones]);
   const cifras = useMemo(() => resumen(todas, hoy), [todas, hoy]);
   const conteos = useMemo(() => conteosPorEstado(cotizaciones), [cotizaciones]);
 

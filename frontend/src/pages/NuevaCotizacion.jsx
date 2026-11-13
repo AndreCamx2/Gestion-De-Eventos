@@ -86,8 +86,6 @@ function Contenido({ c }) {
   );
 }
 
-// /cotizaciones/nueva arma una cotización; /cotizaciones/<id>/editar cambia una guardada
-// con el mismo formulario (PUT .../edicion/) y al guardar vuelve a su detalle.
 export default function NuevaCotizacion() {
   const { id } = useParams();
   const idEditar = id != null ? idDeRuta(id) ?? -1 : null;

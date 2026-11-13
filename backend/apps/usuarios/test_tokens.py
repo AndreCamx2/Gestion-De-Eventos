@@ -1,5 +1,3 @@
-"""SGDE-86: duración de los tokens JWT y renovación con /api/token/refresh/.
-SGDE-92: logout con lista negra y rotación del refresh con tope de duración."""
 import os
 from datetime import timedelta
 from io import StringIO
@@ -34,8 +32,6 @@ def crear_admin():
 
 @sin_limite_de_intentos
 class RenovacionDeTokenTests(APITestCase):
-    """El frontend renueva el acceso con el refresh: así la sesión no vence a mitad del trabajo."""
-
     @classmethod
     def setUpTestData(cls):
         cls.usuario = crear_admin()
@@ -56,7 +52,6 @@ class RenovacionDeTokenTests(APITestCase):
         self.assertEqual(respuesta.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_un_access_como_refresh_responde_401(self):
-        # El endpoint exige un token de tipo "refresh", no cualquier JWT firmado.
         access = AccessToken.for_user(self.usuario)
 
         respuesta = self.client.post(URL_REFRESH, {"refresh": str(access)}, format="json")
@@ -64,7 +59,6 @@ class RenovacionDeTokenTests(APITestCase):
         self.assertEqual(respuesta.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_access_vencido_da_401_y_se_recupera_con_el_refresh(self):
-        # Mismo camino que sigue el frontend: 401 → /token/refresh/ → repetir la petición.
         vencido = AccessToken.for_user(self.usuario)
         vencido.set_exp(lifetime=-timedelta(seconds=1))
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {vencido}")
@@ -79,8 +73,6 @@ class RenovacionDeTokenTests(APITestCase):
 
 @sin_limite_de_intentos
 class DuracionDeTokensTests(APITestCase):
-    """Los tokens que entrega el login duran lo que dice SIMPLE_JWT en settings."""
-
     @classmethod
     def setUpTestData(cls):
         cls.usuario = crear_admin()
@@ -107,13 +99,10 @@ class DuracionDeTokensTests(APITestCase):
         self.assertEqual(duracion, settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"])
 
     def test_el_access_ya_no_dura_5_minutos(self):
-        # El valor por defecto de simplejwt (5 min) era la causa del problema.
         self.assertGreater(settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"], timedelta(minutes=5))
 
 
 class EnteroPositivoEntornoTests(SimpleTestCase):
-    """Lectura de JWT_ACCESS_MINUTES / JWT_REFRESH_HOURS desde el entorno."""
-
     def test_sin_variable_usa_el_valor_por_defecto(self):
         with mock.patch.dict(os.environ, {}, clear=False):
             os.environ.pop("JWT_PRUEBA", None)
@@ -136,8 +125,6 @@ class EnteroPositivoEntornoTests(SimpleTestCase):
 
 @sin_limite_de_intentos
 class LoginBaseTest(APITestCase):
-    """Entra con /api/token/ como el frontend: el refresh queda registrado en la lista de emitidos."""
-
     @classmethod
     def setUpTestData(cls):
         cls.usuario = crear_admin()
@@ -157,8 +144,6 @@ class LoginBaseTest(APITestCase):
 
 
 class LogoutTests(LoginBaseTest):
-    """SGDE-92: al cerrar sesión, el refresh deja de servir en el servidor."""
-
     def test_despues_del_logout_el_refresh_da_401(self):
         refresh = self.entrar()["refresh"]
 
@@ -169,10 +154,8 @@ class LogoutTests(LoginBaseTest):
         self.assertEqual(self.renovar(refresh).status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_funciona_sin_access_y_con_un_access_vencido(self):
-        # Sin cabecera Authorization.
         self.assertEqual(self.cerrar_sesion(self.entrar()["refresh"]).status_code, status.HTTP_200_OK)
 
-        # Con un access vencido en la cabecera: el endpoint no autentica, no lo mira.
         vencido = AccessToken.for_user(self.usuario)
         vencido.set_exp(lifetime=-timedelta(seconds=1))
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {vencido}")
@@ -199,8 +182,6 @@ class LogoutTests(LoginBaseTest):
 
 
 class RotacionTests(LoginBaseTest):
-    """SGDE-92: cada renovación entrega un refresh nuevo e invalida el anterior."""
-
     def test_el_viejo_deja_de_servir_y_el_nuevo_si(self):
         viejo = self.entrar()["refresh"]
 
@@ -222,13 +203,11 @@ class RotacionTests(LoginBaseTest):
         refresh = self.entrar()["refresh"]
         original = RefreshToken(refresh).payload
 
-        # Dos renovaciones seguidas: ninguna alarga el vencimiento.
         for _ in range(2):
             refresh = self.renovar(refresh).data["refresh"]
             nuevo = RefreshToken(refresh).payload
             self.assertEqual(nuevo["exp"], original["exp"])
             self.assertNotEqual(nuevo["jti"], original["jti"])
-        # El registro de emitidos también vence a la hora original (lo usa flushexpiredtokens).
         registro = OutstandingToken.objects.get(jti=nuevo["jti"])
         self.assertEqual(int(registro.expires_at.timestamp()), original["exp"])
 

@@ -45,7 +45,6 @@ export function iniciales(nombre) {
 }
 
 export function descripcionCliente(cliente) {
-  // Al editar, el cliente viene del detalle de la cotización, que no trae el tipo.
   const tipo = cliente.tipo && (cliente.tipo === "juridica" ? "Jurídica" : "Natural");
   return [tipo, cliente.identificacion, cliente.correo].filter(Boolean).join(" · ");
 }
@@ -158,9 +157,14 @@ export function vigenciaPorDefecto(fechaEvento) {
   return fechaEvento < porDefecto ? fechaEvento : porDefecto;
 }
 
+export const CANTIDAD_MAXIMA_POR_CONCEPTO = 100000;
+export const CONCEPTOS_MAXIMOS = 100;
+const ANIOS_MAXIMOS_DE_ANTICIPACION = 5;
+
 export function validarCotizacion(form, lineas, aforo) {
   const campos = {};
   const hoy = hoyISO();
+  const fechaMaxima = fechaISO(sumarDias(hoyLocal(), 365 * ANIOS_MAXIMOS_DE_ANTICIPACION));
   const personas = Number(form.cantidad_personas);
 
   if (!form.cliente) campos.cliente = "Elige el cliente de la cotización.";
@@ -170,6 +174,9 @@ export function validarCotizacion(form, lineas, aforo) {
 
   if (!form.fecha_evento) campos.fecha_evento = "La fecha del evento es obligatoria.";
   else if (form.fecha_evento < hoy) campos.fecha_evento = "La fecha del evento no puede ser pasada.";
+  else if (form.fecha_evento > fechaMaxima) {
+    campos.fecha_evento = `La fecha del evento no puede ser a más de ${ANIOS_MAXIMOS_DE_ANTICIPACION} años.`;
+  }
 
   if (form.cantidad_personas === "") {
     campos.cantidad_personas = "Indica cuántas personas asistirán.";
@@ -186,10 +193,15 @@ export function validarCotizacion(form, lineas, aforo) {
     }
   }
 
-  const erroresLineas = lineas.map((linea) =>
-    cantidadValida(linea.cantidad) ? null : "La cantidad debe ser un entero mayor que 0.",
-  );
-  const general = lineas.length === 0 ? "Agrega al menos un concepto a la cotización." : null;
+  const erroresLineas = lineas.map((linea) => {
+    const cantidad = cantidadValida(linea.cantidad);
+    if (!cantidad) return "La cantidad debe ser un entero mayor que 0.";
+    if (cantidad > CANTIDAD_MAXIMA_POR_CONCEPTO) return "La cantidad no puede pasar de 100.000.";
+    return null;
+  });
+  let general = null;
+  if (lineas.length === 0) general = "Agrega al menos un concepto a la cotización.";
+  else if (lineas.length > CONCEPTOS_MAXIMOS) general = `Una cotización admite máximo ${CONCEPTOS_MAXIMOS} conceptos.`;
 
   const hayErrores = Object.keys(campos).length > 0 || erroresLineas.some(Boolean) || Boolean(general);
   return hayErrores ? { campos, lineas: erroresLineas, general, tipo: "datos" } : null;
@@ -262,14 +274,11 @@ export function cantidadInicial(concepto, personas) {
   return esPorPersona(concepto) && Number.isInteger(n) && n > 0 ? String(n) : "1";
 }
 
-// Las líneas que siguen a las personas toman la cantidad nueva (si es válida).
 export function seguirPersonas(lineas, personas) {
   const n = Number(personas);
   if (!Number.isInteger(n) || n < 1) return lineas;
   return lineas.map((l) => (l.sigue ? { ...l, cantidad: String(n) } : l));
 }
-
-// --- Editar una cotización guardada ---
 
 // El formulario a partir del detalle (GET /cotizaciones/<id>/). Una vigencia ya pasada
 // queda vacía: el API toma la de por defecto (hoy + 15 días), así se reactiva la oferta.
@@ -298,8 +307,6 @@ export function lineasDesdeCotizacion(cotizacion, conceptos) {
     };
   });
 }
-
-// --- Disponibilidad del salón ese día ---
 
 // Del calendario de ese salón y día: las otras cotizaciones que ocupan la fecha
 // (confirmadas, bloqueadas o cotizadas vigentes). idPropio: la que se está editando.

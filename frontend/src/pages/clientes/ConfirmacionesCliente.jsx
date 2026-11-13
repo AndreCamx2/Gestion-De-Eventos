@@ -1,9 +1,6 @@
 import { Boton } from "../../components/ui";
 import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 
-// Ventana de confirmación con <dialog> nativo. showModal() deja inactivo el
-// fondo, encierra el foco dentro y cierra con Escape (evento "cancel").
-// `bloqueado` impide cerrarla mientras se procesa la acción.
 function DialogoConfirmacion({ dialogoRef, idTitulo, titulo, bloqueado, onClose, children, acciones }) {
   return (
     <dialog
@@ -12,7 +9,6 @@ function DialogoConfirmacion({ dialogoRef, idTitulo, titulo, bloqueado, onClose,
       aria-labelledby={idTitulo}
       onCancel={(e) => bloqueado && e.preventDefault()}
       onClose={onClose}
-      // Clic en el fondo oscuro: el destino es el propio <dialog>, no su contenido.
       onClick={(e) => e.target === e.currentTarget && !bloqueado && e.currentTarget.close()}
     >
       <div className="directorio-dialogo__contenido">
@@ -24,9 +20,6 @@ function DialogoConfirmacion({ dialogoRef, idTitulo, titulo, bloqueado, onClose,
   );
 }
 
-// "Dar de baja" un cliente. Se abre con dialogoRef.current.showModal().
-// - confirmarRef: el botón "Dar de baja", que recibe el foco al volver a entrar (SGDE-94).
-// - onEntrarDeNuevo(boton): abre "Entrar de nuevo" encima de la confirmación.
 export function DialogoBajaCliente({
   dialogoRef,
   confirmarRef,
@@ -47,7 +40,6 @@ export function DialogoBajaCliente({
       onClose={onClose}
       acciones={
         <>
-          {/* "Cancelar" va primero: al abrir, el foco cae en la opción segura. */}
           <Boton variante="secundario" onClick={() => dialogoRef.current?.close()} disabled={procesando}>
             Cancelar
           </Boton>
@@ -73,7 +65,6 @@ export function DialogoBajaCliente({
   );
 }
 
-// "Cambios sin guardar": pregunta antes de descartar lo que se escribió en el panel.
 export function DialogoDescartarCambios({ dialogoRef, onDescartar, onClose }) {
   return (
     <DialogoConfirmacion

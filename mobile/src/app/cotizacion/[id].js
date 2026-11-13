@@ -23,7 +23,7 @@ function DetalleCotizacion() {
   const [cotizacion, setCotizacion] = useState(null);
   const [error, setError] = useState(null);
   const [exito, setExito] = useState(null);
-  const [enviando, setEnviando] = useState(null); // clave de la acción en curso
+  const [enviando, setEnviando] = useState(null);
   const [confirmarLiberar, setConfirmarLiberar] = useState(false);
 
   const cargar = useCallback(async () => {
@@ -41,8 +41,6 @@ function DetalleCotizacion() {
     }, [cargar]),
   );
 
-  // Ejecuta bloquear o liberar. El 409 (fecha ocupada, ya no está cotizada...) y
-  // el 400 (hora inválida) llegan con su mensaje y se muestran tal cual.
   async function ejecutar(clave, accion, mensajeExito) {
     setEnviando(clave);
     setError(null);
@@ -54,7 +52,7 @@ function DetalleCotizacion() {
     } catch (e) {
       const { general, campos } = mensajeDeError(e);
       setError(general || Object.values(campos).join(" "));
-      await cargar(); // por si el estado cambió en el servidor
+      await cargar();
     } finally {
       setEnviando(null);
     }

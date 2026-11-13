@@ -4,13 +4,6 @@ import { RUTA_NUEVA } from "./piezasBarraInferior";
 import { IconoMas, IconoNueva } from "./IconosBarraInferior";
 import "../styles/barra-inferior.css";
 
-// Barra de navegación inferior del teléfono (SGDE-102, maqueta Movil.dc.html).
-// Cinco piezas: Inicio, Cotizar, "+" (nueva cotización), Agenda y "Más".
-// Los destinos salen de NAV_ITEMS (DashboardLayout) ya filtrados por rol y repartidos
-// por piezasBarraInferior (piezasBarraInferior.js); lo que no cabe en la barra va al menú
-// "Más". Solo se ve en teléfono (barra-inferior.css).
-
-// Opciones del menú "Más", en el orden en que aparecen.
 function opcionesDe(menu) {
   return Array.from(menu?.querySelectorAll('[role="menuitem"]') ?? []);
 }
@@ -31,7 +24,6 @@ function MenuMas({ items }) {
   const menuRef = useRef(null);
   const location = useLocation();
 
-  // "Más" se marca como activo cuando la pantalla actual está dentro de su menú.
   const activo = items.some(
     (item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
   );
@@ -41,17 +33,14 @@ function MenuMas({ items }) {
     if (devolverFoco) botonRef.current?.focus();
   }
 
-  // Al cambiar de pantalla (se eligió una opción) el menú se cierra.
   useEffect(() => {
     setAbierto(false);
   }, [location.pathname]);
 
-  // Al abrir, el foco pasa a la primera opción.
   useEffect(() => {
     if (abierto) opcionesDe(menuRef.current)[0]?.focus();
   }, [abierto]);
 
-  // Clic o toque fuera del menú lo cierra.
   useEffect(() => {
     if (!abierto) return;
     function alTocarFuera(event) {
@@ -96,7 +85,6 @@ function MenuMas({ items }) {
         ir(lista.length - 1);
         break;
       case "Tab":
-        // Salir del menú con Tab lo cierra, sin atrapar el foco.
         setAbierto(false);
         break;
       default:
@@ -144,8 +132,6 @@ function MenuMas({ items }) {
 
 export default function BarraInferior({ piezas }) {
   const { fijas, enMas, nueva } = piezas;
-  // El "+" va en el centro, como en la maqueta: Inicio y Cotizar a la izquierda,
-  // Agenda y "Más" a la derecha.
   const antes = fijas.filter((pieza) => pieza.to !== "/calendario");
   const despues = fijas.filter((pieza) => pieza.to === "/calendario");
 

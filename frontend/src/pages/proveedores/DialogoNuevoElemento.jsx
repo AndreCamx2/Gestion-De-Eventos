@@ -4,14 +4,6 @@ import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 import { Boton, Campo, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import { ELEMENTO_VACIO, erroresElemento, payloadElemento, validarElemento } from "./proveedores";
 
-// Ventana "Agregar elemento" al stock del proveedor seleccionado: elemento,
-// cantidad y valor unitario.
-// - proveedor: a quién se le agrega.
-// - onCreado(elemento): se creó; Proveedores.jsx la cierra y lo suma a la tabla.
-// - onSesionVencida(), sesionVencida, onEntrarDeNuevo(boton): igual que en
-//   DialogoNuevoProveedor (aviso dentro de la ventana, SGDE-94).
-// - crear(datos): la llamada al API. Por defecto POST /stock/; "Mi stock" (SGDE-72)
-//   pasa crearMiStock, que ignora el proveedor.
 export default function DialogoNuevoElemento({
   proveedor, onCreado, onCerrar, onSesionVencida, sesionVencida, onEntrarDeNuevo, crear = crearElementoStock,
 }) {

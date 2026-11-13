@@ -26,24 +26,21 @@ def exigir_estado_cotizado(cotizacion):
     if cotizacion.estado != "cotizado":
         raise Conflicto(f"La cotización está {estados.en_femenino(cotizacion.estado)}.")
 
-    
+
 def nombre_tipo(tipo):
     return str(tipo) if tipo else "Sin clasificar"
 
 class CotizacionCalendarioView(generics.ListAPIView):
     serializer_class = CotizacionCalendarioSerializer
-    # Muestra clientes y fechas de los eventos de sus sitios: solo para administradores.
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def get_queryset(self):
         # Un ?salon= de otro sitio devuelve una lista vacía: el filtro por sitio va primero.
-        # select_related: sin él, cada fila hace una consulta por cliente, salón y montaje.
         queryset = filtrar_por_sitio(
             Cotizacion.objects.exclude(estado="cancelado").select_related("cliente", "salon", "montaje"),
             self.request.user,
         )
 
-        # Se validan como en el listado: un valor mal formado daba 500 (SGDE-14).
         params = self.request.query_params
         salon = _id_param(params, "salon", "Debe ser el id numérico del salón.")
         if salon:
@@ -52,25 +49,19 @@ class CotizacionCalendarioView(generics.ListAPIView):
 
 
 def cotizaciones_con_relaciones():
-    """Trae en pocas consultas todo lo que muestran el detalle y el listado (evita N+1)."""
     return (
         Cotizacion.objects
                 .select_related(
             "sitio", "cliente", "salon", "montaje", "usuario", "garantia_registrada_por", "cancelado_por",
             "tipo_evento__grupo",
         )
-        
+
         .prefetch_related("items__concepto")
     )
 
 
 def cotizaciones_del_usuario(usuario):
-    """Las cotizaciones de los sitios del usuario: un id de otro sitio da 404.
-
-    No libera nada: un GET no escribe (SGDE-118). Un bloqueo vencido se muestra ya como
-    cotizado (ver Cotizacion.bloqueo_vencido) y se libera de verdad en la siguiente
-    acción o con `manage.py liberar_bloqueos`.
-    """
+    """Las de los sitios del usuario. No libera bloqueos vencidos: un GET no escribe."""
     return filtrar_por_sitio(cotizaciones_con_relaciones(), usuario)
 
 
@@ -89,7 +80,6 @@ def _fecha_param(params, nombre):
 
 
 def _id_param(params, nombre, mensaje):
-    """Un filtro por id: vacío → None; no numérico → 400 con `mensaje`."""
     valor = params.get(nombre)
     if not valor:
         return None
@@ -99,7 +89,6 @@ def _id_param(params, nombre, mensaje):
 
 
 def filtrar_por_fechas(queryset, params):
-    """Aplica ?desde y ?hasta sobre fecha_evento (inclusive). Inválidas o invertidas → 400."""
     desde = _fecha_param(params, "desde")
     hasta = _fecha_param(params, "hasta")
     if desde and hasta and desde > hasta:
@@ -111,11 +100,6 @@ def filtrar_por_fechas(queryset, params):
     return queryset
 
 class CotizacionListCreateView(generics.ListCreateAPIView):
-    """Listado con filtros (?estado, ?cliente, ?salon, ?desde, ?hasta) y creación de cotizaciones.
-
-    Con ?salon es el histórico del salón (SGDE-62): un salón de otro sitio da la lista vacía.
-    """
-
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     pagination_class = PaginaEstandar
@@ -143,7 +127,6 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
         if salon:
             queryset = queryset.filter(salon_id=salon)
 
-        # SGDE-142: filtros por catálogo de eventos
         tipo_evento = _id_param(params, "tipo_evento", "Debe ser el id numérico del tipo de evento.")
         if tipo_evento:
             queryset = queryset.filter(tipo_evento_id=tipo_evento)
@@ -156,8 +139,7 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        # Validar y guardar en una sola transacción: validate() bloquea el salón y el
-        # montaje habilitado hasta que la cotización queda guardada (SGDE-100).
+        # validate() bloquea salón y montaje: validar y guardar van en la misma transacción.
         with transaction.atomic():
             serializer.is_valid(raise_exception=True)
             cotizacion = serializer.save()
@@ -166,7 +148,6 @@ class CotizacionListCreateView(generics.ListCreateAPIView):
 
 
 class CotizacionDetailView(generics.RetrieveUpdateAPIView):
-    """Detalle y cambio de vigencia/tipo (PATCH). Sin PUT ni DELETE."""
     serializer_class = CotizacionDetalleSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
     http_method_names = ["get", "patch", "head", "options"]
@@ -185,11 +166,10 @@ class CotizacionDetailView(generics.RetrieveUpdateAPIView):
             estados.exigir_salon_activo(cotizacion)
             anterior_validez = cotizacion.validez_oferta
             anterior_tipo = nombre_tipo(cotizacion.tipo_evento)
-            
+
             serializer = CotizacionEdicionSerializer(cotizacion, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
-            
-            # Solo guardamos si de verdad hay algo que actualizar
+
             if serializer.validated_data:
                 serializer.save()
 
@@ -207,12 +187,7 @@ class CotizacionDetailView(generics.RetrieveUpdateAPIView):
 
 
 class AccionSobreCotizacionView(generics.GenericAPIView):
-    """Base de las acciones que cambian el estado (aceptar, bloquear, liberar).
-
-    `ejecutar` corre dentro de transaction.atomic() con el Salón y la Cotización
-    bloqueados (estados.tomar_para_cambio). Una cotización de otro sitio da 404.
-    Responde con el detalle actualizado.
-    """
+    """Acciones que cambian el estado, con el Salón y la Cotización bloqueados."""
 
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
@@ -236,8 +211,6 @@ class AccionSobreCotizacionView(generics.GenericAPIView):
 
 
 class CotizacionAceptacionView(AccionSobreCotizacionView):
-    """Registra la garantía y confirma la cotización, desde cotizada o bloqueada (SGDE-20)."""
-
     def post(self, request, *args, **kwargs):
         return self.accion(self.validar(AceptacionSerializer))
 
@@ -246,8 +219,6 @@ class CotizacionAceptacionView(AccionSobreCotizacionView):
 
 
 class CotizacionBloqueoView(AccionSobreCotizacionView):
-    """POST bloquea el salón y la fecha hasta `bloqueo_hasta`; DELETE lo libera a mano."""
-
     def post(self, request, *args, **kwargs):
         return self.accion(self.validar(BloqueoSerializer))
 
@@ -262,8 +233,6 @@ class CotizacionBloqueoView(AccionSobreCotizacionView):
 
 
 class CotizacionCancelacionView(AccionSobreCotizacionView):
-    """Cancela un evento confirmado con su penalización y motivo (SGDE-61)."""
-
     def post(self, request, *args, **kwargs):
         return self.accion(self.validar(CancelacionSerializer))
 
@@ -272,8 +241,6 @@ class CotizacionCancelacionView(AccionSobreCotizacionView):
 
 
 class CotizacionAnulacionView(AccionSobreCotizacionView):
-    """Anula una cotización que no se confirmó (cotizada o bloqueada), con su motivo."""
-
     def post(self, request, *args, **kwargs):
         return self.accion(self.validar(AnulacionSerializer))
 
@@ -282,13 +249,6 @@ class CotizacionAnulacionView(AccionSobreCotizacionView):
 
 
 class CotizacionEdicionView(generics.GenericAPIView):
-    """PUT con el mismo cuerpo que crear: cambia cliente, salón, montaje, fecha, personas,
-    vigencia y conceptos de una cotización cotizada (aunque esté vencida).
-
-    Una bloqueada da 409: hay que liberarla primero, porque el bloqueo es de ese salón y
-    esa fecha. Valida y guarda en la transacción que tiene tomados el salón y la cotización.
-    """
-
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def put(self, request, *args, **kwargs):
@@ -305,8 +265,6 @@ class CotizacionEdicionView(generics.GenericAPIView):
 
 
 class CotizacionMovimientosView(generics.ListAPIView):
-    """Los movimientos de una cotización, en orden (SGDE-62). Otro sitio da 404."""
-
     serializer_class = MovimientoSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
@@ -316,11 +274,6 @@ class CotizacionMovimientosView(generics.ListAPIView):
 
 
 class TipoEventoListView(generics.ListAPIView):
-    """Los tipos de evento activos, agrupados por grupo, para el formulario de cotización (SGDE-142).
-
-    Un grupo inactivo, o sin tipos activos, no aparece. Es un catálogo corto: sin paginar.
-    """
-
     serializer_class = GrupoEventoConTiposSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
     pagination_class = None
@@ -334,17 +287,12 @@ class TipoEventoListView(generics.ListAPIView):
         )
 
 
-# --- "Mis cotizaciones" del rol cliente (SGDE-126) ----------------------------
-
 def mis_cotizaciones(usuario):
-    """Solo las del Cliente vinculado al usuario: el filtro sale del token, nunca
-    de un id que mande el frontend. Una cotización de otro cliente da 404."""
+    """El cliente sale del token, nunca de un id que mande el frontend."""
     return cotizaciones_con_relaciones().filter(cliente__usuario=usuario)
 
 
 class MisCotizacionesView(generics.ListAPIView):
-    """Las cotizaciones del cliente que inició sesión, por fecha del evento. Solo lectura."""
-
     serializer_class = MiCotizacionListaSerializer
     permission_classes = [permissions.IsAuthenticated, EsCliente]
 
@@ -360,144 +308,39 @@ class MiCotizacionDetalleView(generics.RetrieveAPIView):
         return mis_cotizaciones(self.request.user)
 
 class ReporteIngresosPorTipoEventoView(generics.GenericAPIView):
-    """Reporte de ingresos por tipo de evento para cotizaciones confirmadas (SGDE-144)."""
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def get(self, request, *args, **kwargs):
-        # 1. Filtramos las cotizaciones confirmadas
-        queryset = Cotizacion.objects.filter(estado="confirmado")
-        
-        # 2. Filtramos por el sitio del usuario (SGDE-90)
-        queryset = filtrar_por_sitio(queryset, request.user)
-        
-        # 3. Filtros opcionales por fecha de evento (?desde y ?hasta)
-        desde = _fecha_param(request.query_params, "desde")
-        hasta = _fecha_param(request.query_params, "hasta")
-        if desde:
-            queryset = queryset.filter(fecha_evento__gte=desde)
-        if hasta:
-            queryset = queryset.filter(fecha_evento__lte=hasta)
+        confirmadas = filtrar_por_sitio(Cotizacion.objects.filter(estado="confirmado"), request.user)
+        confirmadas = filtrar_por_fechas(confirmadas, request.query_params)
+        confirmadas = confirmadas.select_related("tipo_evento__grupo").prefetch_related("items")
 
-        # 4. Traemos los tipos de evento, incluso si están inactivos
-        tipos = TipoEvento.objects.select_related("grupo").order_by("grupo__orden", "id")
+        grupos = {}
+        for cotizacion in confirmadas:
+            tipo = cotizacion.tipo_evento
+            grupo = grupos.setdefault(tipo.id if tipo else None, {
+                "tipo_evento_id": tipo.id if tipo else None,
+                "tipo_evento_nombre": tipo.nombre if tipo else "Sin clasificar",
+                "grupo_evento_nombre": tipo.grupo.nombre if tipo else "Sin clasificar",
+                "cantidad_eventos": 0,
+                "ingreso": Decimal("0.00"),
+            })
+            grupo["cantidad_eventos"] += 1
+            grupo["ingreso"] += _totales(cotizacion)["total"]
 
-        # 5. Traemos todas las cotizaciones y sus items para calcular los totales (evita N+1)
-        cotizaciones = list(queryset.prefetch_related("items"))
+        gran_total = sum((g["ingreso"] for g in grupos.values()), Decimal("0.00"))
+        total_eventos = sum(g["cantidad_eventos"] for g in grupos.values())
 
-        resultados = []
-        gran_total = Decimal("0.00")
-        total_eventos = 0
+        detalle = []
+        for grupo in sorted(grupos.values(), key=lambda g: (-g["ingreso"], g["tipo_evento_id"] is None, g["tipo_evento_id"] or 0)):
+            ingreso = grupo.pop("ingreso")
+            porcentaje = (ingreso / gran_total * 100).quantize(Decimal("0.01")) if gran_total else Decimal("0")
+            detalle.append({**grupo, "ingreso_total": str(ingreso), "porcentaje_ingreso": float(porcentaje)})
 
-        for tipo in tipos:
-            # Filtramos las cotizaciones de este tipo en memoria
-            cotizaciones_tipo = [c for c in cotizaciones if c.tipo_evento_id == tipo.id]
-            
-            if cotizaciones_tipo:
-                # Sumamos el total de cada cotización
-                ingreso_tipo = sum((_totales(c)["total"] for c in cotizaciones_tipo), Decimal("0.00"))
-                
-                resultados.append({
-                    "tipo_evento_id": tipo.id,
-                    "tipo_evento_nombre": tipo.nombre,
-                    "grupo_evento_nombre": tipo.grupo.nombre,
-                    "cantidad_eventos": len(cotizaciones_tipo),
-                    "ingreso_total": str(ingreso_tipo),
-                })
-                
-                gran_total += ingreso_tipo
-                total_eventos += len(cotizaciones_tipo)
-
-        # 6. Calculamos porcentajes y el promedio
-        for r in resultados:
-            r["porcentaje_ingreso"] = float((Decimal(r["ingreso_total"]) / gran_total * 100).quantize(Decimal("0.01"))) if gran_total > 0 else 0.0
-
-        # Ordenamos de mayor a menor ingreso
-        resultados.sort(key=lambda x: Decimal(x["ingreso_total"]), reverse=True)
-
-        # Ticket promedio global
-        ticket_promedio = (gran_total / total_eventos).quantize(Decimal("0.01")) if total_eventos > 0 else Decimal("0.00")
-
+        ticket_promedio = (gran_total / total_eventos).quantize(Decimal("0.01")) if total_eventos else Decimal("0.00")
         return Response({
             "gran_total": str(gran_total),
             "total_eventos": total_eventos,
             "ticket_promedio": str(ticket_promedio),
-            "detalle": resultados
-        })
-
-    class ReporteIngresosPorTipoEventoView(generics.GenericAPIView):
-        """Reporte de ingresos por tipo de evento para cotizaciones confirmadas (SGDE-144)."""
-    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
-
-    def get(self, request, *args, **kwargs):
-        # 1. Filtramos las cotizaciones confirmadas
-        queryset = Cotizacion.objects.filter(estado="confirmado")
-        
-        # 2. Filtramos por el sitio del usuario (SGDE-90)
-        queryset = filtrar_por_sitio(queryset, request.user)
-        
-        # 3. Filtros opcionales por fecha de evento (?desde y ?hasta)
-        desde = _fecha_param(request.query_params, "desde")
-        hasta = _fecha_param(request.query_params, "hasta")
-        if desde:
-            queryset = queryset.filter(fecha_evento__gte=desde)
-        if hasta:
-            queryset = queryset.filter(fecha_evento__lte=hasta)
-
-        # 4. Traemos los tipos de evento, incluso si están inactivos
-        tipos = TipoEvento.objects.select_related("grupo").order_by("grupo__orden", "id")
-
-        # 5. Traemos todas las cotizaciones y sus items para calcular los totales (evita N+1)
-        cotizaciones = list(queryset.prefetch_related("items"))
-
-        resultados = []
-        gran_total = Decimal("0.00")
-        total_eventos = 0
-
-        # Agregamos un "tipo falso" para capturar las que no tienen tipo (Sin clasificar)
-        tipos_a_evaluar = list(tipos) + [None]
-
-        for tipo in tipos_a_evaluar:
-            if tipo is None:
-                cotizaciones_tipo = [c for c in cotizaciones if c.tipo_evento_id is None]
-            else:
-                cotizaciones_tipo = [c for c in cotizaciones if c.tipo_evento_id == tipo.id]
-            
-            if cotizaciones_tipo:
-                ingreso_tipo = sum((_totales(c)["total"] for c in cotizaciones_tipo), Decimal("0.00"))
-                
-                if tipo is None:
-                    nombre_tipo = "Sin clasificar"
-                    grupo_tipo = "Sin clasificar"
-                    tipo_id = None
-                else:
-                    nombre_tipo = tipo.nombre
-                    grupo_tipo = tipo.grupo.nombre
-                    tipo_id = tipo.id
-
-                resultados.append({
-                    "tipo_evento_id": tipo_id,
-                    "tipo_evento_nombre": nombre_tipo,
-                    "grupo_evento_nombre": grupo_tipo,
-                    "cantidad_eventos": len(cotizaciones_tipo),
-                    "ingreso_total": str(ingreso_tipo),
-                })
-                
-                gran_total += ingreso_tipo
-                total_eventos += len(cotizaciones_tipo)
-
-        # 6. Calculamos porcentajes y el promedio
-        for r in resultados:
-            r["porcentaje_ingreso"] = float((Decimal(r["ingreso_total"]) / gran_total * 100).quantize(Decimal("0.01"))) if gran_total > 0 else 0.0
-
-        # Ordenamos de mayor a menor ingreso
-        resultados.sort(key=lambda x: Decimal(x["ingreso_total"]), reverse=True)
-
-        # Ticket promedio global
-        ticket_promedio = (gran_total / total_eventos).quantize(Decimal("0.01")) if total_eventos > 0 else Decimal("0.00")
-
-        return Response({
-            "gran_total": str(gran_total),
-            "total_eventos": total_eventos,
-            "ticket_promedio": str(ticket_promedio),
-            "detalle": resultados
+            "detalle": detalle,
         })

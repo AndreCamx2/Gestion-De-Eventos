@@ -45,8 +45,6 @@ class TotalesTests(SimpleTestCase):
 
 
 class CotizacionBaseTest(APITestCase):
-    """Datos comunes: un sitio con salón, montaje habilitado (aforo 120) y conceptos."""
-
     @classmethod
     def setUpTestData(cls):
         cls.admin = crear_usuario("admin@test.com", "administrador")
@@ -56,8 +54,6 @@ class CotizacionBaseTest(APITestCase):
         ctg = Ciudad.objects.get(codigo="CTG")
         cls.sitio = Sitio.objects.create(nombre="Hotel Caribe", ciudad=ctg)
         cls.otro_sitio = Sitio.objects.create(nombre="Finca La Ceiba", ciudad=ctg)
-        # Administra los dos sitios (SGDE-90): así "concepto de otro sitio" prueba la
-        # regla salón/concepto, no el filtro por sitio (que se prueba en apps/sitios).
         cls.admin.sitios.add(cls.sitio, cls.otro_sitio)
         cls.salon = Salon.objects.create(sitio=cls.sitio, nombre="Salón Barú")
         cls.montaje = Montaje.objects.create(codigo="test_auditorio", nombre="Auditorio Test")
@@ -100,18 +96,17 @@ class CotizacionBaseTest(APITestCase):
         return datos
 
     def crear_en_bd(self, fecha_evento=None, validez_oferta=None, estado="cotizado", tipo_evento="defecto"):
-        """Crea una cotización directo en la base (sin pasar por las validaciones del API)."""
         if tipo_evento == "defecto":
             tipo_evento = self.tipo_evento
 
         cotizacion = Cotizacion.objects.create(
             sitio=self.sitio, cliente=self.cliente, usuario=self.admin, salon=self.salon,
             montaje=self.montaje, estado=estado, cantidad_personas=50,
-            tipo_evento=tipo_evento, 
+            tipo_evento=tipo_evento,
             fecha_evento=fecha_evento or hoy() + timedelta(days=30),
             validez_oferta=validez_oferta or hoy() + timedelta(days=5),
         )
-        
+
         CotizacionItem.objects.create(
             cotizacion=cotizacion, concepto=self.almuerzo, cantidad=50,
             precio_unitario=self.almuerzo.precio, impuesto_pct=self.almuerzo.impuesto_pct,
@@ -185,7 +180,7 @@ class CrearCotizacionTests(CotizacionBaseTest):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, r.data)
         self.assertIn("cliente", r.data)
         self.assertEqual(Cotizacion.objects.count(), 0)
-    
+
 
     def test_montaje_no_habilitado_en_el_salon(self):
         self.client.force_authenticate(user=self.admin)
@@ -208,7 +203,6 @@ class CrearCotizacionTests(CotizacionBaseTest):
         self.assertFalse(Cotizacion.objects.exists())
 
     def test_errores_de_campo_en_items_tambien_son_una_lista_por_posicion(self):
-        """Concepto inexistente o cantidad inválida: mismo formato que las reglas de validate()."""
         self.client.force_authenticate(user=self.admin)
         items = [
             {"concepto": self.almuerzo.pk, "cantidad": 1},
@@ -297,7 +291,6 @@ class ListadoCotizacionesTests(CotizacionBaseTest):
         self.client.force_authenticate(user=self.admin)
         self.assertEqual(self.client.get(LISTA, {"desde": "20-11-2026"}).status_code,
                          status.HTTP_400_BAD_REQUEST)
-        # Formato correcto pero fecha imposible: parse_date lanza ValueError (antes, 500).
         self.assertEqual(self.client.get(LISTA, {"hasta": "2026-13-40"}).status_code,
                          status.HTTP_400_BAD_REQUEST)
 
@@ -306,7 +299,6 @@ class ListadoCotizacionesTests(CotizacionBaseTest):
         r = self.client.get(LISTA, {"desde": str(hoy() + timedelta(days=10)), "hasta": str(hoy())})
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(r.json()["hasta"], ["La fecha final no puede ser anterior a la inicial."])
-        # El mismo día en los dos extremos es un rango válido.
         self.assertEqual(self.client.get(LISTA, {"desde": str(hoy()), "hasta": str(hoy())}).status_code,
                          status.HTTP_200_OK)
 
@@ -314,8 +306,6 @@ class ListadoCotizacionesTests(CotizacionBaseTest):
         for dias in range(20, 25):
             self.crear_en_bd(fecha_evento=hoy() + timedelta(days=dias))
         self.client.force_authenticate(user=self.admin)
-        # cotizaciones (con joins) + items + conceptos, sin importar cuántas haya.
-        # SGDE-118: el GET ya no libera bloqueos, así que no hay consultas fijas de más.
         with self.assertNumQueries(4):
             self.client.get(LISTA)
 
@@ -362,7 +352,7 @@ class VigenciaTests(CotizacionBaseTest):
         self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
         self.assertEqual(r.data["validez_oferta"], nueva)
         self.assertIs(r.data["vencida"], False)
-        self.assertIn("items", r.data)  # responde el detalle completo
+        self.assertIn("items", r.data)
 
     def test_patch_con_fecha_invalida_400(self):
         cot = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=30))
@@ -470,8 +460,6 @@ class AceptacionTests(CotizacionBaseTest):
         cot.refresh_from_db()
         self.assertEqual(cot.estado, "cotizado")
 
-    # Garantía mínima (2026-10-27). crear_en_bd: 50 almuerzos de 45.000 + 8% = total 2.430.000.
-
     def test_con_5_dias_o_mas_basta_el_30_por_ciento(self):
         for dias in (5, 30):
             cot = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=dias), validez_oferta=hoy())
@@ -531,8 +519,6 @@ class AceptacionTests(CotizacionBaseTest):
 
 
 class CalendarioPermisosTests(CotizacionBaseTest):
-    """Solo GET: por eso no va en ENDPOINTS_ADMIN (allí el POST del admin espera 400)."""
-
     URL = "/api/calendario/"
 
     def test_sin_token_401(self):
@@ -553,8 +539,6 @@ class CalendarioPermisosTests(CotizacionBaseTest):
 
 
 class CalendarioCamposTests(CotizacionBaseTest):
-    """SGDE-89: el Inicio arma la agenda solo con /calendario/, sin cruzar con /cotizaciones/."""
-
     URL = "/api/calendario/"
 
     def setUp(self):
@@ -565,7 +549,6 @@ class CalendarioCamposTests(CotizacionBaseTest):
 
     def test_vencida_true_si_sigue_cotizada_y_paso_su_vigencia(self):
         vencida = self.crear_en_bd(validez_oferta=hoy() - timedelta(days=1))
-        # Confirmada con la vigencia ya pasada: no cuenta como vencida.
         confirmada = self.crear_en_bd(validez_oferta=hoy() - timedelta(days=1), estado="confirmado")
         filas = self.por_id(self.client.get(self.URL))
         self.assertIs(filas[vencida.pk]["vencida"], True)
@@ -579,7 +562,6 @@ class CalendarioCamposTests(CotizacionBaseTest):
         self.assertEqual(fila["montaje_nombre"], "Auditorio Test")
 
     def test_trae_bloqueo_hasta_para_el_rack(self):
-        # SGDE-40: el Rack muestra hasta cuándo está bloqueado un salón.
         libre = self.crear_en_bd()
         bloqueada = self.crear_en_bd(estado="bloqueado", fecha_evento=hoy() + timedelta(days=31))
         hasta = timezone.now() + timedelta(days=1)
@@ -590,7 +572,6 @@ class CalendarioCamposTests(CotizacionBaseTest):
         self.assertEqual(filas[bloqueada.pk]["bloqueo_hasta"], serializers.DateTimeField().to_representation(hasta))
 
     def crear_con_relaciones_propias(self, n):
-        """Cotización con cliente, salón y montaje propios: si vuelve el N+1, sube el conteo."""
         cliente = Cliente.objects.create(
             tipo="natural", nombre=f"Cliente {n}", identificacion=f"9000{n}", correo=f"c{n}@test.com"
         )
@@ -616,8 +597,6 @@ class CalendarioCamposTests(CotizacionBaseTest):
 
 
 class CalendarioFiltrosTests(CotizacionBaseTest):
-    """SGDE-14: ?salon, ?desde y ?hasta se validan; antes un valor mal formado daba 500."""
-
     URL = "/api/calendario/"
 
     def setUp(self):
@@ -650,8 +629,6 @@ class CalendarioFiltrosTests(CotizacionBaseTest):
 
 
 class ListadoCamposSGDE89Tests(CotizacionBaseTest):
-    """SGDE-89: fechas de creación, confirmación y bloqueo, montaje y garantía en el listado."""
-
     def setUp(self):
         self.client.force_authenticate(user=self.admin)
 
@@ -672,7 +649,6 @@ class ListadoCamposSGDE89Tests(CotizacionBaseTest):
         self.assertIsNotNone(fila["confirmado_en"])
         self.assertEqual(fila["confirmado_en"], r.data["confirmado_en"])
         self.assertEqual((fila["garantia"]["tipo"], fila["garantia"]["monto"]), ("efectivo", "800000.00"))
-        # Mismo formato que el detalle: una sola función arma la garantía.
         self.assertEqual(fila["garantia"], r.data["garantia"])
 
     def test_trae_creado_en_bloqueo_hasta_y_montaje_nombre(self):
@@ -709,14 +685,11 @@ def bloqueo(pk):
 
 
 def en(dias, hora=12):
-    """Fecha y hora local (Colombia) a `dias` de hoy, en ISO para el payload."""
     momento = timezone.localtime().replace(hour=hora, minute=0, second=0, microsecond=0) + timedelta(days=dias)
     return momento.isoformat()
 
 
 class BloqueoTests(CotizacionBaseTest):
-    """SGDE-40/60/15: bloquear y liberar el salón y la fecha de una cotización."""
-
     def setUp(self):
         self.client.force_authenticate(user=self.admin)
         self.fecha = hoy() + timedelta(days=30)
@@ -815,9 +788,6 @@ class BloqueoTests(CotizacionBaseTest):
 
 
 class LiberacionAutomaticaTests(CotizacionBaseTest):
-    """SGDE-118: un GET no escribe. El bloqueo vencido se ve como cotizado y se libera con una acción o con el comando."""
-
-   
     def setUp(self):
         self.client.force_authenticate(user=self.admin)
         self.vencido = self.crear_en_bd(estado="bloqueado")
@@ -834,11 +804,10 @@ class LiberacionAutomaticaTests(CotizacionBaseTest):
         self.assertEqual(self.vigente.estado, "bloqueado")
 
     def assertSinEscribir(self):
-        # Un GET no cambia la base: el vencido sigue bloqueado y sin movimiento hasta que lo libere una acción o el comando.
         self.vencido.refresh_from_db()
         self.assertEqual(self.vencido.estado, "bloqueado")
         self.assertIsNotNone(self.vencido.bloqueo_hasta)
-        self.assertFalse(MovimientoCotizacion.objects.filter(cotizacion=self.vencido).exists())    
+        self.assertFalse(MovimientoCotizacion.objects.filter(cotizacion=self.vencido).exists())
 
     def test_al_listar(self):
         filas = {c["id"]: c for c in self.client.get(LISTA).data["results"]}
@@ -864,8 +833,6 @@ class LiberacionAutomaticaTests(CotizacionBaseTest):
 
 
 class AceptarConBloqueoTests(CotizacionBaseTest):
-    """La aceptación (SGDE-20) acepta una bloqueada y respeta el bloqueo de otra cotización."""
-
     def setUp(self):
         self.client.force_authenticate(user=self.admin)
         self.datos = {"tipo": "transferencia", "monto": "1000000"}
@@ -903,8 +870,6 @@ def cancelacion(pk):
 
 
 class CancelacionTests(CotizacionBaseTest):
-    """SGDE-61: cancelar un evento confirmado con penalización."""
-
     def setUp(self):
         self.client.force_authenticate(user=self.admin)
         self.fecha = hoy() + timedelta(days=30)
@@ -1014,8 +979,6 @@ def movimientos(pk):
 
 
 class MovimientosTests(CotizacionBaseTest):
-    """SGDE-62: cada acción deja su movimiento con el usuario correcto, en la misma transacción."""
-
     def setUp(self):
         self.client.force_authenticate(user=self.admin)
         self.otro_admin = crear_usuario("otro_admin@test.com", "administrador")
@@ -1033,7 +996,6 @@ class MovimientosTests(CotizacionBaseTest):
         self.assertEqual(self.client.post(bloqueo(pk), {"bloqueo_hasta": en(2)}, format="json").status_code, 200)
         self.assertEqual(self.client.delete(bloqueo(pk)).status_code, 200)
 
-        # Otro administrador confirma y cancela: el movimiento lleva su usuario, no el del creador.
         self.client.force_authenticate(user=self.otro_admin)
         datos = {"tipo": "efectivo", "monto": "2000000"}
         self.assertEqual(self.client.post(aceptacion(pk), datos, format="json").status_code, 200)
@@ -1059,7 +1021,6 @@ class MovimientosTests(CotizacionBaseTest):
         cot.bloqueo_hasta = timezone.now() - timedelta(minutes=1)
         cot.save()
         self.client.get(LISTA)
-        # SGDE-118: leer no libera ni deja movimiento; lo deja el comando (o la siguiente acción).
         self.assertFalse(MovimientoCotizacion.objects.filter(cotizacion=cot).exists())
         call_command("liberar_bloqueos", stdout=StringIO())
         movimiento = MovimientoCotizacion.objects.get(cotizacion=cot)
@@ -1079,8 +1040,6 @@ class MovimientosTests(CotizacionBaseTest):
 
 
 class HistoricoPorSalonTests(CotizacionBaseTest):
-    """SGDE-62: el histórico de un salón es el listado con ?salon=."""
-
     def setUp(self):
         self.client.force_authenticate(user=self.admin)
 
@@ -1102,8 +1061,6 @@ class HistoricoPorSalonTests(CotizacionBaseTest):
 
 
 class MigracionMovimientosExistentesTests(TransactionTestCase):
-    """SGDE-62: la 0006 crea "creada" y "confirmada" de lo viejo con su fecha original, no la de hoy."""
-
     serialized_rollback = True
     antes = [("cotizaciones", "0005_movimientos_de_cotizacion")]
     despues = [("cotizaciones", "0006_movimientos_de_cotizaciones_existentes")]
@@ -1160,14 +1117,12 @@ class MigracionMovimientosExistentesTests(TransactionTestCase):
 
         self.assertEqual(de("cotizada"), [("creada", admin.pk, creado)])
         self.assertEqual(de("confirmada"), [("creada", admin.pk, creado), ("confirmada", admin.pk, confirmado)])
-        # Sin registro de garantía (confirmada en /admin/), ni canceladas ni bloqueadas: solo "creada".
         for nombre in ("confirmada_a_mano", "cancelada", "bloqueada"):
             with self.subTest(caso=nombre):
                 self.assertEqual(de(nombre), [("creada", admin.pk, creado)])
 
 
 def consultas_for_update(contexto):
-    """Las tablas que una petición bloqueó con SELECT ... FOR UPDATE."""
     tablas = ("salones_salonmontaje", "salones_salon", "cotizaciones_cotizacion")
     bloqueadas = set()
     for consulta in contexto.captured_queries:
@@ -1179,8 +1134,6 @@ def consultas_for_update(contexto):
 
 
 class CrearConBloqueoDelMontajeTests(CotizacionBaseTest):
-    """SGDE-100: crear una cotización bloquea el salón y su montaje habilitado hasta guardar."""
-
     def test_la_creacion_pide_el_bloqueo_y_sigue_funcionando(self):
         self.client.force_authenticate(user=self.admin)
         with CaptureQueriesContext(connection) as contexto:
@@ -1190,15 +1143,12 @@ class CrearConBloqueoDelMontajeTests(CotizacionBaseTest):
 
 
 class GetNoEscribeSGDE118Tests(CotizacionBaseTest):
-    # SGDE-118: los GET no escriben; el estado se calcula al leer y liberan las acciones y el comando.
-
     def setUp(self):
         self.client.force_authenticate(user=self.admin)
         self.vencida = self.crear_en_bd(estado="bloqueado")
         Cotizacion.objects.filter(pk=self.vencida.pk).update(bloqueo_hasta=timezone.now() - timedelta(hours=1))
 
     def escrituras(self, url):
-        # Las sentencias que modifican datos durante un GET.
         with CaptureQueriesContext(connection) as consultas:
             r = self.client.get(url)
         self.assertEqual(r.status_code, status.HTTP_200_OK)
@@ -1250,10 +1200,9 @@ class GetNoEscribeSGDE118Tests(CotizacionBaseTest):
         self.assertTrue(
             MovimientoCotizacion.objects.filter(cotizacion=self.vencida, tipo="liberada", usuario__isnull=True).exists()
         )
-        self.assertEqual(vencida_ajena.estado, "bloqueado")  # de un sitio que el usuario no administra
+        self.assertEqual(vencida_ajena.estado, "bloqueado")
 
     def test_activas_usa_el_estado_efectivo(self):
-        # El bloqueo vencido cuenta como cotizado: activo solo si su oferta sigue vigente.
         self.assertIn(self.vencida, Cotizacion.objects.activas())
         Cotizacion.objects.filter(pk=self.vencida.pk).update(validez_oferta=hoy() - timedelta(days=1))
         self.assertNotIn(self.vencida, Cotizacion.objects.activas())
@@ -1264,7 +1213,6 @@ class GetNoEscribeSGDE118Tests(CotizacionBaseTest):
         self.assertIn(vigente, Cotizacion.objects.activas())
 
     def test_bloqueo_vencido_con_oferta_vencida_no_impide_dar_de_baja_el_salon(self):
-        # Antes daba un 409 falso: activas() leía "bloqueado" de la base sin mirar bloqueo_hasta.
         Cotizacion.objects.filter(pk=self.vencida.pk).update(validez_oferta=hoy() - timedelta(days=1))
         r = self.client.patch(f"/api/salones/{self.salon.pk}/", {"activo": False}, format="json")
         self.assertEqual(r.status_code, status.HTTP_200_OK, r.data)
@@ -1290,8 +1238,6 @@ def edicion(pk):
 
 
 class AnulacionTests(CotizacionBaseTest):
-    """Anular una cotización que no se confirmó: queda cancelada, sin penalización."""
-
     def setUp(self):
         self.client.force_authenticate(user=self.admin)
 
@@ -1317,7 +1263,6 @@ class AnulacionTests(CotizacionBaseTest):
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertIsNone(r.data["bloqueo_hasta"])
 
-        # La fecha quedó libre: otra cotización del mismo salón y día se puede bloquear.
         otra = self.crear_en_bd(fecha_evento=hoy() + timedelta(days=20))
         self.assertEqual(self.client.post(bloqueo(otra.pk), {"bloqueo_hasta": en(2)}, format="json").status_code, 200)
 
@@ -1340,8 +1285,6 @@ class AnulacionTests(CotizacionBaseTest):
 
 
 class EdicionTests(CotizacionBaseTest):
-    """Editar una cotización cotizada con el mismo cuerpo que crear."""
-
     def setUp(self):
         self.client.force_authenticate(user=self.admin)
         r = self.client.post(LISTA, self.payload(), format="json")
@@ -1368,7 +1311,6 @@ class EdicionTests(CotizacionBaseTest):
     def test_los_conceptos_que_ya_estaban_conservan_su_precio(self):
         Concepto.objects.filter(pk=self.almuerzo.pk).update(precio=Decimal("99999.00"))
         Concepto.objects.filter(pk=self.video_beam.pk).update(precio=Decimal("1.00"))
-        # El almuerzo ya estaba: conserva 45.000. El video beam se quita y vuelve: también estaba.
         r = self.client.put(edicion(self.pk), self.payload(), format="json")
         precios = {i["concepto"]: i["precio_unitario"] for i in r.data["items"]}
         self.assertEqual(precios, {self.almuerzo.pk: "45000.00", self.video_beam.pk: "250000.00"})
@@ -1422,8 +1364,6 @@ MIS_COTIZACIONES = "/api/mis-cotizaciones/"
 
 
 class MisCotizacionesTests(CotizacionBaseTest):
-    """SGDE-126: el cliente ve solo sus cotizaciones, sin datos internos y sin poder cambiarlas."""
-
     def setUp(self):
         Cliente.objects.filter(pk=self.cliente.pk).update(usuario=self.cliente_user)
         self.otro_cliente = Cliente.objects.create(
@@ -1485,20 +1425,16 @@ class MisCotizacionesTests(CotizacionBaseTest):
         for metodo in (self.client.patch, self.client.put, self.client.delete):
             with self.subTest(metodo=metodo.__name__):
                 self.assertEqual(metodo(url, {}, format="json").status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        # Las rutas del administrador siguen cerradas para el cliente.
         self.assertEqual(self.client.get(detalle(self.mia.pk)).status_code, status.HTTP_403_FORBIDDEN)
         r = self.client.post(f"{detalle(self.mia.pk)}aceptacion/", {"tipo": "efectivo", "monto": "1000000"}, format="json")
         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class ReporteIngresosPorTipoEventoTests(CotizacionBaseTest):
-    """Tests para el endpoint de ingresos por tipo de evento (SGDE-144)."""
-
     def setUp(self):
         super().setUp()
         self.url = "/api/reportes/ingresos-por-tipo-evento/"
-        
-        # Creamos algunos tipos extra para probar
+
         self.tipo_boda = TipoEvento.objects.create(nombre="Boda", grupo=self.grupo_evento)
 
     def test_solo_administradores_pueden_ver_el_reporte(self):
@@ -1508,35 +1444,26 @@ class ReporteIngresosPorTipoEventoTests(CotizacionBaseTest):
 
     def test_reporte_agrupa_por_tipo_y_calcula_totales(self):
         self.client.force_authenticate(user=self.admin)
-        
-        # 1. Cotización confirmada del tipo "Boda" (Día 10)
+
         self.crear_en_bd(estado="confirmado", tipo_evento=self.tipo_boda, fecha_evento=hoy() + timedelta(days=10))
-        
-        # 2. Cotización confirmada del tipo "Tipo Test" (Día 11)
+
         self.crear_en_bd(estado="confirmado", tipo_evento=self.tipo_evento, fecha_evento=hoy() + timedelta(days=11))
-        
-        # 3. Cotización confirmada SIN tipo (Día 12)
+
         self.crear_en_bd(estado="confirmado", tipo_evento=None, fecha_evento=hoy() + timedelta(days=12))
-        
-        # 4. Una cotizada normal (NO debe salir) (Día 13)
+
         self.crear_en_bd(estado="cotizado", tipo_evento=self.tipo_boda, fecha_evento=hoy() + timedelta(days=13))
 
-        # Obtenemos la respuesta
         r = self.client.get(self.url)
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         data = r.json()
 
-        # Validamos los totales globales (deben ser 3 confirmadas)
         self.assertEqual(data["total_eventos"], 3)
-        
-        # Validamos la agrupación
+
         detalle = {d["tipo_evento_id"]: d for d in data["detalle"]}
-        
-        # Verificamos que estén los 3 grupos y no la cotizada
+
         self.assertIn(self.tipo_boda.pk, detalle)
         self.assertIn(self.tipo_evento.pk, detalle)
-        self.assertIn(None, detalle) # El id del "Sin clasificar" es None
+        self.assertIn(None, detalle)
 
-        # Verificamos los montos exactos para el tipo Boda
         self.assertEqual(detalle[self.tipo_boda.pk]["cantidad_eventos"], 1)
         self.assertEqual(detalle[None]["tipo_evento_nombre"], "Sin clasificar")

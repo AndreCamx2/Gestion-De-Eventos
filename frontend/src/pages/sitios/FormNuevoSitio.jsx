@@ -3,15 +3,6 @@ import { crearSitio } from "../../api/sitios";
 import { Boton, Campo } from "../../components/ui";
 import { erroresDesdeApi } from "../../utils/erroresApi";
 
-// Formulario "Nuevo sitio" (maqueta Sitios.dc.html). No es una ventana modal:
-// ante un 401 basta la barra de SesionVencida y lo escrito se queda aquí.
-// - ciudades: catálogo de /api/ciudades/ para el select.
-// - ciudadesFallaron / onReintentarCiudades: si el catálogo no cargó, se avisa
-//   debajo del select con un botón para pedirlo otra vez.
-// - onCreado(sitio): el sitio que devolvió el API, para agregar su tarjeta.
-// - onSesionVencida(): 401 aunque apiFetch intentó renovar el token.
-// - nombreRef: la tarjeta "Agregar otro sitio" lleva el foco a este campo.
-
 const CAMPOS = ["nombre", "ciudad"];
 const FORM_VACIO = { nombre: "", ciudad: "" };
 
@@ -22,13 +13,11 @@ export default function FormNuevoSitio({ ciudades, ciudadesFallaron, onReintenta
   const [exito, setExito] = useState(null);
   const [enviando, setEnviando] = useState(false);
 
-  // En la beta solo hay una ciudad (Cartagena): si es la única, ya va elegida.
   const ciudadElegida = form.ciudad || (ciudades.length === 1 ? String(ciudades[0].id) : "");
 
   function handleChange(event) {
     const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    // Al corregir un campo, se quita su aviso.
     setErrores((prev) => ({ ...prev, [name]: undefined }));
     setExito(null);
   }
@@ -43,6 +32,7 @@ export default function FormNuevoSitio({ ciudades, ciudadesFallaron, onReintenta
 
     const locales = {};
     if (!form.nombre.trim()) locales.nombre = "Escribe el nombre del venue.";
+    else if (form.nombre.trim().length > 150) locales.nombre = "Máximo 150 caracteres.";
     if (!ciudadElegida) locales.ciudad = "Elige una ciudad.";
     setErrores(locales);
     if (Object.keys(locales).length > 0) return;
@@ -89,7 +79,6 @@ export default function FormNuevoSitio({ ciudades, ciudadesFallaron, onReintenta
         error={errores.nombre}
       />
 
-      {/* Campo solo pinta <input>: el <select> se arma con sus mismas clases, como en ClienteForm. */}
       <div className={["campo", errorCiudad && "campo--error"].filter(Boolean).join(" ")}>
         <label className="campo__etiqueta" htmlFor="sitio-ciudad">Ciudad</label>
         <select

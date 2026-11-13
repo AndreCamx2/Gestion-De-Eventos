@@ -22,8 +22,6 @@ N = 12
 
 
 class PaginacionTests(base.CotizacionBaseTest):
-    """SGDE-116: los listados grandes responden paginados y con consultas constantes."""
-
     def setUp(self):
         self.client.force_authenticate(user=self.admin)
         self.proveedor = Proveedor.objects.create(nombre="Proveedor P")
