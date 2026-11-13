@@ -98,7 +98,8 @@ def correo_en_uso(correo, excepto):
 
 
 class CambioCorreoSerializer(ConPasswordActualSerializer):
-    correo_nuevo = serializers.EmailField(max_length=254)
+    # Puede pasar a ser el usuario de acceso, y Usuario.username admite 150 caracteres.
+    correo_nuevo = serializers.EmailField(max_length=150)
 
     def validate_correo_nuevo(self, valor):
         correo = valor.lower()
@@ -129,7 +130,7 @@ def cambiar_correo(usuario, correo):
 
 
 class CambioContrasenaSerializer(ConPasswordActualSerializer):
-    password_nueva = serializers.CharField(write_only=True, trim_whitespace=False)
+    password_nueva = serializers.CharField(write_only=True, max_length=128, trim_whitespace=False)
 
     def validate(self, attrs):
         nueva = attrs["password_nueva"]

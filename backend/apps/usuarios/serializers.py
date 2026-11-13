@@ -1,5 +1,7 @@
 from django.db import transaction
+from django.db.models import Q
 from rest_framework import serializers
+from apps.clientes.validadores import validar_nombre
 from rest_framework.exceptions import PermissionDenied
 from apps.sitios.acceso import CampoDeSitio
 from apps.sitios.models import Sitio
@@ -8,6 +10,33 @@ from .services import validar_cambio_usuario
 from .validators import validar_password_candidata
 
 MSG_ROL_CLIENTE_REGISTRO = "Los clientes se crean desde la pantalla de Clientes."
+MSG_USUARIO_REPETIDO = "Ya existe un usuario con este nombre."
+MSG_CORREO_REPETIDO = "Ya existe un usuario con este correo."
+
+
+class DatosDeUsuarioMixin:
+    """Usuario y correo únicos sin distinguir mayúsculas; el correo se guarda en minúscula."""
+
+    def _otros(self):
+        otros = Usuario.objects.all()
+        return otros.exclude(pk=self.instance.pk) if self.instance is not None else otros
+
+    def validate_username(self, value):
+        if self._otros().filter(Q(username__iexact=value) | Q(email__iexact=value)).exists():
+            raise serializers.ValidationError(MSG_USUARIO_REPETIDO)
+        return value
+
+    def validate_email(self, value):
+        correo = value.lower()
+        if correo and self._otros().filter(Q(email__iexact=correo) | Q(username__iexact=correo)).exists():
+            raise serializers.ValidationError(MSG_CORREO_REPETIDO)
+        return correo
+
+    def validate_first_name(self, value):
+        return validar_nombre(value) if value.strip() else ""
+
+    def validate_last_name(self, value):
+        return validar_nombre(value) if value.strip() else ""
 
 
 def campo_sitios():
@@ -19,8 +48,8 @@ def campo_sitios():
     return CampoDeSitio(many=True, required=False, queryset=Sitio.objects.all(), campo_sitio="id")
 
 
-class UsuarioRegistroSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=8)
+class UsuarioRegistroSerializer(DatosDeUsuarioMixin, serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=8, max_length=128, trim_whitespace=False)
     sitios = campo_sitios()
 
     class Meta:
@@ -60,7 +89,7 @@ class UsuarioRegistroSerializer(serializers.ModelSerializer):
         return usuario
 
 
-class UsuarioAdminSerializer(serializers.ModelSerializer):
+class UsuarioAdminSerializer(DatosDeUsuarioMixin, serializers.ModelSerializer):
     """Lectura y edición de usuarios por un administrador.
 
     La lista de campos es explícita y NO incluye password, is_superuser, is_staff,
@@ -123,4 +152,4 @@ class SolicitarRecuperacionSerializer(serializers.Serializer):
 class RestablecerClaveSerializer(serializers.Serializer):
     uid = serializers.CharField()
     token = serializers.CharField()
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, max_length=128, trim_whitespace=False)
