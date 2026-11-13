@@ -5,6 +5,10 @@
 // Antes se llamaba clienteForm.js: en Windows chocaba con ClienteForm.jsx por la
 // mayúscula (SGDE-97).
 import { erroresDesdeApi as erroresDesdeApiComun } from "../../utils/erroresApi";
+import { validarCedula, validarCorreo, validarNombre, validarTelefono } from "../../utils/validacionesRegistro";
+
+export const MAX_FORMA_PAGO = 50;
+export const MAX_OBSERVACIONES = 2000;
 
 export const FORM_VACIO = {
   tipo: "natural",
@@ -74,4 +78,34 @@ export function payloadEdicion(form) {
     body.identificacion = form.identificacion.trim() || null;
   }
   return body;
+}
+
+// Mismas reglas que ClienteAdminSerializer. La identificación solo es obligatoria al
+// crear un natural: un cliente viejo puede no tenerla.
+export function validarCliente(form, { esCrear }) {
+  const errores = {};
+  const nombre = validarNombre(form.nombre, { conApellido: false });
+  if (nombre) errores.nombre = nombre;
+  if (form.tipo === "natural" && (esCrear || form.identificacion.trim())) {
+    const cedula = validarCedula(form.identificacion);
+    if (cedula) {
+      errores.identificacion = form.identificacion.trim()
+        ? cedula
+        : "La identificación es obligatoria para personas naturales.";
+    }
+  }
+  if (form.tipo === "juridica" && !form.empresa) errores.empresa = "Elige la empresa del cliente.";
+  if (form.telefono.trim()) {
+    const telefono = validarTelefono(form.telefono);
+    if (telefono) errores.telefono = telefono;
+  }
+  if (form.correo.trim()) {
+    const correo = validarCorreo(form.correo);
+    if (correo) errores.correo = correo;
+  }
+  if (form.forma_pago.trim().length > MAX_FORMA_PAGO) errores.forma_pago = `Máximo ${MAX_FORMA_PAGO} caracteres.`;
+  if (form.observaciones_internas.length > MAX_OBSERVACIONES) {
+    errores.observaciones_internas = `Máximo ${MAX_OBSERVACIONES} caracteres.`;
+  }
+  return errores;
 }

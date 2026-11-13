@@ -1,5 +1,6 @@
 import { erroresDesdeApi } from "../../utils/erroresApi";
 import { mesCorto } from "../../utils/inicioCifras";
+import { MAX_PASSWORD, validarCorreo, validarNombre } from "../../utils/validacionesRegistro";
 
 export const ROL_CLIENTE = "cliente";
 
@@ -69,11 +70,12 @@ export function bloqueoDeBaja(u, yoId) {
 export const NUEVO_VACIO = { rol: "", username: "", email: "", password: "", sitios: [] };
 
 const USUARIO_VALIDO = /^[\w.@+-]+$/;
-const CORREO_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_USUARIO = 150;
 
 export function fortaleza(password, { username = "", email = "" } = {}) {
   const clave = password ?? "";
   if (!clave) return { nivel: 0, texto: "Mínimo 8 caracteres, que no sean solo números." };
+  if (clave.length > MAX_PASSWORD) return { nivel: 1, texto: `Máximo ${MAX_PASSWORD} caracteres.` };
   const avisos = [];
   if (clave.length < 8) avisos.push("al menos 8 caracteres");
   if (/^\d+$/.test(clave)) avisos.push("no solo números");
@@ -95,11 +97,12 @@ export function validarNuevo(form) {
   const errores = {};
   if (!form.rol) errores.rol = "Elige el rol.";
   if (!form.username.trim()) errores.username = "Escribe el nombre de usuario.";
+  else if (form.username.trim().length > MAX_USUARIO) errores.username = `Máximo ${MAX_USUARIO} caracteres.`;
   else if (!USUARIO_VALIDO.test(form.username.trim())) {
     errores.username = "Solo letras, números y los signos . @ + - _ (sin espacios).";
   }
   if (!form.email.trim()) errores.email = "Escribe el correo.";
-  else if (!CORREO_VALIDO.test(form.email.trim())) errores.email = "Escribe un correo válido.";
+  else if (validarCorreo(form.email)) errores.email = validarCorreo(form.email);
   if (fortaleza(form.password, form).nivel < 2) errores.password = fortaleza(form.password, form).texto;
   return errores;
 }
@@ -127,9 +130,11 @@ export function formEdicion(u) {
 export function validarEdicion(form) {
   const errores = {};
   if (!form.rol) errores.rol = "Elige el rol.";
-  if (form.email.trim() && !CORREO_VALIDO.test(form.email.trim())) errores.email = "Escribe un correo válido.";
-  if (form.first_name.length > 150) errores.first_name = "Máximo 150 caracteres.";
-  if (form.last_name.length > 150) errores.last_name = "Máximo 150 caracteres.";
+  if (form.email.trim() && validarCorreo(form.email)) errores.email = validarCorreo(form.email);
+  for (const campo of ["first_name", "last_name"]) {
+    const error = form[campo].trim() ? validarNombre(form[campo], { conApellido: false }) : null;
+    if (error) errores[campo] = error;
+  }
   return errores;
 }
 

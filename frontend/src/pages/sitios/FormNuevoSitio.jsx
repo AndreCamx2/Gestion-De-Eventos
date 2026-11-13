@@ -43,6 +43,7 @@ export default function FormNuevoSitio({ ciudades, ciudadesFallaron, onReintenta
 
     const locales = {};
     if (!form.nombre.trim()) locales.nombre = "Escribe el nombre del venue.";
+    else if (form.nombre.trim().length > 150) locales.nombre = "Máximo 150 caracteres.";
     if (!ciudadElegida) locales.ciudad = "Elige una ciudad.";
     setErrores(locales);
     if (Object.keys(locales).length > 0) return;

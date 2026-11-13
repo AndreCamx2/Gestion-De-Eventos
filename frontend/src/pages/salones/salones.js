@@ -46,14 +46,35 @@ function medidaComoNumero(texto) {
   return limpio === "" ? null : Number(limpio);
 }
 
+export const MAX_NOMBRE_SALON = 100;
+// Salon.altura y Salon.ancho: 5 dígitos con 2 decimales.
+const MEDIDA_MAXIMA = 999.99;
+
 export function validarSalon(form) {
   const errores = {};
-  if (!form.nombre.trim()) errores.nombre = "Escribe el nombre del salón.";
+  const nombre = form.nombre.trim();
+  if (!nombre) errores.nombre = "Escribe el nombre del salón.";
+  else if (nombre.length > MAX_NOMBRE_SALON) errores.nombre = `Máximo ${MAX_NOMBRE_SALON} caracteres.`;
   for (const campo of ["ancho", "altura"]) {
-    const n = medidaComoNumero(form[campo]);
-    if (n !== null && (Number.isNaN(n) || n <= 0)) errores[campo] = "Escribe los metros: un número mayor que 0.";
+    const texto = String(form[campo] ?? "").trim().replace(",", ".");
+    if (texto === "") continue;
+    if (!/^\d+(\.\d{1,2})?$/.test(texto) || Number(texto) <= 0) {
+      errores[campo] = "Escribe los metros: un número mayor que 0, con máximo dos decimales.";
+    } else if (Number(texto) > MEDIDA_MAXIMA) {
+      errores[campo] = "Máximo 999,99 metros.";
+    }
   }
+  const foto = (form.foto_url ?? "").trim();
+  if (foto && !esEnlaceWeb(foto)) errores.foto_url = "Pega un enlace que empiece por https://";
   return errores;
+}
+
+function esEnlaceWeb(texto) {
+  try {
+    return ["http:", "https:"].includes(new URL(texto).protocol);
+  } catch {
+    return false;
+  }
 }
 
 // Solo lo que cambió, para el PATCH: {} si nada cambió. Las medidas se comparan
@@ -72,9 +93,12 @@ export function cambiosSalon(form, salon) {
 
 // ===== Editar aforo (SGDE-88) =====
 
+export const AFORO_MAXIMO = 100000;
+
 export function validarAforo(texto) {
   if (!/^\d+$/.test(String(texto).trim()) || Number(texto) <= 0) {
     return "Escribe cuántas personas caben: un número entero mayor que 0.";
   }
+  if (Number(texto) > AFORO_MAXIMO) return "El aforo no puede pasar de 100.000 personas.";
   return null;
 }

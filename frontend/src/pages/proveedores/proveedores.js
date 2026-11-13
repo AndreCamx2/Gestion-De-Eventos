@@ -3,6 +3,7 @@
 // leen sus errores. Las usan Proveedores.jsx y las piezas de esta carpeta.
 import { erroresDesdeApi as erroresDesdeApiComun } from "../../utils/erroresApi";
 import { mesCorto } from "../../utils/inicioCifras";
+import { validarDocumento, validarRazonSocial } from "../../utils/validacionesRegistro";
 
 const formatoEntero = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
 const formatoCentavos = new Intl.NumberFormat("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -83,9 +84,22 @@ export function fechaActualizado(texto) {
 export const PROVEEDOR_VACIO = { nombre: "", identificacion: "", contacto: "" };
 const CAMPOS_PROVEEDOR = ["nombre", "identificacion", "contacto"];
 
+export const MAX_CONTACTO_PROVEEDOR = 120;
+
 export function validarProveedor(form) {
   const errores = {};
   if (!form.nombre.trim()) errores.nombre = "Escribe el nombre del proveedor.";
+  else {
+    const nombre = validarRazonSocial(form.nombre);
+    if (nombre) errores.nombre = nombre;
+  }
+  if (form.identificacion.trim()) {
+    const documento = validarDocumento(form.identificacion);
+    if (documento) errores.identificacion = documento;
+  }
+  if (form.contacto.trim().length > MAX_CONTACTO_PROVEEDOR) {
+    errores.contacto = `Máximo ${MAX_CONTACTO_PROVEEDOR} caracteres.`;
+  }
   return errores;
 }
 
@@ -119,9 +133,12 @@ export function validarElemento(form) {
   return errores;
 }
 
+const CANTIDAD_MAXIMA = 1000000;
+
 function validarCantidad(texto) {
   if (texto === "") return "Escribe la cantidad.";
   if (!/^\d+$/.test(texto)) return "La cantidad es un número entero, 0 o más, sin decimales.";
+  if (Number(texto) > CANTIDAD_MAXIMA) return "La cantidad no puede pasar de 1.000.000.";
   return null;
 }
 

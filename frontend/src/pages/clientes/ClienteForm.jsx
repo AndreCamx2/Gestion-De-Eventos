@@ -2,7 +2,8 @@
 // misma regla de NIT y misma lectura de errores del API (en formularioCliente.js).
 import { Campo } from "../../components/ui";
 import VerClienteInactivo from "./VerClienteInactivo";
-import { nitDeEmpresa } from "./formularioCliente";
+import { MAX_CORREO, MAX_NOMBRE } from "../../utils/validacionesRegistro";
+import { MAX_FORMA_PAGO, MAX_OBSERVACIONES, nitDeEmpresa } from "./formularioCliente";
 
 // Los <input> usan el componente Campo. Campo solo pinta <input>, así que el
 // <select> y el <textarea> se arman a mano con sus mismas clases (campo,
@@ -54,6 +55,7 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
         type="text"
         value={form.nombre}
         onChange={onChange}
+        maxLength={MAX_NOMBRE}
         error={errores.nombre}
       />
 
@@ -100,6 +102,7 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
           type="text"
           value={form.identificacion}
           onChange={onChange}
+          maxLength={13}
           error={errores.identificacion}
         />
       )}
@@ -115,6 +118,7 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
           type="tel"
           value={form.telefono}
           onChange={onChange}
+          maxLength={16}
           error={errores.telefono}
         />
         <Campo
@@ -124,6 +128,7 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
           type="text"
           value={form.forma_pago}
           onChange={onChange}
+          maxLength={MAX_FORMA_PAGO}
           error={errores.forma_pago}
         />
       </div>
@@ -135,6 +140,7 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
         type="email"
         value={form.correo}
         onChange={onChange}
+        maxLength={MAX_CORREO}
         error={errores.correo}
       />
 
@@ -149,6 +155,7 @@ export default function ClienteForm({ idPrefix, form, errores, empresas, onChang
           rows="3"
           value={form.observaciones_internas}
           onChange={onChange}
+          maxLength={MAX_OBSERVACIONES}
           {...accesible("observaciones_internas")}
         />
         {error("observaciones_internas")}

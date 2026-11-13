@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 import { AvisoError, Boton, Dialogo, cerrarDialogoDe } from "../../components/ui";
+import { MAX_MOTIVO } from "./cancelacion";
 
 // Ventana "Anular cotización" de una cotizada o bloqueada. El estado vive en
 // useAnulacion (d.anulacion); la sesión vencida se avisa dentro (SGDE-94).
@@ -31,6 +32,7 @@ export default function DialogoAnularCotizacion({ d }) {
             rows="3"
             placeholder="Por ejemplo: el cliente eligió otro lugar."
             value={x.motivo}
+            maxLength={MAX_MOTIVO}
             onChange={(e) => x.cambiar(e.target.value)}
             aria-invalid={x.errorMotivo ? true : undefined}
             aria-describedby={x.errorMotivo ? "dc-anular-motivo-error" : undefined}

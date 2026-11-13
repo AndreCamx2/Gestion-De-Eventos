@@ -30,6 +30,8 @@ export function montoRetenido(total, pct) {
   return Math.round((centavos * centesimas) / 10000) / 100;
 }
 
+export const MAX_MOTIVO = 1000;
+
 export function validarCancelacion(form) {
   const campos = {};
   const pct = parsearPorcentaje(form.penalizacion);
@@ -38,6 +40,7 @@ export function validarCancelacion(form) {
   else if (pct > 100) campos.penalizacion_pct = "La penalización debe estar entre 0 y 100.";
   else if (Math.round(pct * 100) !== pct * 100) campos.penalizacion_pct = "Usa máximo dos decimales.";
   if (!form.motivo.trim()) campos.motivo = "Escribe el motivo de la cancelación.";
+  else if (form.motivo.trim().length > MAX_MOTIVO) campos.motivo = `El motivo admite máximo ${MAX_MOTIVO} caracteres.`;
   return campos;
 }
 

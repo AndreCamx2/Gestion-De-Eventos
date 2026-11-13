@@ -99,6 +99,14 @@ describe("validarStock (SGDE-98)", () => {
     const { errores } = validarStock({ nombreElemento: " ", cantidad: "1.5", valor: "-3" }, { conNombre: true });
     expect(Object.keys(errores).sort()).toEqual(["cantidad", "nombre_elemento", "valor"]);
   });
+
+  it("pone topes al nombre, la cantidad y el valor como el backend", () => {
+    const { errores } = validarStock(
+      { nombreElemento: "a".repeat(121), cantidad: "1000001", valor: "12345678901" },
+      { conNombre: true },
+    );
+    expect(Object.keys(errores).sort()).toEqual(["cantidad", "nombre_elemento", "valor"]);
+  });
 });
 
 describe("mensajeDeError", () => {

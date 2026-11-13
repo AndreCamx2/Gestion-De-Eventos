@@ -57,17 +57,28 @@ export function impuestoFueraDeLista(impuestoPct) {
   return !OPCIONES_IMPUESTO.some((o) => o.value === impuestoPct);
 }
 
+export const MAX_NOMBRE_CONCEPTO = 120;
+
 export function validarForm(form) {
   const errores = {};
   if (!form.sitio)
     errores.sitio = "Selecciona el venue al que pertenece el concepto.";
-  if (!form.nombre.trim()) errores.nombre = "El nombre es obligatorio.";
-  if (form.precio === "") {
+  const nombre = form.nombre.trim();
+  if (!nombre) errores.nombre = "El nombre es obligatorio.";
+  else if (nombre.length > MAX_NOMBRE_CONCEPTO) errores.nombre = `Máximo ${MAX_NOMBRE_CONCEPTO} caracteres.`;
+  const precio = String(form.precio).trim();
+  if (precio === "") {
     errores.precio = "El precio es obligatorio.";
-  } else if (Number.isNaN(Number(form.precio))) {
-    errores.precio = "Ingresa un número válido.";
-  } else if (Number(form.precio) < 0) {
+  } else if (precio.startsWith("-")) {
     errores.precio = "El precio no puede ser negativo.";
+  } else if (!/^\d+(\.\d{1,2})?$/.test(precio)) {
+    errores.precio = "Escribe solo números, con máximo dos decimales.";
+  } else if (precio.split(".")[0].replace(/^0+(?=\d)/, "").length > 10) {
+    errores.precio = "El precio admite máximo 10 dígitos antes de los decimales.";
+  }
+  const impuesto = Number(form.impuesto_pct);
+  if (!Number.isFinite(impuesto) || impuesto < 0 || impuesto > 100) {
+    errores.impuesto_pct = "El impuesto debe estar entre 0 y 100 %.";
   }
   return errores;
 }

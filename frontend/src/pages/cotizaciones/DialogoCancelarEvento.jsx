@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 import { AvisoError, Boton, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import { pesos } from "./nuevaCotizacion";
-import { montoRetenido, parsearPorcentaje } from "./cancelacion";
+import { MAX_MOTIVO, montoRetenido, parsearPorcentaje } from "./cancelacion";
 
 // Ventana "Cancelar evento" de un evento confirmado (SGDE-68). El estado vive en
 // useCancelacion (d.cancelacion); la sesión vencida se avisa dentro (SGDE-94).
@@ -58,6 +58,7 @@ export default function DialogoCancelarEvento({ d }) {
             className="campo__input dc-cancelar__motivo"
             rows="3"
             value={x.form.motivo}
+            maxLength={MAX_MOTIVO}
             onChange={(e) => x.cambiar("motivo", e.target.value)}
             aria-invalid={errorMotivo ? true : undefined}
             aria-describedby={errorMotivo ? "dc-cancelar-motivo-error" : undefined}

@@ -13,6 +13,7 @@ import {
   ajustarPersonas,
   avisoOcupacion,
   cantidadInicial,
+  cantidadValida,
   comoLista,
   esPorPersona,
   formDesdeCotizacion,
@@ -220,10 +221,17 @@ export function useNuevaCotizacion(idEditar = null) {
   function agregarConcepto() {
     const concepto = catalogos.conceptos.find((c) => c.id === Number(conceptoElegido));
     if (!concepto) return;
-    setLineas((prev) => [
-      ...prev,
-      { concepto, cantidad: cantidadInicial(concepto, form.cantidad_personas), sigue: esPorPersona(concepto) },
-    ]);
+    const cantidad = cantidadInicial(concepto, form.cantidad_personas);
+    // Un concepto va una sola vez (el API rechaza repetidos): si ya está, se suma a su línea.
+    setLineas((prev) =>
+      prev.some((l) => l.concepto.id === concepto.id)
+        ? prev.map((l) =>
+            l.concepto.id === concepto.id
+              ? { ...l, cantidad: String(cantidadValida(l.cantidad) + cantidadValida(cantidad)), sigue: false }
+              : l,
+          )
+        : [...prev, { concepto, cantidad, sigue: esPorPersona(concepto) }],
+    );
     setConceptoElegido("");
     setErrores((prev) => ({ ...prev, general: null }));
   }

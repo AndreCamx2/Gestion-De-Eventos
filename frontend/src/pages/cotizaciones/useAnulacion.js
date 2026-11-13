@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { anularCotizacion } from "../../api/cotizaciones";
 import { textoError } from "../../utils/erroresApi";
+import { MAX_MOTIVO } from "./cancelacion";
 
 // Estado de la ventana "Anular cotización": descarta una cotizada o bloqueada que el
 // cliente no tomó. Mismo contrato que useCancelacion (SGDE-68):
@@ -57,6 +58,10 @@ export function useAnulacion({ cotizacion, onAnulada, onRecargar, onSesionVencid
     setError(null);
     if (!motivo.trim()) {
       setErrorMotivo("Escribe el motivo de la anulación.");
+      return;
+    }
+    if (motivo.trim().length > MAX_MOTIVO) {
+      setErrorMotivo(`El motivo admite máximo ${MAX_MOTIVO} caracteres.`);
       return;
     }
 
