@@ -360,144 +360,40 @@ class MiCotizacionDetalleView(generics.RetrieveAPIView):
         return mis_cotizaciones(self.request.user)
 
 class ReporteIngresosPorTipoEventoView(generics.GenericAPIView):
-    """Reporte de ingresos por tipo de evento para cotizaciones confirmadas (SGDE-144)."""
+    """Ingresos de las cotizaciones confirmadas agrupados por tipo de evento (SGDE-144)."""
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def get(self, request, *args, **kwargs):
-        # 1. Filtramos las cotizaciones confirmadas
-        queryset = Cotizacion.objects.filter(estado="confirmado")
-        
-        # 2. Filtramos por el sitio del usuario (SGDE-90)
-        queryset = filtrar_por_sitio(queryset, request.user)
-        
-        # 3. Filtros opcionales por fecha de evento (?desde y ?hasta)
-        desde = _fecha_param(request.query_params, "desde")
-        hasta = _fecha_param(request.query_params, "hasta")
-        if desde:
-            queryset = queryset.filter(fecha_evento__gte=desde)
-        if hasta:
-            queryset = queryset.filter(fecha_evento__lte=hasta)
+        confirmadas = filtrar_por_sitio(Cotizacion.objects.filter(estado="confirmado"), request.user)
+        confirmadas = filtrar_por_fechas(confirmadas, request.query_params)
+        confirmadas = confirmadas.select_related("tipo_evento__grupo").prefetch_related("items")
 
-        # 4. Traemos los tipos de evento, incluso si están inactivos
-        tipos = TipoEvento.objects.select_related("grupo").order_by("grupo__orden", "id")
+        grupos = {}
+        for cotizacion in confirmadas:
+            tipo = cotizacion.tipo_evento
+            grupo = grupos.setdefault(tipo.id if tipo else None, {
+                "tipo_evento_id": tipo.id if tipo else None,
+                "tipo_evento_nombre": tipo.nombre if tipo else "Sin clasificar",
+                "grupo_evento_nombre": tipo.grupo.nombre if tipo else "Sin clasificar",
+                "cantidad_eventos": 0,
+                "ingreso": Decimal("0.00"),
+            })
+            grupo["cantidad_eventos"] += 1
+            grupo["ingreso"] += _totales(cotizacion)["total"]
 
-        # 5. Traemos todas las cotizaciones y sus items para calcular los totales (evita N+1)
-        cotizaciones = list(queryset.prefetch_related("items"))
+        gran_total = sum((g["ingreso"] for g in grupos.values()), Decimal("0.00"))
+        total_eventos = sum(g["cantidad_eventos"] for g in grupos.values())
 
-        resultados = []
-        gran_total = Decimal("0.00")
-        total_eventos = 0
+        detalle = []
+        for grupo in sorted(grupos.values(), key=lambda g: (-g["ingreso"], g["tipo_evento_id"] is None, g["tipo_evento_id"] or 0)):
+            ingreso = grupo.pop("ingreso")
+            porcentaje = (ingreso / gran_total * 100).quantize(Decimal("0.01")) if gran_total else Decimal("0")
+            detalle.append({**grupo, "ingreso_total": str(ingreso), "porcentaje_ingreso": float(porcentaje)})
 
-        for tipo in tipos:
-            # Filtramos las cotizaciones de este tipo en memoria
-            cotizaciones_tipo = [c for c in cotizaciones if c.tipo_evento_id == tipo.id]
-            
-            if cotizaciones_tipo:
-                # Sumamos el total de cada cotización
-                ingreso_tipo = sum((_totales(c)["total"] for c in cotizaciones_tipo), Decimal("0.00"))
-                
-                resultados.append({
-                    "tipo_evento_id": tipo.id,
-                    "tipo_evento_nombre": tipo.nombre,
-                    "grupo_evento_nombre": tipo.grupo.nombre,
-                    "cantidad_eventos": len(cotizaciones_tipo),
-                    "ingreso_total": str(ingreso_tipo),
-                })
-                
-                gran_total += ingreso_tipo
-                total_eventos += len(cotizaciones_tipo)
-
-        # 6. Calculamos porcentajes y el promedio
-        for r in resultados:
-            r["porcentaje_ingreso"] = float((Decimal(r["ingreso_total"]) / gran_total * 100).quantize(Decimal("0.01"))) if gran_total > 0 else 0.0
-
-        # Ordenamos de mayor a menor ingreso
-        resultados.sort(key=lambda x: Decimal(x["ingreso_total"]), reverse=True)
-
-        # Ticket promedio global
-        ticket_promedio = (gran_total / total_eventos).quantize(Decimal("0.01")) if total_eventos > 0 else Decimal("0.00")
-
+        ticket_promedio = (gran_total / total_eventos).quantize(Decimal("0.01")) if total_eventos else Decimal("0.00")
         return Response({
             "gran_total": str(gran_total),
             "total_eventos": total_eventos,
             "ticket_promedio": str(ticket_promedio),
-            "detalle": resultados
-        })
-
-    class ReporteIngresosPorTipoEventoView(generics.GenericAPIView):
-        """Reporte de ingresos por tipo de evento para cotizaciones confirmadas (SGDE-144)."""
-    permission_classes = [permissions.IsAuthenticated, EsAdministrador]
-
-    def get(self, request, *args, **kwargs):
-        # 1. Filtramos las cotizaciones confirmadas
-        queryset = Cotizacion.objects.filter(estado="confirmado")
-        
-        # 2. Filtramos por el sitio del usuario (SGDE-90)
-        queryset = filtrar_por_sitio(queryset, request.user)
-        
-        # 3. Filtros opcionales por fecha de evento (?desde y ?hasta)
-        desde = _fecha_param(request.query_params, "desde")
-        hasta = _fecha_param(request.query_params, "hasta")
-        if desde:
-            queryset = queryset.filter(fecha_evento__gte=desde)
-        if hasta:
-            queryset = queryset.filter(fecha_evento__lte=hasta)
-
-        # 4. Traemos los tipos de evento, incluso si están inactivos
-        tipos = TipoEvento.objects.select_related("grupo").order_by("grupo__orden", "id")
-
-        # 5. Traemos todas las cotizaciones y sus items para calcular los totales (evita N+1)
-        cotizaciones = list(queryset.prefetch_related("items"))
-
-        resultados = []
-        gran_total = Decimal("0.00")
-        total_eventos = 0
-
-        # Agregamos un "tipo falso" para capturar las que no tienen tipo (Sin clasificar)
-        tipos_a_evaluar = list(tipos) + [None]
-
-        for tipo in tipos_a_evaluar:
-            if tipo is None:
-                cotizaciones_tipo = [c for c in cotizaciones if c.tipo_evento_id is None]
-            else:
-                cotizaciones_tipo = [c for c in cotizaciones if c.tipo_evento_id == tipo.id]
-            
-            if cotizaciones_tipo:
-                ingreso_tipo = sum((_totales(c)["total"] for c in cotizaciones_tipo), Decimal("0.00"))
-                
-                if tipo is None:
-                    nombre_tipo = "Sin clasificar"
-                    grupo_tipo = "Sin clasificar"
-                    tipo_id = None
-                else:
-                    nombre_tipo = tipo.nombre
-                    grupo_tipo = tipo.grupo.nombre
-                    tipo_id = tipo.id
-
-                resultados.append({
-                    "tipo_evento_id": tipo_id,
-                    "tipo_evento_nombre": nombre_tipo,
-                    "grupo_evento_nombre": grupo_tipo,
-                    "cantidad_eventos": len(cotizaciones_tipo),
-                    "ingreso_total": str(ingreso_tipo),
-                })
-                
-                gran_total += ingreso_tipo
-                total_eventos += len(cotizaciones_tipo)
-
-        # 6. Calculamos porcentajes y el promedio
-        for r in resultados:
-            r["porcentaje_ingreso"] = float((Decimal(r["ingreso_total"]) / gran_total * 100).quantize(Decimal("0.01"))) if gran_total > 0 else 0.0
-
-        # Ordenamos de mayor a menor ingreso
-        resultados.sort(key=lambda x: Decimal(x["ingreso_total"]), reverse=True)
-
-        # Ticket promedio global
-        ticket_promedio = (gran_total / total_eventos).quantize(Decimal("0.01")) if total_eventos > 0 else Decimal("0.00")
-
-        return Response({
-            "gran_total": str(gran_total),
-            "total_eventos": total_eventos,
-            "ticket_promedio": str(ticket_promedio),
-            "detalle": resultados
+            "detalle": detalle,
         })
