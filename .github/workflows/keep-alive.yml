@@ -1,0 +1,21 @@
+name: Mantener backend despierto (Keep-Alive)
+
+on:
+  schedule:
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: Healthcheck Backend Render
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping al backend en producción
+        run: |
+          echo "Enviando ping de keep-alive al backend en Render..."
+          curl -f -s -o /dev/null --max-time 60 "https://sgde-backend.onrender.com/admin/login/"
+          echo "Ping completado con éxito: el backend se encuentra activo y respondiendo."
