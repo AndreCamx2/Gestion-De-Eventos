@@ -3,26 +3,6 @@ import { login } from "../api/auth";
 import { AvisoSesion, Boton, Campo } from "./ui";
 import "./SesionVencida.css";
 
-// Sesión vencida (401) sin salir de la pantalla.
-// Muestra el AvisoSesion abajo; "Entrar de nuevo" abre un <dialog> con usuario y
-// contraseña que usa login() de api/auth.js. Así la persona no pierde lo que
-// estaba escribiendo: al entrar, el diálogo se cierra y vuelve a intentar su acción.
-//
-// Uso en una pantalla:
-//   const [sesionVencida, setSesionVencida] = useState(false);
-//   ...en el catch: if (err.status === 401) setSesionVencida(true);
-//   <SesionVencida visible={sesionVencida} onReingreso={() => setSesionVencida(false)} />
-//
-// Con una ventana modal (<dialog> con showModal) abierta, todo lo de afuera queda
-// inerte, también la barra de abajo: no recibe clics ni foco (SGDE-94). Para esos
-// casos, la ventana muestra <AvisoSesionEnVentana> y su botón llama a
-// sesionRef.current.abrir({ focoAlVolver }): el diálogo "Entrar de nuevo" se abre
-// ENCIMA de la ventana, que no se cierra ni pierde lo escrito.
-//   const sesionRef = useRef(null);
-//   <SesionVencida ref={sesionRef} ... />
-//
-// Vive fuera de components/ui porque llama al API.
-
 // Lee el user_id de un JWT (la parte del medio es JSON en base64url).
 // No valida la firma: solo se usa para comparar quién estaba y quién entró.
 function idDeUsuario(token) {
@@ -35,8 +15,6 @@ function idDeUsuario(token) {
   }
 }
 
-// Aviso de sesión vencida DENTRO de una ventana modal (SGDE-94). Va dentro del
-// <dialog> abierto, que es lo único activo, y su botón abre "Entrar de nuevo" encima.
 export function AvisoSesionEnVentana({ onEntrar }) {
   return (
     <div className="aviso-sesion-ventana" role="alert">
@@ -52,8 +30,6 @@ export function AvisoSesionEnVentana({ onEntrar }) {
 
 export default function SesionVencida({ visible, onReingreso, ref }) {
   const dialogoRef = useRef(null);
-  // Lo que tenía el foco cuando venció la sesión (por ejemplo, "Guardar"):
-  // al volver a entrar, el foco regresa ahí.
   const focoPrevioRef = useRef(null);
   const [errorIngreso, setErrorIngreso] = useState(null);
   const [enviando, setEnviando] = useState(false);
@@ -62,15 +38,12 @@ export default function SesionVencida({ visible, onReingreso, ref }) {
     if (visible) focoPrevioRef.current = document.activeElement;
   }, [visible]);
 
-  // focoAlVolver: elemento que recibe el foco tras volver a entrar (por ejemplo,
-  // "Crear salón", que perdió el foco mientras estaba deshabilitado guardando).
   function abrir({ focoAlVolver } = {}) {
     if (focoAlVolver) focoPrevioRef.current = focoAlVolver;
     setErrorIngreso(null);
     dialogoRef.current?.showModal();
   }
 
-  // Para abrir "Entrar de nuevo" desde una ventana modal (AvisoSesionEnVentana).
   useImperativeHandle(ref, () => ({ abrir }));
 
   async function handleSubmit(event) {
@@ -83,7 +56,6 @@ export default function SesionVencida({ visible, onReingreso, ref }) {
       return;
     }
 
-    // Quién estaba antes (el token de acceso pudo haberse borrado; el de refresco también lo dice).
     const anterior =
       idDeUsuario(sessionStorage.getItem("access_token")) ??
       idDeUsuario(sessionStorage.getItem("refresh_token"));

@@ -35,7 +35,6 @@ export function useDetalleCotizacion(id) {
 
   const peticionRef = useRef(0);
   const movimientosRef = useRef(0);
-  // Para abrir "Entrar de nuevo" desde la ventana de cancelar (SGDE-94).
   const sesionRef = useRef(null);
 
   const cargarMovimientos = useCallback(async () => {
@@ -90,7 +89,6 @@ export function useDetalleCotizacion(id) {
       cargarMovimientos();
     },
     onRecargar: () => Promise.all([cargar(), cargarMovimientos()]),
-    // En la ventana: al volver a entrar, la persona repite "Cancelar evento".
     onSesionVencida: () => setSesionVencida("cancelacion"),
   });
 
@@ -235,7 +233,6 @@ export function useDetalleCotizacion(id) {
     anulacion,
     aplazamiento,
     reemplazar,
-    // Un 401 en un panel: se avisa y, al volver a entrar, la persona repite la acción.
     avisarSesionVencida: () => setSesionVencida("panel"),
   };
 }

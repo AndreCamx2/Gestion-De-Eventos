@@ -41,15 +41,13 @@ class Cliente(models.Model):
     )
     forma_pago = models.CharField(max_length=50, blank=True)
     observaciones_internas = models.TextField(blank=True)
-    # Borrado lógico: un cliente con cotizaciones no se puede borrar (PROTECT)
-    # y en un sistema comercial no se pierde historia.
+    # Borrado lógico: sus cotizaciones lo protegen y no se pierde historia.
     activo = models.BooleanField(default=True)
     creado_en = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [
-            # SGDE-91: el NIT de un jurídico vive en su Empresa. La base de datos lo
-            # garantiza aunque se guarde desde el admin, el shell o código futuro.
+            # El NIT de un jurídico vive en su Empresa, también fuera del API.
             models.CheckConstraint(
                 condition=models.Q(tipo="natural") | models.Q(identificacion__isnull=True),
                 name="cliente_juridico_sin_identificacion",
@@ -57,20 +55,10 @@ class Cliente(models.Model):
         ]
 
     def clean(self):
-        # Lo usa el admin (full_clean): el error sale bajo el campo, no como el
-        # IntegrityError del constraint.
         if self.tipo == self.JURIDICA and self.identificacion:
             raise ValidationError({"identificacion": self.MSG_JURIDICO_CON_IDENTIFICACION})
 
     def set_activo(self, activo):
-        """Activa o desactiva al cliente y a su Usuario vinculado.
-
-        Desactivar el Usuario revoca su acceso (login); sin eso, "borrar" un
-        cliente auto-registrado no le quitaría la entrada al sistema.
-
-        Es el espejo de Usuario.set_activo: cada uno guarda su estado y solo llama
-        al otro si el estado del otro todavía es distinto (sin recursión infinita).
-        """
         with transaction.atomic():
             self.activo = activo
             self.save(update_fields=["activo"])

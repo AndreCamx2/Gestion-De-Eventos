@@ -14,16 +14,7 @@ import {
   validarForm,
 } from "./conceptos";
 
-// Panel lateral del concepto elegido: precio, nombre, impuesto, el botón de
-// activar o desactivar y el historial de precios.
-//
-// Conceptos.jsx lo monta con key={concepto.id}: el formulario se reinicia al
-// elegir OTRO concepto, no cuando la lista se recarga (trae objetos nuevos de los
-// mismos conceptos). Así, si la sesión vence al guardar, lo escrito sigue aquí.
-// - onGuardado(): se guardó; Conceptos.jsx recarga la lista (devuelve una promesa).
-// - onCambiarEstado(): abre la ventana de activar o desactivar.
-// - sesionVencida / onSesionVencida(): 401 al guardar o al pedir el historial. El
-//   panel no es modal: basta la barra de abajo de SesionVencida.
+// Se monta con key={concepto.id}: si la sesión vence al guardar, lo escrito sigue aquí.
 export default function PanelConcepto({
   ref,
   concepto,
@@ -59,7 +50,6 @@ export default function PanelConcepto({
     setGuardando(true);
     try {
       const actualizado = await actualizarConcepto(concepto.id, payloadEdicion(form));
-      // Lo que quedó guardado (por ejemplo, el nombre sin espacios de más).
       if (actualizado?.id) setForm(formDesdeConcepto(actualizado));
       await onGuardado();
       setVersionHistorial((v) => v + 1);
@@ -70,7 +60,6 @@ export default function PanelConcepto({
         setErrores(campos);
         setError(general);
       } else if (err.status === 401) {
-        // El formulario se queda como está: al volver a entrar, se guarda de nuevo.
         onSesionVencida();
       } else if (err.status === 403) {
         setError("No tienes permisos suficientes para editar conceptos.");

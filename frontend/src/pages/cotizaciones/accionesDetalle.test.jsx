@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 import { simularApi } from "../../test/apiFalsa";
 import DetalleCotizacion from "../DetalleCotizacion";
 
-// Una cotizada vigente de diciembre: se puede editar, bloquear y anular.
 const COTIZADA = {
   id: 7,
   estado: "cotizado",
@@ -68,7 +67,6 @@ describe("Acciones del detalle de una cotización", () => {
     });
     await usuario.click(await screen.findByRole("button", { name: "Liberar bloqueo" }));
     expect(llamadas.some((l) => l.metodo === "DELETE" && l.ruta === "/cotizaciones/7/bloqueo/")).toBe(true);
-    // Ya liberada, vuelve a ofrecer Editar.
     expect(await screen.findByRole("link", { name: "Editar" })).toBeInTheDocument();
   });
 

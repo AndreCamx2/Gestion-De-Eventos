@@ -11,7 +11,6 @@ const ETIQUETAS_CONTEO = {
   vencida: ["vencida", "vencidas"],
 };
 
-// Como la maqueta: en la agenda, este aviso va en lugar de las personas.
 function textoVence(dias) {
   if (dias === 0) return "la oferta vence hoy";
   if (dias === 1) return "la oferta vence mañana";
@@ -25,7 +24,6 @@ export default function Agenda({ rol, calendario, agenda, onReintentar }) {
     .map((estado) => ({ estado, cantidad: agenda.filter((e) => e.estadoVisible === estado).length }))
     .filter((c) => c.cantidad > 0);
   const puedeVerCalendario = puedeEntrar("/calendario", rol);
-  // Cada evento abre el detalle de su cotización (el id del calendario es el de la cotización).
   const puedeVerCotizaciones = puedeEntrar("/cotizaciones", rol);
 
   return (

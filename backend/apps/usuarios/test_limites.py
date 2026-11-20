@@ -1,8 +1,3 @@
-"""SGDE-112: límite de intentos por IP en login, renovación del token y registro público.
-
-Cada clase fija una tasa baja con override_settings y limpia la caché, que es
-donde DRF cuenta los intentos.
-"""
 import os
 
 from django.conf import settings
@@ -25,7 +20,6 @@ URL_REGISTRO = "/api/registro/"
 
 
 def con_tasas(**tasas):
-    """override_settings con las tasas indicadas y el resto de REST_FRAMEWORK igual."""
     actuales = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]
     return override_settings(
         REST_FRAMEWORK={**settings.REST_FRAMEWORK, "DEFAULT_THROTTLE_RATES": {**actuales, **tasas}}
@@ -146,8 +140,6 @@ class LimiteRegistroTests(LimpiarConteo):
 
 class TasasRealesTests(SimpleTestCase):
     def test_settings_no_sube_las_tasas_al_correr_las_pruebas(self):
-        # La configuración no sabe nada de las pruebas: con el valor por defecto
-        # de THROTTLE_LOGIN el login queda en 5 por minuto (revisión del 16/10, punto 11).
         if "THROTTLE_LOGIN" not in os.environ:
             self.assertEqual(settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]["login"], "5/min")
 

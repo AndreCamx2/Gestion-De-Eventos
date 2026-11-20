@@ -7,23 +7,12 @@ from rest_framework.views import exception_handler
 
 
 class Conflicto(APIException):
-    """409: la petición es válida pero choca con el estado actual del registro.
-
-    Responde {"detail": "<mensaje>"}. La usan cotizaciones (estado de la cotización)
-    y salones (quitar un montaje con cotizaciones activas).
-    """
-
     status_code = status.HTTP_409_CONFLICT
     default_detail = "El registro no admite esta operación en su estado actual."
     default_code = "conflicto"
 
 
 def custom_exception_handler(exc, context):
-    """
-    Manejador global de excepciones para Django REST Framework.
-    Intercepta errores de integridad relacional y borrado protegido de la base de datos,
-    garantizando respuestas estructuradas en formato JSON con codigo HTTP 400 Bad Request.
-    """
     response = exception_handler(exc, context)
 
     if response is None:

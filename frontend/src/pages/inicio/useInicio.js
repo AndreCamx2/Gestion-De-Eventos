@@ -10,7 +10,6 @@ import { DIAS_VENTANA } from "./inicio";
 
 const BLOQUE_INICIAL = { fase: "cargando", datos: [], error: null };
 
-// Tipo de error para AvisoError: "sesion" (401), "permiso" (403) o "servidor".
 function tipoDeError(err) {
   if (err?.status === 401) return "sesion";
   if (err?.status === 403) return err.body?.codigo === "proveedor_sin_vincular" ? "sinVincular" : "permiso";
@@ -28,13 +27,7 @@ async function ejecutar(pedir, setBloque, setSesionVencida) {
   }
 }
 
-// Datos del Inicio (SGDE-103): el usuario y, solo para el administrador, las
-// cotizaciones, el calendario de los próximos DIAS_VENTANA días y los salones.
-// Cada bloque es { fase: "cargando" | "listo" | "error", datos, error } y falla
-// por separado. Devuelve los bloques, las funciones para volver a pedir cada uno
-// y alVolverAEntrar, que repite lo que falló por la sesión.
 export function useInicio() {
-  // La fecha de hoy queda fija mientras la pantalla está abierta.
   const [hoy] = useState(hoyLocal);
   // El usuario se pide aquí: el contexto del Outlet de DashboardLayout no llega
   // a esta pantalla porque RoleRoute (routes/guards.jsx) tiene su propio <Outlet />.
@@ -50,8 +43,11 @@ export function useInicio() {
   const esAdmin = rol === "administrador";
   const esProveedor = rol === "proveedor";
 
-  const cargarUsuario = () => ejecutar(getUsuarioActual, setUsuario, setSesionVencida);
-  const cargarCotizaciones = () => ejecutar(listarCotizaciones, setCotizaciones, setSesionVencida);
+  const cargarUsuario = useCallback(() => ejecutar(getUsuarioActual, setUsuario, setSesionVencida), []);
+  const cargarCotizaciones = useCallback(
+    () => ejecutar(listarCotizaciones, setCotizaciones, setSesionVencida),
+    [],
+  );
   const cargarCalendario = useCallback(
     () =>
       ejecutar(
@@ -61,12 +57,12 @@ export function useInicio() {
       ),
     [hoy],
   );
-  const cargarSalones = () => ejecutar(listarSalones, setSalones, setSesionVencida);
+  const cargarSalones = useCallback(() => ejecutar(listarSalones, setSalones, setSesionVencida), []);
   const cargarStock = useCallback(() => ejecutar(listarMiStock, setStock, setSesionVencida), []);
 
   useEffect(() => {
     cargarUsuario();
-  }, []);
+  }, [cargarUsuario]);
 
   // Solo el administrador pide cotizaciones y calendario: a cliente y proveedor
   // el API les responde 403.
@@ -75,7 +71,7 @@ export function useInicio() {
     cargarCotizaciones();
     cargarCalendario();
     cargarSalones();
-  }, [esAdmin, cargarCalendario]);
+  }, [esAdmin, cargarCotizaciones, cargarCalendario, cargarSalones]);
 
   useEffect(() => {
     if (!esProveedor) return;
@@ -84,7 +80,6 @@ export function useInicio() {
 
   function alVolverAEntrar() {
     setSesionVencida(false);
-    // Lo que falló por la sesión se pide otra vez.
     if (usuario.error === "sesion") cargarUsuario();
     if (cotizaciones.error === "sesion") cargarCotizaciones();
     if (calendario.error === "sesion") cargarCalendario();

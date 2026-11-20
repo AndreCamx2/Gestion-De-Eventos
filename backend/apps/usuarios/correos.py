@@ -11,12 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class CorreoSinConfigurar(BaseEmailBackend):
-    """Backend de correo de producción cuando falta EMAIL_BACKEND (SGDE-96).
-
-    No envía nada y deja un error en el log, sin el contenido: el correo de
-    recuperar contraseña lleva un enlace con token, y el backend de consola lo
-    dejaría escrito en los logs de Render. El chequeo sgde.W001 lo avisa al arrancar.
-    """
+    """No envía nada y deja un error en el log: la consola dejaría el token de recuperar en los logs."""
 
     def send_messages(self, email_messages):
         for mensaje in email_messages:
@@ -28,13 +23,7 @@ class CorreoSinConfigurar(BaseEmailBackend):
 
 
 def en_segundo_plano(funcion, *args):
-    """Corre `funcion(*args)` sin hacer esperar a la petición (SGDE-96).
-
-    Así la respuesta de "recuperar contraseña" tarda lo mismo exista o no el correo:
-    si el envío fuera dentro de la petición, el tiempo revelaría qué correos están
-    registrados. Con CORREOS_EN_SEGUNDO_PLANO=False corre en línea: lo usan las
-    pruebas (@correos_en_linea), porque un hilo no ve los datos de su transacción.
-    """
+    """Así recuperar contraseña tarda lo mismo exista o no el correo."""
     if not settings.CORREOS_EN_SEGUNDO_PLANO:
         funcion(*args)
         return None

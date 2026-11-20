@@ -1,11 +1,6 @@
 import { Boton, TablaContenedor, Tarjeta } from "../../components/ui";
 import { aforoMaximo, formatoNumero } from "./salones";
 
-// "Aforo por montaje": una fila por salón y una columna por montaje del catálogo.
-// El aforo más alto de cada salón se resalta; un guion es un montaje no habilitado.
-// - salones: los que dejan ver los filtros.
-// - habilitadosDe(salonId), etiquetaSalon(salon): de useSalones.
-// - onHabilitar(evento): abre "Habilitar montaje" sin salón elegido.
 export default function TablaAforo({ salones, montajes, habilitadosDe, etiquetaSalon, onHabilitar }) {
   return (
     <Tarjeta as="section" className="salones-aforo" aria-labelledby="salones-aforo-titulo">

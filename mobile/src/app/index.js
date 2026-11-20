@@ -4,7 +4,6 @@ import { Text, View } from "react-native";
 import { Boton, Cargando, estilos } from "../componentes/ui";
 import { RUTA_POR_ROL, rolDe, useSesion } from "../sesion/Sesion";
 
-// Punto de entrada: sin sesión → login; con sesión → el módulo de su rol.
 export default function Inicio() {
   const { estado, usuario, salir } = useSesion();
 
@@ -14,7 +13,6 @@ export default function Inicio() {
   const ruta = RUTA_POR_ROL[rolDe(usuario)];
   if (ruta) return <Redirect href={ruta} />;
 
-  // Rol cliente: en la beta no tiene módulo móvil.
   return (
     <SafeAreaView style={estilos.pantalla}>
       <View style={estilos.centro}>

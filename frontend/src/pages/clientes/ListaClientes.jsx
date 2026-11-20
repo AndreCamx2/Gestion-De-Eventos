@@ -9,11 +9,6 @@ import {
 import EstadoCliente from "./EstadoCliente";
 import { iniciales } from "./clientes";
 
-// Zona de la lista del directorio. `vista` dice qué se ve: "error" | "sesion" |
-// "carga" | "vacio" | "sinCoincidencias" | "tabla" (la calcula useClientes).
-// - clientes: la lista ya filtrada.
-// - tablaRef: la tabla recibe el foco al cerrar el panel.
-// - onCrear, onQuitarFiltros, onReintentar, onSeleccionar(cliente): acciones de los botones.
 export default function ListaClientes({
   vista,
   errorCarga,

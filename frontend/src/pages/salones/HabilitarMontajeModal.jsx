@@ -6,15 +6,6 @@ import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 
 const CAMPOS = ["salon", "montaje", "aforo"];
 
-// "Habilitar montaje": POST /api/salon-montajes/ con salón, montaje y aforo.
-// - salones, montajes: listas ya cargadas por Salones.jsx.
-// - habilitados(salonId): Set con los ids de montaje que ese salón ya tiene;
-//   esos salen deshabilitados en el select (el API no deja repetirlos).
-// - etiquetaSalon(salon): texto de cada opción del select de salones.
-// - salonInicial: id del salón si se abrió desde su tarjeta.
-// - onHabilitado(salonMontaje): recibe lo que devolvió el API.
-// - sesionVencida / onEntrarDeNuevo(evento): con la sesión vencida se muestra el
-//   aviso dentro de la ventana; la ventana no se cierra y conserva lo escrito.
 export default function HabilitarMontajeModal({
   salones,
   montajes,
@@ -42,7 +33,6 @@ export default function HabilitarMontajeModal({
     const { name, value } = e.target;
     setForm((prev) => {
       const siguiente = { ...prev, [name]: value };
-      // Si el montaje elegido ya existe en el salón nuevo, se desmarca.
       if (name === "salon" && value && habilitados(Number(value)).has(Number(prev.montaje))) {
         siguiente.montaje = "";
       }
@@ -74,14 +64,12 @@ export default function HabilitarMontajeModal({
       onHabilitado(creado);
     } catch (err) {
       if (err.status === 400 && err.body && typeof err.body === "object") {
-        // La regla "un montaje no se repite en el salón" llega como non_field_errors.
         const { non_field_errors, ...porCampo } = err.body;
         const { campos, general } = erroresDesdeApi(porCampo, CAMPOS);
         if (non_field_errors) campos.montaje = "Ese montaje ya está habilitado en este salón.";
         setErrores(campos);
         setErrorGeneral(general);
       } else if (err.status === 401) {
-        // El aviso va dentro de la ventana (AvisoSesionEnVentana), que no se cierra.
         onSesionVencida();
       } else if (err.status === 403) {
         setErrorGeneral("No tienes permisos suficientes para habilitar montajes.");
@@ -92,7 +80,6 @@ export default function HabilitarMontajeModal({
     }
   }
 
-  // Mismos atributos que pone Campo, para el select hecho a mano.
   const claseCampo = (campo) => ["campo", errores[campo] && "campo--error"].filter(Boolean).join(" ");
   const accesible = (campo) => ({
     "aria-invalid": errores[campo] ? true : undefined,
@@ -132,7 +119,6 @@ export default function HabilitarMontajeModal({
             className="campo__input"
             value={form.montaje}
             onChange={handleChange}
-            // Si el salón ya viene elegido, se empieza por aquí.
             data-foco-inicial={salonInicial ? "" : undefined}
             {...accesible("montaje")}
           >

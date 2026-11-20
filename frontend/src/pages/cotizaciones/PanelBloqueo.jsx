@@ -6,10 +6,6 @@ import { fechaHoraColombia } from "../../utils/fechasBloqueo";
 import { textoError } from "../../utils/erroresApi";
 import "../../components/bloqueo/bloqueo.css";
 
-// Bloquear la fecha del salón (o liberarla) desde el detalle, igual que en el Rack y
-// el Calendario (SGDE-40). Se muestra en una cotizada vigente o en una bloqueada.
-// - d: lo que devuelve useDetalleCotizacion; d.reemplazar(cotizacion) pone el detalle
-//   nuevo y recarga los movimientos.
 export default function PanelBloqueo({ d }) {
   const c = d.cotizacion;
   const [formAbierto, setFormAbierto] = useState(false);

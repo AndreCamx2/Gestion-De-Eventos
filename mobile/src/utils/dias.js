@@ -1,6 +1,5 @@
 import { sumarDias } from "./fechas";
 
-// Días desde hoy con las cotizaciones de cada uno: [{fecha, cotizaciones: [...]}].
 export function agruparPorDia(cotizaciones, desde, dias) {
   const porFecha = new Map();
   for (const c of cotizaciones) {

@@ -1,6 +1,11 @@
 import { erroresDesdeApi } from "../../utils/erroresApi";
-import { validarNombrePersona, validarUsuario } from "../../utils/validacionesRegistro";
 import { mesCorto } from "../../utils/inicioCifras";
+import {
+  MAX_PASSWORD,
+  validarCorreo,
+  validarNombre,
+  validarUsuario,
+} from "../../utils/validacionesRegistro";
 
 export const ROL_CLIENTE = "cliente";
 
@@ -68,11 +73,13 @@ export function bloqueoDeBaja(u, yoId) {
 }
 
 export const NUEVO_VACIO = { rol: "", first_name: "", last_name: "", username: "", email: "", password: "", sitios: [] };
-const CORREO_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const MAX_USUARIO = 150;
 
 export function fortaleza(password, { username = "", email = "" } = {}) {
   const clave = password ?? "";
   if (!clave) return { nivel: 0, texto: "Mínimo 8 caracteres, que no sean solo números." };
+  if (clave.length > MAX_PASSWORD) return { nivel: 1, texto: `Máximo ${MAX_PASSWORD} caracteres.` };
   const avisos = [];
   if (clave.length < 8) avisos.push("al menos 8 caracteres");
   if (/^\d+$/.test(clave)) avisos.push("no solo números");
@@ -93,14 +100,28 @@ export function fortaleza(password, { username = "", email = "" } = {}) {
 export function validarNuevo(form) {
   const errores = {};
   if (!form.rol) errores.rol = "Elige el rol.";
-  const nombre = validarNombrePersona(form.first_name);
-  if (nombre) errores.first_name = form.first_name.trim() ? nombre : "Escribe el nombre.";
-  const apellido = validarNombrePersona(form.last_name);
-  if (apellido) errores.last_name = form.last_name.trim() ? apellido : "Escribe el apellido.";
-  const usuario = validarUsuario(form.username);
-  if (usuario) errores.username = usuario;
-  if (!form.email.trim()) errores.email = "Escribe el correo.";
-  else if (!CORREO_VALIDO.test(form.email.trim())) errores.email = "Escribe un correo válido.";
+  if (form.first_name !== undefined) {
+    if (!form.first_name.trim()) errores.first_name = "Escribe el nombre.";
+    else {
+      const error = validarNombre(form.first_name, { conApellido: false });
+      if (error) errores.first_name = error;
+    }
+  }
+  if (form.last_name !== undefined) {
+    if (!form.last_name.trim()) errores.last_name = "Escribe el apellido.";
+    else {
+      const error = validarNombre(form.last_name, { conApellido: false });
+      if (error) errores.last_name = error;
+    }
+  }
+  if (!form.username?.trim()) errores.username = "Escribe el nombre de usuario.";
+  else if (form.username.trim().length > MAX_USUARIO) errores.username = `Máximo ${MAX_USUARIO} caracteres.`;
+  else {
+    const errorUsuario = validarUsuario(form.username);
+    if (errorUsuario) errores.username = errorUsuario;
+  }
+  if (!form.email?.trim()) errores.email = "Escribe el correo.";
+  else if (validarCorreo(form.email)) errores.email = validarCorreo(form.email);
   if (fortaleza(form.password, form).nivel < 2) errores.password = fortaleza(form.password, form).texto;
   return errores;
 }
@@ -130,14 +151,10 @@ export function formEdicion(u) {
 export function validarEdicion(form) {
   const errores = {};
   if (!form.rol) errores.rol = "Elige el rol.";
-  if (form.email.trim() && !CORREO_VALIDO.test(form.email.trim())) errores.email = "Escribe un correo válido.";
-  // Al editar pueden quedar vacíos (usuarios viejos sin nombre); si se escriben, solo letras.
+  if (form.email?.trim() && validarCorreo(form.email)) errores.email = validarCorreo(form.email);
   for (const campo of ["first_name", "last_name"]) {
-    if (form[campo].length > 150) errores[campo] = "Máximo 150 caracteres.";
-    else if (form[campo].trim()) {
-      const error = validarNombrePersona(form[campo]);
-      if (error) errores[campo] = error;
-    }
+    const error = form[campo]?.trim() ? validarNombre(form[campo], { conApellido: false }) : null;
+    if (error) errores[campo] = error;
   }
   return errores;
 }

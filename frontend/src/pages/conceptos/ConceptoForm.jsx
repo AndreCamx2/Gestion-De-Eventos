@@ -6,8 +6,6 @@ import {
   precioValido,
 } from "./conceptos";
 
-// Campos de la ventana "Nuevo concepto": sitio, nombre, precio e impuesto.
-// Las funciones sin estado (validar, payloads, errores del API) viven en conceptos.js.
 export default function ConceptoForm({
   idPrefix,
   form,

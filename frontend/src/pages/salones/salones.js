@@ -1,7 +1,7 @@
+
 // Funciones de la pantalla de Salones que no usan estado: búsqueda, formato de
 // números y medidas, aforo máximo y lo que se envía al editar. Las usan
 // useSalones.js y las piezas de esta carpeta.
-
 import { validarNombreCosa } from "../../utils/validacionesRegistro";
 
 // Minúsculas y sin tildes: así "bolivar" encuentra a "Bolívar".
@@ -14,7 +14,6 @@ export function normalizar(texto) {
 
 export const formatoNumero = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 });
 
-// "20.00" → "20 m"; "4.50" → "4,5 m". Sin dato → "—" (nunca un número inventado).
 export function metros(valor) {
   if (valor === null || valor === undefined || valor === "") return "—";
   return `${formatoNumero.format(Number(valor))} m`;
@@ -24,10 +23,6 @@ export function aforoMaximo(habilitados) {
   return habilitados.length ? Math.max(...habilitados.map((h) => h.aforo)) : null;
 }
 
-// ===== Editar salón (SGDE-88) =====
-
-// El API manda "20.00": en el campo se ve "20" (o "4,5" si tiene decimales,
-// como se escribe en Colombia). Sin dato → "".
 function medidaEnCampo(valor) {
   if (valor === null || valor === undefined || valor === "") return "";
   return String(Number(valor)).replace(".", ",");
@@ -42,21 +37,41 @@ export function formDesdeSalon(salon) {
   };
 }
 
-// "4,5" → 4.5; vacío → null. NaN si no es un número.
 function medidaComoNumero(texto) {
   const limpio = String(texto ?? "").trim().replace(",", ".");
   return limpio === "" ? null : Number(limpio);
 }
 
+export const MAX_NOMBRE_SALON = 100;
+// Salon.altura y Salon.ancho: 5 dígitos con 2 decimales.
+const MEDIDA_MAXIMA = 999.99;
+
 export function validarSalon(form) {
   const errores = {};
-  if (!form.nombre.trim()) errores.nombre = "Escribe el nombre del salón.";
-  else if (validarNombreCosa(form.nombre)) errores.nombre = validarNombreCosa(form.nombre);
+  const nombre = form.nombre.trim();
+  if (!nombre) errores.nombre = "Escribe el nombre del salón.";
+  else if (nombre.length > MAX_NOMBRE_SALON) errores.nombre = `Máximo ${MAX_NOMBRE_SALON} caracteres.`;
+  else if (validarNombreCosa(nombre)) errores.nombre = validarNombreCosa(nombre);
   for (const campo of ["ancho", "altura"]) {
-    const n = medidaComoNumero(form[campo]);
-    if (n !== null && (Number.isNaN(n) || n <= 0)) errores[campo] = "Escribe los metros: un número mayor que 0.";
+    const texto = String(form[campo] ?? "").trim().replace(",", ".");
+    if (texto === "") continue;
+    if (!/^\d+(\.\d{1,2})?$/.test(texto) || Number(texto) <= 0) {
+      errores[campo] = "Escribe los metros: un número mayor que 0, con máximo dos decimales.";
+    } else if (Number(texto) > MEDIDA_MAXIMA) {
+      errores[campo] = "Máximo 999,99 metros.";
+    }
   }
+  const foto = (form.foto_url ?? "").trim();
+  if (foto && !esEnlaceWeb(foto)) errores.foto_url = "Pega un enlace que empiece por https://";
   return errores;
+}
+
+function esEnlaceWeb(texto) {
+  try {
+    return ["http:", "https:"].includes(new URL(texto).protocol);
+  } catch {
+    return false;
+  }
 }
 
 // Solo lo que cambió, para el PATCH: {} si nada cambió. Las medidas se comparan
@@ -73,11 +88,12 @@ export function cambiosSalon(form, salon) {
   return cambios;
 }
 
-// ===== Editar aforo (SGDE-88) =====
+export const AFORO_MAXIMO = 100000;
 
 export function validarAforo(texto) {
   if (!/^\d+$/.test(String(texto).trim()) || Number(texto) <= 0) {
     return "Escribe cuántas personas caben: un número entero mayor que 0.";
   }
+  if (Number(texto) > AFORO_MAXIMO) return "El aforo no puede pasar de 100.000 personas.";
   return null;
 }

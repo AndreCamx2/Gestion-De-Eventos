@@ -28,12 +28,8 @@ def _usuarios():
 
 
 def usuarios_visibles(actor):
-    """Usuarios que puede ver y editar `actor` (SGDE-90).
-
-    El superusuario ve a todos. Un administrador ve a sí mismo, a quienes comparten
-    al menos un sitio con él y a los que no tienen sitios (proveedores, usuarios de
-    clientes, recién creados), para poder gestionarlos. Nunca ve a un superusuario,
-    tenga o no sitios: no puede verlo, editarlo ni darlo de baja. Cualquier otro da 404.
+    """El superusuario ve a todos. Un administrador ve a sí mismo, a quienes comparten un sitio
+    con él y a los que no tienen sitios. Nunca a un superusuario.
     """
     queryset = _usuarios()
     if actor.is_superuser:
@@ -46,11 +42,6 @@ def usuarios_visibles(actor):
 
 
 class UsuarioListCreateView(generics.ListCreateAPIView):
-    """GET: lista de usuarios. POST: crea un usuario interno (igual que /registro/).
-
-    Filtros: ?search= (username, nombre, apellido, correo), ?rol=<codigo> e
-    ?incluir_inactivos=true (por defecto solo activos).
-    """
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
     filter_backends = [filters.SearchFilter]
     pagination_class = PaginaEstandar
@@ -73,10 +64,6 @@ class UsuarioListCreateView(generics.ListCreateAPIView):
 
 
 class UsuarioDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Detalle de un usuario. Incluye inactivos para poder verlos y reactivarlos.
-
-    DELETE es lógico: marca is_active=False (y da de baja a su Cliente, si lo tiene).
-    """
     serializer_class = UsuarioAdminSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
@@ -98,14 +85,9 @@ class RegistrarUsuarioView(generics.CreateAPIView):
 
 
 class RolListView(generics.ListAPIView):
-    """Catálogo de roles para elegir el rol al crear o editar un usuario (SGDE-37).
-
-    POST /api/usuarios/ y PATCH /api/usuarios/<id>/ reciben el rol como id.
-    Solo lectura: los roles se administran en /admin/.
-    """
     queryset = Rol.objects.order_by("nombre")
     serializer_class = RolSerializer
-    pagination_class = None  # catálogo corto: lista simple
+    pagination_class = None
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
 
@@ -131,8 +113,7 @@ class SolicitarRecuperacionView(APIView):
     def post(self, request):
         serializer = SolicitarRecuperacionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        # Fuera de la petición (SGDE-96): buscar el correo y enviarlo tarda distinto si
-        # existe, y ese tiempo revelaría qué correos están registrados.
+        # Fuera de la petición: el tiempo de respuesta revelaría qué correos existen.
         en_segundo_plano(solicitar_recuperacion, serializer.validated_data["email"])
         return Response({"detail": MSG_SOLICITUD_RECIBIDA})
 
@@ -160,19 +141,11 @@ class RestablecerClaveView(APIView):
         return Response({"detail": MSG_CLAVE_ACTUALIZADA})
 
 
-# --- Login y renovación con límite de intentos por IP (SGDE-112) ---------------
-# Mismas vistas de simplejwt (y los serializers de SIMPLE_JWT), con un tope por IP
-# para frenar la fuerza bruta. Las tasas están en DEFAULT_THROTTLE_RATES (settings.py).
-
 class LoginView(ConLimiteDeIntentos, TokenObtainPairView):
-    """POST /api/token/ → {access, refresh}. Pasado el límite responde 429."""
-
     throttle_scope = "login"
 
 
 class RenovarTokenView(ConLimiteDeIntentos, TokenRefreshView):
-    """POST /api/token/refresh/ → {access, refresh}. Pasado el límite responde 429."""
-
     throttle_scope = "renovar_token"
 
 

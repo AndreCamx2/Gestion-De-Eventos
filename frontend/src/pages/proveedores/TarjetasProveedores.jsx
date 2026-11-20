@@ -1,15 +1,6 @@
 import { Boton } from "../../components/ui";
 import { iniciales } from "./proveedores";
 
-// Tarjetas de proveedor (maqueta Proveedores.dc.html). Cada una es un botón con
-// aria-pressed: al elegirla, la tabla de abajo muestra su stock.
-// - proveedores: ya ordenados por nombre.
-// - seleccionadoId: el proveedor elegido.
-// - conteos: { [idProveedor]: n } con sus elementos, o null si /stock/ no cargó
-//   (entonces dice "— elementos").
-// - onElegir(proveedor).
-// - onUsuarioAcceso(boton): abre "Usuario de acceso" del elegido (SGDE-72). El botón
-//   va debajo de la tarjeta elegida, fuera de ella: no puede haber un botón dentro de otro.
 function textoElementos(n) {
   if (n === null) return "— elementos";
   return n === 1 ? "1 elemento" : `${n} elementos`;

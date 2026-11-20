@@ -6,7 +6,6 @@ import { recuperarClaveActiva } from "../utils/recuperarClave";
 import "../styles/acceso.css";
 import logoVenue from "../assets/marca/venue-logo.svg";
 
-// Pasos que se muestran junto al formulario (maqueta Main.dc.html).
 const PASOS = [
   { numero: 1, texto: "Cotiza con aforo y precios al día", tono: "tinta" },
   { numero: 2, texto: "Ve qué salón está libre cada día", tono: "durazno" },
@@ -41,7 +40,6 @@ function LoginForm({ onLoginSuccess }) {
       await onLoginSuccess?.({ email });
       navigate("/inicio");
     } catch (err) {
-      // SGDE-112: el backend limita los intentos por IP y responde 429.
       setErrors({
         password: err.status === 429 ? MSG_MUCHOS_INTENTOS : "Usuario o contraseña incorrectos.",
       });
@@ -73,8 +71,6 @@ function LoginForm({ onLoginSuccess }) {
           error={errors.email}
         />
 
-        {/* Contraseña con botón de mostrar/ocultar: Campo no admite un botón
-            dentro del input, así que se arma con sus mismas clases. */}
         <div className={`campo${errors.password ? " campo--error" : ""}`}>
           <div className="acceso-clave__cabecera">
             <label className="campo__etiqueta" htmlFor="password">

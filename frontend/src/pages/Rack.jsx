@@ -13,8 +13,6 @@ import RackRejilla from "./rack/RackRejilla";
 import { DIAS_POR_PAGINA, armarRejilla, rangoDeDias } from "./rack/rack";
 import "../styles/rack.css";
 
-// Rack de salones (SGDE-69): ocupación por día de cada salón, con bloqueo y
-// liberación desde el panel del día. Las reglas de la rejilla están en pages/rack/rack.js.
 const ESTADOS_LEYENDA = ["disponible", "cotizado", "bloqueado", "confirmado"];
 
 function textoRango(dias) {
@@ -25,17 +23,15 @@ function textoRango(dias) {
 export default function Rack() {
   const hoy = useMemo(() => hoyLocal(), []);
   const [inicio, setInicio] = useState(hoy);
-  // Lo último que llegó del API, junto con el rango al que corresponde.
-  const [datos, setDatos] = useState(null); // { dias, salones, cotizaciones }
+  const [datos, setDatos] = useState(null);
   const [cargando, setCargando] = useState(true);
-  // Error al cargar: null | "sesion" (401) | "permiso" (403) | "servidor".
   const [errorCarga, setErrorCarga] = useState(null);
   const [sesionVencida, setSesionVencida] = useState(false);
   const [filtroSitio, setFiltroSitio] = useState("todos");
-  const [panel, setPanel] = useState(null); // { salonId, fecha: "AAAA-MM-DD" }
+  const [panel, setPanel] = useState(null);
 
   const pedidoRef = useRef(0); // una respuesta vieja no pisa a la nueva
-  const abridorRef = useRef(null); // celda que abrió el panel, para devolverle el foco
+  const abridorRef = useRef(null);
   const sesionRef = useRef(null);
 
   async function cargar(desde) {
@@ -67,7 +63,6 @@ export default function Rack() {
     cargar(inicio);
   }, [inicio]);
 
-  // El foco vuelve a la celda en un efecto, cuando el panel ya se quitó (ERR-017).
   useEffect(() => {
     if (panel === null && abridorRef.current?.isConnected) {
       abridorRef.current.focus();
@@ -75,7 +70,6 @@ export default function Rack() {
     }
   }, [panel]);
 
-  // Los chips de sitio salen de los salones (sitio_nombre, SGDE-104).
   const sitiosConSalones = useMemo(() => sitiosDeSalones(datos?.salones ?? []), [datos]);
   const salonesVisibles = useMemo(
     () => (datos?.salones ?? []).filter((s) => filtroSitio === "todos" || s.sitio === filtroSitio),

@@ -4,13 +4,9 @@ import { Aviso, Boton, Campo, estilos } from "./ui";
 import { mensajeDeError } from "../utils/errores";
 import { validarStock } from "../utils/formularioStock";
 
-// Formulario de un elemento de "Mi stock". Con `conNombre` se pide el nombre
-// (elemento nuevo); al editar, el nombre no cambia (SGDE-98) y solo se muestra.
-// `guardar(datos)` llama al API; si responde 400, los errores salen bajo cada campo.
 export default function FormStock({ inicial = {}, conNombre = false, nombreFijo, tituloBoton, guardar, alGuardar }) {
   const [nombre, setNombre] = useState(inicial.nombre ?? "");
   const [cantidad, setCantidad] = useState(inicial.cantidad != null ? String(inicial.cantidad) : "");
-  // "45000.00" → "45000" y "45000.50" → "45000.5": sin ceros de más y sin perder centavos.
   const [valor, setValor] = useState(inicial.valor != null ? String(Number(inicial.valor)) : "");
   const [errores, setErrores] = useState({});
   const [general, setGeneral] = useState(null);

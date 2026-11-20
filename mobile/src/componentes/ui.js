@@ -2,8 +2,6 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { TOQUE_MINIMO, colores, espacio } from "../tema";
 import { ESTADOS } from "../utils/estados";
 
-// Piezas visuales compartidas por todas las pantallas.
-
 export function Boton({ titulo, onPress, variante = "principal", deshabilitado = false, cargando = false }) {
   const estilo = variante === "secundario" ? estilos.botonSecundario : variante === "peligro" ? estilos.botonPeligro : estilos.botonPrincipal;
   const textoEstilo = variante === "principal" ? estilos.botonTextoClaro : variante === "peligro" ? estilos.botonTextoPeligro : estilos.botonTexto;

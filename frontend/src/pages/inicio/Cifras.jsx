@@ -3,7 +3,6 @@ import { confirmadosDelMes, mesCorto, nombreMes, numero, tasaDeCierre } from "..
 import { SinDatos } from "./AvisosBloque";
 import { plural } from "./inicio";
 
-// Tarjetas de cifras del lateral del Inicio: confirmados del mes y tasa de cierre.
 export function Confirmados({ hoy, cotizaciones }) {
   const mesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
   const listo = cotizaciones.fase === "listo";

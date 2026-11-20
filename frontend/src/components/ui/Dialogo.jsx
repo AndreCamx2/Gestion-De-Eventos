@@ -1,20 +1,6 @@
 import { useEffect, useRef } from "react";
 import "./Dialogo.css";
 
-// Ventana modal de Piedra viva, con <dialog> nativo: showModal() deja inactivo
-// el fondo, encierra el foco dentro y cierra con Escape (evento "cancel").
-//
-// Se pinta ya abierta: la pantalla la monta solo mientras está activa y la quita
-// cuando avisa con onCerrar (Escape, la X o "Cancelar"). Al quitarla, la pantalla
-// devuelve el foco al botón que la abrió.
-// - idTitulo / titulo: el <h2> que nombra la ventana para lectores de pantalla.
-// - bloqueado: mientras se guarda, ni Escape ni la X la cierran.
-// - El foco inicial va al elemento marcado con data-foco-inicial, o al primer campo.
-// Clases para el contenido: dialogo__form (columna de campos), dialogo__error
-// (error general) y dialogo__acciones (botones abajo a la derecha).
-//
-// Con la sesión vencida, la ventana muestra <AvisoSesionEnVentana> de
-// components/SesionVencida.jsx: la barra de abajo queda inerte detrás del modal (SGDE-94).
 export default function Dialogo({ idTitulo, titulo, bloqueado = false, onCerrar, className = "", children }) {
   const dialogoRef = useRef(null);
 

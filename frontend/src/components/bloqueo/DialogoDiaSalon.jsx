@@ -8,15 +8,6 @@ import { fechaLarga, numero } from "../../utils/inicioCifras";
 import FormBloqueo from "./FormBloqueo";
 import "./bloqueo.css";
 
-// Panel del día de un salón: sus cotizaciones (también las vencidas) y las acciones
-// Bloquear y Liberar. Aceptar y cancelar van en el Detalle de cotización, no aquí.
-// Lo abren el Rack (SGDE-69) y el Calendario (SGDE-45).
-// - cotizaciones: las de ese salón y día; la pantalla las vuelve a pasar tras cada recarga.
-// - esPasado: un día anterior a hoy no ofrece "Bloquear" (el backend daría 400);
-//   "Liberar" sí, si la cotización sigue bloqueada.
-// - onCambio(): la pantalla recarga sus datos después de una acción que salió bien.
-// - Sesión vencida (SGDE-94): onSesionVencida(), sesionVencida y onEntrarDeNuevo(boton);
-//   la ventana no se cierra ni redirige a /login.
 const MENSAJES = {
   403: "No tienes permisos para cambiar esta cotización.",
   404: "Esta cotización ya no existe. Cierra esta ventana y vuelve a cargar la página.",
@@ -25,11 +16,10 @@ const MENSAJES = {
 export default function DialogoDiaSalon({
   salon, dia, esPasado, cotizaciones, onCambio, onCerrar, onSesionVencida, sesionVencida, onEntrarDeNuevo,
 }) {
-  // accion: { tipo: "bloquear" | "liberar", id } o null
   const [accion, setAccion] = useState(null);
   const [procesando, setProcesando] = useState(false);
   const [errorCampo, setErrorCampo] = useState(null);
-  const [error, setError] = useState(null); // { tipo, titulo?, texto } para AvisoError
+  const [error, setError] = useState(null);
   const botonRef = useRef(null);
 
   function elegir(nueva) {

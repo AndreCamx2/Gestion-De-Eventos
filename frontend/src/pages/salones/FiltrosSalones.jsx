@@ -1,8 +1,5 @@
 import InterruptorBajas from "./InterruptorBajas";
 
-// Filtros de Salones: búsqueda por nombre, montaje, aforo mínimo y "Mostrar dados
-// de baja". Con filtros puestos, cuenta cuántos salones se ven (visibles de total).
-// buscarRef: la búsqueda recibe el foco al quitar los filtros.
 export default function FiltrosSalones({
   busqueda,
   onBusqueda,

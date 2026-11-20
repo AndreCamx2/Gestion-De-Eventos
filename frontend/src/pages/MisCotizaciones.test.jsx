@@ -7,7 +7,6 @@ import MiCotizacion from "./MiCotizacion";
 import MisCotizaciones from "./MisCotizaciones";
 import { avisoDeEstado, fechaNumerica, separarPorFecha } from "./misCotizaciones/misCotizaciones";
 
-// Fechas lejanas para no depender del día en que corren las pruebas.
 const FILA = {
   id: 7,
   estado: "cotizado",
@@ -113,7 +112,6 @@ describe("Detalle de una cotización del cliente (SGDE-131)", () => {
     expect(screen.getByText("Esta cotización es válida hasta el 30/11/2099.")).toBeInTheDocument();
     expect(screen.getByText("Almuerzo ejecutivo")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Descargar PDF" })).toHaveAttribute("href", "/mis-cotizaciones/7/imprimir");
-    // Solo lectura: ninguna acción del administrador.
     expect(screen.queryByRole("button", { name: /Confirmar|Bloquear|Cancelar|Anular/ })).not.toBeInTheDocument();
   });
 

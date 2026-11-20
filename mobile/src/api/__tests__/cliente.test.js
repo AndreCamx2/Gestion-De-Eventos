@@ -1,6 +1,3 @@
-// Cliente del API: renovación del token (SGDE-86/92) y paginación (SGDE-116).
-// El almacén de tokens se reemplaza por un objeto en memoria (jest.mock se
-// ejecuta antes que los imports, aunque esté escrito después).
 import { ErrorApi, alVencer, api } from "../cliente";
 import { todasLasPaginas } from "../listas";
 
@@ -43,7 +40,6 @@ describe("api() y la renovación del token", () => {
       return opciones.headers.Authorization === "Bearer nuevo" ? respuesta(200, { id: 1 }) : respuesta(401, {});
     });
 
-    // Dos peticiones a la vez: una sola llamada a /token/refresh/.
     await Promise.all([api("/salones/"), api("/calendario/")]);
     expect(fetch.mock.calls.filter(([url]) => url.endsWith("/token/refresh/"))).toHaveLength(1);
     expect(mockMemoria.sgde_refresh).toBe("refresh-2");

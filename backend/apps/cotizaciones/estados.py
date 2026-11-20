@@ -1,22 +1,3 @@
-"""Acciones que cambian el estado de una cotización: bloquear, liberar y aceptar.
-
-El evento es la propia Cotizacion (no hay entidad Bloqueo): estas funciones solo
-mueven su estado entre cotizado → bloqueado → confirmado (→ cancelado).
-Parte de la lógica viene de apps/disponibilidad (SGDE-15, Felipe Bernal).
-
-Cómo se usan desde una vista:
-
-    liberar_bloqueos_vencidos()            # en su propia transacción, antes
-    with transaction.atomic():
-        cotizacion = tomar_para_cambio(queryset_del_usuario, pk)
-        bloquear(cotizacion, hasta, usuario)
-
-Orden de bloqueo de filas, igual en todas las acciones: primero el Salón y
-después la Cotización. Con un solo orden, dos acciones simultáneas sobre el
-mismo salón se esperan en fila en vez de bloquearse mutuamente (deadlock).
-Por eso la liberación automática corre aparte: toma filas de cotización sin
-pasar por el salón.
-"""
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -40,38 +21,28 @@ def en_femenino(estado):
 
 
 def fecha_hora(valor):
-    """14/10/2026 18:00 en la hora de Colombia, para los mensajes."""
     return date_format(timezone.localtime(valor), "d/m/Y H:i")
 
 
 def fecha_corta(valor):
-    """14/10/2026, o "sin fecha" si es None."""
     return valor.strftime("%d/%m/%Y") if valor else "sin fecha"
 
 
 def pesos(valor):
-    """$ 1.000.000 (o $ 1.000.000,50 con centavos), como se escribe en Colombia."""
     entero, _, centavos = f"{valor:,.2f}".partition(".")
     texto = entero.replace(",", ".")
     return f"$ {texto}" if centavos == "00" else f"$ {texto},{centavos}"
 
 
 def registrar(cotizacion, tipo, usuario, detalle=""):
-    """Deja el movimiento (SGDE-62). Se llama dentro de la transacción de la acción.
-
-    usuario=None significa que lo hizo el sistema.
-    """
     MovimientoCotizacion.objects.create(cotizacion=cotizacion, tipo=tipo, usuario=usuario, detalle=detalle[:255])
 
 
 def liberar_bloqueos_vencidos(ahora=None, usuario=None):
-    """Pasa a `cotizado` toda cotización bloqueada cuyo `bloqueo_hasta` ya pasó.
+    """Pasa a cotizado todo bloqueo vencido y devuelve cuántos liberó.
 
-    Los GET no la llaman (SGDE-118): un bloqueo vencido ya se muestra como cotizado
-    sin escribir. Se libera de verdad antes de cada acción (con `usuario`, solo en sus
-    sitios) y con `manage.py liberar_bloqueos`, sin `usuario`, para todos los sitios.
-    skip_locked: si otra petición tiene tomada una fila, se salta; esa misma
-    acción la libera al revisarla (`_liberar_si_vencio`). Devuelve cuántas liberó.
+    Los GET no la llaman: un bloqueo vencido ya se muestra como cotizado sin escribir.
+    Con skip_locked se salta las filas que otra petición tiene tomadas.
     """
     ahora = ahora or timezone.now()
     with transaction.atomic():
@@ -104,11 +75,6 @@ def _liberar_si_vencio(cotizacion, ahora):
 
 
 def tomar_para_cambio(queryset, pk):
-    """Dentro de transaction.atomic(): la cotización con su Salón y ella misma bloqueados.
-
-    `queryset` ya viene filtrado por sitio: un id de otro sitio da 404. El primer
-    get no bloquea; solo sirve para saber qué salón bloquear primero.
-    """
     salon_id = get_object_or_404(queryset.values_list("salon_id", flat=True), pk=pk)
     salon = Salon.objects.select_for_update().get(pk=salon_id)
     cotizacion = Cotizacion.objects.select_for_update().get(pk=pk)
@@ -118,17 +84,11 @@ def tomar_para_cambio(queryset, pk):
 
 
 def exigir_salon_activo(cotizacion):
-    """409 si el salón está dado de baja (SGDE-99): no se bloquea, confirma ni extiende ahí.
-
-    Dar de baja solo revisa las cotizaciones activas; sin esto, una cotizada vencida del
-    salón podría extender su vigencia y confirmarse en un salón inactivo.
-    """
     if not cotizacion.salon.activo:
         raise Conflicto("El salón está dado de baja.")
 
 
 def _exigir_fecha_libre(cotizacion, ahora):
-    """409 si el salón ya tiene esa fecha confirmada o bloqueada (vigente) por otra cotización."""
     otras = (
         Cotizacion.objects.filter(salon_id=cotizacion.salon_id, fecha_evento=cotizacion.fecha_evento)
         .exclude(pk=cotizacion.pk)
@@ -143,7 +103,6 @@ def _exigir_fecha_libre(cotizacion, ahora):
 
 
 def bloquear(cotizacion, bloqueo_hasta, usuario):
-    """Bloquea el salón y la fecha de la cotización hasta `bloqueo_hasta` (SGDE-40/60/15)."""
     if cotizacion.estado != "cotizado":
         raise Conflicto(f"Solo se puede bloquear una cotización cotizada; esta está {en_femenino(cotizacion.estado)}.")
     exigir_salon_activo(cotizacion)
@@ -164,7 +123,6 @@ def bloquear(cotizacion, bloqueo_hasta, usuario):
 
 
 def liberar(cotizacion, usuario):
-    """Quita a mano el bloqueo: vuelve a `cotizado` (SGDE-40/60/15)."""
     if cotizacion.estado != "bloqueado":
         raise Conflicto(f"La cotización no está bloqueada; está {en_femenino(cotizacion.estado)}.")
     _pasar_a_cotizado(cotizacion)
@@ -172,7 +130,6 @@ def liberar(cotizacion, usuario):
 
 
 def _exigir_garantia_minima(cotizacion, monto):
-    """400 si el monto no llega al mínimo (30% o 100%, ver garantia_minima) o pasa del total."""
     total = totales_cotizacion(cotizacion.items.all())["total"]
     minima = garantia_minima(total, cotizacion.fecha_evento, timezone.localdate())
     if monto < minima["monto"]:
@@ -184,10 +141,8 @@ def _exigir_garantia_minima(cotizacion, monto):
 
 
 def aceptar(cotizacion, tipo, monto, usuario):
-    """Registra la garantía y confirma (SGDE-20). Desde cotizada no vencida o bloqueada.
-
-    Una bloqueada se acepta aunque su validez_oferta haya pasado: el bloqueo
-    sostiene la oferta (decisión de Andrés, 2026-10-12).
+    """Registra la garantía y confirma. Una bloqueada se acepta aunque su vigencia haya
+    pasado: el bloqueo sostiene la oferta.
     """
     if cotizacion.estado not in ("cotizado", "bloqueado"):
         raise Conflicto(f"La cotización está {en_femenino(cotizacion.estado)}.")
@@ -204,8 +159,7 @@ def aceptar(cotizacion, tipo, monto, usuario):
     cotizacion.estado = "confirmado"
     cotizacion.bloqueo_hasta = None
     try:
-        # Savepoint: si aun así choca con uq_salon_fecha_confirmado, 409 aquí en vez
-        # del 400 genérico del manejador global.
+        # Si aun así choca con uq_salon_fecha_confirmado, 409 y no el 400 genérico.
         with transaction.atomic():
             cotizacion.save(update_fields=[
                 "garantia_tipo", "garantia_monto", "garantia_registrada_en",
@@ -217,11 +171,6 @@ def aceptar(cotizacion, tipo, monto, usuario):
 
 
 def anular(cotizacion, motivo, usuario):
-    """Descarta una cotización que el cliente no tomó: cotizada (aunque esté vencida) o bloqueada.
-
-    Queda en `cancelado` sin penalización (penalizacion_pct null, sin monto retenido):
-    nunca se confirmó, así que no hay garantía que retener. Una bloqueada suelta su fecha.
-    """
     if cotizacion.estado not in ("cotizado", "bloqueado"):
         raise Conflicto(
             "Solo se puede anular una cotización cotizada o bloqueada; "
@@ -240,11 +189,6 @@ def anular(cotizacion, motivo, usuario):
 
 
 def cancelar(cotizacion, penalizacion_pct, motivo, usuario):
-    """Cancela un evento confirmado con su penalización (SGDE-61).
-
-    Al dejar de estar confirmada, el salón queda libre esa fecha: el constraint
-    uq_salon_fecha_confirmado solo cuenta las confirmadas.
-    """
     if cotizacion.estado != "confirmado":
         raise Conflicto(
             f"Solo se puede cancelar un evento confirmado; esta cotización está {en_femenino(cotizacion.estado)}."

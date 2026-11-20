@@ -15,7 +15,6 @@ from .services import MSG_ROL_CLIENTE, MSG_ROL_CON_CLIENTE, validar_cambio_usuar
 
 PASSWORD = "Clave-Segura-123"
 
-# Endpoints de administración: solo el rol "administrador" puede usarlos.
 ENDPOINTS_ADMIN = [
     "/api/clientes/",
     "/api/empresas/",
@@ -30,10 +29,6 @@ ENDPOINTS_ADMIN = [
     "/api/cotizaciones/",
 ]
 
-# Rutas de detalle (con id) o de solo lectura, con sus métodos: también solo del
-# administrador. Van aparte porque con el admin no dan 200/400 como arriba: un GET
-# a un id que no existe da 404 y un POST a una ruta de solo lectura da 405.
-# El id no necesita existir: el permiso se revisa antes de buscar el objeto.
 ENDPOINTS_ADMIN_DETALLE = [
     ("/api/roles/", ["get"]),
     ("/api/calendario/", ["get"]),
@@ -62,8 +57,6 @@ def crear_usuario(username, codigo_rol):
 
 @sin_limite_de_intentos
 class MatrizAccesoPorRolTests(APITestCase):
-    """SEG-001: cliente y proveedor no pueden usar los endpoints de administración."""
-
     @classmethod
     def setUpTestData(cls):
         cls.admin = crear_usuario("admin@test.com", "administrador")
@@ -89,7 +82,6 @@ class MatrizAccesoPorRolTests(APITestCase):
                                      status.HTTP_403_FORBIDDEN)
 
     def test_administrador_pasa_el_permiso(self):
-        """GET responde 200; POST vacío llega a la validación (400), no es rechazado (403)."""
         self.client.force_authenticate(user=self.admin)
         for url in ENDPOINTS_ADMIN:
             with self.subTest(url=url, metodo="GET"):
@@ -124,8 +116,6 @@ class MatrizAccesoPorRolTests(APITestCase):
 
 @sin_limite_de_intentos
 class RegistroUsuariosInternosTests(APITestCase):
-    """SEG-004: solo un administrador puede crear usuarios internos y fijar su rol."""
-
     @classmethod
     def setUpTestData(cls):
         cls.admin = crear_usuario("admin@test.com", "administrador")
@@ -151,7 +141,6 @@ class RegistroUsuariosInternosTests(APITestCase):
         self.assertEqual(Usuario.objects.get(username="nuevo@test.com").rol, self.rol_proveedor)
 
     def test_no_se_puede_crear_usuario_interno_con_rol_cliente(self):
-        """Hallazgo: el POST aceptaba rol=cliente y dejaba un usuario sin Cliente."""
         self.client.force_authenticate(user=self.admin)
         rol_cliente = Rol.objects.get(codigo="cliente")
         for url in ("/api/usuarios/", "/api/usuarios/registro/"):
@@ -181,8 +170,6 @@ class RegistroUsuariosInternosTests(APITestCase):
 
 @sin_limite_de_intentos
 class CadenaEscaladaSEG004Tests(APITestCase):
-    """SEG-004 de punta a punta, sin credenciales previas ni force_authenticate."""
-
     REGISTRO = {"tipo": "natural", "nombre": "Atacante", "identificacion": "9999999",
                 "email": "atacante@test.com", "ciudad": "CTG", "password": PASSWORD}
 
@@ -190,17 +177,14 @@ class CadenaEscaladaSEG004Tests(APITestCase):
         rol_admin = Rol.objects.get(codigo="administrador")
         self.assertFalse(Usuario.objects.filter(rol=rol_admin).exists())
 
-        # (a) registro público: cualquiera crea una cuenta
         r = self.client.post("/api/registro/", self.REGISTRO, format="json")
         self.assertEqual(r.status_code, status.HTTP_201_CREATED)
 
-        # (b) login real con esa cuenta
         r = self.client.post("/api/token/", {"username": "atacante@test.com", "password": PASSWORD},
                              format="json")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {r.data['access']}")
 
-        # (c) intento de crear un administrador con ese token
         r = self.client.post("/api/usuarios/registro/",
                              {"username": "root@test.com", "email": "root@test.com",
                               "password": PASSWORD, "rol": rol_admin.id, "sitios": []},
@@ -209,7 +193,6 @@ class CadenaEscaladaSEG004Tests(APITestCase):
         self.assertFalse(Usuario.objects.filter(rol=rol_admin).exists())
 
     def test_registro_publico_ignora_un_rol_enviado_en_el_payload(self):
-        """Variante en un solo paso y sin token: el rol del payload no debe tener efecto."""
         rol_admin = Rol.objects.get(codigo="administrador")
         datos = dict(self.REGISTRO, rol=rol_admin.id, sitios=[1])
         r = self.client.post("/api/registro/", datos, format="json")
@@ -220,8 +203,6 @@ class CadenaEscaladaSEG004Tests(APITestCase):
 
 @sin_limite_de_intentos
 class RegistroPublicoPasswordTests(APITestCase):
-    """POST /api/registro/ valida la contraseña con AUTH_PASSWORD_VALIDATORS."""
-
     BASE = {"tipo": "natural", "nombre": "Carolina Méndez", "identificacion": "1045678",
             "email": "carolina.mendez@example.com", "ciudad": "CTG"}
 
@@ -248,7 +229,6 @@ class RegistroPublicoPasswordTests(APITestCase):
         self.assertPasswordRechazada(self.registrar(password="carolina.mendez"), "muy parecida a nombre de usuario")
 
     def test_contrasena_parecida_al_nombre(self):
-        # Correo sin relación con la contraseña: solo puede fallar por el nombre.
         r = self.registrar(email="xk93qz@dominio.test", password="Carolina2026")
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(r.json()["password"], ["La contraseña es muy parecida a nombre."])
@@ -306,8 +286,6 @@ class BaseUsuariosAdminTests(APITestCase):
 
 
 class MatrizDetalleUsuarioTests(BaseUsuariosAdminTests):
-    """Rol x método sobre /api/usuarios/<pk>/ (mismo patrón que SEG-001)."""
-
     def test_sin_token_recibe_401(self):
         self.client.force_authenticate(user=None)
         for metodo in ("get", "patch", "delete"):
@@ -327,13 +305,9 @@ class MatrizDetalleUsuarioTests(BaseUsuariosAdminTests):
 
 
 class ListaRolesTests(BaseUsuariosAdminTests):
-    """SGDE-37: la pantalla de Usuarios elige el rol (por id) de este catálogo.
-    El 401 y el 403 los cubre MatrizAccesoPorRolTests (ENDPOINTS_ADMIN_DETALLE)."""
-
     def test_administrador_recibe_la_lista_simple_de_roles(self):
         respuesta = self.client.get("/api/roles/")
         self.assertEqual(respuesta.status_code, status.HTTP_200_OK)
-        # Lista simple, sin paginar, ordenada por nombre, con id, código y nombre.
         esperados = [
             {"id": rol.id, "codigo": rol.codigo, "nombre": rol.nombre}
             for rol in Rol.objects.order_by("nombre")
@@ -506,13 +480,11 @@ class ReglasDeSeguridadUsuarioTests(BaseUsuariosAdminTests):
         self.assertEqual(respuesta.status_code, status.HTTP_204_NO_CONTENT)
 
     def test_no_se_deja_sin_administradores_activos(self):
-        """Defensa en profundidad: con un actor admin inactivo (que el login JWT ya
-        rechazaría) se intenta dar de baja al único administrador activo."""
         unico = crear_usuario("unico@test.com", "administrador")
         for inactivo in (self.admin, self.otro_admin):
             inactivo.is_active = False
             inactivo.save()
-        self.client.force_authenticate(user=self.admin)  # actor
+        self.client.force_authenticate(user=self.admin)
 
         respuesta = self.client.delete(detalle(unico.pk))
         self.assertEqual(respuesta.status_code, status.HTTP_400_BAD_REQUEST)
@@ -531,7 +503,7 @@ class ReglasDeSeguridadUsuarioTests(BaseUsuariosAdminTests):
         self.otro_admin.save()
         with self.assertRaises(ValidationError):
             validar_cambio_usuario(self.admin, None, nuevo_activo=False)
-        validar_cambio_usuario(self.proveedor, None, nuevo_activo=False)  # no es admin: pasa
+        validar_cambio_usuario(self.proveedor, None, nuevo_activo=False)
 
     def test_superusuario_no_se_toca_desde_la_api(self):
         super_user = Usuario.objects.create_superuser(
@@ -541,8 +513,6 @@ class ReglasDeSeguridadUsuarioTests(BaseUsuariosAdminTests):
             ("patch", {"is_active": False}, "is_active"),
             ("patch", {"rol": self.rol_proveedor.id}, "rol"),
         ]
-        # Un administrador normal ni siquiera lo ve (SGDE-90): 404. Otro superusuario
-        # sí lo ve, y la regla de validar_cambio_usuario lo frena con 400.
         otro_super = Usuario.objects.create_superuser(
             username="root2", email="root2@test.com", password=PASSWORD, rol=self.rol_admin)
         for actor, esperado in ((self.admin, status.HTTP_404_NOT_FOUND), (otro_super, status.HTTP_400_BAD_REQUEST)):
@@ -587,8 +557,6 @@ class ReglasDeSeguridadUsuarioTests(BaseUsuariosAdminTests):
 
 
 class BajaUsuarioYClienteIdaYVueltaTests(BaseUsuariosAdminTests):
-    """La baja/reactivación se propaga en los dos sentidos sin recursión infinita."""
-
     def estado(self, cliente):
         cliente.refresh_from_db()
         cliente.usuario.refresh_from_db()
@@ -631,8 +599,6 @@ class BajaUsuarioYClienteIdaYVueltaTests(BaseUsuariosAdminTests):
 
 @sin_limite_de_intentos
 class UsuarioMeTests(APITestCase):
-    """SGDE-89: el saludo del Inicio usa first_name, y si viene vacío, username."""
-
     def test_me_trae_first_name(self):
         usuario = crear_usuario("carla@test.com", "administrador")
         usuario.first_name = "Carla"
@@ -646,7 +612,6 @@ class UsuarioMeTests(APITestCase):
         self.assertEqual(self.client.get("/api/usuarios/me/").data["first_name"], "")
 
     def test_me_trae_el_proveedor_vinculado_o_null(self):
-        # SGDE-30: "Mi stock" muestra el nombre de su proveedor, aunque no tenga stock.
         from apps.proveedores.models import Proveedor
 
         usuario = crear_usuario("sonido@test.com", "proveedor")
@@ -659,9 +624,6 @@ class UsuarioMeTests(APITestCase):
 
 
 class LimitePorIpDetrasDelProxyTests(TestCase):
-    """NUM_PROXIES (settings.py): el límite de intentos cuenta por la IP que agrega el
-    proxy de Render, no por lo que el cliente escriba en X-Forwarded-For."""
-
     class Vista:
         throttle_scope = "prueba_num_proxies"
 
@@ -683,6 +645,5 @@ class LimitePorIpDetrasDelProxyTests(TestCase):
         ]
 
     def test_cambiar_la_cabecera_no_salta_el_limite(self):
-        # El cliente inventa la primera parte; Render agrega su IP real (203.0.113.9) al final.
         falsas = [f"9.9.9.{i}, 203.0.113.9" for i in range(10)]
         self.assertEqual(self.permitidos(falsas), [True] * 5 + [False] * 5)

@@ -10,20 +10,14 @@ import TarjetaSitio from "./sitios/TarjetaSitio";
 import FormNuevoSitio from "./sitios/FormNuevoSitio";
 import "../styles/sitios.css";
 
-// Pantalla de Sitios (SGDE-83, maqueta Sitios.dc.html): una tarjeta por sitio con
-// sus conteos, la tarjeta "Agregar otro sitio" y el formulario "Nuevo sitio".
-
-// DRF puede devolver una lista o { results }.
 function comoLista(data) {
   return Array.isArray(data) ? data : data?.results ?? [];
 }
 
-// Resultado de Promise.allSettled → la lista, o null si esa petición falló.
 function listaO(resultado) {
   return resultado.status === "fulfilled" ? comoLista(resultado.value) : null;
 }
 
-// Tipo de error al cargar: "sesion" (401), "permiso" (403) o "servidor" (500 o sin red).
 function tipoDeError(err) {
   if (err?.status === 401) return "sesion";
   if (err?.status === 403) return "permiso";
@@ -42,15 +36,11 @@ export default function Sitios() {
   const [sitios, setSitios] = useState([]);
   const [ciudades, setCiudades] = useState([]);
   const [ciudadesFallaron, setCiudadesFallaron] = useState(false);
-  // Listas para contar; null = esa petición falló y su número muestra "—".
   const [listas, setListas] = useState({ salones: null, conceptos: null, usuarios: null });
   const [cargando, setCargando] = useState(true);
-  // Error al cargar /sitios/: null | "sesion" | "permiso" | "servidor".
   const [errorCarga, setErrorCarga] = useState(null);
-  // 401: se avisa abajo sin salir de la pantalla (components/SesionVencida.jsx).
   const [sesionVencida, setSesionVencida] = useState(false);
 
-  // Si la sesión venció mientras se cargaba, al volver a entrar se carga otra vez.
   const recargarAlEntrarRef = useRef(false);
   const nombreRef = useRef(null);
   const sesionRef = useRef(null);
@@ -59,9 +49,6 @@ export default function Sitios() {
     cargarDatos();
   }, []);
 
-  // Las cinco peticiones van en paralelo. Solo /sitios/ es indispensable: si
-  // falla una de las de conteo, ese número queda en "—"; si fallan las ciudades,
-  // la tarjeta no muestra el código y el formulario ofrece reintentar.
   async function cargarDatos() {
     setCargando(true);
     setErrorCarga(null);
@@ -106,12 +93,7 @@ export default function Sitios() {
   );
   const ciudadPorId = useMemo(() => new Map(ciudades.map((c) => [c.id, c])), [ciudades]);
 
-  // El sitio nuevo aparece sin recargar, con salones y conceptos en 0. Los
-  // usuarios se piden otra vez porque el backend le asigna el sitio a quien lo
-  // crea (SGDE-90): así el conteo sale del API (1, o 0 si lo creó un superusuario,
-  // que no aparece en /usuarios/). La tarjeta se agrega cuando llega esa
-  // respuesta, para que el número no cambie solo. Si falla, se queda la lista
-  // anterior; con un 401, todo se vuelve a cargar al entrar de nuevo.
+  // Los usuarios se piden otra vez: el backend le asigna el sitio a quien lo crea.
   async function alCrear(sitio) {
     let usuarios = null;
     try {
@@ -134,7 +116,6 @@ export default function Sitios() {
     }
   }
 
-  // "Agregar otro sitio" lleva al formulario: en teléfono, enfocar el campo lo trae a la vista.
   const irAlFormulario = () => nombreRef.current?.focus();
 
   let vista = "lista";
@@ -151,7 +132,6 @@ export default function Sitios() {
         subtitulo="Cada hotel o sede tiene sus propios salones, conceptos y precios."
       />
 
-      {/* Un 403 no deja ver ni crear: solo el aviso. */}
       {errorCarga === "permiso" ? (
         <Tarjeta>
           <AvisoError tipo="permiso" />

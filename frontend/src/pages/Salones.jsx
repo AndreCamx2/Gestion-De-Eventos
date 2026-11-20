@@ -19,8 +19,6 @@ import TablaAforo from "./salones/TablaAforo";
 import { useSalones } from "./salones/useSalones";
 import "../styles/catalogo-salones.css";
 
-// Salones y montajes. El estado y las acciones están en pages/salones/useSalones.js
-// y cada parte de la pantalla en pages/salones/ (SGDE-108).
 export default function Salones() {
   const {
     salones, montajes, sitios, errorCarga, cargarDatos, vista, datosListos,
@@ -71,7 +69,6 @@ export default function Salones() {
         />
       )}
 
-      {/* Siempre presente (aunque vacío) para que el lector de pantalla anuncie el aviso. */}
       <p className="salones-aviso" role="status">{aviso}</p>
 
       {vista === "error" && (

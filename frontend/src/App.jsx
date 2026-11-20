@@ -110,7 +110,6 @@ export default function App() {
           </>
         )}
 
-        {/* Todo lo de aquí adentro exige sesión iniciada */}
         <Route element={<ProtectedRoute user={user} cargando={cargando} />}>
           <Route element={<RoleRoute user={user} />}>
             <Route path="/cotizaciones/:id/imprimir" element={<ImprimirCotizacion />} />
@@ -120,7 +119,6 @@ export default function App() {
             />
           </Route>
 
-          {/* Y todo lo de aquí adentro comparte la misma barra superior */}
           <Route
             element={
               <DashboardLayout
@@ -129,7 +127,6 @@ export default function App() {
               />
             }
           >
-            {/* Y todo lo de aquí adentro exige un rol permitido para la ruta */}
             <Route element={<RoleRoute user={user} />}>
               <Route path="/inicio" element={<Home />} />
               <Route path="/cotizaciones" element={<Cotizaciones />} />
@@ -154,7 +151,6 @@ export default function App() {
           </Route>
         </Route>
 
-        {/* Ruta que no existe: /inicio con sesión, /login sin sesión */}
         <Route path="*" element={<SegunSesion user={user} cargando={cargando} />} />
       </Routes>
     </BrowserRouter>

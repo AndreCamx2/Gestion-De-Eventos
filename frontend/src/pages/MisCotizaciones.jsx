@@ -11,9 +11,6 @@ import {
 import "../components/ui/EstadoBadge.css";
 import "../styles/mis-cotizaciones.css";
 
-// "Mis cotizaciones" del rol cliente (SGDE-127): sus cotizaciones en dos pestañas,
-// próximos y realizados. Solo lectura; cada una abre su detalle (SGDE-131).
-
 const PESTANAS = [
   { clave: "proximos", texto: "Próximos", vacio: "No tienes eventos próximos" },
   { clave: "realizados", texto: "Realizados", vacio: "Todavía no tienes eventos realizados" },

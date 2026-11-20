@@ -3,15 +3,6 @@ import { Link } from "react-router-dom";
 import { Boton } from "../../components/ui";
 import { aforoMaximo, formatoNumero, metros } from "./salones";
 
-// Tarjeta de un salón (maqueta Salones): foto o marcador, medidas, aforo máximo
-// y sus montajes. "Ver disponibilidad" abre el Calendario con ese salón (SGDE-45)
-// y "Editar" abre la ventana de edición (SGDE-88). Cada montaje habilitado tiene
-// "Editar aforo" y "Quitar". "Dar de baja" lo saca de la operación (SGDE-99): un
-// salón dado de baja se ve atenuado, con la etiqueta "Dado de baja", y solo ofrece
-// "Reactivar".
-// - onEditar(evento), onHabilitar(evento), onCambiarActivo(evento): abren sus ventanas.
-// - onEditarAforo(habilitado, evento), onQuitarMontaje(habilitado, evento): ídem
-//   para un montaje ({ id, montajeId, nombre, aforo }).
 export default function TarjetaSalon({
   salon,
   sitio,
@@ -23,12 +14,10 @@ export default function TarjetaSalon({
   onQuitarMontaje,
   onCambiarActivo,
 }) {
-  // Si la URL de la foto no carga, se muestra el marcador en su lugar.
   const [fotoFallo, setFotoFallo] = useState(false);
   const conFoto = Boolean(salon.foto_url) && !fotoFallo;
   const maximo = aforoMaximo(habilitados);
   const idTitulo = `salon-${salon.id}-titulo`;
-  // Tres tonos de tokens.css que se alternan para distinguir los marcadores.
   const tono = salon.id % 3;
   const activo = salon.activo !== false;
 

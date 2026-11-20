@@ -1,13 +1,9 @@
-// Cancelar un evento confirmado (SGDE-68): reglas y cálculos de la ventana.
-// El API (POST /cotizaciones/<id>/cancelacion/) recibe el porcentaje y calcula el
-// monto retenido; aquí se calcula igual para mostrarlo en vivo antes de guardar.
 import { erroresDesdeApi } from "../../utils/erroresApi";
 
 export const CANCELACION_VACIA = { penalizacion: "", motivo: "" };
 
 const CAMPOS = ["penalizacion_pct", "motivo"];
 
-// Solo un evento confirmado se cancela; el resto da 409 en el API.
 export function puedeCancelar(c) {
   return c?.estado === "confirmado";
 }
@@ -21,7 +17,6 @@ export function parsearPorcentaje(texto) {
 }
 
 // total × pct ÷ 100, redondeado a centavos como el backend (ROUND_HALF_UP).
-// Devuelve null si el porcentaje no sirve todavía.
 export function montoRetenido(total, pct) {
   const base = Number(total);
   if (pct == null || Number.isNaN(pct) || pct < 0 || pct > 100 || !Number.isFinite(base)) return null;
@@ -30,12 +25,15 @@ export function montoRetenido(total, pct) {
   return Math.round((centavos * centesimas) / 10000) / 100;
 }
 
+export const MAX_MOTIVO = 1000;
+
 // Un motivo debe explicar algo: solo números o símbolos ("12345", "4.5") no vale (QA).
 // Devuelve el texto del error o null. Igual que validar_motivo del API.
 // deQue: "de la anulación", "del aplazamiento"…
 export function errorMotivo(texto, deQue) {
   const limpio = String(texto ?? "").trim();
   if (!limpio) return `Escribe el motivo ${deQue}.`;
+  if (limpio.length > MAX_MOTIVO) return `El motivo admite máximo ${MAX_MOTIVO} caracteres.`;
   if (!/\p{L}/u.test(limpio)) return `Describe el motivo ${deQue} con palabras, no solo números o símbolos.`;
   return null;
 }
@@ -56,7 +54,6 @@ export function payloadCancelacion(form) {
   return { penalizacionPct: parsearPorcentaje(form.penalizacion).toFixed(2), motivo: form.motivo.trim() };
 }
 
-// 400 del API: los de penalizacion_pct y motivo van bajo su campo; el resto, al final.
 export function erroresCancelacion(body) {
   return erroresDesdeApi(body, CAMPOS);
 }

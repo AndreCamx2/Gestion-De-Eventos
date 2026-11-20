@@ -1,7 +1,3 @@
-"""Editar el stock de un proveedor (SGDE-98).
-
-El 401/403 por rol está en ENDPOINTS_ADMIN_DETALLE (apps/usuarios/tests.py).
-"""
 from decimal import Decimal
 
 from rest_framework import status

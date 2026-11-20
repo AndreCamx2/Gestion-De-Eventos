@@ -1,10 +1,6 @@
 import { useId } from "react";
 import "./Campo.css";
 
-// Etiqueta + input + mensaje de error, enlazados para lectores de pantalla:
-// la etiqueta apunta al input (htmlFor/id) y el input apunta al error
-// (aria-describedby). Si no se pasa `id`, se genera uno único con useId().
-// El resto de props (name, type, value, onChange, required...) van al <input>.
 export default function Campo({ etiqueta, id, error, className = "", ...resto }) {
   const idGenerado = useId();
   const idCampo = id ?? idGenerado;

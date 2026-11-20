@@ -8,7 +8,7 @@ class CotizacionItemInline(admin.TabularInline):
 
 
 class MovimientoInline(admin.TabularInline):
-    # Solo lectura: el historial lo escribe el API (SGDE-62), no se edita a mano.
+    # El historial lo escribe el API, no se edita a mano.
     model = MovimientoCotizacion
     extra = 0
     fields = ["fecha", "tipo", "usuario", "detalle"]
@@ -21,9 +21,7 @@ class MovimientoInline(admin.TabularInline):
 
 class CotizacionAdmin(admin.ModelAdmin):
     inlines = [CotizacionItemInline, MovimientoInline]
-    # El estado y todo lo que depende de él solo cambia por el API (estados.py), que aplica
-    # las reglas (fecha libre, salón activo, vigencia) y deja su movimiento (SGDE-119, RNF-03).
-    # Editarlos a mano en /admin/ se saltaba la máquina de estados.
+    # El estado solo cambia por el API (estados.py), que aplica las reglas y deja el movimiento.
     readonly_fields = [
         "estado", "bloqueo_hasta",
         "garantia_tipo", "garantia_monto", "garantia_registrada_en", "garantia_registrada_por",
@@ -37,7 +35,6 @@ class TipoEventoInline(admin.TabularInline):
 
 
 class GrupoEventoAdmin(admin.ModelAdmin):
-    # SGDE-142: el cliente agrega, ordena o desactiva grupos y tipos sin programar.
     list_display = ["nombre", "orden", "activo"]
     inlines = [TipoEventoInline]
 

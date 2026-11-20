@@ -9,7 +9,6 @@ module.exports = defineConfig([
     ignores: ['dist/*'],
   },
   {
-    // Pruebas de Jest (jest-expo): describe, it, expect, jest...
     files: ['**/__tests__/**/*.js', '**/*.test.js'],
     languageOptions: { globals: globals.jest },
   },

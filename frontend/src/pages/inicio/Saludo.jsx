@@ -11,8 +11,6 @@ import {
 import { AvisoBloque } from "./AvisosBloque";
 import { plural, puedeEntrar } from "./inicio";
 
-// Dinero abreviado a la vista ("$ 184,6 M"); la cifra exacta, para el lector de
-// pantalla y al pasar el mouse.
 function Dinero({ valor }) {
   const completo = dineroCompleto(valor);
   const corto = dineroAbreviado(valor);
@@ -30,8 +28,6 @@ function textoVencen(cantidad) {
   return cantidad === 1 ? "1 vence esta semana" : `${numero(cantidad)} vencen esta semana`;
 }
 
-// Saludo con el resumen. En escritorio es la frase de la maqueta de Inicio; en
-// teléfono (Movil) el título es corto y las cifras van en la tarjeta oscura.
 // Las dos variantes se alternan con CSS (display: none), así no se leen dos veces.
 export default function Saludo({ hoy, nombre, rol, cotizaciones, onReintentar }) {
   const resumen = cotizaciones.fase === "listo" ? resumenPorConfirmar(cotizaciones.datos, hoy) : null;
@@ -102,7 +98,6 @@ export default function Saludo({ hoy, nombre, rol, cotizaciones, onReintentar })
           </Tarjeta>
         )}
 
-        {/* Solo en teléfono: tarjeta oscura con las cifras (maqueta Movil). */}
         {resumen &&
           (puedeVerCotizaciones ? (
             <Link to="/cotizaciones" className="inicio-por-confirmar inicio-solo-movil">
@@ -113,7 +108,6 @@ export default function Saludo({ hoy, nombre, rol, cotizaciones, onReintentar })
           ))}
       </div>
 
-      {/* Lleva a la pantalla de nueva cotización (SGDE-47). */}
       {puedeNuevaCotizacion && (
         <div className="inicio-saludo__accion">
           <Boton as={Link} to="/cotizaciones/nueva" variante="principal">

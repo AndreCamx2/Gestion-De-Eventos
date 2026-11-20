@@ -1,14 +1,5 @@
 import { Link } from "react-router-dom";
 
-// Tarjeta de un sitio (maqueta Sitios.dc.html): cabecera en tinta con la ciudad
-// y el nombre, los tres conteos y la fecha de creación.
-// - sitio: { id, nombre, ciudad, ciudad_nombre, creado_en } de /api/sitios/.
-// - ciudad: la ciudad del catálogo (/api/ciudades/) con ese id, o undefined si
-//   el catálogo no cargó; entonces solo se muestra ciudad_nombre, sin código.
-// - conteos: { salones, conceptos, usuarios } de contarPorSitio(); un null es
-//   una lista que no se pudo cargar y se muestra "—".
-
-// "21 de septiembre de 2026"
 const FORMATO_FECHA = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "long", year: "numeric" });
 
 function fechaLarga(valor) {
@@ -24,7 +15,6 @@ function IconoUbicacion() {
   );
 }
 
-// Un conteo: el número grande y su nombre. Con `a`, es un enlace a esa pantalla.
 function Conteo({ valor, nombre, a }) {
   const contenido = (
     <>
@@ -76,7 +66,6 @@ export default function TarjetaSitio({ sitio, ciudad, conteos }) {
       <ul className="sitio-tarjeta__conteos">
         <Conteo valor={salones} nombre="salones" a="/salones" />
         <Conteo valor={conceptos} nombre="conceptos" a="/conceptos" />
-        {/* Sin enlace: la pantalla de Usuarios todavía no existe (SGDE-37). */}
         <Conteo valor={usuarios} nombre="usuarios" />
       </ul>
 

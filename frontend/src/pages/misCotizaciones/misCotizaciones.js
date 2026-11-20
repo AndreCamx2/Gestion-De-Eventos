@@ -1,5 +1,3 @@
-// Funciones puras de "Mis cotizaciones" (SGDE-127 y SGDE-131): textos del estado
-// para el cliente, fechas dd/mm/aaaa y el aviso de cada estado. Sin React.
 import { estadoVisible } from "../../utils/estadosCotizacion";
 import { desdeISO } from "../../utils/inicioCifras";
 import { pesos } from "../cotizaciones/cotizaciones";
@@ -25,21 +23,17 @@ export function etiquetaCliente(c) {
 
 const dosDigitos = (n) => String(n).padStart(2, "0");
 
-// "AAAA-MM-DD" o fecha con hora → "dd/mm/aaaa".
 export function fechaNumerica(valor) {
   if (!valor) return "—";
   const fecha = /^\d{4}-\d{2}-\d{2}$/.test(valor) ? desdeISO(valor) : new Date(valor);
   return `${dosDigitos(fecha.getDate())}/${dosDigitos(fecha.getMonth() + 1)}/${fecha.getFullYear()}`;
 }
 
-// Fecha con hora → "hh:mm" en la hora local.
 export function horaCorta(valor) {
   const fecha = new Date(valor);
   return `${dosDigitos(fecha.getHours())}:${dosDigitos(fecha.getMinutes())}`;
 }
 
-// Próximos: el evento es hoy o después, del más cercano al más lejano.
-// Realizados: el evento ya pasó, del más reciente al más antiguo.
 export function separarPorFecha(cotizaciones, hoy) {
   const proximos = [];
   const realizados = [];
@@ -55,8 +49,6 @@ function tipoGarantia(tipo) {
   return TIPOS_GARANTIA.find((t) => t.valor === tipo)?.texto.toLowerCase() ?? tipo;
 }
 
-// El aviso del detalle según el estado: { tono, texto }. tono es el estado visible,
-// para pintar el aviso con los colores del estado.
 export function avisoDeEstado(c) {
   const estado = estadoCliente(c);
   switch (estado) {
@@ -92,8 +84,6 @@ export function avisoDeEstado(c) {
   }
 }
 
-// Error al cargar: "sesion" (401), "sinVincular" (403 con ese código), "permiso"
-// (otro 403), "noExiste" (404) o "servidor" (500 o sin red).
 export function tipoDeError(err) {
   if (err?.status === 401) return "sesion";
   if (err?.status === 403) return err.body?.codigo === "cliente_sin_vincular" ? "sinVincular" : "permiso";

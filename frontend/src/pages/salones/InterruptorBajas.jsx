@@ -1,5 +1,3 @@
-// Interruptor "Mostrar dados de baja" (SGDE-99), igual al "Mostrar inactivos" de
-// Clientes: un botón con role="switch" y aria-checked.
 export default function InterruptorBajas({ activo, onCambiar }) {
   return (
     <button

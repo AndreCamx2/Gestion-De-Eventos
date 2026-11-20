@@ -30,7 +30,6 @@ function DiasDelSalon() {
     }
   }, [salon, desde, dias]);
 
-  // Al volver del detalle (después de bloquear o liberar) se recarga.
   useFocusEffect(
     useCallback(() => {
       cargar();

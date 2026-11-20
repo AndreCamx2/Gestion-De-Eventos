@@ -2,12 +2,6 @@ import { useId, useState } from "react";
 import { bloqueoPorDefecto, datetimeLocalAISO } from "../../utils/fechasBloqueo";
 import { Boton, Campo } from "../ui";
 
-// Formulario para bloquear una cotización hasta una fecha y hora (SGDE-40).
-// - El valor por defecto es dentro de 48 h, sin pasar del final del día del evento,
-//   armado en hora LOCAL (bloqueoPorDefecto). Al enviar se convierte a ISO con zona.
-// - error: el 400 del API para bloqueo_hasta, que se muestra bajo el campo.
-// - onGuardar(iso), onCancelar(); procesando deshabilita los botones.
-// - guardarRef: el botón "Bloquear", para devolverle el foco al volver a entrar.
 export default function FormBloqueo({ cotizacion, error, procesando, onGuardar, onCancelar, guardarRef }) {
   const [valor, setValor] = useState(() => bloqueoPorDefecto(new Date(), cotizacion.fecha_evento));
   const [errorLocal, setErrorLocal] = useState(null);

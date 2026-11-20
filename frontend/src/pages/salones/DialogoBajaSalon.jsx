@@ -4,14 +4,6 @@ import { AvisoSesionEnVentana } from "../../components/SesionVencida";
 import { AvisoError, Boton, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import { textoError } from "../../utils/erroresApi";
 
-// Confirmación "Dar de baja" o "Reactivar" un salón (SGDE-99): PATCH {activo}.
-// La baja es lógica: el salón deja de aparecer en el Rack, el Calendario y
-// Nueva cotización, y sus cotizaciones se conservan. Con cotizaciones activas el
-// API da 409 y su mensaje dice cuántas son: se muestra con AvisoError "conflicto".
-// - salon: el que se da de baja (si está activo) o se reactiva (si no).
-// - onCambiado(salon): el API respondió; Salones.jsx lo actualiza y la cierra.
-// - onSesionVencida(), sesionVencida, onEntrarDeNuevo(boton): aviso dentro de la
-//   ventana (SGDE-94).
 export default function DialogoBajaSalon({ salon, onCambiado, onCerrar, onSesionVencida, sesionVencida, onEntrarDeNuevo }) {
   const darDeBaja = salon.activo;
   const [conflicto, setConflicto] = useState(null);
@@ -20,7 +12,6 @@ export default function DialogoBajaSalon({ salon, onCambiado, onCerrar, onSesion
   const confirmarRef = useRef(null);
   const cancelarRef = useRef(null);
 
-  // Con el 409 desaparece el botón de confirmar, que tenía el foco: pasa a "Cerrar".
   useEffect(() => {
     if (conflicto) cancelarRef.current?.focus();
   }, [conflicto]);
@@ -67,7 +58,6 @@ export default function DialogoBajaSalon({ salon, onCambiado, onCerrar, onSesion
         {sesionVencida && <AvisoSesionEnVentana onEntrar={() => onEntrarDeNuevo(confirmarRef.current)} />}
         {error && <p className="dialogo__error" role="alert">{error}</p>}
         <div className="dialogo__acciones">
-          {/* "Cancelar" lleva el foco inicial: la opción segura. */}
           <Boton ref={cancelarRef} variante="secundario" data-foco-inicial disabled={guardando} onClick={(e) => cerrarDialogoDe(e.currentTarget)}>
             {conflicto ? "Cerrar" : "Cancelar"}
           </Boton>

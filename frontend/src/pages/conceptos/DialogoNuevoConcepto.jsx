@@ -5,13 +5,6 @@ import { Boton, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import ConceptoForm from "./ConceptoForm";
 import { FORM_VACIO, erroresDesdeApi, payloadCreacion, validarForm } from "./conceptos";
 
-// Ventana "Nuevo concepto". Guarda su propio formulario y crea el concepto.
-// - sitioInicial: sitio ya elegido (el del filtro, o el único que hay).
-// - onCreado(concepto): se creó; Conceptos.jsx la cierra y recarga la lista.
-// - onSesionVencida(): 401 aunque se intentó renovar el token.
-// - sesionVencida / onEntrarDeNuevo(boton): con la sesión vencida, el aviso va
-//   dentro de la ventana, que no se cierra ni pierde lo escrito (SGDE-94). Al volver
-//   a entrar, el foco regresa a "Guardar".
 export default function DialogoNuevoConcepto({
   sitios,
   sitioInicial,
@@ -53,7 +46,6 @@ export default function DialogoNuevoConcepto({
         setErrores(campos);
         setError(general);
       } else if (err.status === 401) {
-        // La ventana sigue abierta con lo escrito: al volver a entrar, se guarda de nuevo.
         onSesionVencida();
       } else if (err.status === 403) {
         setError("No tienes permisos suficientes para crear conceptos.");

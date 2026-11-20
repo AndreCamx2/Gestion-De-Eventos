@@ -12,7 +12,6 @@ function mensajeError(error) {
   return "No pudimos cargar la cotización. Inténtalo de nuevo.";
 }
 
-// El cliente usa esta misma página con su propio endpoint y su detalle (SGDE-131).
 export default function ImprimirCotizacion({ cargar = getCotizacion, rutaDetalle = (id) => `/cotizaciones/${id}` }) {
   const { id } = useParams();
   const [cotizacion, setCotizacion] = useState(null);

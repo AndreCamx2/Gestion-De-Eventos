@@ -6,16 +6,9 @@ import { Boton, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import { textoError } from "../../utils/erroresApi";
 import { usuariosLibres } from "./proveedores";
 
-// Ventana "Usuario de acceso" (SGDE-30 y 72): vincula a un proveedor el usuario
-// con rol proveedor que entra a "Mi stock", o lo desvincula ("Sin usuario").
-// La lista trae los usuarios proveedor que no están vinculados a otro proveedor.
-// - proveedor: el elegido. proveedores: todos, para saber qué usuarios ya están tomados.
-// - onGuardado(proveedor): el API respondió; Proveedores.jsx actualiza la tarjeta y la cierra.
-// - onSesionVencida(), sesionVencida, onEntrarDeNuevo(boton): aviso dentro de la ventana (SGDE-94).
 export default function DialogoUsuarioAcceso({
   proveedor, proveedores, onGuardado, onCerrar, onSesionVencida, sesionVencida, onEntrarDeNuevo,
 }) {
-  // Usuarios con rol proveedor tal como llegan del API; null mientras cargan.
   const [todos, setTodos] = useState(null);
   const [elegido, setElegido] = useState(proveedor.usuario == null ? "" : String(proveedor.usuario));
   const [errorCampo, setErrorCampo] = useState(null);
@@ -24,7 +17,6 @@ export default function DialogoUsuarioAcceso({
   const guardarRef = useRef(null);
   const usuarios = todos && usuariosLibres(todos, proveedores, proveedor);
 
-  // Se cargan al abrir y, si la sesión venció, otra vez al volver a entrar.
   useEffect(() => {
     if (sesionVencida || todos !== null) return undefined;
     let vigente = true;

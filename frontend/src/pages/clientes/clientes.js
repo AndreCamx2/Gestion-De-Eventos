@@ -1,5 +1,3 @@
-// Auxiliares de la pantalla de Clientes (SGDE-97). Viven en un .js porque un
-// .jsx solo exporta componentes (react-refresh, SGDE-55).
 
 export const FILTROS_TIPO = [
   { value: "todos", label: "Todos" },

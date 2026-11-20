@@ -26,7 +26,6 @@ function MiStock() {
     }
   }, []);
 
-  // Al volver de crear o editar un elemento, la lista se recarga.
   useFocusEffect(
     useCallback(() => {
       cargar();

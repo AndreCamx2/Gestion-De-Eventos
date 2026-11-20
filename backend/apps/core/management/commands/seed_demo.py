@@ -1,15 +1,3 @@
-"""
-Datos semilla de demostración para desarrollo local.
-
-Uso:  python manage.py seed_demo
-
-Es idempotente: se puede correr varias veces sin duplicar nada.
-Las contraseñas salen de variables de entorno (SEED_*_PASSWORD). cliente_demo y
-proveedor_demo tienen valores por defecto solo para desarrollo local. El superusuario
-admin no (SGDE-114): sin SEED_ADMIN_PASSWORD se le genera una contraseña aleatoria
-que se muestra una sola vez. Por seguridad, el comando se niega a correr con
-DEBUG=False (producción) salvo que se use --force.
-"""
 import os
 import secrets
 from decimal import Decimal
@@ -27,11 +15,8 @@ from apps.usuarios.models import Rol, Usuario
 
 NOMBRE_SITIO = "Hotel Demo Cartagena"
 
-# NIT de la empresa demo. Vive SOLO en Empresa.identificacion: el cliente
-# jurídico deja Cliente.identificacion en null (SGDE-56).
 NIT_EMPRESA_DEMO = "900000001-1"
 
-# (nombre, altura, ancho, {codigo_montaje: aforo})
 SALONES = [
     ("Salón Bolívar", Decimal("4.50"), Decimal("20.00"),
      {"auditorio": 300, "escuela": 180, "coctel": 400}),
@@ -41,7 +26,6 @@ SALONES = [
      {"escuela": 50, "imperial": 24}),
 ]
 
-# (nombre, precio, impuesto_pct)
 CONCEPTOS = [
     ("Alquiler de salón (día)", Decimal("3500000.00"), Decimal("19.00")),
     ("Servicio de audio y video", Decimal("800000.00"), Decimal("19.00")),
@@ -52,7 +36,6 @@ CONCEPTOS = [
 
 NOMBRE_PROVEEDOR = "Proveedor Demo"
 
-# (nombre_elemento, cantidad, valor)
 STOCK_PROVEEDOR = [
     ("Silla Tiffany", 200, Decimal("8000.00")),
     ("Mantel blanco", 80, Decimal("12000.00")),
@@ -129,7 +112,6 @@ class Command(BaseCommand):
                     f"  {username}: no definiste {env_var}. Contraseña generada (solo se muestra ahora): {clave}"
                 ))
             usuario.set_password(clave)
-        # Se reafirman rol y banderas por si alguien los cambió a mano.
         usuario.rol = rol
         usuario.is_staff = usuario.is_superuser = superusuario
         usuario.save()
@@ -158,10 +140,7 @@ class Command(BaseCommand):
             )
 
     def _proveedor(self, proveedor_user):
-        """Proveedor Demo vinculado a proveedor_demo, para la pantalla Mi stock (SGDE-30)."""
         proveedor, _ = Proveedor.objects.get_or_create(nombre=NOMBRE_PROVEEDOR)
-        # Se reafirma el vínculo por si alguien lo cambió a mano. Si proveedor_demo
-        # quedó vinculado a otro proveedor, se suelta primero (OneToOne).
         Proveedor.objects.filter(usuario=proveedor_user).exclude(pk=proveedor.pk).update(usuario=None)
         proveedor.usuario = proveedor_user
         proveedor.save(update_fields=["usuario"])
@@ -194,16 +173,6 @@ class Command(BaseCommand):
         self._cliente_juridico(empresa)
 
     def _cliente_juridico(self, empresa):
-        """Cliente jurídico demo: el NIT vive en su Empresa, no en el Cliente.
-
-        Se busca por tipo + empresa (no por identificación) para seguir siendo
-        idempotente. Con filter().first() y no get_or_create: si alguien creó a
-        mano otro jurídico para la misma empresa, se toma el más antiguo en vez
-        de fallar con MultipleObjectsReturned.
-
-        Las bases del seed anterior (jurídico con el NIT repetido en
-        Cliente.identificacion) las corrige la migración 0007 de clientes (SGDE-91).
-        """
         existe = Cliente.objects.filter(tipo=Cliente.JURIDICA, empresa=empresa).exists()
         if not existe:
             Cliente.objects.create(

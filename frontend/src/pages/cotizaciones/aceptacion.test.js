@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { textoGarantiaMinima, validarAceptacion } from "./detalleCotizacion";
 
-// Total 2.430.000: el 30% son 729.000 (garantia_minima la manda el backend).
 const CON_TIEMPO = { total: "2430000.00", garantia_minima: { porcentaje: "30", monto: "729000.00" } };
 const DE_ULTIMA_HORA = { total: "2430000.00", garantia_minima: { porcentaje: "100", monto: "2430000.00" } };
 

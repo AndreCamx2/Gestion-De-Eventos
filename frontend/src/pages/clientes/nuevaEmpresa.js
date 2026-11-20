@@ -1,23 +1,20 @@
 import { erroresDesdeApi } from "../../utils/erroresApi";
-import { validarContacto, validarNit, validarRazonSocial } from "../../utils/validacionesRegistro";
+import { validarContacto, validarCorreo, validarNit, validarRazonSocial } from "../../utils/validacionesRegistro";
 
 export const EMPRESA_VACIA = { razon_social: "", identificacion: "", contacto: "", correo: "", ciudad: "" };
 
 const CAMPOS = ["razon_social", "identificacion", "contacto", "correo", "ciudad"];
 
-const CORREO_VALIDO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export function validarEmpresa(form) {
   const errores = {};
   if (!form.razon_social.trim()) errores.razon_social = "Escribe la razón social.";
-  else if (form.razon_social.trim().length > 150) errores.razon_social = "Máximo 150 caracteres.";
-  else if (validarRazonSocial(form.razon_social)) errores.razon_social = validarRazonSocial(form.razon_social);
+  else errores.razon_social = validarRazonSocial(form.razon_social);
   if (!form.identificacion.trim()) errores.identificacion = "Escribe el NIT de la empresa.";
-  else if (validarNit(form.identificacion)) errores.identificacion = validarNit(form.identificacion);
+  else errores.identificacion = validarNit(form.identificacion);
   if (form.contacto.trim().length > 120) errores.contacto = "Máximo 120 caracteres.";
-  else if (validarContacto(form.contacto)) errores.contacto = validarContacto(form.contacto);
-  if (form.correo.trim() && !CORREO_VALIDO.test(form.correo.trim())) errores.correo = "Escribe un correo válido.";
-  return errores;
+  else if (form.contacto.trim()) errores.contacto = validarContacto(form.contacto);
+  if (form.correo.trim()) errores.correo = validarCorreo(form.correo);
+  return Object.fromEntries(Object.entries(errores).filter(([, mensaje]) => mensaje));
 }
 
 export function payloadEmpresa(form) {

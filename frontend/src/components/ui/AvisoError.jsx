@@ -2,15 +2,6 @@ import { Link } from "react-router-dom";
 import Boton from "./Boton";
 import "./AvisoError.css";
 
-// Aviso de error al cargar una pantalla (maqueta CasosLimite):
-// - tipo="permiso"  → 403: candado y botón "Volver al inicio".
-// - tipo="servidor" → 500 o sin red: wifi tachado y botón "Reintentar", que
-//   llama a onReintentar (normalmente la función que vuelve a cargar los datos).
-//   Si no pasas onReintentar, no se muestra el botón.
-// - tipo="conflicto" → 409: la acción choca con el estado actual (por ejemplo,
-//   la fecha ya está bloqueada). Triángulo de alerta; pasa el `detail` del API como texto.
-// titulo y texto son opcionales: cada tipo trae los de la maqueta.
-// No trae caja propia: envuélvelo en Tarjeta.
 const TIPOS = {
   permiso: {
     titulo: "Esta sección es para administradores",

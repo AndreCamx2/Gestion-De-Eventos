@@ -1,9 +1,5 @@
 import "./Boton.css";
 
-// Botón de Piedra viva (guía, sección 6).
-// variante: "principal" | "oscuro" | "secundario" | "peligro" | "exito".
-// Usa una sola variante "principal" por pantalla: la tinta marca la acción principal.
-// Con `as={Link}` (y `to="..."`) se pinta como enlace con la misma apariencia.
 export default function Boton({
   variante = "principal",
   as: Componente = "button",

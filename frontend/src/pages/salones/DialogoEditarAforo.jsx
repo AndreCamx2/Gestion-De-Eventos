@@ -5,12 +5,6 @@ import { Boton, Campo, Dialogo, cerrarDialogoDe } from "../../components/ui";
 import { erroresDesdeApi } from "../../utils/erroresApi";
 import { validarAforo } from "./salones";
 
-// "Editar aforo" de un montaje habilitado (SGDE-88): PATCH /api/salon-montajes/<id>/.
-// Si hay cotizaciones activas con más personas, el API da 400 bajo "aforo".
-// - salon: el salón; habilitado: { id, nombre, aforo } del montaje.
-// - onGuardado(salonMontaje): el API respondió; Salones.jsx lo reemplaza y la cierra.
-// - onSesionVencida(), sesionVencida, onEntrarDeNuevo(boton): aviso dentro de la
-//   ventana (SGDE-94).
 export default function DialogoEditarAforo({ salon, habilitado, onGuardado, onCerrar, onSesionVencida, sesionVencida, onEntrarDeNuevo }) {
   const [aforo, setAforo] = useState(String(habilitado.aforo));
   const [errorAforo, setErrorAforo] = useState(null);

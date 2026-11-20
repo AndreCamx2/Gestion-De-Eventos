@@ -3,13 +3,8 @@ import { pesos } from "./proveedores";
 
 const formatoCantidad = new Intl.NumberFormat("es-CO");
 
-// Un elemento en "Comparar precios" (SGDE-71): su nombre y el mejor precio en
-// grande, y la tabla de ofertas tal como llega del API (disponibles de la más
-// barata a la más cara, agotadas al final). La fila del mejor precio dice "Mejor
-// precio" (no solo color) y las agotadas van atenuadas con "Agotado". El contacto
-// es como se solicita el elemento en la beta. En teléfono cada fila se pinta como
-// tarjeta (CSS): los role explícitos conservan la tabla para lectores de pantalla
-// al cambiar el display, y data-etiqueta pone el nombre de cada dato.
+// En teléfono cada fila es una tarjeta: los role explícitos conservan la tabla para
+// lectores de pantalla al cambiar el display.
 export default function OfertasElemento({ grupo, indice }) {
   const idTitulo = `comparar-elemento-${indice}`;
 

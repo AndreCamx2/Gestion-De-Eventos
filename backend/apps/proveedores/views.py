@@ -16,7 +16,6 @@ from .serializers import (
 
 
 def _dinero(valor):
-    """Mismo formato que el resto de la API: texto con 2 decimales (o None)."""
     return None if valor is None else f"{valor:.2f}"
 
 
@@ -25,9 +24,7 @@ _VIRGULILLA = "\u0303"
 
 
 def _normalizar(texto):
-    """Clave para agrupar y buscar elementos: sin tildes ni diéresis, sin espacios
-    de más y en minúsculas. "Sílla  Tiffany" → "silla tiffany". La ñ se conserva:
-    "Paño" y "Pano" son elementos distintos."""
+    """Sin tildes, espacios de más ni mayúsculas. La ñ se conserva: "Paño" no es "Pano"."""
     separado = unicodedata.normalize("NFKD", texto)
     sin_tildes = "".join(
         c for c in separado if not unicodedata.combining(c) or c == _VIRGULILLA
@@ -42,9 +39,6 @@ class ProveedorListCreateView(generics.ListCreateAPIView):
 
 
 class ProveedorDetailView(generics.RetrieveUpdateAPIView):
-    """Ver y editar un proveedor; sirve para vincular o desvincular (usuario: null)
-    su usuario de acceso (SGDE-30). Sin DELETE ni PUT."""
-
     queryset = Proveedor.objects.select_related("usuario")
     serializer_class = ProveedorSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
@@ -59,10 +53,7 @@ class StockElementoListCreateView(generics.ListCreateAPIView):
 
 
 class RegistraHistorialStockMixin:
-    """Si un PATCH cambia la cantidad o el valor, guarda quién y cuándo (SGDE-134).
-
-    La usan las dos formas de editar el stock: /api/stock/<id>/ y /api/mi-stock/<id>/.
-    """
+    """Si un PATCH cambia la cantidad o el valor, guarda quién y cuándo."""
 
     @transaction.atomic
     def perform_update(self, serializer):
@@ -84,18 +75,11 @@ class RegistraHistorialStockMixin:
 
 
 def _historial_de(elementos, pk):
-    """Historial de un elemento, del cambio más reciente al más antiguo. 404 si el
-    elemento no está en `elementos` (no existe o es de otro proveedor)."""
     elemento = get_object_or_404(elementos, pk=pk)
     return elemento.historial.select_related("modificado_por")
 
 
 class StockElementoDetailView(RegistraHistorialStockMixin, generics.RetrieveUpdateAPIView):
-    """Ver y editar la cantidad y el valor de un elemento de stock (SGDE-98).
-
-    Sin DELETE: para darlo por agotado se deja la cantidad en 0. Sin PUT.
-    """
-
     queryset = StockElemento.objects.all()
     serializer_class = StockElementoSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
@@ -103,8 +87,6 @@ class StockElementoDetailView(RegistraHistorialStockMixin, generics.RetrieveUpda
 
 
 class StockHistorialListView(generics.ListAPIView):
-    """GET /api/stock/<id>/historial/: cambios de cantidad y valor (SGDE-134)."""
-
     serializer_class = HistorialStockElementoSerializer
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
@@ -113,13 +95,6 @@ class StockHistorialListView(generics.ListAPIView):
 
 
 class MiStockMixin:
-    """Mi stock (SGDE-30): el proveedor ve y edita solo el stock de su Proveedor.
-
-    Excepción a la regla de EsAdministrador: estas vistas son del rol proveedor
-    (EsProveedor). El administrador y el cliente reciben 403. El stock de otro
-    proveedor no está en el queryset, así que su id da 404 (no 403).
-    """
-
     serializer_class = MiStockSerializer
     permission_classes = [permissions.IsAuthenticated, EsProveedor]
 
@@ -134,23 +109,15 @@ class MiStockMixin:
 
 
 class MiStockListCreateView(MiStockMixin, generics.ListCreateAPIView):
-    """GET/POST /api/mi-stock/: lista y crea en el proveedor de quien llama."""
-
     def perform_create(self, serializer):
         serializer.save(proveedor=self.request.user.proveedor)
 
 
 class MiStockDetailView(MiStockMixin, RegistraHistorialStockMixin, generics.RetrieveUpdateAPIView):
-    """GET/PATCH /api/mi-stock/<id>/: solo cantidad y valor, como SGDE-98.
-    Sin DELETE: para darlo por agotado se deja la cantidad en 0. Sin PUT."""
-
     http_method_names = ["get", "patch", "head", "options"]
 
 
 class MiStockHistorialView(MiStockMixin, generics.ListAPIView):
-    """GET /api/mi-stock/<id>/historial/: el proveedor solo ve el historial de su
-    propio stock; el elemento de otro proveedor da 404 (SGDE-134)."""
-
     serializer_class = HistorialStockElementoSerializer
 
     def get_queryset(self):
@@ -158,14 +125,6 @@ class MiStockHistorialView(MiStockMixin, generics.ListAPIView):
 
 
 class StockCompararView(APIView):
-    """Compara precios entre proveedores para un mismo elemento (SGDE-31).
-
-    GET /api/stock/comparar/?elemento=silla
-    Agrupa el stock por nombre de elemento sin distinguir mayúsculas, tildes ni
-    espacios de más (_normalizar), y marca el mejor precio entre los proveedores
-    que tienen unidades disponibles. La búsqueda usa la misma normalización.
-    """
-
     permission_classes = [permissions.IsAuthenticated, EsAdministrador]
 
     def get(self, request):
@@ -176,8 +135,7 @@ class StockCompararView(APIView):
         grupos = {}
         for item in stock:
             clave = _normalizar(item.nombre_elemento)
-            # Se filtra en Python: icontains de Postgres sí distingue tildes
-            # ("silla" no encuentra "Sílla"). El stock es pequeño.
+            # En Python: icontains distingue tildes y el stock es pequeño.
             if texto not in clave:
                 continue
             grupo = grupos.setdefault(
@@ -189,7 +147,6 @@ class StockCompararView(APIView):
         for clave in sorted(grupos):
             items = grupos[clave]["items"]
             mejor = min((i.valor for i in items if i.cantidad > 0), default=None)
-            # Primero los disponibles, del más barato al más caro; los agotados al final.
             items.sort(key=lambda i: (i.cantidad == 0, i.valor, i.proveedor.nombre))
             resultado.append(
                 {

@@ -1,6 +1,3 @@
-// Funciones de la pantalla de Cotizaciones que no usan estado: formatos, la
-// vigencia de cada fila y las cifras de arriba. Las fechas y la tasa de cierre
-// vienen de inicioCifras.js, para que el Inicio y esta pantalla digan lo mismo.
 import { desdeISO, diasEntre, mesCorto, tasaDeCierre } from "../../utils/inicioCifras";
 
 const formatoPesos = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
@@ -15,7 +12,6 @@ export const FILTROS = [
   { clave: "cancelado", texto: "Canceladas" },
 ];
 
-// "AAAA-MM-DD" → "20 nov 2026" (o "20 nov" sin el año).
 export function fechaCorta(texto, conAnio = true) {
   const f = desdeISO(texto);
   return `${f.getDate()} ${mesCorto(f)}${conAnio ? ` ${f.getFullYear()}` : ""}`;
@@ -33,7 +29,6 @@ export function numeroCotizacion(id) {
   return `#${String(id).padStart(3, "0")}`;
 }
 
-// Minúsculas y sin tildes, para buscar "maria" y encontrar "María".
 export function normalizar(texto) {
   return String(texto ?? "")
     .normalize("NFD")
@@ -46,12 +41,6 @@ export function estadoVisible(c) {
   return c.vencida ? "vencida" : c.estado;
 }
 
-// Columna "Vigencia": la fecha, una nota debajo y su tono (clase cotizaciones-vigencia--{tono}).
-//   - cotizado: validez_oferta, "vence en N días" / "venció hace N días";
-//   - bloqueado con bloqueo_hasta: esa fecha y "bloqueado hasta el {día}";
-//     sin bloqueo_hasta, igual que una cotizada;
-//   - confirmado: "—" y "garantía recibida" si hay garantía;
-//   - cancelado: "—" sin nota.
 export function vigencia(c, hoy) {
   if (c.estado === "confirmado") {
     return { fecha: "—", nota: c.garantia ? "garantía recibida" : "", tono: "confirmado" };
@@ -108,8 +97,6 @@ export function resumen(cotizaciones, hoy) {
   };
 }
 
-// Error del API → qué mostrar: "sesion" (401), "permiso" (403), "fechas" (400,
-// fechas del filtro no válidas) o "servidor" (500 o sin red).
 export function tipoDeError(err) {
   if (err?.status === 401) return "sesion";
   if (err?.status === 403) return "permiso";
@@ -117,7 +104,6 @@ export function tipoDeError(err) {
   return "servidor";
 }
 
-// Cuántas cotizaciones hay en cada botón de estado (de la lista de la tabla).
 export function conteosPorEstado(cotizaciones) {
   const mapa = { todas: cotizaciones.length };
   cotizaciones.forEach((c) => {
