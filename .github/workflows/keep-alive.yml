@@ -1,0 +1,31 @@
+name: Mantener backend despierto (Keep-Alive)
+
+# Render suspende los contenedores gratuitos tras 15 minutos de inactividad.
+# Este workflow envía un ping HTTP cada 14 minutos para mantener la instancia activa.
+
+on:
+  schedule:
+    # Se ejecuta cada 14 minutos (formato cron UTC)
+    - cron: "*/14 * * * *"
+  workflow_dispatch: # Permite probar el ping manualmente desde la pestaña Actions de GitHub
+
+permissions:
+  contents: read
+
+jobs:
+  keep-alive:
+    name: Ping al Backend en Render
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Enviar ping al servidor
+        run: |
+          URL="https://sgde-backend.onrender.com/admin/login/"
+          echo "Enviando ping a $URL a las $(date -u) ..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 "$URL")
+          echo "Respuesta del backend: HTTP $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 500 ]; then
+            echo "Servidor activo y respondiendo correctamente."
+          else
+            echo "Aviso: Código HTTP $HTTP_STATUS recibido, pero la petición despertó el contenedor."
+          fi
