@@ -54,10 +54,10 @@ class UsuarioRegistroSerializer(DatosDeUsuarioMixin, serializers.ModelSerializer
     sitios = campo_sitios()
     # Obligatorios al crear: sin ellos la lista mostraba el usuario como nombre (QA).
     first_name = serializers.CharField(
-        max_length=150, required=False, default="", allow_blank=True,
+        max_length=150, error_messages={"blank": "Escribe el nombre.", "required": "Escribe el nombre."},
     )
     last_name = serializers.CharField(
-        max_length=150, required=False, default="", allow_blank=True,
+        max_length=150, error_messages={"blank": "Escribe el apellido.", "required": "Escribe el apellido."},
     )
 
     class Meta:
@@ -69,10 +69,10 @@ class UsuarioRegistroSerializer(DatosDeUsuarioMixin, serializers.ModelSerializer
         return validar_usuario(valor)
 
     def validate_first_name(self, valor):
-        return nombre_de_persona_opcional(valor)
+        return validar_nombre(valor)
 
     def validate_last_name(self, valor):
-        return nombre_de_persona_opcional(valor)
+        return validar_nombre(valor)
 
     def validate_rol(self, rol):
         # La vista ya lo exige; aquí también, por si alguien reutiliza el serializer.

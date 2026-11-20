@@ -26,7 +26,14 @@ class RegistrarUsuarioExtremoTests(APITestCase):
         self.client.force_authenticate(self.admin)
 
     def registrar(self, **datos):
-        cuerpo = {"username": "luisa", "email": "luisa@sgde.co", "password": PASSWORD, "rol": self.rol_proveedor.pk}
+        cuerpo = {
+            "username": "luisa",
+            "first_name": "Luisa",
+            "last_name": "Gómez",
+            "email": "luisa@sgde.co",
+            "password": PASSWORD,
+            "rol": self.rol_proveedor.pk,
+        }
         return self.client.post("/api/usuarios/registro/", {**cuerpo, **datos}, format="json")
 
     def test_no_repite_un_usuario_cambiando_mayusculas(self):
