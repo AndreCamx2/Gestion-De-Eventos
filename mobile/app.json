@@ -10,6 +10,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.sgde.venue",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -25,6 +26,16 @@
       "expo-status-bar",
       "expo-secure-store"
     ],
-    "scheme": "sgde"
+    "scheme": "sgde",
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "fc586835-d175-481c-8925-18dabe6e7c99"
+      }
+    }
   }
 }
