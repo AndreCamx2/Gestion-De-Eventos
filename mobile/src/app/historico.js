@@ -4,7 +4,8 @@ import { router } from "expo-router";
 import { fechaCorta, millones, numeroCotizacion, pesos } from "../compartido/pages/cotizaciones/cotizaciones";
 import { ESTADOS_HISTORICO, realizado } from "../compartido/pages/cotizaciones/historico";
 import { useHistorico } from "../compartido/pages/cotizaciones/useHistorico";
-import { CampoFecha, Cifras, Segmento, Selector } from "../componentes/formulario";
+import { CampoFecha } from "../componentes/CampoFecha";
+import { Cifras, Segmento, Selector } from "../componentes/formulario";
 import { Aviso, Boton, Cargando, EtiquetaEstado, Tarjeta, Vacio, estilos } from "../componentes/ui";
 import RequiereRol from "../sesion/RequiereRol";
 import { espacio } from "../tema";
@@ -63,10 +64,10 @@ function Historico() {
       />
       <View style={{ flexDirection: "row", gap: espacio.m }}>
         <View style={{ flex: 1 }}>
-          <CampoFecha etiqueta="Desde" value={desde} onChangeText={(v) => fecha("desde", v, setDesde)} />
+          <CampoFecha etiqueta="Desde" value={desde} maximo={hasta} opcional onChangeText={(v) => fecha("desde", v, setDesde)} />
         </View>
         <View style={{ flex: 1 }}>
-          <CampoFecha etiqueta="Hasta" value={hasta} onChangeText={(v) => fecha("hasta", v, setHasta)} />
+          <CampoFecha etiqueta="Hasta" value={hasta} minimo={desde} opcional onChangeText={(v) => fecha("hasta", v, setHasta)} />
         </View>
       </View>
       {h.hayFiltros ? <Boton titulo="Quitar filtros" variante="secundario" onPress={quitar} /> : null}

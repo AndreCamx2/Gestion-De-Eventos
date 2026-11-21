@@ -27,7 +27,8 @@ import {
 import { etiquetaMovimiento, momento, quien } from "../../compartido/pages/cotizaciones/historico";
 import { nombreImpuesto, pesosDeCentavos, totalesLinea } from "../../compartido/pages/cotizaciones/nuevaCotizacion";
 import { useDetalleCotizacion } from "../../compartido/pages/cotizaciones/useDetalleCotizacion";
-import { AreaTexto, CampoFecha, Dato, Dialogo, Fila, Seccion, Selector } from "../../componentes/formulario";
+import { CampoFecha } from "../../componentes/CampoFecha";
+import { AreaTexto, Dato, Dialogo, Fila, Seccion, Selector } from "../../componentes/formulario";
 import { Aviso, Boton, Campo, Cargando, EtiquetaEstado, Tarjeta, estilos } from "../../componentes/ui";
 import { textoDeError } from "../../componentes/useCarga";
 import RequiereRol from "../../sesion/RequiereRol";
@@ -352,6 +353,8 @@ function DetalleCotizacion() {
         <CampoFecha
           etiqueta="Nueva vigencia"
           value={d.nuevaVigencia}
+          minimo={limitesVigencia(c).min}
+          maximo={limitesVigencia(c).max}
           onChangeText={d.cambiarVigencia}
           error={d.errorVigencia?.texto}
         />
@@ -365,6 +368,7 @@ function DetalleCotizacion() {
         <CampoFecha
           etiqueta={`Fecha nueva (desde ${fechaMinimaAplazamiento(c)})`}
           value={d.aplazamiento.form.fecha}
+          minimo={fechaMinimaAplazamiento(c)}
           onChangeText={(v) => d.aplazamiento.cambiar("fecha", v)}
           error={d.aplazamiento.errores.fecha_evento}
         />

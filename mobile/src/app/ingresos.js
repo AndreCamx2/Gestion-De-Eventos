@@ -3,7 +3,8 @@ import { RefreshControl, ScrollView, Text, View } from "react-native";
 import { millones, pesos } from "../compartido/pages/cotizaciones/cotizaciones";
 import { AGRUPACIONES, PERIODOS, porcentaje, textoEventos } from "../compartido/pages/ingresos/ingresos";
 import { useIngresos } from "../compartido/pages/ingresos/useIngresos";
-import { CampoFecha, Cifras, Segmento } from "../componentes/formulario";
+import { CampoFecha } from "../componentes/CampoFecha";
+import { Cifras, Segmento } from "../componentes/formulario";
 import { Aviso, Boton, Cargando, Tarjeta, Vacio, estilos } from "../componentes/ui";
 import RequiereRol from "../sesion/RequiereRol";
 import { colores, espacio } from "../tema";
@@ -41,10 +42,10 @@ function Ingresos() {
       {g.periodo === "rango" ? (
         <View style={{ flexDirection: "row", gap: espacio.m }}>
           <View style={{ flex: 1 }}>
-            <CampoFecha etiqueta="Desde" value={desde} onChangeText={(v) => fecha("desde", v, setDesde)} />
+            <CampoFecha etiqueta="Desde" value={desde} maximo={hasta} opcional onChangeText={(v) => fecha("desde", v, setDesde)} />
           </View>
           <View style={{ flex: 1 }}>
-            <CampoFecha etiqueta="Hasta" value={hasta} onChangeText={(v) => fecha("hasta", v, setHasta)} />
+            <CampoFecha etiqueta="Hasta" value={hasta} minimo={desde} opcional onChangeText={(v) => fecha("hasta", v, setHasta)} />
           </View>
         </View>
       ) : null}

@@ -8,9 +8,11 @@ import {
   pesosDeCentavos,
 } from "../../compartido/pages/cotizaciones/nuevaCotizacion";
 import { useNuevaCotizacion } from "../../compartido/pages/cotizaciones/useNuevaCotizacion";
-import { CampoFecha, Fila, Seccion, Selector } from "../../componentes/formulario";
+import { CampoFecha } from "../../componentes/CampoFecha";
+import { Fila, Seccion, Selector } from "../../componentes/formulario";
 import { Aviso, Boton, Campo, Cargando, Tarjeta, estilos } from "../../componentes/ui";
 import RequiereRol from "../../sesion/RequiereRol";
+import { hoyISO } from "../../utils/fechas";
 import { colores, espacio } from "../../tema";
 
 const MENSAJES_CARGA = {
@@ -174,6 +176,7 @@ function NuevaCotizacion() {
           <CampoFecha
             etiqueta="Fecha del evento"
             value={c.form.fecha_evento}
+            minimo={hoyISO()}
             onChangeText={campo(c, "fecha_evento")}
             error={c.errores.campos.fecha_evento}
           />
@@ -202,6 +205,9 @@ function NuevaCotizacion() {
           <CampoFecha
             etiqueta="Oferta válida hasta"
             value={c.form.validez_oferta}
+            minimo={hoyISO()}
+            maximo={c.form.fecha_evento}
+            opcional
             onChangeText={campo(c, "validez_oferta")}
             placeholder={c.vigencia}
             error={c.errores.campos.validez_oferta}

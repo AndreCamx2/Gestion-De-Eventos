@@ -21,6 +21,8 @@ Tiene las mismas funciones de la página web, organizadas por rol. Al entrar, ca
    npx expo start
    ```
 
+   > **Una sola vez** (quien agregue el calendario): `npx expo install @react-native-community/datetimepicker`. Instala la versión que corresponde al SDK de Expo y la anota en `package.json` y `package-lock.json`; sube esos dos archivos para que los demás solo necesiten `npm install`.
+
 3. Escanea el código QR que aparece en la terminal: en Android, desde Expo Go; en iPhone, con la cámara.
    - El celular y el computador deben estar en la **misma red Wi-Fi**.
    - Si la red no lo permite (la de la universidad, por ejemplo), usa `npx expo start --tunnel`.
@@ -87,7 +89,8 @@ mobile/src/
 - **Sesión:** si el access vence, se renueva solo con el refresh, que rota (SGDE-92). Si el refresh venció, la app vuelve al login.
 - **Seguridad:** la app solo oculta pantallas por rol. Quien decide de verdad es el backend (401/403).
 - **Estilo:** los colores son los de Piedra viva (`src/tema.js`).
-- **Sin librerías nuevas:** listas desplegables, diálogos y fechas están hechos con React Native puro. Las fechas se escriben como `AAAA-MM-DD`.
+- **Fechas con calendario:** `componentes/CampoFecha.native.js` usa `@react-native-community/datetimepicker` (funciona en Expo Go). En Android abre el calendario del sistema; en iOS, uno dentro de una ventana con "Listo". Los días fuera del rango permitido (antes de hoy, después del evento) no se pueden tocar. En la versión web (`CampoFecha.js`) la fecha se escribe como `AAAA-MM-DD`, porque ese calendario no existe en el navegador.
+- Listas desplegables y diálogos están hechos con React Native puro.
 
 ### `src/compartido`: la misma lógica que la web
 

@@ -73,3 +73,28 @@ export function opcionesBloqueo(fechaEvento, ahora = Date.now()) {
   });
   return opciones;
 }
+
+// --- Campo de fecha con calendario (componentes/CampoFecha) ---
+// El API usa "AAAA-MM-DD"; el calendario del teléfono usa Date en hora local.
+
+export function esFechaISO(texto) {
+  if (typeof texto !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(texto)) return false;
+  const [a, m, d] = texto.split("-").map(Number);
+  const f = new Date(Date.UTC(a, m - 1, d));
+  return f.getUTCFullYear() === a && f.getUTCMonth() === m - 1 && f.getUTCDate() === d;
+}
+
+// Medianoche local de ese día (lo que espera el calendario nativo).
+export function fechaLocalDeISO(texto) {
+  const [a, m, d] = texto.split("-").map(Number);
+  return new Date(a, m - 1, d);
+}
+
+// El día que el usuario tocó en el calendario, como "AAAA-MM-DD".
+export function isoDeFechaLocal(fecha) {
+  return `${fecha.getFullYear()}-${dos(fecha.getMonth() + 1)}-${dos(fecha.getDate())}`;
+}
+
+export function diaLegibleConAnio(fechaISO) {
+  return `${diaLegible(fechaISO)} ${fechaISO.slice(0, 4)}`;
+}

@@ -124,23 +124,6 @@ export function Segmento({ opciones, valor, onCambiar }) {
   );
 }
 
-// Fecha como texto AAAA-MM-DD: es lo que espera el API y no exige instalar un calendario nativo.
-export function CampoFecha({ etiqueta, value, onChangeText, error, ...props }) {
-  return (
-    <Campo
-      etiqueta={etiqueta}
-      value={value ?? ""}
-      onChangeText={(t) => onChangeText(t.replace(/[^\d-]/g, "").slice(0, 10))}
-      placeholder="AAAA-MM-DD"
-      keyboardType={Platform.OS === "ios" ? "numbers-and-punctuation" : "default"}
-      autoCorrect={false}
-      maxLength={10}
-      error={error}
-      {...props}
-    />
-  );
-}
-
 export function AreaTexto(props) {
   return <Campo multiline textAlignVertical="top" style={[estilos.input, { minHeight: 96, paddingTop: 10 }]} {...props} />;
 }
