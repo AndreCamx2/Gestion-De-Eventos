@@ -60,39 +60,40 @@ describe("Editar una cotización guardada", () => {
       validez_oferta: "2026-11-01",
     });
 
-    describe("Tipo de evento en el formulario", () => {
-      const form = {
-        cliente: { id: 2 },
-        salon: 4,
-        montaje: 5,
-        tipo_evento: "20",
-        fecha_evento: "2099-12-10",
-        cantidad_personas: "80",
-        validez_oferta: "",
-      };
-      const lineas = [{ concepto: { id: 6 }, cantidad: "1" }];
+    expect(formDesdeCotizacion(COTIZACION, "2026-11-02").validez_oferta).toBe("");
+  });
 
-      it("es obligatorio y se incluye en el payload de crear o editar", () => {
-        const errores = validarCotizacion({ ...form, tipo_evento: "" }, lineas, 100);
-        expect(errores.campos.tipo_evento).toBe("Elige el tipo de evento.");
+  describe("Tipo de evento en el formulario", () => {
+    const form = {
+      cliente: { id: 2 },
+      salon: 4,
+      montaje: 5,
+      tipo_evento: "20",
+      fecha_evento: "2099-12-10",
+      cantidad_personas: "80",
+      validez_oferta: "",
+    };
+    const lineas = [{ concepto: { id: 6 }, cantidad: "1" }];
 
-        expect(payloadCotizacion(form, lineas)).toMatchObject({
-          tipo_evento: 20,
-          cliente: 2,
-          items: [{ concepto: 6, cantidad: 1 }],
-        });
-      });
+    it("es obligatorio y se incluye en el payload de crear o editar", () => {
+      const errores = validarCotizacion({ ...form, tipo_evento: "" }, lineas, 100);
+      expect(errores.campos.tipo_evento).toBe("Elige el tipo de evento.");
 
-      it("muestra debajo del selector el error de tipo que devuelve el backend", () => {
-        const errores = erroresDeGuardado({
-          status: 400,
-          body: { tipo_evento: ["El tipo de evento está inactivo."] },
-        }, lineas.length);
-
-        expect(errores.campos.tipo_evento).toBe("El tipo de evento está inactivo.");
+      expect(payloadCotizacion(form, lineas)).toMatchObject({
+        tipo_evento: 20,
+        cliente: 2,
+        items: [{ concepto: 6, cantidad: 1 }],
       });
     });
-    expect(formDesdeCotizacion(COTIZACION, "2026-11-02").validez_oferta).toBe("");
+
+    it("muestra debajo del selector el error de tipo que devuelve el backend", () => {
+      const errores = erroresDeGuardado({
+        status: 400,
+        body: { tipo_evento: ["El tipo de evento está inactivo."] },
+      }, lineas.length);
+
+      expect(errores.campos.tipo_evento).toBe("El tipo de evento está inactivo.");
+    });
   });
 
   it("las líneas usan el precio con que se cotizó, no el de hoy", () => {
