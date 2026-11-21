@@ -3,6 +3,8 @@ import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-na
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Redirect, router } from "expo-router";
 import { ErrorApi } from "../api/cliente";
+import { recuperarClaveActiva } from "../compartido/utils/recuperarClave";
+import { Enlace } from "../componentes/formulario";
 import { Aviso, Boton, Campo, estilos } from "../componentes/ui";
 import { useSesion } from "../sesion/Sesion";
 import { mensajeDeError } from "../utils/errores";
@@ -48,7 +50,7 @@ export default function Login() {
             <Text style={estilos.titulo} accessibilityRole="header">
               Inicia sesión
             </Text>
-            <Text style={estilos.subtitulo}>Disponibilidad de salones y tu stock, desde el celular.</Text>
+            <Text style={estilos.subtitulo}>Tus cotizaciones, salones y stock, desde el celular.</Text>
           </View>
 
           <Aviso texto={errores.general} />
@@ -76,6 +78,12 @@ export default function Login() {
             error={errores.clave}
           />
           <Boton titulo="Entrar" onPress={enviar} cargando={enviando} />
+          <View style={{ flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+            <Enlace titulo="Crear cuenta de cliente" onPress={() => router.push("/registro")} />
+            {recuperarClaveActiva() ? (
+              <Enlace titulo="¿Olvidaste tu contraseña?" onPress={() => router.push("/recuperar-clave")} />
+            ) : null}
+          </View>
           <Text style={[estilos.textoSuave, { textAlign: "center" }]}>
             Si el servidor estaba inactivo, la primera vez puede tardar hasta un minuto.
           </Text>

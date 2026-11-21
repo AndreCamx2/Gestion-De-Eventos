@@ -52,12 +52,13 @@ export function Tarjeta({ children, onPress, accessibilityLabel }) {
   );
 }
 
-export function EtiquetaEstado({ estado }) {
+// `etiqueta` cambia el texto (el cliente ve "Reservada temporalmente" en vez de "Bloqueado").
+export function EtiquetaEstado({ estado, etiqueta }) {
   const e = ESTADOS[estado] || ESTADOS.cotizado;
   return (
     <View style={[estilos.etiquetaEstado, { backgroundColor: e.fondo }]}>
       <View style={[estilos.punto, { backgroundColor: e.punto }]} />
-      <Text style={[estilos.etiquetaEstadoTexto, { color: e.texto }]}>{e.etiqueta}</Text>
+      <Text style={[estilos.etiquetaEstadoTexto, { color: e.texto }]}>{etiqueta ?? e.etiqueta}</Text>
     </View>
   );
 }

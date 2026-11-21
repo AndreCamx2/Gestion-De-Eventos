@@ -4,7 +4,8 @@ import { Aviso, Boton, Campo, estilos } from "./ui";
 import { mensajeDeError } from "../utils/errores";
 import { validarStock } from "../utils/formularioStock";
 
-export default function FormStock({ inicial = {}, conNombre = false, nombreFijo, tituloBoton, guardar, alGuardar }) {
+// `pie`: contenido opcional debajo del botón (por ejemplo, el historial del elemento).
+export default function FormStock({ inicial = {}, conNombre = false, nombreFijo, tituloBoton, guardar, alGuardar, pie = null }) {
   const [nombre, setNombre] = useState(inicial.nombre ?? "");
   const [cantidad, setCantidad] = useState(inicial.cantidad != null ? String(inicial.cantidad) : "");
   const [valor, setValor] = useState(inicial.valor != null ? String(Number(inicial.valor)) : "");
@@ -63,6 +64,7 @@ export default function FormStock({ inicial = {}, conNombre = false, nombreFijo,
           error={errores.valor}
         />
         <Boton titulo={tituloBoton} onPress={enviar} cargando={enviando} />
+        {pie}
       </ScrollView>
     </KeyboardAvoidingView>
   );
