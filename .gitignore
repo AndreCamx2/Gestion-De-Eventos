@@ -16,6 +16,7 @@ frontend/.env.*.local
 # General
 .DS_Store
 *.log
+*.apk
 
 # Raíz (Docker)
 .env
