@@ -11,11 +11,19 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sgde-backend.onrender.com/api",
+        "EXPO_PUBLIC_RECUPERAR_CLAVE": "false"
       }
     },
     "production": {
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sgde-backend.onrender.com/api",
+        "EXPO_PUBLIC_RECUPERAR_CLAVE": "false"
       }
     }
   },
