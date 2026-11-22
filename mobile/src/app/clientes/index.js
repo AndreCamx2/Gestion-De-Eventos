@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { FlatList, Text, TextInput, View } from "react-native";
+import { FlatList, View } from "react-native";
+import { Text, TextInput } from "../../componentes/Texto";
 import { router } from "expo-router";
 import { listarClientes } from "../../compartido/api/clientes";
 import { FILTROS_TIPO, normalizar } from "../../compartido/pages/clientes/clientes";
 import { Interruptor, Segmento } from "../../componentes/formulario";
-import { Aviso, Boton, Cargando, Tarjeta, Vacio, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Boton, Cargando, Tarjeta, Vacio, estilos } from "../../componentes/ui";
 import { useCarga } from "../../componentes/useCarga";
 import RequiereRol from "../../sesion/RequiereRol";
 import { colores } from "../../tema";
@@ -39,6 +40,7 @@ function Clientes() {
       keyboardShouldPersistTaps="handled"
       ListHeaderComponent={
         <View style={{ gap: 10 }}>
+          <Cabecera antetitulo="Administración" titulo="Clientes" subtitulo="Personas y empresas. Dar de baja no borra su historia." />
           <Boton titulo="Nuevo cliente" onPress={() => router.push({ pathname: "/clientes/[id]", params: { id: "nuevo" } })} />
           <TextInput
             value={busqueda}

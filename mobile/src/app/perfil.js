@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, View } from "react-native";
+import { Text } from "../componentes/Texto";
 import { actualizarPerfil, cambiarContrasena, cambiarCorreo, obtenerPerfil } from "../compartido/api/perfil";
 import {
   MAX_CONTACTO,
@@ -13,7 +14,7 @@ import {
 import { useEnvio } from "../compartido/pages/perfil/useEnvio";
 import { MAX_PASSWORD, filtrarTelefono, limpiarTelefono } from "../compartido/utils/validacionesRegistro";
 import { Dato, Seccion } from "../componentes/formulario";
-import { Aviso, Boton, Campo, Cargando, Tarjeta, estilos } from "../componentes/ui";
+import { Cabecera, Aviso, Boton, Campo, Cargando, Tarjeta, estilos } from "../componentes/ui";
 import { useCarga } from "../componentes/useCarga";
 import RequiereRol from "../sesion/RequiereRol";
 import { useSesion } from "../sesion/Sesion";
@@ -101,7 +102,7 @@ function TarjetaCorreo({ perfil, alGuardar, alVencer }) {
           etiqueta="Tu contraseña actual"
           value={form.password_actual}
           onChangeText={(v) => cambiar("password_actual", v)}
-          secureTextEntry
+          clave
           error={envio.errores.password_actual}
         />
         <Boton titulo="Cambiar correo" variante="secundario" cargando={envio.guardando} onPress={guardar} />
@@ -134,16 +135,16 @@ function TarjetaContrasena({ perfil, alVencer }) {
       <Tarjeta>
         <Aviso texto={envio.error} />
         {envio.exito ? <Aviso tipo="exito" texto="Contraseña cambiada. Tu sesión sigue abierta en este celular." /> : null}
-        <Campo etiqueta="Contraseña actual" value={form.password_actual} onChangeText={(v) => cambiar("password_actual", v)} secureTextEntry error={envio.errores.password_actual} />
+        <Campo etiqueta="Contraseña actual" value={form.password_actual} onChangeText={(v) => cambiar("password_actual", v)} clave error={envio.errores.password_actual} />
         <Campo
           etiqueta="Contraseña nueva"
           value={form.password_nueva}
           onChangeText={(v) => cambiar("password_nueva", v)}
-          secureTextEntry
+          clave
           maxLength={MAX_PASSWORD}
           error={envio.errores.password_nueva}
         />
-        <Campo etiqueta="Confírmala" value={form.confirmacion} onChangeText={(v) => cambiar("confirmacion", v)} secureTextEntry error={envio.errores.confirmacion} />
+        <Campo etiqueta="Confírmala" value={form.confirmacion} onChangeText={(v) => cambiar("confirmacion", v)} clave error={envio.errores.confirmacion} />
         <Boton titulo="Cambiar contraseña" variante="secundario" cargando={envio.guardando} onPress={guardar} />
       </Tarjeta>
     </Seccion>
@@ -164,6 +165,7 @@ function Perfil() {
         keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={recargando} onRefresh={recargar} />}
       >
+        <Cabecera antetitulo="Cuenta" titulo="Mi perfil" subtitulo={perfil?.nombre} />
         <Aviso texto={error} />
         {perfil?.sinVincular ? (
           <Aviso texto="Tu usuario todavía no está vinculado a una ficha. Pídele al administrador que lo vincule." />
@@ -171,7 +173,6 @@ function Perfil() {
         {perfil && !perfil.sinVincular ? (
           <>
             <View style={{ gap: 4 }}>
-              <Text style={estilos.titulo}>{perfil.nombre}</Text>
               <Text style={estilos.textoSuave}>
                 {perfil.rol === "cliente" ? `Cliente · ${textoTipo(perfil.tipo)}` : "Proveedor"} · {perfil.identificacion || "sin identificación"}
               </Text>

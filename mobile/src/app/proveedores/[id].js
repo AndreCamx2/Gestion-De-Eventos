@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
+import { Text, TextInput } from "../../componentes/Texto";
+import { useLocalSearchParams } from "expo-router";
 import { historialStock } from "../../api/extras";
 import { crearElementoStock, editarStock, listarProveedores, listarStock, vincularUsuarioProveedor } from "../../compartido/api/proveedores";
 import { listarUsuarios } from "../../compartido/api/usuarios";
@@ -26,7 +27,7 @@ import {
 import { textoError } from "../../compartido/utils/erroresApi";
 import HistorialStock from "../../componentes/HistorialStock";
 import { Cifras, Dialogo, Seccion, Selector } from "../../componentes/formulario";
-import { Aviso, Boton, Campo, Cargando, Tarjeta, Vacio, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Boton, Campo, Cargando, Tarjeta, Vacio, estilos } from "../../componentes/ui";
 import { textoDeError } from "../../componentes/useCarga";
 import RequiereRol from "../../sesion/RequiereRol";
 import { colores } from "../../tema";
@@ -213,8 +214,8 @@ function DetalleProveedor() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Stack.Screen options={{ title: proveedor.nombre }} />
       <ScrollView style={estilos.pantalla} contentContainerStyle={[estilos.contenido, { paddingBottom: 40 }]} keyboardShouldPersistTaps="handled">
+        <Cabecera antetitulo="Proveedores" titulo={proveedor.nombre} />
         <Aviso texto={error} />
         <Aviso tipo="exito" texto={exito} />
         <Tarjeta>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
-import { Stack, router, useLocalSearchParams } from "expo-router";
+import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
+import { Text } from "../../componentes/Texto";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   actualizarConcepto,
   cambiarEstadoConcepto,
@@ -26,7 +27,7 @@ import {
   variacion,
 } from "../../compartido/pages/conceptos/conceptos";
 import { Seccion, Selector } from "../../componentes/formulario";
-import { Aviso, Boton, Campo, Cargando, Tarjeta, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Boton, Campo, Cargando, Tarjeta, estilos } from "../../componentes/ui";
 import { textoDeError } from "../../componentes/useCarga";
 import RequiereRol from "../../sesion/RequiereRol";
 import { colores } from "../../tema";
@@ -131,8 +132,8 @@ function FormConcepto() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Stack.Screen options={{ title: esNuevo ? "Nuevo concepto" : concepto?.nombre ?? "Concepto" }} />
       <ScrollView style={estilos.pantalla} contentContainerStyle={[estilos.contenido, { paddingBottom: 40 }]} keyboardShouldPersistTaps="handled">
+        <Cabecera antetitulo="Conceptos" titulo={esNuevo ? "Nuevo concepto" : concepto?.nombre ?? "Concepto"} />
         <Aviso texto={general} />
         <Aviso tipo="exito" texto={exito} />
         {concepto && !concepto.activo ? <Aviso texto="Este concepto está inactivo: no aparece al cotizar." /> : null}

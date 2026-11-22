@@ -4,6 +4,7 @@ export const ESTADOS = {
   confirmado: { etiqueta: "Confirmado", fondo: "rgba(52,168,106,0.14)", texto: "#1F6E44", punto: "#34A86A" },
   vencida: { etiqueta: "Vencida", fondo: "rgba(238,138,99,0.16)", texto: "#9C4826", punto: "#EE8A63" },
   cancelado: { etiqueta: "Cancelado", fondo: "rgba(93,102,115,0.18)", texto: "#525A66", punto: "#6E7581" },
+  disponible: { etiqueta: "Disponible", fondo: "rgba(93,102,115,0.07)", texto: "#4A525E", punto: "#AEB4BC" },
 };
 
 export function estadoVisible(cotizacion) {

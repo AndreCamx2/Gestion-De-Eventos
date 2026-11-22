@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
-import { FlatList, Text, View } from "react-native";
-import { Stack, router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { FlatList, View } from "react-native";
+import { Text } from "../../componentes/Texto";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { obtenerCalendario } from "../../api/disponibilidad";
-import { Aviso, Boton, Cargando, EtiquetaEstado, Tarjeta, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Boton, Cargando, EtiquetaEstado, Tarjeta, estilos } from "../../componentes/ui";
 import RequiereRol from "../../sesion/RequiereRol";
 import { colores } from "../../tema";
 import { agruparPorDia } from "../../utils/dias";
@@ -48,7 +49,6 @@ function DiasDelSalon() {
 
   return (
     <>
-      <Stack.Screen options={{ title: nombre ? String(nombre) : "Salón" }} />
       <FlatList
         style={estilos.pantalla}
         contentContainerStyle={estilos.contenido}
@@ -58,7 +58,7 @@ function DiasDelSalon() {
         onRefresh={recargar}
         ListHeaderComponent={
           <View style={{ gap: 6 }}>
-            <Text style={estilos.subtitulo}>Próximos {dias} días. Toca una cotización para bloquear o liberar.</Text>
+            <Cabecera antetitulo="Disponibilidad" titulo={nombre ? String(nombre) : "Salón"} subtitulo={`Próximos ${dias} días. Toca una cotización para bloquear o liberar.`} />
             <Aviso texto={error} />
           </View>
         }

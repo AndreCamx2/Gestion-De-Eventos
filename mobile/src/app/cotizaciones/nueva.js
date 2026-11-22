@@ -1,5 +1,6 @@
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-import { Stack, router, useLocalSearchParams } from "expo-router";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
+import { Text, TextInput } from "../../componentes/Texto";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   descripcionCliente,
   medidasSalon,
@@ -8,9 +9,10 @@ import {
   pesosDeCentavos,
 } from "../../compartido/pages/cotizaciones/nuevaCotizacion";
 import { useNuevaCotizacion } from "../../compartido/pages/cotizaciones/useNuevaCotizacion";
+import { numeroCotizacion } from "../../compartido/pages/cotizaciones/cotizaciones";
 import { CampoFecha } from "../../componentes/CampoFecha";
 import { Fila, Seccion, Selector } from "../../componentes/formulario";
-import { Aviso, Boton, Campo, Cargando, Tarjeta, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Boton, Campo, Cargando, Tarjeta, estilos } from "../../componentes/ui";
 import RequiereRol from "../../sesion/RequiereRol";
 import { hoyISO } from "../../utils/fechas";
 import { colores, espacio } from "../../tema";
@@ -63,14 +65,14 @@ function NuevaCotizacion() {
   const { editar } = useLocalSearchParams();
   const idEditar = editar ? Number(editar) : null;
   const c = useNuevaCotizacion(idEditar);
-  const titulo = c.editando ? `Editar cotización #${idEditar}` : "Nueva cotización";
+  const titulo = c.editando ? `Editar cotización ${numeroCotizacion(idEditar)}` : "Nueva cotización";
 
   if (c.cargando) return <Cargando texto="Cargando salones y conceptos…" />;
 
   if (c.errorCarga) {
     return (
       <View style={[estilos.pantalla, estilos.contenido]}>
-        <Stack.Screen options={{ title: titulo }} />
+        <Cabecera titulo={titulo} />
         <Aviso texto={MENSAJES_CARGA[c.errorCarga] ?? "No pudimos cargar los datos. Revisa tu conexión."} />
         <Boton titulo="Reintentar" variante="secundario" onPress={c.cargar} />
       </View>
@@ -80,7 +82,7 @@ function NuevaCotizacion() {
   if (c.guardada) {
     return (
       <View style={[estilos.pantalla, estilos.contenido]}>
-        <Stack.Screen options={{ title: titulo }} />
+        <Cabecera titulo={titulo} />
         <Aviso
           tipo="exito"
           texto={`${c.editando ? "Cambios guardados" : "Cotización creada"}: #${c.guardada.id} por ${pesos(c.guardada.total)}.`}
@@ -101,8 +103,8 @@ function NuevaCotizacion() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Stack.Screen options={{ title: titulo }} />
       <ScrollView style={estilos.pantalla} contentContainerStyle={[estilos.contenido, { paddingBottom: 40 }]} keyboardShouldPersistTaps="handled">
+        <Cabecera titulo={titulo} />
         <Aviso texto={c.errores.general || ERRORES_GUARDADO[c.errores.tipo]} />
 
         <Seccion titulo="1 · Cliente">

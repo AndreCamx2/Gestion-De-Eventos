@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { FlatList, Text, TextInput, View } from "react-native";
+import { FlatList, View } from "react-native";
+import { Text, TextInput } from "../../componentes/Texto";
 import { compararStock } from "../../compartido/api/proveedores";
 import { pesos } from "../../compartido/pages/proveedores/proveedores";
-import { Aviso, Boton, Tarjeta, Vacio, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Boton, Tarjeta, Vacio, estilos } from "../../componentes/ui";
 import { textoDeError } from "../../componentes/useCarga";
 import RequiereRol from "../../sesion/RequiereRol";
 import { colores } from "../../tema";
@@ -45,6 +46,7 @@ function Comparar() {
       keyboardShouldPersistTaps="handled"
       ListHeaderComponent={
         <View style={{ gap: 8 }}>
+          <Cabecera antetitulo="Proveedores" titulo="Comparar precios" subtitulo="Busca un elemento y mira quién lo ofrece y a qué precio." />
           <TextInput
             value={texto}
             onChangeText={setTexto}

@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
-import { RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
+import { RefreshControl, ScrollView, View } from "react-native";
+import { Text, TextInput } from "../../componentes/Texto";
 import { router } from "expo-router";
 import { listarConceptos, listarSitios } from "../../compartido/api/conceptos";
 import { etiquetaImpuesto, formatCOP, precioConImpuesto } from "../../compartido/pages/conceptos/conceptos";
 import { normalizar } from "../../compartido/pages/cotizaciones/cotizaciones";
 import { Interruptor, Seccion } from "../../componentes/formulario";
-import { Aviso, Boton, Cargando, Tarjeta, Vacio, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Boton, Cargando, Tarjeta, Vacio, estilos } from "../../componentes/ui";
 import { useCarga } from "../../componentes/useCarga";
 import RequiereRol from "../../sesion/RequiereRol";
 import { colores } from "../../tema";
@@ -43,6 +44,7 @@ function Conceptos() {
       keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={recargando} onRefresh={recargar} />}
     >
+      <Cabecera antetitulo="Catálogo" titulo="Conceptos y precios" subtitulo="Cada cambio de precio queda registrado con quién y cuándo." />
       <Boton titulo="Nuevo concepto" onPress={() => router.push({ pathname: "/conceptos/[id]", params: { id: "nuevo" } })} />
       <TextInput
         value={busqueda}

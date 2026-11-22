@@ -1,12 +1,13 @@
 import { useMemo } from "react";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
+import { RefreshControl, ScrollView, View } from "react-native";
+import { Text } from "../../componentes/Texto";
 import { router } from "expo-router";
 import { listarMisCotizaciones } from "../../compartido/api/misCotizaciones";
 import { pesos } from "../../compartido/pages/cotizaciones/cotizaciones";
 import { estadoCliente, etiquetaCliente, fechaNumerica, separarPorFecha, tipoDeError } from "../../compartido/pages/misCotizaciones/misCotizaciones";
 import { hoyLocal } from "../../compartido/utils/inicioCifras";
 import { Seccion } from "../../componentes/formulario";
-import { Aviso, Cargando, EtiquetaEstado, Tarjeta, Vacio, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Cargando, EtiquetaEstado, Tarjeta, Vacio, estilos } from "../../componentes/ui";
 import { useCarga } from "../../componentes/useCarga";
 import RequiereRol from "../../sesion/RequiereRol";
 
@@ -38,6 +39,7 @@ function MisCotizaciones() {
       contentContainerStyle={estilos.contenido}
       refreshControl={<RefreshControl refreshing={recargando} onRefresh={recargar} />}
     >
+      <Cabecera antetitulo="Cliente" titulo="Mis cotizaciones" subtitulo="Las propuestas que te ha enviado tu asesor y el estado de cada evento." />
       <Aviso texto={error} />
       {datos?.sinVincular ? <Aviso texto="Tu usuario todavía no está vinculado a una ficha de cliente. Comunícate con tu asesor." /> : null}
       {datos && !datos.lista.length && !datos.sinVincular ? (

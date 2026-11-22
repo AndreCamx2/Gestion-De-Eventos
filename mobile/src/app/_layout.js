@@ -1,56 +1,69 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import BotonSalir from "../componentes/BotonSalir";
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+  useFonts,
+} from "@expo-google-fonts/plus-jakarta-sans";
+import Marco from "../componentes/Marco";
+import { Cargando } from "../componentes/ui";
 import { ProveedorSesion } from "../sesion/Sesion";
 import { colores } from "../tema";
 
+// Sin encabezado de React Navigation: el marco (logo, avatar y barra de abajo) es el de la web.
 export default function Layout() {
+  const [fuentesListas, errorFuentes] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+  // Si la fuente no carga (sin red la primera vez), la app sigue con la del sistema.
+  if (!fuentesListas && !errorFuentes) return <Cargando texto="" />;
+
   return (
     <ProveedorSesion>
       <StatusBar style="dark" />
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: colores.superficie },
-          headerTintColor: colores.texto,
-          headerTitleStyle: { fontWeight: "700" },
-          headerShadowVisible: false,
-          contentStyle: { backgroundColor: colores.fondo },
-          headerRight: () => <BotonSalir />,
-        }}
-      >
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="registro" options={{ title: "Crear cuenta", headerRight: () => null }} />
-        <Stack.Screen name="recuperar-clave" options={{ title: "Recuperar contraseña", headerRight: () => null }} />
-        <Stack.Screen name="restablecer-clave" options={{ title: "Nueva contraseña", headerRight: () => null }} />
-        <Stack.Screen name="inicio" options={{ title: "Inicio" }} />
-        <Stack.Screen name="cotizaciones/index" options={{ title: "Cotizaciones" }} />
-        <Stack.Screen name="cotizaciones/nueva" options={{ title: "Nueva cotización" }} />
-        <Stack.Screen name="cotizacion/[id]" options={{ title: "Cotización" }} />
-        <Stack.Screen name="calendario" options={{ title: "Calendario" }} />
-        <Stack.Screen name="rack" options={{ title: "Rack de salones" }} />
-        <Stack.Screen name="historico" options={{ title: "Histórico" }} />
-        <Stack.Screen name="ingresos" options={{ title: "Ingresos" }} />
-        <Stack.Screen name="disponibilidad/index" options={{ title: "Disponibilidad" }} />
-        <Stack.Screen name="disponibilidad/[salon]" options={{ title: "Salón" }} />
-        <Stack.Screen name="clientes/index" options={{ title: "Clientes" }} />
-        <Stack.Screen name="clientes/[id]" options={{ title: "Cliente" }} />
-        <Stack.Screen name="sitios" options={{ title: "Venues" }} />
-        <Stack.Screen name="salones/index" options={{ title: "Salones" }} />
-        <Stack.Screen name="salones/[id]" options={{ title: "Salón" }} />
-        <Stack.Screen name="conceptos/index" options={{ title: "Conceptos" }} />
-        <Stack.Screen name="conceptos/[id]" options={{ title: "Concepto" }} />
-        <Stack.Screen name="proveedores/index" options={{ title: "Proveedores" }} />
-        <Stack.Screen name="proveedores/comparar" options={{ title: "Comparar precios" }} />
-        <Stack.Screen name="proveedores/[id]" options={{ title: "Proveedor" }} />
-        <Stack.Screen name="usuarios" options={{ title: "Usuarios" }} />
-        <Stack.Screen name="mis-cotizaciones/index" options={{ title: "Mis cotizaciones" }} />
-        <Stack.Screen name="mis-cotizaciones/[id]" options={{ title: "Mi cotización" }} />
-        <Stack.Screen name="mi-stock/index" options={{ title: "Mi stock" }} />
-        <Stack.Screen name="mi-stock/nuevo" options={{ title: "Nuevo elemento" }} />
-        <Stack.Screen name="mi-stock/[id]" options={{ title: "Editar elemento" }} />
-        <Stack.Screen name="perfil" options={{ title: "Mi perfil" }} />
-      </Stack>
+      <Marco>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colores.fondo } }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="registro" />
+          <Stack.Screen name="recuperar-clave" />
+          <Stack.Screen name="restablecer-clave" />
+          <Stack.Screen name="inicio" />
+          <Stack.Screen name="cotizaciones/index" />
+          <Stack.Screen name="cotizaciones/nueva" />
+          <Stack.Screen name="cotizacion/[id]" />
+          <Stack.Screen name="calendario" />
+          <Stack.Screen name="rack" />
+          <Stack.Screen name="historico" />
+          <Stack.Screen name="ingresos" />
+          <Stack.Screen name="disponibilidad/index" />
+          <Stack.Screen name="disponibilidad/[salon]" />
+          <Stack.Screen name="clientes/index" />
+          <Stack.Screen name="clientes/[id]" />
+          <Stack.Screen name="sitios" />
+          <Stack.Screen name="salones/index" />
+          <Stack.Screen name="salones/[id]" />
+          <Stack.Screen name="conceptos/index" />
+          <Stack.Screen name="conceptos/[id]" />
+          <Stack.Screen name="proveedores/index" />
+          <Stack.Screen name="proveedores/comparar" />
+          <Stack.Screen name="proveedores/[id]" />
+          <Stack.Screen name="usuarios" />
+          <Stack.Screen name="mis-cotizaciones/index" />
+          <Stack.Screen name="mis-cotizaciones/[id]" />
+          <Stack.Screen name="mi-stock/index" />
+          <Stack.Screen name="mi-stock/nuevo" />
+          <Stack.Screen name="mi-stock/[id]" />
+          <Stack.Screen name="perfil" />
+        </Stack>
+      </Marco>
     </ProveedorSesion>
   );
 }

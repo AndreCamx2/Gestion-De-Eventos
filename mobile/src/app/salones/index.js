@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { ScrollView, RefreshControl, Text, TextInput, View } from "react-native";
+import { ScrollView, RefreshControl, View } from "react-native";
+import { Text, TextInput } from "../../componentes/Texto";
 import { router } from "expo-router";
 import { listarSalonMontajes, listarSalones } from "../../compartido/api/salones";
 import { aforoMaximo, metros, normalizar } from "../../compartido/pages/salones/salones";
 import { Interruptor, Seccion } from "../../componentes/formulario";
-import { Aviso, Boton, Cargando, Tarjeta, Vacio, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Boton, Cargando, Tarjeta, Vacio, estilos } from "../../componentes/ui";
 import { useCarga } from "../../componentes/useCarga";
 import RequiereRol from "../../sesion/RequiereRol";
 import { colores } from "../../tema";
@@ -40,6 +41,7 @@ function Salones() {
       keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={recargando} onRefresh={recargar} />}
     >
+      <Cabecera antetitulo="Catálogo" titulo="Salones y montajes" subtitulo="Cuánta gente cabe, en qué formato y dónde." />
       <Boton titulo="Nuevo salón" onPress={() => router.push({ pathname: "/salones/[id]", params: { id: "nuevo" } })} />
       <TextInput
         value={busqueda}

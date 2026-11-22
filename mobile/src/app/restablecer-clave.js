@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { ScrollView, Text } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import useRestablecerClave from "../compartido/pages/recuperacion/useRestablecerClave";
-import { Aviso, Boton, Campo, estilos } from "../componentes/ui";
+import { AvisoAcceso, EnlaceAcceso, PantallaAcceso, TarjetaAcceso } from "../componentes/Acceso";
+import { Text } from "../componentes/Texto";
+import { Boton, Campo } from "../componentes/ui";
 
-// Se abre con el enlace del correo: sgde://restablecer-clave?uid=…&token=…
+// RestablecerClave.jsx de la web. Se abre con el enlace del correo: sgde://restablecer-clave?uid=…&token=…
 export default function RestablecerClave() {
   const { uid, token } = useLocalSearchParams();
   const [clave, setClave] = useState("");
@@ -14,31 +15,42 @@ export default function RestablecerClave() {
     typeof token === "string" ? token : "",
   );
 
-  if (listo || enlaceInvalido) {
+  if (listo) {
     return (
-      <ScrollView style={estilos.pantalla} contentContainerStyle={estilos.contenido}>
-        <Aviso
-          tipo={listo ? "exito" : "error"}
-          texto={listo ? "Listo: ya puedes entrar con tu contraseña nueva." : "El enlace ya no sirve o está incompleto. Pide uno nuevo."}
-        />
-        <Boton titulo="Ir a iniciar sesión" onPress={() => router.replace("/login")} />
-      </ScrollView>
+      <PantallaAcceso>
+        <TarjetaAcceso titulo="Contraseña actualizada">
+          <AvisoAcceso tipo="exito">Tu contraseña quedó cambiada. Por seguridad, cerramos las sesiones que tenías abiertas.</AvisoAcceso>
+          <Boton titulo="Iniciar sesión" alto={50} onPress={() => router.replace("/login")} />
+        </TarjetaAcceso>
+      </PantallaAcceso>
+    );
+  }
+
+  if (enlaceInvalido) {
+    return (
+      <PantallaAcceso>
+        <TarjetaAcceso titulo="El enlace no sirve">
+          <AvisoAcceso>Este enlace no es válido, ya se usó o venció. Pide uno nuevo para cambiar tu contraseña.</AvisoAcceso>
+          <Boton titulo="Pedir un enlace nuevo" alto={50} onPress={() => router.replace("/recuperar-clave")} />
+          <Text style={{ textAlign: "center" }}>
+            <EnlaceAcceso titulo="Volver a iniciar sesión" onPress={() => router.replace("/login")} />
+          </Text>
+        </TarjetaAcceso>
+      </PantallaAcceso>
     );
   }
 
   return (
-    <ScrollView style={estilos.pantalla} contentContainerStyle={estilos.contenido} keyboardShouldPersistTaps="handled">
-      <Text style={estilos.subtitulo}>Escribe tu contraseña nueva (mínimo 8 caracteres).</Text>
-      <Aviso texto={errorGeneral} />
-      <Campo etiqueta="Contraseña nueva" value={clave} onChangeText={setClave} secureTextEntry error={errores.password} />
-      <Campo
-        etiqueta="Confirma la contraseña"
-        value={confirmacion}
-        onChangeText={setConfirmacion}
-        secureTextEntry
-        error={errores.confirmacion}
-      />
-      <Boton titulo="Guardar contraseña" cargando={enviando} onPress={() => enviar(clave, confirmacion)} />
-    </ScrollView>
+    <PantallaAcceso>
+      <TarjetaAcceso
+        titulo="Crea tu nueva contraseña"
+        subtitulo="Usa mínimo 8 caracteres y evita datos fáciles de adivinar, como tu nombre o tu correo."
+      >
+        <Campo etiqueta="Nueva contraseña" obligatorio clave value={clave} onChangeText={setClave} autoComplete="new-password" error={errores.password} />
+        <Campo etiqueta="Confirmar contraseña" obligatorio clave value={confirmacion} onChangeText={setConfirmacion} error={errores.confirmacion} />
+        <AvisoAcceso>{errorGeneral}</AvisoAcceso>
+        <Boton titulo="Guardar contraseña" textoCargando="Guardando…" alto={50} cargando={enviando} onPress={() => enviar(clave, confirmacion)} />
+      </TarjetaAcceso>
+    </PantallaAcceso>
   );
 }

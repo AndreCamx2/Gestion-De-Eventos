@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, View } from "react-native";
+import { Text } from "../componentes/Texto";
 import { router } from "expo-router";
 import { obtenerCalendario } from "../compartido/api/calendario";
 import { listarSalones } from "../compartido/api/salones";
@@ -14,7 +15,7 @@ import {
   rangoDeDias,
 } from "../compartido/pages/rack/rack";
 import { fechaISO, hoyLocal, sumarDias } from "../compartido/utils/inicioCifras";
-import { Aviso, Boton, Cargando, estilos } from "../componentes/ui";
+import { Cabecera, Aviso, Boton, Cargando, estilos } from "../componentes/ui";
 import { useCarga } from "../componentes/useCarga";
 import RequiereRol from "../sesion/RequiereRol";
 import { colores, espacio } from "../tema";
@@ -51,6 +52,7 @@ function Rack() {
       contentContainerStyle={estilos.contenido}
       refreshControl={<RefreshControl refreshing={recargando} onRefresh={recargar} />}
     >
+      <Cabecera antetitulo="Disponibilidad" titulo="Rack de salones" />
       <View style={{ flexDirection: "row", alignItems: "center", gap: espacio.s }}>
         <Boton titulo="‹" variante="secundario" onPress={() => setInicio((d) => sumarDias(d, -DIAS_POR_PAGINA))} />
         <Text style={[estilos.textoFuerte, { flex: 1, textAlign: "center" }]}>

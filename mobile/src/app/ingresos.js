@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
+import { RefreshControl, ScrollView, View } from "react-native";
+import { Text } from "../componentes/Texto";
 import { millones, pesos } from "../compartido/pages/cotizaciones/cotizaciones";
 import { AGRUPACIONES, PERIODOS, porcentaje, textoEventos } from "../compartido/pages/ingresos/ingresos";
 import { useIngresos } from "../compartido/pages/ingresos/useIngresos";
 import { CampoFecha } from "../componentes/CampoFecha";
 import { Cifras, Segmento } from "../componentes/formulario";
-import { Aviso, Boton, Cargando, Tarjeta, Vacio, estilos } from "../componentes/ui";
+import { Cabecera, Aviso, Boton, Cargando, Tarjeta, Vacio, estilos } from "../componentes/ui";
 import RequiereRol from "../sesion/RequiereRol";
 import { colores, espacio } from "../tema";
 
@@ -37,6 +38,7 @@ function Ingresos() {
       keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={g.cargando && d.filas.length > 0} onRefresh={g.cargar} />}
     >
+      <Cabecera antetitulo="Reportes" titulo="¿Qué eventos generan más ingresos?" subtitulo="Ingresos de los eventos confirmados, de mayor a menor." />
       <Text style={estilos.etiqueta}>Periodo</Text>
       <Segmento opciones={PERIODOS.map((p) => ({ valor: p.clave, etiqueta: p.texto }))} valor={g.periodo} onCambiar={g.setPeriodo} />
       {g.periodo === "rango" ? (

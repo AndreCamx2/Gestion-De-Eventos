@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
-import { Stack, router, useLocalSearchParams } from "expo-router";
+import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
+import { Text } from "../../componentes/Texto";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   cambiarActivoSalon,
   crearSalon,
@@ -16,7 +17,7 @@ import { listarSitios } from "../../compartido/api/sitios";
 import { MAX_NOMBRE_SALON, cambiosSalon, formDesdeSalon, validarAforo, validarSalon } from "../../compartido/pages/salones/salones";
 import { erroresDesdeApi, textoError } from "../../compartido/utils/erroresApi";
 import { Confirmar, Dialogo, Fila, Seccion, Selector } from "../../componentes/formulario";
-import { Aviso, Boton, Campo, Cargando, Tarjeta, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Boton, Campo, Cargando, Tarjeta, estilos } from "../../componentes/ui";
 import { textoDeError } from "../../componentes/useCarga";
 import RequiereRol from "../../sesion/RequiereRol";
 import { espacio } from "../../tema";
@@ -184,8 +185,8 @@ function FormSalon() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Stack.Screen options={{ title: esNuevo ? "Nuevo salón" : salon?.nombre ?? "Salón" }} />
       <ScrollView style={estilos.pantalla} contentContainerStyle={[estilos.contenido, { paddingBottom: 40 }]} keyboardShouldPersistTaps="handled">
+        <Cabecera antetitulo="Salones" titulo={esNuevo ? "Nuevo salón" : salon?.nombre ?? "Salón"} />
         <Aviso texto={general} />
         <Aviso tipo="exito" texto={exito} />
         {salon && salon.activo === false ? (

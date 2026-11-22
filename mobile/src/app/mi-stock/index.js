@@ -1,8 +1,9 @@
 import { useCallback, useState } from "react";
-import { FlatList, Text, View } from "react-native";
+import { FlatList, View } from "react-native";
+import { Text } from "../../componentes/Texto";
 import { router, useFocusEffect } from "expo-router";
 import { listarMiStock } from "../../api/miStock";
-import { Aviso, Boton, Cargando, Tarjeta, Vacio, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Boton, Cargando, Tarjeta, Vacio, estilos } from "../../componentes/ui";
 import RequiereRol from "../../sesion/RequiereRol";
 import { useSesion } from "../../sesion/Sesion";
 import { mensajeDeError } from "../../utils/errores";
@@ -50,8 +51,8 @@ function MiStock() {
       onRefresh={recargar}
       ListHeaderComponent={
         <View style={{ gap: 8 }}>
-          {usuario?.proveedor ? <Text style={estilos.antetitulo}>{usuario.proveedor.nombre}</Text> : null}
-          <Text style={estilos.subtitulo}>Toca un elemento para actualizar su cantidad o su valor.</Text>
+          <Cabecera antetitulo="Proveedor" titulo="Mi stock" subtitulo={usuario?.proveedor?.nombre} />
+          <Text style={estilos.textoSuave}>Toca un elemento para actualizar su cantidad o su valor.</Text>
           <Aviso texto={error} />
           {!error ? <Boton titulo="Agregar elemento" onPress={() => router.push("/mi-stock/nuevo")} /> : null}
         </View>

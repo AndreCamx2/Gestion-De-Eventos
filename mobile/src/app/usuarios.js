@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { FlatList, Text, TextInput, View } from "react-native";
+import { FlatList, View } from "react-native";
+import { Text, TextInput } from "../componentes/Texto";
 import { actualizarUsuario, darDeBajaUsuario } from "../compartido/api/usuarios";
 import { useUsuarios } from "../compartido/pages/usuarios/useUsuarios";
 import {
@@ -15,7 +16,7 @@ import {
   validarEdicion,
 } from "../compartido/pages/usuarios/usuarios";
 import { Confirmar, Dialogo, Interruptor, Segmento, Selector } from "../componentes/formulario";
-import { Aviso, Boton, Campo, Cargando, Tarjeta, Vacio, estilos } from "../componentes/ui";
+import { Cabecera, Aviso, Boton, Campo, Cargando, Tarjeta, Vacio, estilos } from "../componentes/ui";
 import RequiereRol from "../sesion/RequiereRol";
 import { colores } from "../tema";
 
@@ -78,7 +79,7 @@ function DialogoNuevo({ u, alCerrar }) {
         etiqueta="Contraseña temporal"
         value={u.nuevo.password}
         onChangeText={(v) => u.cambiarNuevo("password", v)}
-        secureTextEntry
+        clave
         error={u.erroresNuevo.password}
       />
       {!u.erroresNuevo.password ? <Text style={[estilos.textoSuave, nivel.nivel >= 4 && { color: colores.exito }]}>{nivel.texto}</Text> : null}
@@ -198,6 +199,11 @@ function Usuarios() {
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <View style={{ gap: 10 }}>
+            <Cabecera
+              antetitulo="Administración"
+              titulo="Usuarios internos"
+              subtitulo="Administradores y proveedores. Los clientes se gestionan desde Clientes."
+            />
             <Boton titulo="Nuevo usuario" onPress={() => setNuevoAbierto(true)} />
             {!nuevoAbierto ? <Aviso tipo="exito" texto={u.aviso} /> : null}
             {u.errorCarga ? <Aviso texto={mensajeError(u.errorCarga === "permiso" ? 403 : 500, "ver usuarios")} /> : null}

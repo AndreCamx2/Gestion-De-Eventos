@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { FlatList, Text, View } from "react-native";
+import { FlatList, View } from "react-native";
+import { Text } from "../componentes/Texto";
 import { listarConceptos } from "../compartido/api/conceptos";
 import { listarSalones } from "../compartido/api/salones";
 import { crearSitio, listarCiudades, listarSitios } from "../compartido/api/sitios";
@@ -8,7 +9,7 @@ import { contarPorSitio } from "../compartido/pages/sitios/conteos";
 import { erroresDesdeApi } from "../compartido/utils/erroresApi";
 import { quitarEspacios, validarNombreCosa } from "../compartido/utils/validacionesRegistro";
 import { Dialogo, Selector } from "../componentes/formulario";
-import { Aviso, Boton, Campo, Cargando, Tarjeta, Vacio, estilos } from "../componentes/ui";
+import { Cabecera, Aviso, Boton, Campo, Cargando, Tarjeta, Vacio, estilos } from "../componentes/ui";
 import { textoDeError, useCarga } from "../componentes/useCarga";
 import RequiereRol from "../sesion/RequiereRol";
 
@@ -69,6 +70,7 @@ function Sitios() {
         onRefresh={recargar}
         ListHeaderComponent={
           <View style={{ gap: 10 }}>
+            <Cabecera antetitulo="Administración" titulo="Venues" subtitulo="Cada hotel o sede tiene sus propios salones, conceptos y precios." />
             <Boton titulo="Nuevo venue" onPress={() => setAbierto(true)} />
             <Aviso texto={error} />
             <Aviso tipo="exito" texto={exito} />

@@ -1,6 +1,7 @@
 import { Redirect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "../componentes/Texto";
 import { Boton, Cargando, estilos } from "../componentes/ui";
 import { RUTA_POR_ROL, rolDe, useSesion } from "../sesion/Sesion";
 

@@ -5,6 +5,7 @@ import { historialMiStock } from "../../api/extras";
 import { actualizarElemento, obtenerElemento } from "../../api/miStock";
 import FormStock from "../../componentes/FormStock";
 import HistorialStock from "../../componentes/HistorialStock";
+import { Text } from "../../componentes/Texto";
 import { Aviso, Boton, Cargando, estilos } from "../../componentes/ui";
 import RequiereRol from "../../sesion/RequiereRol";
 import { mensajeDeError } from "../../utils/errores";
@@ -43,6 +44,7 @@ function EditarElemento() {
     <FormStock
       inicial={{ cantidad: elemento.cantidad, valor: elemento.valor }}
       nombreFijo={elemento.nombre_elemento}
+      cabecera={<Text style={estilos.antetitulo}>Mi stock</Text>}
       tituloBoton="Guardar cambios"
       guardar={(datos) => actualizarElemento(elemento.id, datos)}
       alGuardar={() => router.back()}

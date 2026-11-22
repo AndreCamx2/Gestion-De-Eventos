@@ -1,4 +1,4 @@
-import { Text } from "react-native";
+import { Text } from "./Texto";
 import { pesos } from "../utils/formato";
 import { momentoLegible } from "../utils/fechas";
 import { Seccion } from "./formulario";

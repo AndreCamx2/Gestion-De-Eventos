@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
-import { Stack, router, useLocalSearchParams } from "expo-router";
+import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
+import { Text } from "../../componentes/Texto";
+import { router, useLocalSearchParams } from "expo-router";
 import { obtenerCliente } from "../../api/extras";
 import { actualizarCliente, crearCliente, darDeBajaCliente, listarEmpresas, reactivarCliente } from "../../compartido/api/clientes";
 import {
@@ -17,7 +18,7 @@ import { useNuevaEmpresa } from "../../compartido/pages/clientes/useNuevaEmpresa
 import { fechaCorta, numeroCotizacion } from "../../compartido/pages/cotizaciones/cotizaciones";
 import { MAX_NOMBRE, filtrarDigitos, filtrarNit, filtrarTelefono, limpiarTelefono, quitarEspacios } from "../../compartido/utils/validacionesRegistro";
 import { AreaTexto, Confirmar, Dialogo, Seccion, Segmento, Selector } from "../../componentes/formulario";
-import { Aviso, Boton, Campo, Cargando, EtiquetaEstado, Tarjeta, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Boton, Campo, Cargando, EtiquetaEstado, Tarjeta, estilos } from "../../componentes/ui";
 import { textoDeError } from "../../componentes/useCarga";
 import RequiereRol from "../../sesion/RequiereRol";
 import { estadoVisible } from "../../utils/estados";
@@ -176,8 +177,8 @@ function FormCliente() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Stack.Screen options={{ title: esNuevo ? "Nuevo cliente" : cliente?.nombre ?? "Cliente" }} />
       <ScrollView style={estilos.pantalla} contentContainerStyle={[estilos.contenido, { paddingBottom: 40 }]} keyboardShouldPersistTaps="handled">
+        <Cabecera antetitulo="Clientes" titulo={esNuevo ? "Nuevo cliente" : cliente?.nombre ?? "Cliente"} />
         <Aviso texto={general} />
         <Aviso tipo="exito" texto={exito} />
         {inactivo ? (

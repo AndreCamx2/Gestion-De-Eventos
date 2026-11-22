@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, Text } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { Text } from "./Texto";
 import { Aviso, Boton, Campo, estilos } from "./ui";
 import { mensajeDeError } from "../utils/errores";
 import { validarStock } from "../utils/formularioStock";
 
 // `pie`: contenido opcional debajo del botón (por ejemplo, el historial del elemento).
-export default function FormStock({ inicial = {}, conNombre = false, nombreFijo, tituloBoton, guardar, alGuardar, pie = null }) {
+export default function FormStock({ inicial = {}, conNombre = false, nombreFijo, tituloBoton, guardar, alGuardar, pie = null, cabecera = null }) {
   const [nombre, setNombre] = useState(inicial.nombre ?? "");
   const [cantidad, setCantidad] = useState(inicial.cantidad != null ? String(inicial.cantidad) : "");
   const [valor, setValor] = useState(inicial.valor != null ? String(Number(inicial.valor)) : "");
@@ -35,6 +36,7 @@ export default function FormStock({ inicial = {}, conNombre = false, nombreFijo,
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView style={estilos.pantalla} contentContainerStyle={estilos.contenido} keyboardShouldPersistTaps="handled">
+        {cabecera}
         <Aviso texto={general} />
         {conNombre ? (
           <Campo

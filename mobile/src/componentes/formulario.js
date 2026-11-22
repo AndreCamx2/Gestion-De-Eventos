@@ -1,17 +1,6 @@
 import { useMemo, useState } from "react";
-import {
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { Text, TextInput } from "./Texto";
 import { TOQUE_MINIMO, colores, espacio } from "../tema";
 import { Aviso, Boton, Campo, estilos } from "./ui";
 
@@ -121,6 +110,63 @@ export function Segmento({ opciones, valor, onCambiar }) {
         );
       })}
     </ScrollView>
+  );
+}
+
+// Casilla de verificación (como el checkbox de la web, con el color tinta).
+export function Casilla({ valor, onCambiar, children, error }) {
+  return (
+    <View style={{ gap: 6 }}>
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: Boolean(valor) }}
+        onPress={() => onCambiar(!valor)}
+        style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, minHeight: TOQUE_MINIMO }}
+      >
+        <View
+          style={{
+            width: 20,
+            height: 20,
+            marginTop: 1,
+            borderRadius: 5,
+            borderWidth: 1.5,
+            borderColor: error ? colores.peligro : valor ? colores.tinta : colores.lineaFuerte,
+            backgroundColor: valor ? colores.tinta : colores.superficie,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {valor ? <Text style={{ color: "#FFFFFF", fontSize: 13, fontWeight: "800", lineHeight: 16 }}>✓</Text> : null}
+        </View>
+        <Text style={{ flex: 1, fontSize: 14, color: colores.textoSuave, lineHeight: 20 }}>{children}</Text>
+      </Pressable>
+      {error ? <Text style={estilos.errorCampo}>{error}</Text> : null}
+    </View>
+  );
+}
+
+// Dos o tres opciones que ocupan todo el ancho (.registro-tipo de la web).
+export function OpcionesSegmentadas({ etiqueta, opciones, valor, onCambiar }) {
+  return (
+    <View style={{ gap: 8 }}>
+      {etiqueta ? <Text style={estilos.etiqueta}>{etiqueta}</Text> : null}
+      <View style={{ flexDirection: "row", gap: 6, padding: 6, borderRadius: 14, borderWidth: 1, borderColor: colores.linea, backgroundColor: colores.superficie }} accessibilityRole="tablist">
+        {opciones.map((o) => {
+          const activa = o.valor === valor;
+          return (
+            <Pressable
+              key={o.valor}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activa }}
+              onPress={() => onCambiar(o.valor)}
+              style={{ flex: 1, minHeight: TOQUE_MINIMO, borderRadius: 10, alignItems: "center", justifyContent: "center", paddingHorizontal: 6, backgroundColor: activa ? colores.tinta : "transparent" }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: "700", color: activa ? "#FFFFFF" : colores.textoSuave, textAlign: "center" }}>{o.etiqueta}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 

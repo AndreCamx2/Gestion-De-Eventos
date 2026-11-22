@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
+import { RefreshControl, ScrollView, View } from "react-native";
+import { Text } from "../componentes/Texto";
 import { router } from "expo-router";
 import { fechaCorta, millones, numeroCotizacion, pesos } from "../compartido/pages/cotizaciones/cotizaciones";
 import { ESTADOS_HISTORICO, realizado } from "../compartido/pages/cotizaciones/historico";
 import { useHistorico } from "../compartido/pages/cotizaciones/useHistorico";
 import { CampoFecha } from "../componentes/CampoFecha";
 import { Cifras, Segmento, Selector } from "../componentes/formulario";
-import { Aviso, Boton, Cargando, EtiquetaEstado, Tarjeta, Vacio, estilos } from "../componentes/ui";
+import { Cabecera, Aviso, Boton, Cargando, EtiquetaEstado, Tarjeta, Vacio, estilos } from "../componentes/ui";
 import RequiereRol from "../sesion/RequiereRol";
-import { espacio } from "../tema";
+import { colores, espacio } from "../tema";
 
 const FECHA_COMPLETA = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -43,6 +44,13 @@ function Historico() {
       keyboardShouldPersistTaps="handled"
       refreshControl={<RefreshControl refreshing={h.cargando && h.eventos.length > 0} onRefresh={h.cargar} />}
     >
+      <Text style={estilos.textoSuave}>
+        <Text accessibilityRole="link" onPress={() => router.navigate("/cotizaciones")} style={{ color: colores.mandarinaTexto, fontWeight: "700" }}>
+          Cotizaciones
+        </Text>
+        {"  /  "}Histórico
+      </Text>
+      <Cabecera titulo="Histórico de eventos" subtitulo="Eventos confirmados y cancelados. Abre uno para ver quién hizo cada cambio." />
       <Segmento
         opciones={ESTADOS_HISTORICO.map((e) => ({ valor: e.clave, etiqueta: e.texto }))}
         valor={h.filtros.estado}

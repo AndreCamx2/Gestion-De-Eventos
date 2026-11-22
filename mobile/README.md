@@ -21,7 +21,7 @@ Tiene las mismas funciones de la página web, organizadas por rol. Al entrar, ca
    npx expo start
    ```
 
-   > **Una sola vez** (quien agregue el calendario): `npx expo install @react-native-community/datetimepicker`. Instala la versión que corresponde al SDK de Expo y la anota en `package.json` y `package-lock.json`; sube esos dos archivos para que los demás solo necesiten `npm install`.
+   > **Una sola vez** (quien agregue estas librerías): `npx expo install @react-native-community/datetimepicker expo-font @expo-google-fonts/plus-jakarta-sans`. Instala las versiones que corresponden al SDK de Expo y las anota en `package.json`, `package-lock.json` y `app.json`; sube esos archivos para que los demás solo necesiten `npm install`.
 
 3. Escanea el código QR que aparece en la terminal: en Android, desde Expo Go; en iPhone, con la cámara.
    - El celular y el computador deben estar en la **misma red Wi-Fi**.
@@ -66,7 +66,7 @@ Al terminar, EAS da un enlace para descargar el APK e instalarlo en el celular (
 ```
 mobile/src/
 ├── app/            Pantallas (Expo Router: cada archivo es una ruta)
-│   ├── _layout.js  Navegación, títulos y botón "Salir"
+│   ├── _layout.js  Navegación, fuentes y el marco (barras de arriba y abajo)
 │   ├── index.js    Entrada: manda a cada rol a su inicio
 │   ├── login.js, registro.js, recuperar-clave.js, restablecer-clave.js
 │   ├── inicio.js   Cifras y menú de cada rol
@@ -88,7 +88,8 @@ mobile/src/
 - **Tokens:** se guardan en `expo-secure-store` (cifrado del teléfono). En el navegador, en `sessionStorage`.
 - **Sesión:** si el access vence, se renueva solo con el refresh, que rota (SGDE-92). Si el refresh venció, la app vuelve al login.
 - **Seguridad:** la app solo oculta pantallas por rol. Quien decide de verdad es el backend (401/403).
-- **Estilo:** los colores son los de Piedra viva (`src/tema.js`).
+- **Se ve como la web en el teléfono:** mismo logo (`assets/marca`), letra Plus Jakarta Sans, colores de Piedra viva (`src/tema.js`, copia de `tokens.css`), barra de arriba con logo y avatar, y barra de abajo con Inicio, Cotizar, "+", Agenda y Más (`componentes/Marco.js`, como `BarraInferior.jsx`). Cada pantalla abre con la misma cabecera de la web (antetítulo, título y subtítulo).
+- **Letra:** las pantallas importan `Text` y `TextInput` de `componentes/Texto.js`, no de `react-native`: así cada grosor usa su archivo de Plus Jakarta Sans (en Android `fontWeight` no cambia una fuente propia).
 - **Fechas con calendario:** `componentes/CampoFecha.native.js` usa `@react-native-community/datetimepicker` (funciona en Expo Go). En Android abre el calendario del sistema; en iOS, uno dentro de una ventana con "Listo". Los días fuera del rango permitido (antes de hoy, después del evento) no se pueden tocar. En la versión web (`CampoFecha.js`) la fecha se escribe como `AAAA-MM-DD`, porque ese calendario no existe en el navegador.
 - Listas desplegables y diálogos están hechos con React Native puro.
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Platform, Pressable, View } from "react-native";
+import { Text } from "./Texto";
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { colores } from "../tema";
 import { diaLegibleConAnio, esFechaISO, fechaLocalDeISO, isoDeFechaLocal } from "../utils/fechas";

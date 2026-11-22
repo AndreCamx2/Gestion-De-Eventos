@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, View } from "react-native";
+import { Text } from "../componentes/Texto";
 import { router } from "expo-router";
 import { obtenerCalendario } from "../compartido/api/calendario";
 import { listarSalones } from "../compartido/api/salones";
@@ -18,7 +19,7 @@ import {
 } from "../compartido/pages/calendario/calendario";
 import { fechaISO, hoyLocal } from "../compartido/utils/inicioCifras";
 import { Selector } from "../componentes/formulario";
-import { Aviso, Boton, Cargando, EtiquetaEstado, Tarjeta, Vacio, estilos } from "../componentes/ui";
+import { Cabecera, Aviso, Boton, Cargando, EtiquetaEstado, Tarjeta, Vacio, estilos } from "../componentes/ui";
 import { useCarga } from "../componentes/useCarga";
 import RequiereRol from "../sesion/RequiereRol";
 import { colores, espacio } from "../tema";
@@ -64,9 +65,20 @@ function Calendario() {
       contentContainerStyle={estilos.contenido}
       refreshControl={<RefreshControl refreshing={recargando} onRefresh={recargar} />}
     >
+      <Cabecera antetitulo="Disponibilidad" titulo={tituloMes(mes)} />
       <View style={{ flexDirection: "row", alignItems: "center", gap: espacio.s }}>
         <Boton titulo="‹" variante="secundario" onPress={() => mover(-1)} />
-        <Text style={[estilos.textoFuerte, { flex: 1, textAlign: "center", fontSize: 18 }]}>{tituloMes(mes)}</Text>
+        <View style={{ flex: 1 }}>
+          <Boton
+            titulo="Hoy"
+            variante="secundario"
+            deshabilitado={mes === claveMes(hoy)}
+            onPress={() => {
+              setMes(claveMes(hoy));
+              setElegido(hoyTexto);
+            }}
+          />
+        </View>
         <Boton titulo="›" variante="secundario" onPress={() => mover(1)} />
       </View>
       {datos ? (

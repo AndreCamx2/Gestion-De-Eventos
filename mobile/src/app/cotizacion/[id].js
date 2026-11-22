@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
-import { Stack, router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { RefreshControl, ScrollView, View } from "react-native";
+import { Text } from "../../componentes/Texto";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { bloquear, liberar } from "../../api/disponibilidad";
 import { pesos as pesosEnteros, numeroCotizacion } from "../../compartido/pages/cotizaciones/cotizaciones";
 import { MAX_MOTIVO, montoRetenido, parsearPorcentaje, puedeCancelar } from "../../compartido/pages/cotizaciones/cancelacion";
@@ -185,11 +186,18 @@ function DetalleCotizacion() {
       contentContainerStyle={[estilos.contenido, { paddingBottom: 40 }]}
       refreshControl={<RefreshControl refreshing={recargando} onRefresh={refrescar} />}
     >
-      <Stack.Screen options={{ title: `Cotización ${numeroCotizacion(c.id)}` }} />
-
-      <View style={{ gap: 6 }}>
+      <View style={{ gap: 8 }}>
+        <Text style={estilos.textoSuave}>
+          <Text accessibilityRole="link" onPress={() => router.navigate("/cotizaciones")} style={{ color: colores.mandarinaTexto, fontWeight: "700" }}>
+            Cotizaciones
+          </Text>
+          {"  /  "}
+          {numeroCotizacion(c.id)}
+        </Text>
+        <Text style={estilos.titulo} accessibilityRole="header">
+          {c.cliente?.nombre}
+        </Text>
         <EtiquetaEstado estado={estadoVisible(c)} />
-        <Text style={estilos.titulo}>{c.cliente?.nombre}</Text>
         <Text style={estilos.textoSuave}>
           {cliente.principal} · {cliente.secundario}
         </Text>

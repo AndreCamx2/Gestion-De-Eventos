@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { FlatList, Text, TextInput, View } from "react-native";
+import { FlatList, View } from "react-native";
+import { Text, TextInput } from "../../componentes/Texto";
 import { router } from "expo-router";
 import { getCotizaciones } from "../../compartido/api/cotizaciones";
 import {
@@ -16,7 +17,7 @@ import {
 } from "../../compartido/pages/cotizaciones/cotizaciones";
 import { hoyLocal } from "../../compartido/utils/inicioCifras";
 import { Cifras, Segmento } from "../../componentes/formulario";
-import { Aviso, Boton, Cargando, EtiquetaEstado, Tarjeta, Vacio, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Boton, Cargando, EtiquetaEstado, Tarjeta, Vacio, estilos } from "../../componentes/ui";
 import { useCarga } from "../../componentes/useCarga";
 import RequiereRol from "../../sesion/RequiereRol";
 
@@ -52,7 +53,21 @@ function Cotizaciones() {
       keyboardShouldPersistTaps="handled"
       ListHeaderComponent={
         <View style={{ gap: 10 }}>
-          <Boton titulo="Nueva cotización" onPress={() => router.push("/cotizaciones/nueva")} />
+          <Cabecera
+            antetitulo="Operación"
+            titulo="Cotizaciones"
+            subtitulo="Todo lo que se ha ofrecido, en qué estado está y cuánto vale."
+            acciones={
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Boton titulo="Histórico" variante="secundario" onPress={() => router.push("/historico")} />
+                </View>
+                <View style={{ flex: 1.6 }}>
+                  <Boton titulo="+ Nueva cotización" onPress={() => router.push("/cotizaciones/nueva")} />
+                </View>
+              </View>
+            }
+          />
           {cifras ? (
             <Cifras
               items={[

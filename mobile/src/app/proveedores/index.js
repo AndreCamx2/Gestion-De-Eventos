@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { FlatList, Text, View } from "react-native";
+import { FlatList, View } from "react-native";
+import { Text } from "../../componentes/Texto";
 import { router } from "expo-router";
 import { crearProveedor, listarProveedores, listarStock } from "../../compartido/api/proveedores";
 import {
@@ -12,7 +13,7 @@ import {
   validarProveedor,
 } from "../../compartido/pages/proveedores/proveedores";
 import { Dialogo } from "../../componentes/formulario";
-import { Aviso, Boton, Campo, Cargando, Tarjeta, Vacio, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Boton, Campo, Cargando, Tarjeta, Vacio, estilos } from "../../componentes/ui";
 import { textoDeError, useCarga } from "../../componentes/useCarga";
 import RequiereRol from "../../sesion/RequiereRol";
 import { colores, espacio } from "../../tema";
@@ -72,6 +73,7 @@ function Proveedores() {
         onRefresh={recargar}
         ListHeaderComponent={
           <View style={{ gap: 10 }}>
+            <Cabecera antetitulo="Catálogo" titulo="Proveedores y stock" subtitulo="Quién provee qué, cuánto hay y cuánto vale." />
             <View style={{ flexDirection: "row", gap: espacio.s }}>
               <View style={{ flex: 1 }}>
                 <Boton titulo="Nuevo proveedor" onPress={() => setAbierto(true)} />
