@@ -29,8 +29,8 @@ rectangle "SGDE" {
   usecase "Consultar historial de precios" as UC3
 }
 
-AD --> UC1
-AD --> UC3
+AD -- UC1
+AD -- UC3
 UC1 ..> UC2 : <<include>>
 
 note right of UC1

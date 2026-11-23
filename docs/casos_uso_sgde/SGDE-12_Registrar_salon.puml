@@ -30,9 +30,9 @@ rectangle "SGDE" {
   usecase "Verificar que no tenga\ncotizaciones activas" as UC4
 }
 
-AD --> UC1
-AD --> UC2
-AD --> UC3
+AD -- UC1
+AD -- UC2
+AD -- UC3
 UC3 ..> UC4 : <<include>>
 
 note right of UC1

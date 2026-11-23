@@ -31,8 +31,8 @@ rectangle "SGDE" {
   usecase "Liberar bloqueo" as UC5
 }
 
-AD --> UC1
-AD --> UC2
+AD -- UC1
+AD -- UC2
 UC3 .> UC1 : <<extend>>
 UC3 .> UC2 : <<extend>>
 UC4 .> UC3 : <<extend>>
