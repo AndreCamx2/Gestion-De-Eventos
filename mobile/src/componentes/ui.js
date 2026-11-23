@@ -1,63 +1,126 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { TOQUE_MINIMO, colores, espacio } from "../tema";
+import { useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "./Texto";
+import { TOQUE_MINIMO, colores, espacio, radio, texto } from "../tema";
 import { ESTADOS } from "../utils/estados";
 
-export function Boton({ titulo, onPress, variante = "principal", deshabilitado = false, cargando = false }) {
-  const estilo = variante === "secundario" ? estilos.botonSecundario : variante === "peligro" ? estilos.botonPeligro : estilos.botonPrincipal;
-  const textoEstilo = variante === "principal" ? estilos.botonTextoClaro : variante === "peligro" ? estilos.botonTextoPeligro : estilos.botonTexto;
+// Piezas básicas con el mismo aspecto de la web (frontend/src/components/ui/*.css).
+
+const VARIANTES = {
+  principal: { fondo: colores.tinta, borde: "transparent", texto: colores.sobreOscuro },
+  oscuro: { fondo: colores.texto, borde: "transparent", texto: colores.sobreOscuro },
+  secundario: { fondo: colores.superficie, borde: colores.lineaFuerte, texto: colores.texto },
+  peligro: { fondo: "transparent", borde: colores.peligroBorde, texto: colores.mandarinaTexto },
+  exito: { fondo: colores.exitoFondo, borde: "transparent", texto: colores.exitoTexto },
+};
+
+export function Boton({ titulo, onPress, variante = "principal", deshabilitado = false, cargando = false, textoCargando, icono = null, alto }) {
+  const v = VARIANTES[variante] ?? VARIANTES.principal;
   const inactivo = deshabilitado || cargando;
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={titulo}
       accessibilityState={{ disabled: inactivo, busy: cargando }}
       onPress={onPress}
       disabled={inactivo}
-      style={({ pressed }) => [estilos.boton, estilo, inactivo && estilos.botonInactivo, pressed && estilos.botonPresionado]}
+      style={({ pressed }) => [
+        estilos.boton,
+        { backgroundColor: v.fondo, borderColor: v.borde },
+        alto ? { minHeight: alto } : null,
+        inactivo && estilos.botonInactivo,
+        pressed && estilos.botonPresionado,
+      ]}
     >
-      {cargando ? (
-        <ActivityIndicator color={variante === "principal" ? "#FFFFFF" : colores.tinta} />
-      ) : (
-        <Text style={[estilos.botonTextoBase, textoEstilo]}>{titulo}</Text>
-      )}
+      {cargando ? <ActivityIndicator color={v.texto} /> : icono}
+      {cargando && textoCargando ? <Text style={[estilos.botonTextoBase, { color: v.texto }]}>{textoCargando}</Text> : null}
+      {!cargando ? <Text style={[estilos.botonTextoBase, { color: v.texto }]}>{titulo}</Text> : null}
     </Pressable>
   );
 }
 
-export function Campo({ etiqueta, error, ...props }) {
+// Campo con etiqueta arriba y error abajo (Campo.jsx).
+//   obligatorio: asterisco mandarina, como en Login y Registro
+//   clave: contraseña con botón "Ver / Ocultar" dentro del campo (acceso-clave)
+//   extra: algo a la derecha de la etiqueta (por ejemplo, "¿La olvidaste?")
+export function Campo({ etiqueta, error, obligatorio = false, clave = false, extra = null, style, ...props }) {
+  const [visible, setVisible] = useState(false);
   return (
     <View style={estilos.campo}>
-      <Text style={estilos.etiqueta}>{etiqueta}</Text>
-      <TextInput
-        accessibilityLabel={etiqueta}
-        placeholderTextColor={colores.textoTenue}
-        style={[estilos.input, error && estilos.inputError]}
-        {...props}
-      />
+      {etiqueta || extra ? (
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: espacio.m }}>
+          {etiqueta ? (
+            <Text style={estilos.etiqueta}>
+              {etiqueta}
+              {obligatorio ? <Text style={{ color: colores.mandarinaTexto }}> *</Text> : null}
+            </Text>
+          ) : null}
+          {extra}
+        </View>
+      ) : null}
+      <View>
+        <TextInput
+          accessibilityLabel={etiqueta}
+          placeholderTextColor={colores.textoTenue}
+          style={[estilos.input, error && estilos.inputError, clave && { paddingRight: 84 }, style]}
+          secureTextEntry={clave ? !visible : props.secureTextEntry}
+          autoCapitalize={clave ? "none" : props.autoCapitalize}
+          autoCorrect={clave ? false : props.autoCorrect}
+          {...props}
+          {...(clave ? { secureTextEntry: !visible } : null)}
+        />
+        {clave ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={visible ? "Ocultar contraseña" : "Ver contraseña"}
+            accessibilityState={{ selected: visible }}
+            onPress={() => setVisible((v) => !v)}
+            style={({ pressed }) => [estilos.verClave, pressed && { backgroundColor: colores.tintaSuave }]}
+          >
+            <Text style={estilos.verClaveTexto}>{visible ? "Ocultar" : "Ver"}</Text>
+          </Pressable>
+        ) : null}
+      </View>
       {error ? <Text style={estilos.errorCampo}>{error}</Text> : null}
     </View>
   );
 }
 
-export function Tarjeta({ children, onPress, accessibilityLabel }) {
-  if (!onPress) return <View style={estilos.tarjeta}>{children}</View>;
+export function Tarjeta({ children, onPress, accessibilityLabel, style }) {
+  if (!onPress) return <View style={[estilos.tarjeta, style]}>{children}</View>;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
-      style={({ pressed }) => [estilos.tarjeta, pressed && estilos.tarjetaPresionada]}
+      style={({ pressed }) => [estilos.tarjeta, style, pressed && estilos.tarjetaPresionada]}
     >
       {children}
     </Pressable>
   );
 }
 
-export function EtiquetaEstado({ estado }) {
+// Cabecera de cada pantalla (CabeceraPagina.jsx): antetítulo mandarina, título grande y subtítulo.
+export function Cabecera({ antetitulo, titulo, subtitulo, acciones = null }) {
+  return (
+    <View style={{ gap: espacio.s }}>
+      {antetitulo ? <Text style={estilos.antetitulo}>{antetitulo}</Text> : null}
+      <Text style={estilos.titulo} accessibilityRole="header">
+        {titulo}
+      </Text>
+      {subtitulo ? <Text style={[estilos.subtitulo, { marginTop: 2 }]}>{subtitulo}</Text> : null}
+      {acciones ? <View style={{ gap: espacio.m, marginTop: espacio.s }}>{acciones}</View> : null}
+    </View>
+  );
+}
+
+// `etiqueta` cambia el texto (el cliente ve "Reservada temporalmente" en vez de "Bloqueado").
+export function EtiquetaEstado({ estado, etiqueta }) {
   const e = ESTADOS[estado] || ESTADOS.cotizado;
   return (
     <View style={[estilos.etiquetaEstado, { backgroundColor: e.fondo }]}>
       <View style={[estilos.punto, { backgroundColor: e.punto }]} />
-      <Text style={[estilos.etiquetaEstadoTexto, { color: e.texto }]}>{e.etiqueta}</Text>
+      <Text style={[estilos.etiquetaEstadoTexto, { color: e.texto }]}>{etiqueta ?? e.etiqueta}</Text>
     </View>
   );
 }
@@ -71,51 +134,57 @@ export function Aviso({ texto, tipo = "error" }) {
   );
 }
 
-export function Cargando({ texto = "Cargando…" }) {
+export function Cargando({ texto: mensaje = "Cargando…" }) {
   return (
     <View style={estilos.centro}>
       <ActivityIndicator size="large" color={colores.tinta} />
-      <Text style={estilos.textoSuave}>{texto}</Text>
+      <Text style={estilos.textoSuave}>{mensaje}</Text>
     </View>
   );
 }
 
-export function Vacio({ titulo, texto }) {
+// EstadoVacio.jsx
+export function Vacio({ titulo, texto: mensaje, accion = null }) {
   return (
     <View style={estilos.vacio}>
       <Text style={estilos.vacioTitulo}>{titulo}</Text>
-      {texto ? <Text style={estilos.textoSuave}>{texto}</Text> : null}
+      {mensaje ? <Text style={[estilos.textoSuave, { textAlign: "center" }]}>{mensaje}</Text> : null}
+      {accion}
     </View>
   );
 }
 
 export const estilos = StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: colores.fondo },
-  contenido: { padding: espacio.l, gap: espacio.m },
+  // --espacio-6 arriba y --espacio-4 a los lados, como .panel__contenido en el teléfono
+  contenido: { paddingHorizontal: espacio.l, paddingTop: espacio.xl, paddingBottom: espacio.e8, gap: espacio.l },
   centro: { flex: 1, alignItems: "center", justifyContent: "center", gap: espacio.m, padding: espacio.xl },
-  titulo: { fontSize: 24, fontWeight: "800", color: colores.texto, letterSpacing: -0.4 },
-  subtitulo: { fontSize: 15, color: colores.textoSuave },
-  antetitulo: { fontSize: 12, fontWeight: "800", color: colores.mandarinaTexto, letterSpacing: 1.4, textTransform: "uppercase" },
-  textoSuave: { fontSize: 14, color: colores.textoSuave },
-  textoFuerte: { fontSize: 16, fontWeight: "700", color: colores.texto },
+  titulo: { fontSize: texto.titulo, fontWeight: "800", color: colores.texto, letterSpacing: -1.1, lineHeight: 36 },
+  subtitulo: { fontSize: texto.subtitulo, color: colores.textoSuave, lineHeight: 24 },
+  antetitulo: { fontSize: texto.antetitulo, fontWeight: "800", color: colores.mandarinaTexto, letterSpacing: 1.56, textTransform: "uppercase" },
+  textoSuave: { fontSize: texto.etiqueta + 1, color: colores.textoSuave, lineHeight: 21 },
+  textoFuerte: { fontSize: texto.cuerpo, fontWeight: "700", color: colores.texto },
 
-  boton: { minHeight: TOQUE_MINIMO + 4, borderRadius: 12, alignItems: "center", justifyContent: "center", paddingHorizontal: espacio.l },
-  botonPrincipal: { backgroundColor: colores.tinta },
-  botonSecundario: { backgroundColor: colores.superficie, borderWidth: 1, borderColor: colores.lineaFuerte },
-  botonPeligro: { backgroundColor: "transparent", borderWidth: 1, borderColor: "#F3C9B5" },
+  boton: {
+    minHeight: 48,
+    borderRadius: radio.control,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: espacio.s,
+    paddingHorizontal: espacio.e5,
+  },
   botonInactivo: { opacity: 0.5 },
   botonPresionado: { transform: [{ scale: 0.97 }] },
-  botonTextoBase: { fontSize: 16, fontWeight: "700" },
-  botonTextoClaro: { color: "#FFFFFF" },
-  botonTexto: { color: colores.texto },
-  botonTextoPeligro: { color: colores.mandarinaTexto },
+  botonTextoBase: { fontSize: texto.cuerpo, fontWeight: "800" },
 
-  campo: { gap: espacio.xs },
-  etiqueta: { fontSize: 13, fontWeight: "600", color: colores.textoSuave },
+  campo: { gap: 6 },
+  etiqueta: { fontSize: texto.etiqueta, fontWeight: "600", color: colores.textoSuave },
   input: {
-    minHeight: TOQUE_MINIMO + 4,
-    borderRadius: 10,
-    borderWidth: 1,
+    minHeight: 46,
+    borderRadius: radio.control,
+    borderWidth: 1.5,
     borderColor: colores.lineaFuerte,
     backgroundColor: colores.campo,
     paddingHorizontal: espacio.m,
@@ -123,14 +192,26 @@ export const estilos = StyleSheet.create({
     color: colores.texto,
   },
   inputError: { borderColor: colores.peligro },
-  errorCampo: { fontSize: 13, color: colores.peligro },
+  errorCampo: { fontSize: texto.pequeno, fontWeight: "700", color: colores.peligro },
+  verClave: {
+    position: "absolute",
+    right: 4,
+    top: 1,
+    minWidth: TOQUE_MINIMO,
+    height: TOQUE_MINIMO,
+    paddingHorizontal: espacio.m,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  verClaveTexto: { fontSize: 13, fontWeight: "700", color: colores.tinta },
 
   tarjeta: {
     backgroundColor: colores.superficie,
-    borderRadius: 18,
+    borderRadius: radio.tarjetaGrande,
     borderWidth: 1,
     borderColor: colores.linea,
-    padding: espacio.l,
+    padding: espacio.e5,
     gap: espacio.s,
   },
   tarjetaPresionada: { backgroundColor: colores.superficie2 },
@@ -142,16 +223,17 @@ export const estilos = StyleSheet.create({
     gap: 6,
     height: 26,
     paddingHorizontal: 10,
-    borderRadius: 999,
+    borderRadius: radio.pildora,
   },
   punto: { width: 6, height: 6, borderRadius: 3 },
-  etiquetaEstadoTexto: { fontSize: 12, fontWeight: "700" },
+  etiquetaEstadoTexto: { fontSize: texto.pequeno, fontWeight: "700" },
 
-  aviso: { backgroundColor: "#FDECEA", borderRadius: 12, padding: espacio.m, borderWidth: 1, borderColor: "#F5C2BD" },
-  avisoExito: { backgroundColor: "rgba(52,168,106,0.12)", borderColor: "rgba(52,168,106,0.35)" },
-  avisoTexto: { color: colores.peligro, fontSize: 14 },
-  avisoTextoExito: { color: colores.exito },
+  // .acceso-aviso de la web
+  aviso: { backgroundColor: ESTADOS.vencida.fondo, borderRadius: radio.control, paddingVertical: 12, paddingHorizontal: 16 },
+  avisoExito: { backgroundColor: ESTADOS.confirmado.fondo },
+  avisoTexto: { color: colores.peligro, fontSize: 14, fontWeight: "600" },
+  avisoTextoExito: { color: ESTADOS.confirmado.texto },
 
-  vacio: { alignItems: "center", gap: espacio.s, paddingVertical: espacio.xl },
-  vacioTitulo: { fontSize: 17, fontWeight: "700", color: colores.texto },
+  vacio: { alignItems: "center", gap: espacio.s, paddingVertical: espacio.xl, paddingHorizontal: espacio.l },
+  vacioTitulo: { fontSize: 16, fontWeight: "700", color: colores.texto, textAlign: "center" },
 });

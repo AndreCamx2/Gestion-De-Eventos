@@ -4,9 +4,11 @@ import { alVencer } from "../api/cliente";
 
 const ContextoSesion = createContext(null);
 
+// Los tres roles entran al inicio: ahí ven sus cifras y el menú de su módulo.
 export const RUTA_POR_ROL = {
-  administrador: "/disponibilidad",
-  proveedor: "/mi-stock",
+  administrador: "/inicio",
+  proveedor: "/inicio",
+  cliente: "/inicio",
 };
 
 export function ProveedorSesion({ children }) {

@@ -34,7 +34,7 @@ Requerimientos oficiales: RF-01 a RF-13 y RNF-01 a RNF-08 ([`docs/Requerimientos
 
 **Cliente:** se registra, inicia sesión y ve su inicio.
 
-**App móvil** (Android e iOS, carpeta [`mobile/`](mobile/README.md)): inicio de sesión, disponibilidad y bloqueos para el administrador, y "Mi stock" para el proveedor.
+**App móvil** (Android e iOS, carpeta [`mobile/`](mobile/README.md)): las mismas funciones de la web por rol. El administrador maneja cotizaciones completas, calendario, rack, catálogos y reportes; el cliente ve sus cotizaciones y su perfil; el proveedor, su stock y su perfil.
 
 **Para todos:** inicio y cierre de sesión con JWT, y recuperación de contraseña por correo (en `rediseno`).
 
