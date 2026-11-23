@@ -29,8 +29,8 @@ rectangle "SGDE" {
   usecase "Asignarme el sitio" as UC3
 }
 
-AD --> UC1
-AD --> UC2
+AD -- UC1
+AD -- UC2
 UC1 ..> UC3 : <<include>>
 
 note right of UC1

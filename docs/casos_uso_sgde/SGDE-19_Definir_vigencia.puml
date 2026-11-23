@@ -28,7 +28,7 @@ rectangle "SGDE" {
   usecase "Registrar movimiento" as UC2
 }
 
-AD --> UC1
+AD -- UC1
 UC1 ..> UC2 : <<include>>
 
 note right of UC1

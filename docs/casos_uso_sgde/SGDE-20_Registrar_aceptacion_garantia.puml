@@ -29,7 +29,7 @@ rectangle "SGDE" {
   usecase "Verificar que la fecha\nesté libre" as UC3
 }
 
-AD --> UC1
+AD -- UC1
 UC1 ..> UC2 : <<include>>
 UC2 ..> UC3 : <<include>>
 

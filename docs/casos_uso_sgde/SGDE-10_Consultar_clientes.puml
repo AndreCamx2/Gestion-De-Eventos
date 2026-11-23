@@ -31,9 +31,9 @@ rectangle "SGDE" {
   usecase "Dar de baja cliente" as UC5
 }
 
-AD --> UC1
-AD --> UC4
-AD --> UC5
+AD -- UC1
+AD -- UC4
+AD -- UC5
 UC2 .> UC1 : <<extend>>
 UC3 .> UC1 : <<extend>>
 

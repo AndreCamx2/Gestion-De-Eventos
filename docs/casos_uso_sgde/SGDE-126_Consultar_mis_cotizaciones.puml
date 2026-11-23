@@ -30,9 +30,9 @@ rectangle "SGDE" {
   usecase "Descargar PDF" as UC4
 }
 
-CL --> UC1
-CL --> UC3
-CL --> UC4
+CL -- UC1
+CL -- UC3
+CL -- UC4
 UC2 ..> UC1 : <<extend>>
 
 note right of UC1

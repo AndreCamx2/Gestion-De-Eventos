@@ -29,8 +29,8 @@ rectangle "SGDE" {
   usecase "Buscar por razón social\no identificación" as UC3
 }
 
-AD --> UC1
-AD --> UC2
+AD -- UC1
+AD -- UC2
 UC3 .> UC2 : <<extend>>
 
 note right of UC1

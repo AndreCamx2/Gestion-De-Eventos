@@ -38,9 +38,9 @@ rectangle "SGDE" {
   usecase "Recuperar contraseña\n(SGDE-96)" as UC4
 }
 
-US --> UC1
-US --> UC3
-VI --> UC4
+US -- UC1
+US -- UC3
+VI -- UC4
 UC2 .> UC1 : <<extend>>\n[venció el access]
 
 note right of UC3

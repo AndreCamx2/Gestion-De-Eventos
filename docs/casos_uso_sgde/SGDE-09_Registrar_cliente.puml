@@ -31,8 +31,8 @@ rectangle "SGDE" {
   usecase "Crear usuario con rol cliente" as UC4
 }
 
-AD --> UC1
-VI --> UC3
+AD -- UC1
+VI -- UC3
 UC2 .> UC1 : <<extend>>\n[cliente jurídico\ncon empresa nueva]
 UC3 ..> UC4 : <<include>>
 UC3 ..> UC2 : <<include>>

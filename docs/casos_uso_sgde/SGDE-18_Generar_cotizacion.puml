@@ -34,9 +34,9 @@ rectangle "SGDE" {
   usecase "Vista previa para el cliente" as UC8
 }
 
-AD --> UC1
-AD --> UC5
-AD --> UC6
+AD -- UC1
+AD -- UC5
+AD -- UC6
 UC1 ..> UC2 : <<include>>
 UC1 ..> UC3 : <<include>>
 UC1 ..> UC4 : <<include>>
