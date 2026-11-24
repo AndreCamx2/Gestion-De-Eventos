@@ -1,14 +1,13 @@
 import { useCallback, useState } from "react";
-import { FlatList, Text, View } from "react-native";
+import { FlatList, View } from "react-native";
+import { Text } from "../../componentes/Texto";
 import { router, useFocusEffect } from "expo-router";
 import { listarSalones } from "../../api/disponibilidad";
-import { Aviso, Cargando, Tarjeta, Vacio, estilos } from "../../componentes/ui";
+import { Cabecera, Aviso, Cargando, Tarjeta, Vacio, estilos } from "../../componentes/ui";
 import RequiereRol from "../../sesion/RequiereRol";
-import { useSesion } from "../../sesion/Sesion";
 import { mensajeDeError } from "../../utils/errores";
 
 function Salones() {
-  const { usuario } = useSesion();
   const [salones, setSalones] = useState(null);
   const [error, setError] = useState(null);
   const [recargando, setRecargando] = useState(false);
@@ -47,8 +46,7 @@ function Salones() {
       onRefresh={recargar}
       ListHeaderComponent={
         <View style={{ gap: 6, marginBottom: 4 }}>
-          <Text style={estilos.antetitulo}>Hola{usuario?.first_name ? `, ${usuario.first_name}` : ""}</Text>
-          <Text style={estilos.subtitulo}>Elige un salón para ver sus próximos días y bloquear o liberar fechas.</Text>
+          <Cabecera antetitulo="Disponibilidad" titulo="Disponibilidad por salón" subtitulo="Elige un salón para ver sus próximos días y bloquear o liberar fechas." />
           <Aviso texto={error} />
         </View>
       }

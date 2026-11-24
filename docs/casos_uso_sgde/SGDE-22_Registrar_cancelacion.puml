@@ -31,8 +31,8 @@ rectangle "SGDE" {
   usecase "Anular cotización\nno confirmada" as UC5
 }
 
-AD --> UC1
-AD --> UC5
+AD -- UC1
+AD -- UC5
 UC1 ..> UC2 : <<include>>
 UC1 ..> UC3 : <<include>>
 UC1 ..> UC4 : <<include>>

@@ -32,9 +32,9 @@ rectangle "SGDE" {
   usecase "Registrar movimiento" as UC5
 }
 
-AD --> UC1
-AD --> UC2
-SIS --> UC3
+AD -- UC1
+AD -- UC2
+SIS -- UC3
 UC1 ..> UC4 : <<include>>
 UC1 ..> UC5 : <<include>>
 UC2 ..> UC5 : <<include>>

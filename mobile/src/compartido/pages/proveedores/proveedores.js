@@ -1,0 +1,225 @@
+// Funciones de la pantalla de Proveedores que no usan estado: iniciales, stock de
+// cada proveedor, totales, fechas, validación, lo que se envía al API y cómo se
+// leen sus errores. Las usan Proveedores.jsx y las piezas de esta carpeta.
+import { erroresDesdeApi as erroresDesdeApiComun } from "../../utils/erroresApi";
+import { mesCorto } from "../../utils/inicioCifras";
+import {
+  validarContacto,
+  validarDocumento,
+  validarNombreCosa,
+  validarRazonSocial,
+} from "../../utils/validacionesRegistro";
+
+const formatoEntero = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
+const formatoCentavos = new Intl.NumberFormat("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// "$ 85.000", o "$ 1.200.000,50" si tiene centavos. El valor admite decimales en
+// el modelo: redondear (como pesos() de Cotizaciones) mostraría un precio falso.
+export function pesos(valor) {
+  const n = Number(valor);
+  const centavos = Math.round(n * 100) % 100 !== 0;
+  return `$ ${(centavos ? formatoCentavos : formatoEntero).format(n)}`;
+}
+
+// Cambio frente a la web: sin \p{L} ni \p{Diacritic}, que el motor de JavaScript del
+// celular (Hermes) puede no aceptar. Para nombres en español da lo mismo.
+const LETRA_O_DIGITO_INICIAL = /^[A-Za-zÀ-ÖØ-öø-ÿ\d]/;
+
+const CONECTORES = new Set(["el", "la", "los", "las", "de", "del", "y", "e"]);
+
+export function iniciales(nombre) {
+  const palabras = String(nombre ?? "")
+    .split(/\s+/)
+    .filter((p) => LETRA_O_DIGITO_INICIAL.test(p) && !CONECTORES.has(p.toLowerCase()));
+  return palabras.slice(0, 2).map((p) => p[0].toUpperCase()).join("") || "?";
+}
+
+export function porNombre(a, b) {
+  return a.nombre.localeCompare(b.nombre, "es");
+}
+
+function normalizar(texto) {
+  return String(texto ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+export function filtrarStock(elementos, busqueda) {
+  const texto = normalizar(busqueda);
+  if (!texto) return elementos;
+  return elementos.filter((e) => normalizar(e.nombre_elemento).includes(texto));
+}
+
+export function estaAgotado(elemento) {
+  return Number(elemento.cantidad) === 0;
+}
+
+export function stockDe(stock, idProveedor) {
+  return stock
+    .filter((e) => e.proveedor === idProveedor)
+    .sort((a, b) => a.nombre_elemento.localeCompare(b.nombre_elemento, "es"));
+}
+
+export function conteoPorProveedor(stock) {
+  const conteo = {};
+  for (const e of stock) conteo[e.proveedor] = (conteo[e.proveedor] ?? 0) + 1;
+  return conteo;
+}
+
+export function valorTotalElemento(e) {
+  return Number(e.cantidad) * Number(e.valor);
+}
+
+export function valorTotal(elementos) {
+  return elementos.reduce((suma, e) => suma + valorTotalElemento(e), 0);
+}
+
+// actualizado_en trae hora y zona ("2026-10-12T15:30:00-05:00"): new Date respeta
+// la zona y getDate() lo pasa a la hora local, como bloqueo_hasta en Cotizaciones.
+export function fechaActualizado(texto) {
+  const f = new Date(texto);
+  if (Number.isNaN(f.getTime())) return "—";
+  return `${f.getDate()} ${mesCorto(f)} ${f.getFullYear()}`;
+}
+
+export const PROVEEDOR_VACIO = { nombre: "", identificacion: "", contacto: "" };
+const CAMPOS_PROVEEDOR = ["nombre", "identificacion", "contacto"];
+
+export const MAX_CONTACTO_PROVEEDOR = 120;
+
+export function validarProveedor(form) {
+  const errores = {};
+  if (!form.nombre.trim()) errores.nombre = "Escribe el nombre del proveedor.";
+  else {
+    const nombre = validarRazonSocial(form.nombre);
+    if (nombre) errores.nombre = nombre;
+  }
+  if (form.identificacion.trim()) {
+    const documento = validarDocumento(form.identificacion);
+    if (documento) errores.identificacion = documento;
+  }
+  if (form.contacto.trim().length > MAX_CONTACTO_PROVEEDOR) {
+    errores.contacto = `Máximo ${MAX_CONTACTO_PROVEEDOR} caracteres.`;
+  } else if (form.contacto.trim()) {
+    const contacto = validarContacto(form.contacto);
+    if (contacto) errores.contacto = contacto;
+  }
+  return errores;
+}
+
+export function payloadProveedor(form) {
+  return {
+    nombre: form.nombre.trim(),
+    identificacion: form.identificacion.trim(),
+    contacto: form.contacto.trim(),
+  };
+}
+
+export function erroresProveedor(body) {
+  return erroresDesdeApiComun(body, CAMPOS_PROVEEDOR);
+}
+
+export const ELEMENTO_VACIO = { nombre_elemento: "", cantidad: "", valor: "" };
+const CAMPOS_ELEMENTO = ["nombre_elemento", "cantidad", "valor"];
+
+export const MAX_NOMBRE_ELEMENTO = 120;
+const MAX_DIGITOS_ENTEROS_VALOR = 10;
+const MAX_DECIMALES_VALOR = 2;
+
+export function validarElemento(form) {
+  const errores = validarCantidadYValor(form);
+  const nombre = form.nombre_elemento.trim();
+  if (!nombre) errores.nombre_elemento = "Escribe el nombre del elemento.";
+  else if (nombre.length > MAX_NOMBRE_ELEMENTO)
+    errores.nombre_elemento = `El nombre admite máximo ${MAX_NOMBRE_ELEMENTO} caracteres.`;
+  else if (validarNombreCosa(nombre)) errores.nombre_elemento = validarNombreCosa(nombre);
+  return errores;
+}
+
+const CANTIDAD_MAXIMA = 1000000;
+
+function validarCantidad(texto) {
+  if (texto === "") return "Escribe la cantidad.";
+  if (!/^\d+$/.test(texto)) return "La cantidad es un número entero, 0 o más, sin decimales.";
+  if (Number(texto) > CANTIDAD_MAXIMA) return "La cantidad no puede pasar de 1.000.000.";
+  return null;
+}
+
+function validarValor(texto) {
+  if (texto === "") return "Escribe el valor unitario.";
+  const partes = /^(\d+)(?:\.(\d+))?$/.exec(texto);
+  if (!partes) return "El valor es un número, 0 o más.";
+  const [, enteros, decimales = ""] = partes;
+  if (decimales.length > MAX_DECIMALES_VALOR) return `El valor admite máximo ${MAX_DECIMALES_VALOR} decimales.`;
+  if (enteros.replace(/^0+(?=\d)/, "").length > MAX_DIGITOS_ENTEROS_VALOR)
+    return `El valor admite máximo ${MAX_DIGITOS_ENTEROS_VALOR} dígitos antes de los decimales.`;
+  return null;
+}
+
+function validarCantidadYValor(form) {
+  const errores = {};
+  const cantidad = validarCantidad(String(form.cantidad).trim());
+  const valor = validarValor(String(form.valor).trim());
+  if (cantidad) errores.cantidad = cantidad;
+  if (valor) errores.valor = valor;
+  return errores;
+}
+
+export function quedaAgotado(form) {
+  return /^0+$/.test(String(form.cantidad).trim());
+}
+
+export function payloadElemento(form, idProveedor) {
+  return {
+    proveedor: idProveedor,
+    nombre_elemento: form.nombre_elemento.trim(),
+    cantidad: Number(form.cantidad),
+    valor: String(form.valor).trim(),
+  };
+}
+
+export function erroresElemento(body) {
+  const { non_field_errors, ...resto } = body ?? {};
+  const generales = [].concat(non_field_errors ?? []);
+  const esDuplicado = (msg) => /únic|unique/i.test(String(msg));
+  const otros = generales.filter((msg) => !esDuplicado(msg));
+
+  const { campos, general } = erroresDesdeApiComun(
+    otros.length ? { ...resto, non_field_errors: otros } : resto,
+    CAMPOS_ELEMENTO,
+  );
+  if (generales.some(esDuplicado)) campos.nombre_elemento = "Este proveedor ya tiene un elemento con ese nombre.";
+  return { campos, general };
+}
+
+export function usuariosLibres(usuarios, proveedores, proveedor) {
+  const tomados = new Set(
+    proveedores.filter((p) => p.id !== proveedor.id && p.usuario != null).map((p) => p.usuario),
+  );
+  return usuarios
+    .filter((u) => !tomados.has(u.id))
+    .sort((a, b) => a.username.localeCompare(b.username, "es"));
+}
+
+const CAMPOS_EDICION_STOCK = ["cantidad", "valor"];
+
+export function formDesdeElemento(e) {
+  return { cantidad: String(e.cantidad), valor: String(Number(e.valor)) };
+}
+
+export function validarEdicionStock(form) {
+  return validarCantidadYValor(form);
+}
+
+export function cambiosStock(form, elemento) {
+  const cambios = {};
+  if (Number(form.cantidad) !== elemento.cantidad) cambios.cantidad = Number(form.cantidad);
+  if (Number(form.valor) !== Number(elemento.valor)) cambios.valor = String(form.valor).trim();
+  return cambios;
+}
+
+export function erroresEdicionStock(body) {
+  return erroresDesdeApiComun(body, CAMPOS_EDICION_STOCK);
+}

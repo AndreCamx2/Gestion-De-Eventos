@@ -34,14 +34,14 @@ rectangle "SGDE" as SISTEMA {
   usecase "Cerrar las demás sesiones" as UC7
 }
 
-CL --> UC1
-CL --> UC2
-CL --> UC4
-CL --> UC5
-PR --> UC1
-PR --> UC3
-PR --> UC4
-PR --> UC5
+CL -- UC1
+CL -- UC2
+CL -- UC4
+CL -- UC5
+PR -- UC1
+PR -- UC3
+PR -- UC4
+PR -- UC5
 UC4 ..> UC6 : <<include>>
 UC5 ..> UC6 : <<include>>
 UC5 ..> UC7 : <<include>>

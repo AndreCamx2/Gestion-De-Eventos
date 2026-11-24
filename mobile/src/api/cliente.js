@@ -7,11 +7,17 @@ export class ErrorApi extends Error {
     super(cuerpo?.detail || `Error ${status}`);
     this.status = status;
     this.cuerpo = cuerpo;
+    // `body` es el nombre que usan los módulos compartidos con la web (src/compartido).
+    this.body = cuerpo ?? {};
   }
 }
 
 // Sin conexión, o el servidor dormido de Render que tardó demasiado.
-export class ErrorRed extends Error {}
+export class ErrorRed extends Error {
+  // status 0 y body vacío: así lo leen los módulos compartidos con la web.
+  status = 0;
+  body = {};
+}
 
 let alVencerSesion = () => {};
 export function alVencer(funcion) {

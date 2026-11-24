@@ -1,11 +1,16 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { View } from "react-native";
+import { Text } from "../componentes/Texto";
 import { Redirect, router } from "expo-router";
-import { ErrorApi } from "../api/cliente";
-import { Aviso, Boton, Campo, estilos } from "../componentes/ui";
+import { recuperarClaveActiva } from "../compartido/utils/recuperarClave";
+import { Divisor, EnlaceAcceso, PantallaAcceso, Pildora, PieAcceso, TarjetaAcceso } from "../componentes/Acceso";
+import { Boton, Campo, estilos } from "../componentes/ui";
 import { useSesion } from "../sesion/Sesion";
+import { colores } from "../tema";
 import { mensajeDeError } from "../utils/errores";
+
+// Igual que Login.jsx de la web en el teléfono: logo, frase y la tarjeta para entrar.
+const MSG_MUCHOS_INTENTOS = "Hiciste muchos intentos seguidos. Espera un minuto y vuelve a intentarlo.";
 
 export default function Login() {
   const { estado, entrar } = useSesion();
@@ -18,8 +23,8 @@ export default function Login() {
 
   async function enviar() {
     const faltan = {};
-    if (!usuario.trim()) faltan.usuario = "Escribe tu usuario o correo.";
-    if (!clave) faltan.clave = "Escribe tu contraseña.";
+    if (!usuario.trim()) faltan.usuario = "Ingresa tu usuario o correo.";
+    if (!clave) faltan.clave = "Ingresa tu contraseña.";
     setErrores(faltan);
     if (Object.keys(faltan).length) return;
 
@@ -28,59 +33,62 @@ export default function Login() {
       await entrar(usuario, clave);
       router.replace("/");
     } catch (error) {
-      // 401 en el login = credenciales malas (el mensaje de simplejwt viene en inglés).
-      const general =
-        error instanceof ErrorApi && error.status === 401
-          ? "Usuario o contraseña incorrectos."
-          : mensajeDeError(error).general;
-      setErrores({ general });
+      if (error?.status === 429) setErrores({ clave: MSG_MUCHOS_INTENTOS });
+      else if (error?.status === 400 || error?.status === 401) setErrores({ clave: "Usuario o contraseña incorrectos." });
+      // Sin conexión o servidor caído: no es culpa de la contraseña.
+      else setErrores({ clave: mensajeDeError(error).general || "No pudimos hablar con el servidor. Intenta de nuevo." });
     } finally {
       setEnviando(false);
     }
   }
 
   return (
-    <SafeAreaView style={estilos.pantalla}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={[estilos.contenido, { flexGrow: 1, justifyContent: "center" }]} keyboardShouldPersistTaps="handled">
-          <View style={{ gap: 6, marginBottom: 8 }}>
-            <Text style={estilos.antetitulo}>Venue</Text>
-            <Text style={estilos.titulo} accessibilityRole="header">
-              Inicia sesión
-            </Text>
-            <Text style={estilos.subtitulo}>Disponibilidad de salones y tu stock, desde el celular.</Text>
-          </View>
+    <PantallaAcceso>
+      <View style={{ gap: 16 }}>
+        <Pildora>Gestión de eventos y salones · Cartagena</Pildora>
+        <Text style={{ fontSize: 36, fontWeight: "800", lineHeight: 38, letterSpacing: -1.4, color: colores.texto }} accessibilityRole="header">
+          Todo el evento, en <Text style={{ backgroundColor: colores.durazno }}> una sola vista </Text>.
+        </Text>
+      </View>
 
-          <Aviso texto={errores.general} />
-
-          <Campo
-            etiqueta="Usuario o correo"
-            value={usuario}
-            onChangeText={setUsuario}
-            autoCapitalize="none"
-            autoCorrect={false}
-            autoComplete="username"
-            textContentType="username"
-            returnKeyType="next"
-            error={errores.usuario}
-          />
-          <Campo
-            etiqueta="Contraseña"
-            value={clave}
-            onChangeText={setClave}
-            secureTextEntry
-            autoComplete="password"
-            textContentType="password"
-            returnKeyType="go"
-            onSubmitEditing={enviar}
-            error={errores.clave}
-          />
-          <Boton titulo="Entrar" onPress={enviar} cargando={enviando} />
-          <Text style={[estilos.textoSuave, { textAlign: "center" }]}>
+      <TarjetaAcceso titulo="Inicia sesión" subtitulo="Accede a tu panel de gestión de eventos y salones.">
+        <Campo
+          etiqueta="Usuario o correo electrónico"
+          obligatorio
+          value={usuario}
+          onChangeText={setUsuario}
+          placeholder="nombre@empresa.com"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="username"
+          textContentType="username"
+          keyboardType="email-address"
+          returnKeyType="next"
+          error={errores.usuario}
+        />
+        <Campo
+          etiqueta="Contraseña"
+          obligatorio
+          clave
+          extra={recuperarClaveActiva() ? <EnlaceAcceso pequeno titulo="¿La olvidaste?" onPress={() => router.push("/recuperar-clave")} /> : null}
+          value={clave}
+          onChangeText={setClave}
+          placeholder="••••••••"
+          autoComplete="password"
+          textContentType="password"
+          returnKeyType="go"
+          onSubmitEditing={enviar}
+          error={errores.clave}
+        />
+        <Boton titulo="Iniciar sesión" textoCargando="Ingresando…" alto={50} onPress={enviar} cargando={enviando} />
+        {enviando ? (
+          <Text style={[estilos.textoSuave, { textAlign: "center", fontSize: 13 }]}>
             Si el servidor estaba inactivo, la primera vez puede tardar hasta un minuto.
           </Text>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        ) : null}
+        <Divisor />
+        <PieAcceso texto="¿Aún no tienes cuenta?" enlace="Regístrate aquí" onPress={() => router.push("/registro")} />
+      </TarjetaAcceso>
+    </PantallaAcceso>
   );
 }

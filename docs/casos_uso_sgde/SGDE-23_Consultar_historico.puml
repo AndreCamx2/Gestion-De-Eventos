@@ -29,7 +29,7 @@ rectangle "SGDE" {
   usecase "Ver movimientos de una\ncotización (SGDE-62)" as UC3
 }
 
-AD --> UC1
+AD -- UC1
 UC2 .> UC1 : <<extend>>
 UC3 .> UC1 : <<extend>>
 

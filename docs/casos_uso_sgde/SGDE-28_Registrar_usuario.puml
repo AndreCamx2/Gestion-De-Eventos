@@ -30,9 +30,9 @@ rectangle "SGDE" {
   usecase "Dar de baja usuario" as UC4
 }
 
-AD --> UC1
-AD --> UC3
-AD --> UC4
+AD -- UC1
+AD -- UC3
+AD -- UC4
 UC1 ..> UC2 : <<include>>
 
 note right of UC2

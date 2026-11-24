@@ -33,11 +33,11 @@ rectangle "SGDE" {
   usecase "Ver resumen del inventario\nen el Inicio" as UC6
 }
 
-PR --> UC1
-PR --> UC2
-PR --> UC3
-PR --> UC6
-AD --> UC4
+PR -- UC1
+PR -- UC2
+PR -- UC3
+PR -- UC6
+AD -- UC4
 UC1 <.. UC5 : <<extend>>
 
 note right of UC1

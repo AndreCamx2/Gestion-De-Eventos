@@ -31,10 +31,10 @@ rectangle "SGDE" {
   usecase "Verificar cotizaciones activas" as UC5
 }
 
-AD --> UC1
-AD --> UC2
-AD --> UC3
-AD --> UC4
+AD -- UC1
+AD -- UC2
+AD -- UC3
+AD -- UC4
 UC3 ..> UC5 : <<include>>
 UC4 ..> UC5 : <<include>>
 
