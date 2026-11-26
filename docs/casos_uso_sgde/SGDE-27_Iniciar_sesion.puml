@@ -32,7 +32,7 @@ PR -up-|> US
 CL -up-|> US
 
 rectangle "SGDE" {
-  usecase "Iniciar sesión\n(usuario o correo)" as UC1
+  usecase "Iniciar sesión\n(usuario; el cliente\nusa su correo)" as UC1
   usecase "Renovar la sesión\n(automático)" as UC2
   usecase "Cerrar sesión\n(SGDE-92)" as UC3
   usecase "Recuperar contraseña\n(SGDE-96)" as UC4
@@ -41,7 +41,7 @@ rectangle "SGDE" {
 US -- UC1
 US -- UC3
 VI -- UC4
-UC2 .> UC1 : <<extend>>\n[venció el access]
+UC1 <.. UC2 : <<extend>>\n[venció el access]
 
 note right of UC3
   El refresh pasa a la lista negra:

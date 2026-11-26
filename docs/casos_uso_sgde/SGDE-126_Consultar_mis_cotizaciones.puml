@@ -19,13 +19,13 @@ skinparam note {
 }
 skinparam ArrowColor black
 skinparam actorStyle awesome
-title SGDE-126 · Consultar mis cotizaciones (por construir)
+title SGDE-126 · Consultar mis cotizaciones
 
 actor "Cliente" as CL
 
 rectangle "SGDE" {
   usecase "Ver mis cotizaciones" as UC1
-  usecase "Filtrar por estado" as UC2
+  usecase "Ver próximos y realizados" as UC2
   usecase "Ver detalle de una cotización" as UC3
   usecase "Descargar PDF" as UC4
 }
@@ -37,7 +37,8 @@ UC2 ..> UC1 : <<extend>>
 
 note right of UC1
   Solo ve sus propias cotizaciones:
-  salón, fecha, total y estado.
+  salón, fecha, total y estado,
+  separadas en próximos y realizados.
   Solo lectura: no crea ni cambia
   cotizaciones. Nunca ve las
   observaciones internas.

@@ -33,9 +33,9 @@ rectangle "SGDE" {
 
 AD -- UC1
 VI -- UC3
-UC2 .> UC1 : <<extend>>\n[cliente jurídico\ncon empresa nueva]
+UC1 <.. UC2 : <<extend>>\n[cliente jurídico\ncon empresa nueva]
 UC3 ..> UC4 : <<include>>
-UC3 ..> UC2 : <<include>>
+UC3 <.. UC2 : <<extend>>\n[persona jurídica]
 
 note right of UC1
   Natural: identificación única.

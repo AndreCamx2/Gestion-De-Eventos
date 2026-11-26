@@ -1,0 +1,39 @@
+@startuml CU26_ConsultarIngresos
+title CU-26 · Consultar ingresos por tipo de evento (SGDE-144, SGDE-145)
+skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+
+|Administrador|
+start
+:Abre "Ingresos";
+:Elige el periodo: este mes, este año
+o un rango de fechas;
+|Sistema|
+if (¿La fecha inicial es posterior a la final?) then (sí)
+  :Responde 400 y marca las fechas;
+  stop
+else (no)
+  :Toma los eventos confirmados de sus sitios
+  dentro del periodo;
+  :Suma el total de cada tipo de evento
+  ("Sin clasificar" si no tiene);
+  :Calcula el total, el número de eventos,
+  el ticket promedio y el % de cada tipo;
+endif
+|Administrador|
+:Ve las cifras y el gráfico de mayor a menor;
+if (¿Cambia la agrupación?) then (sí)
+  :Agrupa por grupo o por tipo de evento;
+endif
+stop
+@enduml

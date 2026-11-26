@@ -1,0 +1,39 @@
+@startuml SGDE-145_Consultar_ingresos_por_tipo_de_evento_secuencia
+title SGDE-145 · Consultar ingresos por tipo de evento (SGDE-144)
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+autonumber
+
+actor "Administrador" as AD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
+
+AD -> UI : Abrir Ingresos y elegir el periodo\n(este mes, este año o rango)
+UI -> SI : GET /api/reportes/ingresos-por-tipo-evento/?desde=&hasta=
+alt La fecha inicial es posterior a la final
+  SI --> UI : 400
+  UI --> AD : Mostrar el error en las fechas
+else Rango válido
+  SI -> BD : Cotizaciones confirmadas de sus sitios\ncon el evento en el rango
+  BD --> SI : Resultado con sus conceptos
+  SI -> SI : Agrupar por tipo de evento, sumar el total,\ncalcular el % y el ticket promedio
+  SI --> UI : 200 con gran_total, total_eventos,\nticket_promedio y detalle
+  UI --> AD : Mostrar las cifras y el gráfico de mayor a menor\n(agrupado por grupo o por tipo)
+end
+@enduml

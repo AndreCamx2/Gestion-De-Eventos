@@ -1,0 +1,42 @@
+@startuml SGDE-145_Consultar_ingresos_por_tipo_de_evento
+!pragma layout smetana
+left to right direction
+skinparam backgroundColor white
+skinparam usecase {
+  BackgroundColor #F2F2F2
+  BorderColor black
+  FontSize 12
+}
+skinparam rectangle {
+  BorderColor black
+  FontSize 13
+  FontStyle bold
+}
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+  FontSize 11
+}
+skinparam ArrowColor black
+skinparam actorStyle awesome
+title SGDE-145 · Consultar ingresos por tipo de evento (SGDE-144)
+
+actor "Administrador" as AD
+
+rectangle "SGDE" {
+  usecase "Consultar ingresos\npor tipo de evento" as UC1
+  usecase "Elegir el periodo: este mes,\neste año o rango de fechas" as UC2
+  usecase "Agrupar por grupo\no por tipo de evento" as UC3
+}
+
+AD -- UC1
+UC1 <.. UC2 : <<extend>>
+UC1 <.. UC3 : <<extend>>
+
+note right of UC1
+  Solo eventos confirmados de sus sitios.
+  Muestra los ingresos, el número de eventos,
+  el ticket promedio y el % de cada tipo,
+  de mayor a menor. Sin tipo = "Sin clasificar".
+end note
+@enduml

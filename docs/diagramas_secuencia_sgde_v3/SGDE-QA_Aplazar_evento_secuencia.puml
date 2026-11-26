@@ -1,0 +1,50 @@
+@startuml SGDE-QA_Aplazar_evento_secuencia
+title Aplazar evento (hallazgo de QA)
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+autonumber
+
+actor "Administrador" as AD
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
+
+AD -> UI : En el detalle, "Aplazar fecha":\nfecha nueva y motivo
+UI -> SI : POST /api/cotizaciones/{id}/aplazamiento/
+alt Falta la fecha o el motivo
+  SI --> UI : 400
+  UI --> AD : Mostrar el error en el campo
+else Datos completos
+  SI -> BD : Tomar la cotización y el salón\n(select_for_update)
+  alt Está cotizada, cancelada o el salón está inactivo
+    SI --> UI : 409 (una cotizada se cambia con Editar)
+    UI --> AD : Mostrar el aviso
+  else Fecha pasada, igual a la actual o antes del fin del bloqueo
+    SI --> UI : 400
+    UI --> AD : Mostrar el error en la fecha
+  else Otra cotización confirmada o bloqueada ese día
+    SI --> UI : 409
+    UI --> AD : Mostrar que la fecha está ocupada
+  else Fecha libre
+    SI -> BD : Guardar la fecha nueva\n(la vigencia baja si quedaba después)
+    SI -> BD : Registrar el movimiento "aplazada"\ncon la fecha anterior, la nueva y el motivo
+    SI --> UI : 200 con la cotización
+    UI --> AD : Mostrar la fecha nueva
+  end
+end
+@enduml

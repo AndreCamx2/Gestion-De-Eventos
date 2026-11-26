@@ -1,0 +1,49 @@
+@startuml CU25_AplazarEvento
+title CU-25 · Aplazar un evento (hallazgo de QA)
+skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+
+|Administrador|
+start
+:En el detalle de una cotización bloqueada
+o confirmada elige "Aplazar fecha";
+:Escribe la fecha nueva y el motivo;
+|Sistema|
+if (¿Falta la fecha o el motivo?) then (sí)
+  :Responde 400 y marca el campo;
+  stop
+elseif (¿Está cotizada o cancelada,
+o el salón está dado de baja?) then (sí)
+  :Responde 409
+  (una cotizada se cambia con Editar);
+  stop
+elseif (¿La fecha es pasada, igual a la actual
+o anterior al fin del bloqueo?) then (sí)
+  :Responde 400 y marca la fecha;
+  stop
+elseif (¿Otra cotización está confirmada
+o bloqueada ese día en ese salón?) then (sí)
+  :Responde 409: la fecha está ocupada;
+  stop
+else (no)
+  :Guarda la fecha nueva
+  (salón, montaje, conceptos y garantía no cambian);
+  :Si la vigencia quedaba después del día nuevo,
+  la baja a ese día;
+  :Registra el movimiento "aplazada"
+  con la fecha anterior, la nueva y el motivo;
+endif
+|Administrador|
+:Ve la cotización con la fecha nueva;
+stop
+@enduml

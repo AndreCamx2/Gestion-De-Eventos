@@ -33,14 +33,16 @@ rectangle "SGDE" {
 
 AD -- UC1
 AD -- UC2
-UC3 .> UC1 : <<extend>>
-UC3 .> UC2 : <<extend>>
-UC4 .> UC3 : <<extend>>
-UC5 .> UC3 : <<extend>>
+UC1 <.. UC3 : <<extend>>
+UC2 <.. UC3 : <<extend>>
+UC3 <.. UC4 : <<extend>>
+UC3 <.. UC5 : <<extend>>
 
 note right of UC2
-  Colores por estado: cotizado, bloqueado,
-  confirmado y vencida. Las canceladas
-  no se muestran.
+  Colores por estado: disponible, cotizado,
+  bloqueado y confirmado. Las vencidas y
+  las canceladas no ocupan la fecha; las
+  vencidas solo se listan en el día del
+  calendario.
 end note
 @enduml

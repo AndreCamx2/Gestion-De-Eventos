@@ -1,0 +1,40 @@
+@startuml CU24_ConsultarMisCotizaciones
+title CU-24 · Consultar mis cotizaciones (SGDE-126)
+skinparam backgroundColor white
+skinparam ActivityBackgroundColor #F2F2F2
+skinparam ActivityBorderColor black
+skinparam ActivityDiamondBackgroundColor white
+skinparam ActivityDiamondBorderColor black
+skinparam ArrowColor black
+skinparam SwimlaneBorderColor #9AA3AE
+skinparam SwimlaneTitleFontStyle bold
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+
+|Cliente|
+start
+:Abre "Mis cotizaciones";
+|Sistema|
+if (¿Su usuario está vinculado a un cliente?) then (no)
+  :Responde 403 con el aviso;
+  stop
+else (sí)
+  :Busca solo las cotizaciones de su cliente;
+  :Las separa en Próximos y Realizados,
+  con salón, fecha, total y estado;
+endif
+|Cliente|
+if (¿Abre una cotización?) then (sí)
+  |Sistema|
+  :Muestra el detalle y sus conceptos
+  (sin observaciones internas);
+  |Cliente|
+  if (¿Descarga el PDF?) then (sí)
+    :Abre la vista de impresión
+    y la guarda como PDF;
+  endif
+endif
+stop
+@enduml

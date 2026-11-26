@@ -1,0 +1,49 @@
+@startuml SGDE-126_Consultar_mis_cotizaciones_secuencia
+title SGDE-126 · Consultar mis cotizaciones
+skinparam backgroundColor white
+skinparam sequence {
+  ArrowColor black
+  LifeLineBorderColor black
+  ParticipantBorderColor black
+  ParticipantBackgroundColor #F2F2F2
+  ActorBorderColor black
+  ActorBackgroundColor #F2F2F2
+}
+skinparam database {
+  BackgroundColor #F2F2F2
+  BorderColor black
+}
+skinparam note {
+  BackgroundColor #FFFBEA
+  BorderColor #B8A86B
+}
+autonumber
+
+actor "Cliente" as CL
+participant "Interfaz\n(React)" as UI
+participant "API\n(Django REST)" as SI
+database "Base de datos\n(PostgreSQL)" as BD
+
+CL -> UI : Abrir Mis cotizaciones
+UI -> SI : GET /api/mis-cotizaciones/
+alt No es cliente o su usuario no está vinculado a un cliente
+  SI --> UI : 403 (no_es_cliente o cliente_sin_vincular)
+  UI --> CL : Mostrar el aviso
+else Cliente vinculado
+  SI -> BD : Cotizaciones de su cliente\n(el cliente sale del token, no de un id)
+  BD --> SI : Resultado
+  SI --> UI : 200 con salón, fecha, total y estado\n(sin observaciones internas)
+  UI --> CL : Mostrar Próximos y Realizados
+end
+CL -> UI : Abrir una cotización
+UI -> SI : GET /api/mis-cotizaciones/{id}/
+alt No es suya
+  SI --> UI : 404
+  UI --> CL : Mostrar que no existe
+else Es suya
+  SI --> UI : 200 con el detalle y sus conceptos
+  UI --> CL : Mostrar el detalle
+end
+CL -> UI : Descargar PDF
+UI --> CL : Vista de impresión (/mis-cotizaciones/{id}/imprimir)\npara guardarla como PDF
+@enduml
