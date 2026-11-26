@@ -1,6 +1,6 @@
 # Documentación de SGDE
 
-Índice de la documentación y los diagramas del proyecto. Todos los diagramas describen el **sistema construido** (revisados contra el código el 2026-10-22). Las excepciones son la carpeta de actividades fuera de alcance, que es análisis inicial, y `casos_uso_sgde/SGDE-126_Consultar_mis_cotizaciones`, que está marcado "por construir".
+Índice de la documentación y los diagramas del proyecto. Todos los diagramas describen el **sistema construido** (revisados contra el código el 2026-10-22). Los casos de uso se volvieron a revisar contra el código el 2026-11-26, y se agregaron los que faltaban (aplazar un evento, ingresos por tipo de evento y mis cotizaciones) con su actividad y su secuencia. La excepción es la carpeta de actividades fuera de alcance, que es análisis inicial.
 
 ## Documentos
 
@@ -21,9 +21,9 @@ Cada diagrama tiene su fuente en PlantUML (`.pu` o `.puml`) y su imagen (`.png`)
 | [`arquitectura/`](arquitectura/) | **Diseño del sistema construido:** estados de la cotización, despliegue (Vercel, Render, GitHub Actions y Docker), componentes, paquetes, objetos, comunicación, sesión JWT y la secuencia de bloquear y confirmar sin sobreventa |
 | [`Diagrama_Clases_SGDE.pu`](Diagrama_Clases_SGDE.pu) | Las 16 clases del modelo y sus relaciones |
 | [`../database/diagramas/Modelo Relacional/`](../database/diagramas/Modelo%20Relacional/) | Las 16 tablas con columnas, llaves y restricciones |
-| [`casos_uso_sgde/`](casos_uso_sgde/) | `SGDE-00` es el diagrama general con los roles reales (administrador, proveedor, cliente, visitante y el sistema). Los demás tienen un diagrama por tarea de Jira |
+| [`casos_uso_sgde/`](casos_uso_sgde/) | `SGDE-00` es el diagrama general con los roles reales (administrador, proveedor, cliente, visitante y el sistema). Los demás tienen un diagrama por tarea de Jira; `SGDE-QA_Aplazar_evento` salió de un hallazgo de QA y no tiene tarea propia |
 | [`Diagrama_Actividades_SGDE.pu`](Diagrama_Actividades_SGDE.pu) | Proceso comercial completo, con carriles Administrador y Sistema |
-| [`Diagrama de actividades/`](Diagrama%20de%20actividades/) | Un flujo por caso de uso (CU-01 a CU-15 y CU-21 a CU-23) |
+| [`Diagrama de actividades/`](Diagrama%20de%20actividades/) | Un flujo por caso de uso (CU-01 a CU-15 y CU-21 a CU-26) |
 | [`Diagrama de actividades/fuera_de_alcance/`](Diagrama%20de%20actividades/fuera_de_alcance/) | CU-16 a CU-20 (BEO, ejecución, liquidación, cierre y reportes). Análisis inicial que **no** hace parte de la beta |
 | [`diagramas_secuencia_sgde_v3/`](diagramas_secuencia_sgde_v3/) | Secuencias de nivel sistema (Interfaz – API – Base de datos) con la ruta del API y las respuestas reales (400, 404, 409) |
 
